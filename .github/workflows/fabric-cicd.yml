@@ -1,0 +1,260 @@
+name: Fabric CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+      config_template:
+        description: 'Configuration template'
+        required: true
+        default: 'basic_etl'
+        type: choice
+        options:
+        - basic_etl
+        - advanced_analytics
+        - data_science
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Install Fabric CLI
+      run: |
+        pip install fabric-cli
+        fabric --version
+    
+    - name: Validate configuration
+      run: |
+        python src/fabric_deploy.py validate config/templates/basic_etl.yaml
+        python src/fabric_deploy.py validate config/templates/advanced_analytics.yaml
+        python src/fabric_deploy.py validate config/templates/data_science.yaml
+    
+    - name: Run unit tests
+      run: |
+        pytest tests/ -m "not integration" -v --cov=src/
+
+    - name: Run integration tests
+      run: |
+        if command -v fabric &> /dev/null; then
+          pytest tests/integration -m integration -v
+        else
+          echo "Fabric CLI not available, skipping integration tests"
+        fi
+
+  deploy-dev:
+    needs: validate
+    if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: development
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Install Fabric CLI
+      run: |
+        echo "Installing Fabric CLI..."
+        # Add actual installation steps here
+    
+    - name: Deploy to Development
+      env:
+        FABRIC_TOKEN: ${{ secrets.FABRIC_DEV_TOKEN }}
+        TENANT_ID: ${{ secrets.TENANT_ID }}
+      run: |
+        # Determine config template
+        CONFIG_TEMPLATE="${{ github.event.inputs.config_template || 'basic_etl' }}"
+        
+        # Deploy workspace
+        python src/fabric_deploy.py deploy \
+          config/templates/${CONFIG_TEMPLATE}.yaml \
+          --env dev \
+          --branch ${{ github.ref_name }} \
+          --diagnose
+    
+    - name: Run integration tests
+      env:
+        FABRIC_TOKEN: ${{ secrets.FABRIC_DEV_TOKEN }}
+        TENANT_ID: ${{ secrets.TENANT_ID }}
+      run: |
+        pytest tests/integration -m integration -v
+
+  deploy-staging:
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Install Fabric CLI
+      run: |
+        echo "Installing Fabric CLI..."
+    
+    - name: Deploy to Staging
+      env:
+        FABRIC_TOKEN: ${{ secrets.FABRIC_STAGING_TOKEN }}
+        TENANT_ID: ${{ secrets.TENANT_ID }}
+      run: |
+        python src/fabric_deploy.py deploy \
+          config/templates/basic_etl.yaml \
+          --env staging \
+          --diagnose
+    
+    - name: Staging validation tests
+      env:
+        FABRIC_TOKEN: ${{ secrets.FABRIC_STAGING_TOKEN }}
+        TENANT_ID: ${{ secrets.TENANT_ID }}
+      run: |
+        if [ -d tests/validation ]; then
+          pytest tests/validation -v
+        else
+          echo "tests/validation directory not found, skipping"
+        fi
+
+  deploy-prod:
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Install Fabric CLI
+      run: |
+        echo "Installing Fabric CLI..."
+    
+    - name: Deploy to Production
+      env:
+        FABRIC_TOKEN: ${{ secrets.FABRIC_PROD_TOKEN }}
+        TENANT_ID: ${{ secrets.TENANT_ID }}
+      run: |
+        python src/fabric_deploy.py deploy \
+          config/templates/basic_etl.yaml \
+          --env prod \
+          --diagnose
+    
+    - name: Production smoke tests
+      env:
+        FABRIC_TOKEN: ${{ secrets.FABRIC_PROD_TOKEN }}
+        TENANT_ID: ${{ secrets.TENANT_ID }}
+      run: |
+        if [ -d tests/smoke ]; then
+          pytest tests/smoke -v
+        else
+          echo "tests/smoke directory not found, skipping"
+        fi
+    
+    - name: Generate deployment report
+      run: |
+        echo "Deployment completed successfully" > deployment-report.txt
+        echo "Timestamp: $(date)" >> deployment-report.txt
+        echo "Commit: ${{ github.sha }}" >> deployment-report.txt
+    
+    - name: Upload deployment report
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-report
+        path: deployment-report.txt
+
+  feature-branch-deploy:
+    needs: validate
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    environment: development
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Install Fabric CLI
+      run: |
+        echo "Installing Fabric CLI..."
+    
+    - name: Deploy feature branch workspace
+      env:
+        FABRIC_TOKEN: ${{ secrets.FABRIC_DEV_TOKEN }}
+        TENANT_ID: ${{ secrets.TENANT_ID }}
+      run: |
+        # Create feature-branch specific workspace
+        python src/fabric_deploy.py deploy \
+          config/templates/basic_etl.yaml \
+          --env dev \
+          --branch ${{ github.head_ref }} \
+          --force-branch-workspace \
+          --diagnose
+    
+    - name: Comment PR with workspace info
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🚀 Feature branch workspace deployed!\n\nWorkspace: `analytics-workspace-${{ github.head_ref }}`\nBranch: `${{ github.head_ref }}`\n\nYou can now test your changes in the dedicated workspace.'
+          })

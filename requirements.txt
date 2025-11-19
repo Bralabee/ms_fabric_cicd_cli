@@ -1,0 +1,23 @@
+# Fabric CLI CI/CD - Thin Wrapper
+# Based on learnings from 1,830 LOC → 270 LOC optimization
+
+python-dotenv>=1.0.0
+pyyaml>=6.0
+requests>=2.31.0
+jsonschema>=4.19.0
+click>=8.1.0
+rich>=13.0.0
+typer>=0.9.0
+gitpython>=3.1.0
+azure-identity>=1.15.0
+azure-storage-blob>=12.19.0
+
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Microsoft Fabric CLI (Install directly from GitHub to ensure correct tool)
+git+https://github.com/microsoft/fabric-cli.git@main#egg=ms-fabric-cli

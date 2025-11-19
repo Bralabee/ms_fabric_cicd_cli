@@ -1,0 +1,186 @@
+"""
+Configuration Management - Thin Wrapper Component 1/5
+~50 LOC - Validates and manages project configurations
+
+Key Learning Applied: Configuration over Code
+- Make everything configurable for any organization
+- Validate early to prevent deployment failures
+- Environment-specific overrides
+"""
+
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import jsonschema
+import yaml
+from dotenv import load_dotenv
+from jsonschema import validate
+
+
+@dataclass
+class WorkspaceConfig:
+    """Workspace configuration for any organization/project"""
+    name: str
+    display_name: str
+    description: str
+    capacity_id: str
+    
+    # Git integration
+    git_repo: Optional[str] = None
+    git_branch: str = "main"
+    git_directory: str = "/"
+    
+    # Folder structure
+    folders: List[str] = None
+    
+    # Items to create
+    lakehouses: List[Dict[str, Any]] = None
+    warehouses: List[Dict[str, Any]] = None
+    notebooks: List[Dict[str, Any]] = None
+    pipelines: List[Dict[str, Any]] = None
+    semantic_models: List[Dict[str, Any]] = None
+    
+    # Principals (users/service principals to add)
+    principals: List[Dict[str, str]] = None
+
+
+class ConfigManager:
+    """Manages configuration loading and validation"""
+    
+    def __init__(self, config_path: str):
+        self.config_path = Path(config_path)
+        self.schema = self._load_schema()
+    
+    def load_config(self, environment: str = None) -> WorkspaceConfig:
+        """Load and validate configuration"""
+        # Load base config
+        with open(self.config_path, 'r') as f:
+            config_data = yaml.safe_load(f)
+        
+        # Apply environment overrides
+        if environment:
+            env_config = self._load_environment_config(environment)
+            config_data = self._merge_configs(config_data, env_config)
+        
+        # Validate against schema
+        validate(instance=config_data, schema=self.schema)
+        
+        # Convert to WorkspaceConfig
+        return self._to_workspace_config(config_data)
+    
+    def _load_environment_config(self, environment: str) -> Dict[str, Any]:
+        """Load environment-specific overrides"""
+        env_path = self.config_path.parent / "environments" / f"{environment}.yaml"
+        if env_path.exists():
+            with open(env_path, 'r') as f:
+                return yaml.safe_load(f)
+        return {}
+    
+    def _merge_configs(self, base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+        """Merge base config with environment overrides"""
+        result = base.copy()
+        for key, value in override.items():
+            if isinstance(value, dict) and key in result and isinstance(result[key], dict):
+                result[key] = self._merge_configs(result[key], value)
+            else:
+                result[key] = value
+        return result
+    
+    def _to_workspace_config(self, data: Dict[str, Any]) -> WorkspaceConfig:
+        """Convert dict to WorkspaceConfig dataclass"""
+        workspace_data = data.get('workspace', {})
+        return WorkspaceConfig(
+            name=workspace_data['name'],
+            display_name=workspace_data.get('display_name', workspace_data['name']),
+            description=workspace_data.get('description', ''),
+            capacity_id=workspace_data['capacity_id'],
+            git_repo=workspace_data.get('git_repo'),
+            git_branch=workspace_data.get('git_branch', 'main'),
+            git_directory=workspace_data.get('git_directory', '/'),
+            folders=data.get('folders', ['Bronze', 'Silver', 'Gold', 'Notebooks', 'Pipelines']),
+            lakehouses=data.get('lakehouses', []),
+            warehouses=data.get('warehouses', []),
+            notebooks=data.get('notebooks', []),
+            pipelines=data.get('pipelines', []),
+            semantic_models=data.get('semantic_models', []),
+            principals=data.get('principals', [])
+        )
+    
+    def _load_schema(self) -> Dict[str, Any]:
+        """Load JSON schema for configuration validation"""
+        schema_path = Path(__file__).parent.parent / "schemas" / "workspace_config.json"
+        if schema_path.exists():
+            with open(schema_path, 'r') as f:
+                return yaml.safe_load(f)
+        
+        # Basic schema if file doesn't exist
+        return {
+            "type": "object",
+            "properties": {
+                "workspace": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "capacity_id": {"type": "string"}
+                    },
+                    "required": ["name", "capacity_id"]
+                }
+            },
+            "required": ["workspace"]
+        }
+
+
+def get_environment_variables() -> Dict[str, str]:
+    """Get required environment variables with validation"""
+    # Load variables from .env to simplify local workflows
+    load_dotenv()
+    
+    # If FABRIC_TOKEN is not found, try looking for .env files in config directory
+    if not os.getenv('FABRIC_TOKEN') and not os.getenv('AZURE_CLIENT_ID'):
+        config_env_files = list(Path('config').glob('*.env'))
+        if config_env_files:
+            # Load the first found env file
+            print(f"Loading environment from {config_env_files[0]}")
+            load_dotenv(config_env_files[0])
+
+    # Map Azure standard names to internal names if needed
+    if os.getenv('AZURE_TENANT_ID') and not os.getenv('TENANT_ID'):
+        os.environ['TENANT_ID'] = os.getenv('AZURE_TENANT_ID')
+
+    # Auto-generate token from Service Principal if provided but token is missing
+    if not os.getenv('FABRIC_TOKEN') and os.getenv('AZURE_CLIENT_ID') and os.getenv('AZURE_CLIENT_SECRET'):
+        try:
+            from azure.identity import ClientSecretCredential
+            print("Generating Fabric token from Service Principal credentials...")
+            credential = ClientSecretCredential(
+                tenant_id=os.getenv('TENANT_ID') or os.getenv('AZURE_TENANT_ID'),
+                client_id=os.getenv('AZURE_CLIENT_ID'),
+                client_secret=os.getenv('AZURE_CLIENT_SECRET')
+            )
+            token = credential.get_token("https://api.fabric.microsoft.com/.default")
+            os.environ['FABRIC_TOKEN'] = token.token
+            print("✅ Fabric token generated successfully")
+        except Exception as e:
+            print(f"⚠️ Failed to generate token from Service Principal: {e}")
+
+    required_vars = [
+        'FABRIC_TOKEN',
+        'TENANT_ID',
+    ]
+    
+    env_vars = {}
+    missing_vars = []
+    
+    for var in required_vars:
+        value = os.getenv(var)
+        if value:
+            env_vars[var] = value
+        else:
+            missing_vars.append(var)
+    
+    if missing_vars:
+        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+    
+    return env_vars

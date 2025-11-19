@@ -1,0 +1,24 @@
+name: fabric-cli-cicd
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pyyaml
+  - requests
+  - jsonschema
+  - click
+  - rich
+  - typer
+  - pytest
+  - pytest-cov
+  - black
+  - flake8
+  - mypy
+  - pip:
+    - python-dotenv
+    - gitpython
+    - azure-identity
+    - azure-storage-blob
+    - fabric-cli

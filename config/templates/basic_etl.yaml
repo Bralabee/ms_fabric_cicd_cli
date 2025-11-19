@@ -1,0 +1,81 @@
+# Basic ETL Workspace Configuration Template
+# Organization-agnostic template - customize for your needs
+
+workspace:
+  name: "analytics-workspace"  # Change this to your project name
+  display_name: "Analytics Workspace"
+  description: "ETL workspace for data analytics"
+  capacity_id: "F64"  # Change to your Fabric capacity ID
+  
+  # Git integration (optional)
+  git_repo: "https://github.com/your-org/your-repo"  # Change to your repo
+  git_branch: "main"
+  git_directory: "/"
+
+# Folder structure (medallion architecture)
+folders:
+  - "Bronze"    # Raw data landing
+  - "Silver"    # Cleaned/processed data
+  - "Gold"      # Business-ready analytics
+  - "Notebooks" # Data processing notebooks
+  - "Pipelines" # Data pipelines
+
+# Lakehouses for data storage
+lakehouses:
+  - name: "raw_data_lakehouse"
+    folder: "Bronze"
+    description: "Raw data from source systems"
+  
+  - name: "processed_data_lakehouse"
+    folder: "Silver"
+    description: "Cleaned and validated data"
+  
+  - name: "analytics_lakehouse"
+    folder: "Gold"
+    description: "Business-ready analytics data"
+
+# Data warehouses for analytics
+warehouses:
+  - name: "analytics_warehouse"
+    folder: "Gold"
+    description: "Primary analytics warehouse"
+
+# Notebooks for data processing
+notebooks:
+  - name: "data_ingestion"
+    folder: "Notebooks"
+    description: "Data ingestion from source systems"
+    # file_path: "notebooks/data_ingestion.py"  # Optional: import from file
+  
+  - name: "data_transformation"
+    folder: "Notebooks"
+    description: "Data cleaning and transformation"
+  
+  - name: "data_quality_checks"
+    folder: "Notebooks"
+    description: "Data quality validation and monitoring"
+
+# Pipelines for orchestration
+pipelines:
+  - name: "daily_etl_pipeline"
+    folder: "Pipelines"
+    description: "Daily ETL orchestration pipeline"
+
+# Principals (users/service principals) to add to workspace
+principals:
+  - id: "user@yourorg.com"        # Change to actual user email
+    role: "Admin"
+  
+  - id: "data-engineering-team@yourorg.com"  # Change to actual group
+    role: "Contributor"
+  
+  # Service principal for automation
+  - id: "12345678-1234-1234-1234-123456789012"  # Change to actual SP object ID
+    role: "Contributor"
+
+# Configuration notes:
+# 1. Replace all placeholder values with your organization's details
+# 2. Capacity ID should match your Fabric capacity
+# 3. Git repository should be accessible with your credentials
+# 4. Principal IDs should be actual user emails or service principal object IDs
+# 5. Remove sections you don't need (e.g., if no Git integration needed)

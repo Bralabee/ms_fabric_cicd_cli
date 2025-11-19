@@ -1,0 +1,106 @@
+# Advanced Analytics Workspace Configuration
+# For data science and advanced analytics projects
+
+workspace:
+  name: "advanced-analytics"
+  display_name: "Advanced Analytics & Data Science"
+  description: "Workspace for ML, AI, and advanced analytics"
+  capacity_id: "F64"  # Change to your capacity
+  
+  git_repo: "https://github.com/your-org/analytics-repo"
+  git_branch: "main"
+  git_directory: "/"
+
+# Extended folder structure for ML/AI projects
+folders:
+  - "Bronze"      # Raw data
+  - "Silver"      # Processed data
+  - "Gold"        # Business data
+  - "Feature Store"  # ML features
+  - "Models"      # ML models
+  - "Experiments" # ML experiments
+  - "Notebooks"   # Analysis notebooks
+  - "Pipelines"   # Data + ML pipelines
+  - "Reports"     # Business reports
+
+# Data stores
+lakehouses:
+  - name: "raw_customer_data"
+    folder: "Bronze"
+    description: "Raw customer interaction data"
+  
+  - name: "processed_customer_data"
+    folder: "Silver"
+    description: "Cleaned customer data with features"
+  
+  - name: "customer_360"
+    folder: "Gold"
+    description: "Complete customer view for analytics"
+  
+  - name: "ml_feature_store"
+    folder: "Feature Store"
+    description: "ML features for model training"
+
+warehouses:
+  - name: "analytics_warehouse"
+    folder: "Gold"
+    description: "Primary analytics warehouse"
+  
+  - name: "reporting_warehouse"
+    folder: "Gold"
+    description: "Optimized for business reporting"
+
+# ML & Analytics notebooks
+notebooks:
+  - name: "data_exploration"
+    folder: "Notebooks"
+    description: "Exploratory data analysis"
+  
+  - name: "feature_engineering"
+    folder: "Notebooks"
+    description: "Feature creation and selection"
+  
+  - name: "customer_segmentation"
+    folder: "Notebooks"
+    description: "Customer segmentation analysis"
+  
+  - name: "churn_prediction_model"
+    folder: "Models"
+    description: "Customer churn prediction ML model"
+  
+  - name: "recommendation_engine"
+    folder: "Models"
+    description: "Product recommendation ML model"
+  
+  - name: "ab_test_analysis"
+    folder: "Experiments"
+    description: "A/B test statistical analysis"
+
+# Advanced pipelines
+pipelines:
+  - name: "feature_pipeline"
+    folder: "Pipelines"
+    description: "Feature engineering and store updates"
+  
+  - name: "model_training_pipeline"
+    folder: "Pipelines"
+    description: "Automated model training and validation"
+  
+  - name: "model_inference_pipeline"
+    folder: "Pipelines"
+    description: "Batch inference for predictions"
+
+# Team access
+principals:
+  - id: "data-science-team@yourorg.com"
+    role: "Admin"
+  
+  - id: "analytics-team@yourorg.com"
+    role: "Contributor"
+  
+  - id: "business-analysts@yourorg.com"
+    role: "Viewer"
+  
+  # ML automation service principal
+  - id: "ml-automation-sp-object-id"
+    role: "Contributor"

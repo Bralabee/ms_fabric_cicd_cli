@@ -1,0 +1,56 @@
+# Data Science Project Configuration
+# For pure data science and research projects
+
+workspace:
+  name: "data-science-lab"
+  display_name: "Data Science Laboratory"
+  description: "Experimental workspace for data science research"
+  capacity_id: "F2"  # Smaller capacity for experimentation
+  
+  git_repo: "https://github.com/your-org/ds-experiments"
+  git_branch: "main"
+
+# Research-focused folder structure
+folders:
+  - "Raw Data"
+  - "Experiments"
+  - "Models"
+  - "Notebooks"
+  - "Datasets"
+  - "Publications"
+
+# Minimal data infrastructure
+lakehouses:
+  - name: "research_data"
+    folder: "Raw Data"
+    description: "Research datasets and external data sources"
+  
+  - name: "experiment_results"
+    folder: "Experiments"
+    description: "ML experiment results and metrics"
+
+# Research notebooks
+notebooks:
+  - name: "exploratory_analysis"
+    folder: "Notebooks"
+    description: "Initial data exploration and hypothesis formation"
+  
+  - name: "statistical_analysis"
+    folder: "Notebooks" 
+    description: "Statistical tests and significance analysis"
+  
+  - name: "deep_learning_experiments"
+    folder: "Experiments"
+    description: "Neural network architecture experiments"
+  
+  - name: "research_paper_analysis"
+    folder: "Publications"
+    description: "Analysis for research publication"
+
+# Research team access
+principals:
+  - id: "lead-data-scientist@yourorg.com"
+    role: "Admin"
+  
+  - id: "research-team@yourorg.com"
+    role: "Contributor"

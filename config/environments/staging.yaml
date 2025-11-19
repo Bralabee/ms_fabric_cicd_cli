@@ -1,0 +1,15 @@
+# Staging Environment Overrides
+# Pre-production environment with production-like setup
+
+workspace:
+  name: "analytics-workspace-staging"
+  capacity_id: "F32"  # Mid-tier capacity
+  git_branch: "main"
+
+# Full setup but smaller scale
+principals:
+  - id: "staging-testers@yourorg.com"
+    role: "Admin"
+  
+  - id: "qa-team@yourorg.com"
+    role: "Contributor"

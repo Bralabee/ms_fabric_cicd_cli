@@ -1,0 +1,21 @@
+# Development Environment Overrides
+# These settings override the base configuration for development
+
+workspace:
+  name: analytics-workspace-dev # Dev-specific naming
+  capacity_id: F2 # Smaller capacity for development
+  git_branch: develop # Use develop branch
+
+# Minimal setup for development
+lakehouses:
+  - name: dev_raw_data
+    folder: Bronze
+    description: Development raw data (subset)
+
+# Development team access
+principals:
+  - id: dev-team@yourorg.com
+    role: Admin
+
+  - id: developers@yourorg.com
+    role: Contributor

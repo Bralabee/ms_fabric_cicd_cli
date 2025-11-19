@@ -1,0 +1,19 @@
+# Production Environment Overrides
+# Production settings with high capacity and security
+
+workspace:
+  name: "analytics-workspace-prod"
+  capacity_id: "F64"  # High capacity for production
+  git_branch: "main"
+
+# Production principals with restricted access
+principals:
+  - id: "prod-admin@yourorg.com"
+    role: "Admin"
+  
+  - id: "analytics-prod-users@yourorg.com"
+    role: "Viewer"  # Read-only access in production
+  
+  # Production automation service principal
+  - id: "prod-automation-sp-object-id"
+    role: "Contributor"
