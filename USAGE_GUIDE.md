@@ -251,9 +251,28 @@ AUTOMATION_SP_ID=12345678-1234-1234-1234-123456789012
 - **Contributor**: Can create/modify items
 - **Viewer**: Read-only access
 
-## Multi-Environment Management
+### Multi-Environment Management
 
 ### Environment-Specific Settings
+
+Each environment (Dev, Staging, Prod) has its own configuration file in `config/environments/`. These files now use environment variables for principals to ensure security.
+
+**Required Environment Variables:**
+
+Ensure these are defined in your `.env` file (or CI/CD secrets):
+
+**Development:**
+- `DEV_ADMIN_EMAIL`: Email of the dev environment admin
+- `DEV_ADMIN_OBJECT_ID`: Object ID for the dev admin group
+
+**Staging:**
+- `STAGING_ADMIN_EMAIL`: Email for staging admins
+- `STAGING_QA_GROUP_ID`: Object ID for the QA team
+
+**Production:**
+- `PROD_ADMIN_EMAIL`: Email for production admins
+- `PROD_VIEWERS_GROUP_ID`: Object ID for production viewers
+- `PROD_AUTOMATION_SP_ID`: Object ID for the automation service principal
 
 ```bash
 # Development (smaller capacity, open access)

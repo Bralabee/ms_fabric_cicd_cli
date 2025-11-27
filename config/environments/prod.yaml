@@ -8,14 +8,14 @@ workspace:
 
 # Production principals with restricted access
 principals:
-  - id: "prod-admin@yourorg.com"
+  - id: "${PROD_ADMIN_EMAIL}"
     role: "Admin"
   
-  - id: "99999999-8888-7777-6666-555555555555" # Prod Users Group Object ID
+  - id: "${PROD_VIEWERS_GROUP_ID}" # Prod Users Group Object ID
     role: "Viewer"  # Read-only access in production
   
   # Production automation service principal
-  - id: "12345678-1234-1234-1234-123456789012" # Automation SP Object ID
+  - id: "${PROD_AUTOMATION_SP_ID}" # Automation SP Object ID
     role: "Contributor"
 
   # Mandatory Security Principals

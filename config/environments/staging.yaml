@@ -8,10 +8,10 @@ workspace:
 
 # Full setup but smaller scale
 principals:
-  - id: "staging-testers@yourorg.com"
+  - id: "${STAGING_ADMIN_EMAIL}"
     role: "Admin"
   
-  - id: "77777777-6666-5555-4444-333333333333" # QA Team Group Object ID
+  - id: "${STAGING_QA_GROUP_ID}" # QA Team Group Object ID
     role: "Contributor"
 
   # Mandatory Security Principals
