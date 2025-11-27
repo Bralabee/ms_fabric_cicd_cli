@@ -217,22 +217,32 @@ env:
 
 ## Principal Management
 
-### Adding Users and Groups
+### Adding Users and Groups (Securely)
 
+We recommend using environment variables for all principal IDs to keep sensitive information out of version control.
+
+1. **Define variables in your configuration:**
 ```yaml
-# In your configuration file
+# In your configuration file (e.g., config/environments/prod.yaml)
 principals:
-  # Individual users (Email/UPN is supported)
-  - id: "john.doe@yourorg.com"
+  # Individual users
+  - id: "${PROD_ADMIN_EMAIL}"
     role: "Admin"
   
-  # Azure AD groups (Use Object ID)
-  - id: "87654321-4321-4321-4321-210987654321"
-    role: "Contributor"
+  # Azure AD groups
+  - id: "${PROD_VIEWERS_GROUP_ID}"
+    role: "Viewer"
   
-  # Service principals (Use Object ID)
-  - id: "12345678-1234-1234-1234-123456789012"
+  # Service principals
+  - id: "${AUTOMATION_SP_ID}"
     role: "Contributor"
+```
+
+2. **Set values in your `.env` file:**
+```bash
+PROD_ADMIN_EMAIL=john.doe@yourorg.com
+PROD_VIEWERS_GROUP_ID=87654321-4321-4321-4321-210987654321
+AUTOMATION_SP_ID=12345678-1234-1234-1234-123456789012
 ```
 
 ### Role Definitions

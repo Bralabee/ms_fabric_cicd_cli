@@ -79,7 +79,10 @@ class ConfigManager:
         
         def replace(match):
             var_name = match.group(1)
-            return os.getenv(var_name, match.group(0))
+            value = os.getenv(var_name)
+            if value is None:
+                raise ValueError(f"Missing required environment variable: {var_name}")
+            return value
             
         return pattern.sub(replace, content)
     
