@@ -440,6 +440,27 @@ git branch -a
 # Use Object ID for service principals, not Application ID
 ```
 
+### Bulk Workspace Cleanup
+
+If you need to delete multiple workspaces (e.g., for cleanup), use the bulk destroy utility.
+
+1. **Create a list file** (e.g., `workspaces_to_delete.txt`):
+   ```text
+   workspace-a
+   workspace-b
+   old-test-ws.Workspace
+   ```
+   *(Note: The script handles `fab list` output format automatically)*
+
+2. **Run the script**:
+   ```bash
+   # Dry run (preview)
+   python scripts/bulk_destroy.py workspaces_to_delete.txt --dry-run
+
+   # Execute
+   python scripts/bulk_destroy.py workspaces_to_delete.txt
+   ```
+
 ### Audit Trail
 
 All operations are logged to `audit_logs/fabric_operations_YYYY-MM-DD.jsonl`:

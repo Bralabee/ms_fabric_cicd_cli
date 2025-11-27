@@ -133,3 +133,8 @@
 {"timestamp": "2025-11-27T15:10:32.411136+00:00", "event": "fabric_cli.success", "command": "fab acl set analytics-workspace-dev.Workspace --identity f21d0f2e-f041-4ccc-8a13-c05abfaa886c --role Admin --force", "duration_ms": 1836.11, "reused": false}
 {"timestamp": "2025-11-27T15:10:34.239069+00:00", "event": "fabric_cli.success", "command": "fab acl set analytics-workspace-dev.Workspace --identity c1f65310-9bff-4feb-af93-535785d3003d --role Contributor --force", "duration_ms": 1827.73, "reused": false}
 {"timestamp": "2025-11-27T15:26:23.780755+00:00", "event": "fabric_cli.success", "command": "fab ls", "duration_ms": 1358.27, "reused": false}
+{"timestamp": "2025-11-27T20:49:55.172508+00:00", "event": "fabric_cli.success", "command": "fab rm test-workspace-creation.Workspace --force", "duration_ms": 1328.19, "reused": false}
+{"timestamp": "2025-11-27T20:49:56.475759+00:00", "event": "fabric_cli.success", "command": "fab rm usf2-fabric-comprehensive-demo-demo-dev.Workspace --force", "duration_ms": 1303.12, "reused": false}
+{"timestamp": "2025-11-27T20:49:57.704484+00:00", "event": "fabric_cli.success", "command": "fab rm usf2-fabric-customer-analytics-workspace-dev.Workspace --force", "duration_ms": 1228.61, "reused": false}
+{"timestamp": "2025-11-27T20:49:58.973641+00:00", "event": "fabric_cli.success", "command": "fab rm usf2-fabric-sales-analytics-dev.Workspace --force", "duration_ms": 1269.04, "reused": false}
+{"timestamp": "2025-11-27T20:50:00.086014+00:00", "event": "fabric_cli.success", "command": "fab rm your-org-prefix-sales-analytics-dev.Workspace --force", "duration_ms": 1112.26, "reused": false}
