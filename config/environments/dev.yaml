@@ -14,10 +14,10 @@ lakehouses:
 
 # Development team access
 principals:
-  - id: sanmi.ibitoye@leit.com
+  - id: "${DEV_ADMIN_EMAIL}"
     role: Admin
 
-  - id: 9117cbfa-f0a7-43b7-846f-96ba66a3c1c0
+  - id: "${DEV_ADMIN_OBJECT_ID}"
     role: Admin
 
   # Mandatory Security Principals
