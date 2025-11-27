@@ -56,8 +56,8 @@ principals:
     role: "Contributor"
 
   # Mandatory Security Principals
-  - id: "f21d0f2e-f041-4ccc-8a13-c05abfaa886c" # EU-M365-SEC-EMEA-AZ-PBI-IT-ADMIN
+  - id: "${EU_M365_SEC_EMEA_AZ_PBI_IT_ADMIN_ID}" # EU-M365-SEC-EMEA-AZ-PBI-IT-ADMIN
     role: "Admin"
   
-  - id: "c1f65310-9bff-4feb-af93-535785d3003d" # EU-M365-SEC-EMEA-AZ-PBI-EDP-SUPPORT
+  - id: "${EU_M365_SEC_EMEA_AZ_PBI_EDP_SUPPORT_ID}" # EU-M365-SEC-EMEA-AZ-PBI-EDP-SUPPORT
     role: "Contributor"

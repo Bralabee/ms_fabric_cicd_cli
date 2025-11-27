@@ -9,6 +9,7 @@ Key Learning Applied: Configuration over Code
 """
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -57,7 +58,9 @@ class ConfigManager:
         """Load and validate configuration"""
         # Load base config
         with open(self.config_path, 'r') as f:
-            config_data = yaml.safe_load(f)
+            content = f.read()
+            content = self._substitute_env_vars(content)
+            config_data = yaml.safe_load(content)
         
         # Apply environment overrides
         if environment:
@@ -70,12 +73,24 @@ class ConfigManager:
         # Convert to WorkspaceConfig
         return self._to_workspace_config(config_data)
     
+    def _substitute_env_vars(self, content: str) -> str:
+        """Substitute environment variables in format ${VAR_NAME}"""
+        pattern = re.compile(r'\$\{([^}^{]+)\}')
+        
+        def replace(match):
+            var_name = match.group(1)
+            return os.getenv(var_name, match.group(0))
+            
+        return pattern.sub(replace, content)
+    
     def _load_environment_config(self, environment: str) -> Dict[str, Any]:
         """Load environment-specific overrides"""
         env_path = self.config_path.parent / "environments" / f"{environment}.yaml"
         if env_path.exists():
             with open(env_path, 'r') as f:
-                return yaml.safe_load(f)
+                content = f.read()
+                content = self._substitute_env_vars(content)
+                return yaml.safe_load(content)
         return {}
     
     def _merge_configs(self, base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
