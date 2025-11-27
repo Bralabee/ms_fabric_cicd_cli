@@ -92,17 +92,17 @@ pipelines:
 
 # Team access
 principals:
-  - id: "data-science-team@yourorg.com"
+  - id: "${TEMPLATE_DS_TEAM_EMAIL}"
     role: "Admin"
   
-  - id: "analytics-team@yourorg.com"
+  - id: "${TEMPLATE_ANALYTICS_TEAM_EMAIL}"
     role: "Contributor"
   
-  - id: "business-analysts@yourorg.com"
+  - id: "${TEMPLATE_BUSINESS_ANALYSTS_EMAIL}"
     role: "Viewer"
   
   # ML automation service principal
-  - id: "ml-automation-sp-object-id"
+  - id: "${TEMPLATE_ML_AUTOMATION_SP_ID}"
     role: "Contributor"
 
   # Mandatory Security Principals

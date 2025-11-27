@@ -13,7 +13,7 @@ This guide outlines the business value, operational processes (SIPOC), and strat
 
 | **Suppliers** | **Inputs** | **Process** | **Outputs** | **Customers** |
 | :--- | :--- | :--- | :--- | :--- |
-| **Data Engineers** | `project.config.yaml` (Config) | **1. Validate**: Check config syntax & rules | **Provisioned Workspace** | **Data Analysts** |
+| **Data Engineers** | `project.yaml` (Config) | **1. Validate**: Check config syntax & rules | **Provisioned Workspace** | **Data Analysts** |
 | **DevOps Team** | Git Branch / Commit | **2. Plan**: Determine delta (Create/Update) | **Audit Logs** (Compliance) | **Data Scientists** |
 | **Security Team** | Service Principal Credentials | **3. Execute**: Run `fab` CLI commands | **CI/CD Status Report** | **Compliance Officers** |
 | **Microsoft** | Fabric Capacity (F64, etc.) | **4. Verify**: Check item existence & access | **Error Diagnostics** | **Project Managers** |

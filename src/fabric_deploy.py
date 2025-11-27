@@ -77,6 +77,9 @@ class FabricDeployer:
                 return False
             progress.update(task, description="✅ Workspace created")
             
+            # Wait for workspace propagation
+            time.sleep(5)
+            
             # Step 2: Create folders
             task = progress.add_task("Creating folder structure...", total=None)
             self._create_folders()
@@ -86,6 +89,9 @@ class FabricDeployer:
             task = progress.add_task("Creating items...", total=None)
             self._create_items()
             progress.update(task, description="✅ Items created")
+            
+            # Wait for items propagation
+            time.sleep(5)
             
             # Step 4: Add principals
             task = progress.add_task("Adding principals...", total=None)
@@ -117,11 +123,26 @@ class FabricDeployer:
         # or we need to update config schema to support capacity_name
         capacity_name = self.config.capacity_id 
         
+        # If capacity_id is a GUID, we might need to use capacityId parameter instead of capacityName
+        # But CLI wrapper uses -P capacityName=...
+        # Let's try to pass it as is, but if it fails, we might need to adjust wrapper
+        
+        # WORKAROUND: If capacity assignment fails, try creating without capacity
+        # This allows deployment to proceed on Trial/Pro workspaces
+        
         result = self.fabric.create_workspace(
             name=workspace_name,
             capacity_name=capacity_name,
             description=self.config.description
         )
+        
+        if not result["success"] and "capacity" in str(result.get("error", "")).lower():
+            console.print("[yellow]Warning: Capacity assignment failed. Retrying without capacity...[/yellow]")
+            result = self.fabric.create_workspace(
+                name=workspace_name,
+                capacity_name=None,
+                description=self.config.description
+            )
         
         if result["success"]:
             self.workspace_id = result.get("workspace_id")
@@ -133,10 +154,12 @@ class FabricDeployer:
     
     def _create_folders(self):
         """Create folder structure"""
-        # Folders are not fully supported at workspace level in CLI wrapper yet
-        # We skip this step or log warning
         if self.config.folders:
-            console.print("[yellow]Skipping folder creation (not supported by current CLI wrapper)[/yellow]")
+            console.print("[blue]Creating folders...[/blue]")
+            for folder in self.config.folders:
+                result = self.fabric.create_folder(self.config.name, folder)
+                if result["success"]:
+                    console.print(f"  Created folder: {folder}")
     
     def _create_items(self):
         """Create all configured items"""
@@ -145,12 +168,11 @@ class FabricDeployer:
         
         # Create lakehouses
         for lakehouse in self.config.lakehouses:
-            # Folder support is limited, we ignore folder_id for now
-            
             result = self.fabric.create_lakehouse(
                 workspace_name,
                 lakehouse["name"],
-                lakehouse.get("description", "")
+                lakehouse.get("description", ""),
+                folder=lakehouse.get("folder")
             )
             
             if result["success"]:
@@ -166,7 +188,8 @@ class FabricDeployer:
             result = self.fabric.create_warehouse(
                 workspace_name,
                 warehouse["name"],
-                warehouse.get("description", "")
+                warehouse.get("description", ""),
+                folder=warehouse.get("folder")
             )
             
             if result["success"]:
@@ -182,7 +205,8 @@ class FabricDeployer:
             result = self.fabric.create_notebook(
                 workspace_name,
                 notebook["name"],
-                notebook.get("file_path")
+                notebook.get("file_path"),
+                folder=notebook.get("folder")
             )
             
             if result["success"]:
@@ -198,7 +222,8 @@ class FabricDeployer:
             result = self.fabric.create_pipeline(
                 workspace_name,
                 pipeline["name"],
-                pipeline.get("description", "")
+                pipeline.get("description", ""),
+                folder=pipeline.get("folder")
             )
             
             if result["success"]:
@@ -214,13 +239,32 @@ class FabricDeployer:
             result = self.fabric.create_semantic_model(
                 workspace_name,
                 model["name"],
-                model.get("description", "")
+                model.get("description", ""),
+                folder=model.get("folder")
             )
             
             if result["success"]:
                 self.audit.log_item_creation(
                     "SemanticModel", model["name"], self.workspace_id,
                     self.config.name, model.get("folder")
+                )
+                if not result.get("reused"):
+                    self.items_created += 1
+        
+        # Create generic resources (Future-proof)
+        for resource in self.config.resources:
+            result = self.fabric.create_item(
+                workspace_name,
+                resource["name"],
+                resource["type"],
+                resource.get("description", ""),
+                folder=resource.get("folder")
+            )
+            
+            if result["success"]:
+                self.audit.log_item_creation(
+                    resource["type"], resource["name"], self.workspace_id,
+                    self.config.name
                 )
                 if not result.get("reused"):
                     self.items_created += 1

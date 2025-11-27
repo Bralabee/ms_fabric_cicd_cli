@@ -8,6 +8,7 @@ Key Learning Applied: Configuration over Code
 - Environment-specific overrides
 """
 
+import json
 import os
 import re
 from dataclasses import dataclass
@@ -43,6 +44,9 @@ class WorkspaceConfig:
     pipelines: List[Dict[str, Any]] = None
     semantic_models: List[Dict[str, Any]] = None
     
+    # Generic resources (Future-proof)
+    resources: List[Dict[str, Any]] = None
+    
     # Principals (users/service principals to add)
     principals: List[Dict[str, str]] = None
 
@@ -53,10 +57,22 @@ class ConfigManager:
     def __init__(self, config_path: str):
         self.config_path = Path(config_path)
         self.schema = self._load_schema()
+        # Ensure env vars are loaded
+        get_environment_variables()
     
     def load_config(self, environment: str = None) -> WorkspaceConfig:
         """Load and validate configuration"""
         # Load base config
+        if not self.config_path.exists():
+            # Try looking in config/ directory if path was just filename
+            if not str(self.config_path).startswith('config/'):
+                alt_path = Path('config') / self.config_path.name
+                if alt_path.exists():
+                    self.config_path = alt_path
+        
+        if not self.config_path.exists():
+            raise FileNotFoundError(f"Configuration file not found: {self.config_path}")
+
         with open(self.config_path, 'r') as f:
             content = f.read()
             content = self._substitute_env_vars(content)
@@ -88,7 +104,13 @@ class ConfigManager:
     
     def _load_environment_config(self, environment: str) -> Dict[str, Any]:
         """Load environment-specific overrides"""
-        env_path = self.config_path.parent / "environments" / f"{environment}.yaml"
+        # Try standard structure: config/templates/../environments/env.yaml
+        env_path = self.config_path.parent.parent / "environments" / f"{environment}.yaml"
+        
+        if not env_path.exists():
+            # Try subdirectory: config/environments/env.yaml (if config is in config/)
+            env_path = self.config_path.parent / "environments" / f"{environment}.yaml"
+            
         if env_path.exists():
             with open(env_path, 'r') as f:
                 content = f.read()
@@ -123,15 +145,20 @@ class ConfigManager:
             notebooks=data.get('notebooks', []),
             pipelines=data.get('pipelines', []),
             semantic_models=data.get('semantic_models', []),
+            resources=data.get('resources', []),
             principals=data.get('principals', [])
         )
     
     def _load_schema(self) -> Dict[str, Any]:
         """Load JSON schema for configuration validation"""
-        schema_path = Path(__file__).parent.parent / "schemas" / "workspace_config.json"
+        # Schema is in src/schemas/workspace_config.json
+        # __file__ is src/core/config.py -> parent is src/core -> parent.parent is src
+        base_path = Path(__file__).resolve().parent.parent
+        schema_path = base_path / "schemas" / "workspace_config.json"
+        
         if schema_path.exists():
             with open(schema_path, 'r') as f:
-                return yaml.safe_load(f)
+                return json.load(f)
         
         # Basic schema if file doesn't exist
         return {
@@ -157,7 +184,16 @@ def get_environment_variables() -> Dict[str, str]:
     
     # If FABRIC_TOKEN is not found, try looking for .env files in config directory
     if not os.getenv('FABRIC_TOKEN') and not os.getenv('AZURE_CLIENT_ID'):
+        # Try CWD config first
         config_env_files = list(Path('config').glob('*.env'))
+        
+        # If not found, try relative to this file (project root/config)
+        if not config_env_files:
+            project_root = Path(__file__).resolve().parent.parent.parent
+            config_dir = project_root / "config"
+            if config_dir.exists():
+                config_env_files = list(config_dir.glob('*.env'))
+        
         if config_env_files:
             # Load the first found env file
             print(f"Loading environment from {config_env_files[0]}")

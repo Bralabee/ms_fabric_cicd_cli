@@ -56,6 +56,21 @@ python src/fabric_deploy.py deploy config/contoso-inc-customer-analytics.yaml \
   --env dev --branch feature/new-analytics --force-branch-workspace
 ```
 
+## Workflow for Multiple Projects
+
+This tool is designed to manage multiple projects and organizations from a single codebase.
+
+1.  **Create Specific Configs**:
+    *   Create `config/ProductA.yaml`
+    *   Create `config/ProductB.yaml`
+2.  **Define Environments**:
+    *   Ensure `config/environments/prod.yaml` contains your production secrets/capacity IDs.
+3.  **Deploy with Specifics**:
+    *   Run: `python src/fabric_deploy.py deploy config/ProductA.yaml --env prod`
+    *   Run: `python src/fabric_deploy.py deploy config/ProductB.yaml --env dev`
+
+The `ConfigManager` looks at the file you passed (`config/ProductA.yaml`), loads it, and then automatically looks for the environment override in `config/environments/{env}.yaml` to merge them. This allows you to maintain one "structure" file per project, while sharing "environment" settings (like Service Principals or Capacities) across them if needed.
+
 ## End-to-End Scenarios
 
 ### Scenario 1: Basic ETL Project for Manufacturing Company
@@ -91,6 +106,18 @@ lakehouses:
   - name: "production_metrics"
     folder: "Production Lines"
     description: "Processed production line metrics"
+
+# Future-Proof Generic Resources
+# Use this for any Fabric item type not explicitly listed above
+resources:
+  - type: "Eventstream"
+    name: "iot_ingestion"
+    folder: "Raw Sensors"
+    description: "Real-time IoT data stream"
+  
+  - type: "KQLDatabase"
+    name: "sensor_logs"
+    folder: "Raw Sensors"
 
 # Manufacturing team principals
 principals:
@@ -361,10 +388,10 @@ workspace:
 
 ### Custom Templates
 
-Create your own template in `config/templates/`:
+Create your own template in `examples/templates/`:
 
 ```yaml
-# config/templates/retail_analytics.yaml
+# examples/templates/retail_analytics.yaml
 workspace:
   name: "retail-analytics-template"
   description: "Template for retail analytics projects"

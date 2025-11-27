@@ -13,7 +13,7 @@ def generate_project_config(org_name: str, project_name: str, template: str,
     """Generate customized project configuration"""
     
     # Load base template
-    template_path = Path(f"config/templates/{template}.yaml")
+    template_path = Path(f"examples/templates/{template}.yaml")
     if not template_path.exists():
         raise ValueError(f"Template {template} not found")
     
@@ -21,7 +21,10 @@ def generate_project_config(org_name: str, project_name: str, template: str,
         config = yaml.safe_load(f)
     
     # Customize for organization
-    workspace_name = f"{org_name}-{project_name}".lower().replace(' ', '-')
+    org_slug = org_name.lower().replace(' ', '_')
+    project_slug = project_name.lower().replace(' ', '_')
+    workspace_name = f"{org_slug}-{project_slug}".replace('_', '-')
+    
     config['workspace']['name'] = workspace_name
     config['workspace']['display_name'] = f"{org_name} {project_name}"
     config['workspace']['capacity_id'] = capacity_id
@@ -37,7 +40,11 @@ def generate_project_config(org_name: str, project_name: str, template: str,
                 config['principals'][i]['id'] = principal['id'].replace('yourorg.com', org_domain)
     
     # Save customized config
-    output_path = Path(f"config/{workspace_name}.yaml")
+    # Create organization directory
+    output_dir = Path(f"config/{org_slug}")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    output_path = output_dir / f"{project_slug}.yaml"
     with open(output_path, 'w') as f:
         yaml.dump(config, f, default_flow_style=False, indent=2)
     

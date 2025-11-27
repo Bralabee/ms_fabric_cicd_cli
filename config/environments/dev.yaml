@@ -3,7 +3,7 @@
 
 workspace:
   name: analytics-workspace-dev # Dev-specific naming
-  capacity_id: F2 # Smaller capacity for development
+  capacity_id: "${FABRIC_CAPACITY_ID}" # Use configured capacity
   git_branch: develop # Use develop branch
 
 # Minimal setup for development

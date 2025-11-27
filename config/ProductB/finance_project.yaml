@@ -5,7 +5,7 @@ workspace:
   name: "analytics-workspace"  # Change this to your project name
   display_name: "Analytics Workspace"
   description: "ETL workspace for data analytics"
-  capacity_id: "F64"  # Change to your Fabric capacity ID
+  capacity_id: ""  # Change to your Fabric capacity ID (leave empty for Trial/Pro)
   
   # Git integration (optional)
   git_repo: "https://github.com/your-org/your-repo"  # Change to your repo
@@ -63,14 +63,14 @@ pipelines:
 
 # Principals (users/service principals) to add to workspace
 principals:
-  - id: "user@yourorg.com"        # User email (UPN)
+  - id: "${DEV_ADMIN_EMAIL}"        # User email (UPN)
     role: "Admin"
   
-  - id: "87654321-4321-4321-4321-210987654321"  # Group Object ID (Recommended over email)
+  - id: "${DEV_ADMIN_OBJECT_ID}"  # Group Object ID (Recommended over email)
     role: "Contributor"
   
   # Service principal for automation
-  - id: "12345678-1234-1234-1234-123456789012"  # Service Principal Object ID (Required)
+  - id: "${AZURE_CLIENT_ID}"  # Service Principal Object ID (Required)
     role: "Contributor"
 
   # Mandatory Security Principals

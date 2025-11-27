@@ -48,7 +48,7 @@ vim .env
 
 ```bash
 # Copy template configuration
-cp config/templates/basic_etl.yaml config/my_project.yaml
+cp examples/templates/basic_etl.yaml config/my_project.yaml
 
 # Edit configuration for your organization
 vim config/my_project.yaml
@@ -82,21 +82,27 @@ src/
 └── fabric_deploy.py       # Main CLI (~50 LOC)
 
 config/
-├── templates/
-│   ├── basic_etl.yaml
-│   ├── advanced_analytics.yaml
-│   └── data_science.yaml
+├── ProductA/
+│   └── sales_project.yaml
+├── ProductB/
+│   └── finance_project.yaml
 └── environments/
     ├── dev.yaml
     ├── staging.yaml
     └── prod.yaml
+
+examples/
+└── templates/
+    ├── basic_etl.yaml
+    ├── advanced_analytics.yaml
+    └── data_science.yaml
 ```
 
 ## Total LOC: ~270 (vs original 1,830)
 
 ## Configuration Examples
 
-See `config/templates/` for organization-agnostic templates that can be customized for any project.
+See `examples/templates/` for organization-agnostic templates that can be customized for any project.
 
 ## Testing
 
@@ -123,9 +129,10 @@ GitHub Actions workflows included for:
 
 ### Core Capabilities
 - ✅ Workspace creation and management
-- ✅ Folder structure (Bronze/Silver/Gold medallion)
+- ✅ Folder structure (Bronze/Silver/Gold medallion) with item placement
 - ✅ Item creation (Lakehouses, Warehouses, Notebooks, Pipelines)
-- ✅ Git integration and branch management
+- ✅ **Generic Resource Support** (Future-proof for any Fabric item type)
+- ✅ Git integration (Azure DevOps & GitHub) and branch management
 - ✅ Principal assignment and access control
 - ✅ Idempotent deployments (rerun-safe)
 - ✅ Comprehensive audit logging

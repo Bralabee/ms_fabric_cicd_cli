@@ -35,14 +35,20 @@ usf_fabric_cli_cicd/
 │   └── fabric_deploy.py           # Main CLI interface (50 LOC)
 │
 ├── 📁 config/
-│   ├── 📁 templates/              # Organization-agnostic templates
-│   │   ├── basic_etl.yaml         # Basic ETL workspace
-│   │   ├── advanced_analytics.yaml # ML/AI workspace
-│   │   └── data_science.yaml      # Research workspace
-│   └── 📁 environments/           # Environment overrides
-│       ├── dev.yaml               # Development settings
-│       ├── staging.yaml           # Staging settings
-│       └── prod.yaml              # Production settings
+│   ├── 📁 environments/           # Environment overrides
+│   │   ├── dev.yaml               # Development settings
+│   │   ├── staging.yaml           # Staging settings
+│   │   └── prod.yaml              # Production settings
+│   ├── 📁 ProductA/               # Product A projects
+│   │   └── sales_project.yaml
+│   └── 📁 ProductB/               # Product B projects
+│       └── finance_project.yaml
+│
+├── 📁 examples/
+│   └── 📁 templates/              # Organization-agnostic templates
+│       ├── basic_etl.yaml         # Basic ETL workspace
+│       ├── advanced_analytics.yaml # ML/AI workspace
+│       └── data_science.yaml      # Research workspace
 │
 ├── 📁 scripts/
 │   ├── generate_project.py        # Project generator

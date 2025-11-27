@@ -1,0 +1,66 @@
+# Project Configuration for usf_fabric_cli_cicd
+# Based on basic_etl.yaml template
+
+workspace:
+  name: "usf-fabric-cli-cicd-workspace"
+  display_name: "USF Fabric CLI CICD Workspace"
+  description: "Workspace for USF Fabric CLI CICD Project"
+  capacity_id: "Fabric Capacity - REDA"
+  
+  # Git integration
+  git_repo: "https://github.com/${GITHUB_ORG}/${GITHUB_REPO}"
+  git_branch: "main"
+  git_directory: "/"
+
+# Folder structure (medallion architecture)
+folders:
+  - "Bronze"
+  - "Silver"
+  - "Gold"
+  - "Notebooks"
+  - "Pipelines"
+
+# Lakehouses
+lakehouses:
+  - name: "raw_lakehouse"
+    folder: "Bronze"
+    description: "Raw data landing zone"
+  
+  - name: "processed_lakehouse"
+    folder: "Silver"
+    description: "Processed data zone"
+
+# Warehouses
+warehouses:
+  - name: "analytics_warehouse"
+    folder: "Gold"
+    description: "Analytics warehouse"
+
+# Notebooks
+notebooks:
+  - name: "demo_notebook"
+    folder: "Notebooks"
+    description: "Demo notebook"
+
+# Pipelines
+pipelines:
+  - name: "demo_pipeline"
+    folder: "Pipelines"
+    description: "Demo pipeline"
+
+# Principals
+principals:
+  - id: "${DEV_ADMIN_EMAIL}"
+    role: "Admin"
+  
+  - id: "${DEV_ADMIN_OBJECT_ID}"
+    role: "Contributor"
+  
+  - id: "${AZURE_CLIENT_ID}"
+    role: "Contributor"
+
+  - id: "${EU_M365_SEC_EMEA_AZ_PBI_IT_ADMIN_ID}"
+    role: "Admin"
+  
+  - id: "${EU_M365_SEC_EMEA_AZ_PBI_EDP_SUPPORT_ID}"
+    role: "Contributor"

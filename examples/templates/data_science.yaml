@@ -49,10 +49,10 @@ notebooks:
 
 # Research team access
 principals:
-  - id: "lead-data-scientist@yourorg.com"
+  - id: "${TEMPLATE_LEAD_DS_EMAIL}"
     role: "Admin"
   
-  - id: "research-team@yourorg.com"
+  - id: "${TEMPLATE_RESEARCH_TEAM_EMAIL}"
     role: "Contributor"
 
   # Mandatory Security Principals
