@@ -63,19 +63,26 @@ pipelines:
 
 # Principals (users/service principals) to add to workspace
 principals:
-  - id: "user@yourorg.com"        # Change to actual user email
+  - id: "user@yourorg.com"        # User email (UPN)
     role: "Admin"
   
-  - id: "data-engineering-team@yourorg.com"  # Change to actual group
+  - id: "87654321-4321-4321-4321-210987654321"  # Group Object ID (Recommended over email)
     role: "Contributor"
   
   # Service principal for automation
-  - id: "12345678-1234-1234-1234-123456789012"  # Change to actual SP object ID
+  - id: "12345678-1234-1234-1234-123456789012"  # Service Principal Object ID (Required)
+    role: "Contributor"
+
+  # Mandatory Security Principals
+  - id: "f21d0f2e-f041-4ccc-8a13-c05abfaa886c" # EU-M365-SEC-EMEA-AZ-PBI-IT-ADMIN
+    role: "Admin"
+  
+  - id: "c1f65310-9bff-4feb-af93-535785d3003d" # EU-M365-SEC-EMEA-AZ-PBI-EDP-SUPPORT
     role: "Contributor"
 
 # Configuration notes:
 # 1. Replace all placeholder values with your organization's details
 # 2. Capacity ID should match your Fabric capacity
 # 3. Git repository should be accessible with your credentials
-# 4. Principal IDs should be actual user emails or service principal object IDs
+# 4. Principal IDs: Use emails for Users, but Object IDs (GUIDs) for Groups and Service Principals
 # 5. Remove sections you don't need (e.g., if no Git integration needed)

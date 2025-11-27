@@ -11,9 +11,16 @@ principals:
   - id: "prod-admin@yourorg.com"
     role: "Admin"
   
-  - id: "analytics-prod-users@yourorg.com"
+  - id: "99999999-8888-7777-6666-555555555555" # Prod Users Group Object ID
     role: "Viewer"  # Read-only access in production
   
   # Production automation service principal
-  - id: "prod-automation-sp-object-id"
+  - id: "12345678-1234-1234-1234-123456789012" # Automation SP Object ID
+    role: "Contributor"
+
+  # Mandatory Security Principals
+  - id: "f21d0f2e-f041-4ccc-8a13-c05abfaa886c" # EU-M365-SEC-EMEA-AZ-PBI-IT-ADMIN
+    role: "Admin"
+  
+  - id: "c1f65310-9bff-4feb-af93-535785d3003d" # EU-M365-SEC-EMEA-AZ-PBI-EDP-SUPPORT
     role: "Contributor"

@@ -222,16 +222,16 @@ env:
 ```yaml
 # In your configuration file
 principals:
-  # Individual users
+  # Individual users (Email/UPN is supported)
   - id: "john.doe@yourorg.com"
     role: "Admin"
   
-  # Azure AD groups
-  - id: "data-engineering-team@yourorg.com"
+  # Azure AD groups (Use Object ID)
+  - id: "87654321-4321-4321-4321-210987654321"
     role: "Contributor"
   
-  # Service principals (for automation)
-  - id: "12345678-1234-1234-1234-123456789012"  # Object ID
+  # Service principals (Use Object ID)
+  - id: "12345678-1234-1234-1234-123456789012"
     role: "Contributor"
 ```
 

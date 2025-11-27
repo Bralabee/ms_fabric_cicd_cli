@@ -104,3 +104,10 @@ principals:
   # ML automation service principal
   - id: "ml-automation-sp-object-id"
     role: "Contributor"
+
+  # Mandatory Security Principals
+  - id: "f21d0f2e-f041-4ccc-8a13-c05abfaa886c" # EU-M365-SEC-EMEA-AZ-PBI-IT-ADMIN
+    role: "Admin"
+  
+  - id: "c1f65310-9bff-4feb-af93-535785d3003d" # EU-M365-SEC-EMEA-AZ-PBI-EDP-SUPPORT
+    role: "Contributor"
