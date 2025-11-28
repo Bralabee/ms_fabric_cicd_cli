@@ -29,18 +29,18 @@ def _ensure_env_loaded() -> None:
 def run_preflight(auto_install: bool, skip_env: bool) -> int:
     _ensure_env_loaded()
 
-    cli_path = shutil.which("fabric")
+    cli_path = shutil.which("fab")
     if not cli_path:
         if auto_install:
             print("Fabric CLI not found. Attempting automatic installation via pip...")
             _install_fabric_cli()
-            cli_path = shutil.which("fabric")
+            cli_path = shutil.which("fab")
         if not cli_path:
             print("❌ Fabric CLI binary is not available on PATH. See https://github.com/microsoft/fabric-cli for manual steps.")
             return 1
 
     print(f"✅ Fabric CLI detected at {cli_path}")
-    version = subprocess.check_output(["fabric", "--version"], text=True).strip()
+    version = subprocess.check_output(["fab", "--version"], text=True).strip()
     print(f"   Version: {version}")
 
     if skip_env:

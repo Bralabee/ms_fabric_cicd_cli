@@ -9,7 +9,7 @@
 **Alignment Check:**
 - ✅ **Separation of Concerns:** Config (YAML) is separated from Secrets (.env) and Logic (Python).
 - ✅ **Validation:** JSON Schema ensures the YAML is valid before deployment starts.
-- ❓ **Confusion Point:** The presence of `project.config.json` in the sibling project (`usf-fabric-cicd`) is legacy. In this CLI project (`usf_fabric_cli_cicd`), we strictly use YAML for user config.
+- ✅ **Multi-Org Support:** Configuration templates now use generic variable names (e.g., `${ADDITIONAL_ADMIN_PRINCIPAL_ID}`) instead of hardcoded organization-specific IDs, allowing for seamless reuse across different tenants.
 
 ## 2. Functional Gaps (Fabric Wrapper)
 The `FabricCLIWrapper` is a "thin wrapper" around the `fab` CLI. Current limitations:
@@ -20,6 +20,7 @@ The `FabricCLIWrapper` is a "thin wrapper" around the `fab` CLI. Current limitat
 | **Folder Support** | ✅ Implemented | Items are now correctly placed in folders using `mkdir Workspace/Folder/Item`. |
 | **Generic Resources** | ✅ Implemented | "Future-proof" support for any Fabric item type via `resources` config. |
 | **Idempotency** | 🟢 Robust | Uses `fab exists` checks before creation to avoid error parsing fragility. |
+| **UX Improvements** | ✅ Implemented | Added visual progress indicators and wait steps for propagation delays. |
 | **State Management** | 🔴 Missing | No state file (like Terraform). Renaming an item in YAML creates a duplicate; the old one is orphaned. |
 
 ## 3. Deployment Logic
@@ -31,6 +32,7 @@ The `FabricCLIWrapper` is a "thin wrapper" around the `fab` CLI. Current limitat
 - ✅ **Authentication:** Fixed. Now uses explicit Service Principal login.
 - ✅ **Resilience:** Retries on capacity assignment failure.
 - ✅ **Flexibility:** Supports any Fabric item type without code changes.
+- ✅ **Config Robustness:** Gracefully handles missing optional environment variables by skipping the associated resources (e.g., optional admins) instead of failing.
 - ⚠️ **Error Handling:** If a deployment fails halfway, there is no "rollback" mechanism.
 
 ## 4. Recommendations

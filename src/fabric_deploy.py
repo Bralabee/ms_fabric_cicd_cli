@@ -44,6 +44,14 @@ class FabricDeployer:
         self.workspace_id = None
         self.items_created = 0
     
+    def _wait_for_propagation(self, progress, seconds: int, message: str):
+        """Wait with visual feedback"""
+        task = progress.add_task(f"[yellow]{message}[/yellow]", total=seconds)
+        for _ in range(seconds):
+            time.sleep(1)
+            progress.update(task, advance=1)
+        progress.update(task, visible=False)
+
     def deploy(self, branch: str = None, force_branch_workspace: bool = False) -> bool:
         """Deploy workspace based on configuration"""
         
@@ -78,12 +86,15 @@ class FabricDeployer:
             progress.update(task, description="✅ Workspace created")
             
             # Wait for workspace propagation
-            time.sleep(5)
+            self._wait_for_propagation(progress, 5, "Waiting for workspace propagation...")
             
             # Step 2: Create folders
             task = progress.add_task("Creating folder structure...", total=None)
             self._create_folders()
             progress.update(task, description="✅ Folders created")
+            
+            # Wait for folder propagation
+            self._wait_for_propagation(progress, 5, "Waiting for folder propagation...")
             
             # Step 3: Create items
             task = progress.add_task("Creating items...", total=None)
@@ -91,7 +102,7 @@ class FabricDeployer:
             progress.update(task, description="✅ Items created")
             
             # Wait for items propagation
-            time.sleep(5)
+            self._wait_for_propagation(progress, 5, "Waiting for items propagation...")
             
             # Step 4: Add principals
             task = progress.add_task("Adding principals...", total=None)
@@ -136,7 +147,19 @@ class FabricDeployer:
             description=self.config.description
         )
         
-        if not result["success"] and "capacity" in str(result.get("error", "")).lower():
+        error_msg = str(result.get("error", "")).lower()
+        
+        data = result.get("data")
+        error_code = ""
+        if isinstance(data, dict):
+            error_code = data.get("errorCode", "")
+        
+        if not result["success"] and (
+            "capacity" in error_msg or 
+            "entitynotfound" in error_msg or 
+            "could not be found" in error_msg or
+            error_code == "EntityNotFound"
+        ):
             console.print("[yellow]Warning: Capacity assignment failed. Retrying without capacity...[/yellow]")
             result = self.fabric.create_workspace(
                 name=workspace_name,

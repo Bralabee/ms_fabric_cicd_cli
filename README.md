@@ -41,7 +41,7 @@ python scripts/preflight_check.py --auto-install
 # Configure secrets once ready (.env is auto-loaded by python-dotenv)
 cp .env.template .env
 vim .env
-# Add your Fabric Token, Tenant ID, and Principal IDs (e.g., EU_M365_SEC_EMEA_AZ_PBI_IT_ADMIN_ID)
+# Add your Fabric Token, Tenant ID, and Principal IDs (e.g., ADDITIONAL_ADMIN_PRINCIPAL_ID)
 ```
 
 ### 2. Configure Your Project

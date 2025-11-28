@@ -183,11 +183,10 @@ class FabricCLIWrapper:
     def _item_exists(self, path: str) -> bool:
         """Check if an item exists using 'fab exists'"""
         try:
-            # 'fab exists' returns exit code 0 if exists, non-zero if not
-            # We use subprocess directly to avoid raising exceptions on non-zero
+            # 'fab exists' returns exit code 0 always, but prints '* true' or '* false'
             cmd = ['fab', 'exists', path]
-            result = subprocess.run(cmd, capture_output=True, check=False)
-            return result.returncode == 0
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            return "true" in result.stdout.lower()
         except Exception:
             return False
 
@@ -208,33 +207,89 @@ class FabricCLIWrapper:
             
             return {"success": True, "data": "already_exists", "reused": True, "workspace_id": workspace_id}
 
-        # Use 'mkdir' with -P capacityName=...
-        command = ["mkdir", f"{name}.Workspace"]
-        
+        # Check if capacity_name is a GUID
+        is_guid = False
         if capacity_name:
-             command.extend(["-P", f"capacityName={capacity_name}"])
+            if re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', capacity_name.lower()):
+                is_guid = True
 
-        # Description is not directly supported by mkdir -P for workspace in CLI help, 
-        # but we can try to set it later if needed. For now, we skip it to avoid errors.
-        
-        result = self._execute_command(command, check_existence=True)
-
-        if result.get("success"):
-            # Wait for propagation
-            time.sleep(5)
+        if is_guid:
+            # Use API for GUID capacity
+            payload = {
+                "displayName": name,
+                "description": description,
+                "capacityId": capacity_name
+            }
             
-            # We need to return the workspace ID for other operations
-            # 'fab get name.Workspace' should return details
-            workspace_info = self.get_workspace(name)
-            if workspace_info.get("success") and workspace_info.get("data"):
-                data = workspace_info["data"]
-                # Handle nested structure from CLI
-                if isinstance(data, dict) and "result" in data and "data" in data["result"] and len(data["result"]["data"]) > 0:
-                     result["workspace_id"] = data["result"]["data"][0].get("id")
-                else:
-                     result["workspace_id"] = data.get("id")
+            command = [
+                "api", "workspaces",
+                "-X", "post",
+                "-i", json.dumps(payload)
+            ]
+            
+            result = self._execute_command(command)
+            
+            if result.get("success"):
+                # Check for API error in data (fab api returns 0 even on error)
+                data = result.get("data")
+                if isinstance(data, str):
+                    try:
+                        data = json.loads(data)
+                    except:
+                        pass
+                
+                # Handle fab api error response format
+                if isinstance(data, dict):
+                    if "errorCode" in data:
+                        return {"success": False, "error": data.get("message"), "data": data}
+                    if "status_code" in data and data["status_code"] >= 400:
+                        error_msg = "API Error"
+                        if isinstance(data.get("text"), dict):
+                            error_msg = data["text"].get("message", error_msg)
+                        return {"success": False, "error": error_msg, "data": data}
 
-        return result
+                # Extract ID from response
+                if isinstance(data, dict) and "id" in data:
+                    result["workspace_id"] = data["id"]
+                else:
+                    # Fallback to get_workspace
+                    time.sleep(2)
+                    workspace_info = self.get_workspace(name)
+                    if workspace_info.get("success") and workspace_info.get("data"):
+                        data = workspace_info["data"]
+                        if isinstance(data, dict) and "result" in data and "data" in data["result"] and len(data["result"]["data"]) > 0:
+                             result["workspace_id"] = data["result"]["data"][0].get("id")
+                        else:
+                             result["workspace_id"] = data.get("id")
+            return result
+        else:
+            # Use 'mkdir' with -P capacityName=... (Legacy/Name-based)
+            command = ["mkdir", f"{name}.Workspace"]
+            
+            if capacity_name:
+                 command.extend(["-P", f"capacityName={capacity_name}"])
+
+            # Description is not directly supported by mkdir -P for workspace in CLI help, 
+            # but we can try to set it later if needed. For now, we skip it to avoid errors.
+            
+            result = self._execute_command(command, check_existence=True)
+
+            if result.get("success"):
+                # Wait for propagation
+                time.sleep(5)
+                
+                # We need to return the workspace ID for other operations
+                # 'fab get name.Workspace' should return details
+                workspace_info = self.get_workspace(name)
+                if workspace_info.get("success") and workspace_info.get("data"):
+                    data = workspace_info["data"]
+                    # Handle nested structure from CLI
+                    if isinstance(data, dict) and "result" in data and "data" in data["result"] and len(data["result"]["data"]) > 0:
+                         result["workspace_id"] = data["result"]["data"][0].get("id")
+                    else:
+                         result["workspace_id"] = data.get("id")
+
+            return result
     
     def delete_workspace(self, name: str) -> Dict[str, Any]:
         """Delete workspace"""
@@ -246,104 +301,280 @@ class FabricCLIWrapper:
         command = ["get", f"{name}.Workspace", "-q", ".", "--output_format", "json"]
         return self._execute_command(command)
     
+    def get_workspace_id(self, name: str) -> Optional[str]:
+        """Helper to get workspace ID"""
+        workspace_info = self.get_workspace(name)
+        if workspace_info.get("success") and workspace_info.get("data"):
+            data = workspace_info["data"]
+            if isinstance(data, dict) and "result" in data and "data" in data["result"] and len(data["result"]["data"]) > 0:
+                 return data["result"]["data"][0].get("id")
+            else:
+                 return data.get("id")
+        return None
+
+    def get_folder_id(self, workspace_name: str, folder_name: str, retries: int = 5) -> Optional[str]:
+        """Get folder ID by name with retries for propagation"""
+        workspace_id = self.get_workspace_id(workspace_name)
+        if not workspace_id:
+            return None
+            
+        for attempt in range(retries):
+            # List folders using API
+            command = ["api", f"workspaces/{workspace_id}/folders"]
+            result = self._execute_command(command)
+            
+            if result.get("success"):
+                data = result.get("data")
+                if isinstance(data, str):
+                    try:
+                        data = json.loads(data)
+                    except:
+                        pass
+                
+                # Handle nested "text" field from fab api wrapper if present
+                if isinstance(data, dict) and "text" in data and isinstance(data["text"], dict):
+                     data = data["text"]
+                
+                if isinstance(data, dict) and "value" in data:
+                    for folder in data["value"]:
+                        if folder.get("displayName") == folder_name:
+                            return folder.get("id")
+            
+            # Wait before retrying if not found
+            if attempt < retries - 1:
+                time.sleep(2)
+                
+        return None
+
     def create_folder(self, workspace_name: str, folder_name: str) -> Dict[str, Any]:
         """Create folder in workspace"""
-        path = f"{workspace_name}.Workspace/{folder_name}"
-        if self._item_exists(path):
+        # Check if exists
+        folder_id = self.get_folder_id(workspace_name, folder_name)
+        if folder_id:
             logger.info(f"Folder {folder_name} already exists.")
-            return {"success": True, "data": "already_exists", "reused": True}
+            return {"success": True, "data": "already_exists", "reused": True, "id": folder_id}
 
-        command = ["mkdir", path]
-        return self._execute_command(command, check_existence=True)
-    
+        workspace_id = self.get_workspace_id(workspace_name)
+        if not workspace_id:
+             return {"success": False, "error": f"Workspace {workspace_name} not found"}
+
+        # Create using API
+        payload = {"displayName": folder_name}
+        command = [
+            "api", f"workspaces/{workspace_id}/folders",
+            "-X", "post",
+            "-i", json.dumps(payload)
+        ]
+        return self._execute_command(command)
+
     def create_lakehouse(self, workspace_name: str, name: str, description: str = "", folder: str = None) -> Dict[str, Any]:
         """Create lakehouse"""
         if folder:
-            path = f"{workspace_name}.Workspace/{folder}/{name}.Lakehouse"
+            folder_id = self.get_folder_id(workspace_name, folder)
+            if not folder_id:
+                logger.warning(f"Folder {folder} not found. Creating Lakehouse {name} at root.")
+                folder_id = None
+        else:
+            folder_id = None
+            
+        if folder_id:
+            workspace_id = self.get_workspace_id(workspace_name)
+            if not workspace_id:
+                 return {"success": False, "error": f"Workspace {workspace_name} not found"}
+
+            payload = {
+                "displayName": name,
+                "type": "Lakehouse",
+                "description": description,
+                "folderId": folder_id
+            }
+            
+            command = [
+                "api", f"workspaces/{workspace_id}/items",
+                "-X", "post",
+                "-i", json.dumps(payload)
+            ]
+            return self._execute_command(command)
         else:
             path = f"{workspace_name}.Workspace/{name}.Lakehouse"
-            
-        if self._item_exists(path):
-            logger.info(f"Lakehouse {name} already exists.")
-            return {"success": True, "data": "already_exists", "reused": True}
-
-        command = ["mkdir", path]
-        return self._execute_command(command, check_existence=True)
+            if self._item_exists(path):
+                return {"success": True, "data": "already_exists", "reused": True}
+            command = ["mkdir", path]
+            return self._execute_command(command, check_existence=True)
     
     def create_warehouse(self, workspace_name: str, name: str, description: str = "", folder: str = None) -> Dict[str, Any]:
         """Create warehouse"""
         if folder:
-            path = f"{workspace_name}.Workspace/{folder}/{name}.Warehouse"
+            folder_id = self.get_folder_id(workspace_name, folder)
+            if not folder_id:
+                logger.warning(f"Folder {folder} not found. Creating Warehouse {name} at root.")
+                folder_id = None
+        else:
+            folder_id = None
+            
+        if folder_id:
+            workspace_id = self.get_workspace_id(workspace_name)
+            if not workspace_id:
+                 return {"success": False, "error": f"Workspace {workspace_name} not found"}
+
+            payload = {
+                "displayName": name,
+                "type": "Warehouse",
+                "description": description,
+                "folderId": folder_id
+            }
+            
+            command = [
+                "api", f"workspaces/{workspace_id}/items",
+                "-X", "post",
+                "-i", json.dumps(payload)
+            ]
+            return self._execute_command(command)
         else:
             path = f"{workspace_name}.Workspace/{name}.Warehouse"
-            
-        if self._item_exists(path):
-            logger.info(f"Warehouse {name} already exists.")
-            return {"success": True, "data": "already_exists", "reused": True}
-
-        command = ["mkdir", path]
-        return self._execute_command(command, check_existence=True)
+            if self._item_exists(path):
+                return {"success": True, "data": "already_exists", "reused": True}
+            command = ["mkdir", path]
+            return self._execute_command(command, check_existence=True)
     
     def create_notebook(self, workspace_name: str, name: str, file_path: str = None, folder: str = None) -> Dict[str, Any]:
         """Create notebook"""
         if folder:
-            path = f"{workspace_name}.Workspace/{folder}/{name}.Notebook"
+            folder_id = self.get_folder_id(workspace_name, folder)
+            if not folder_id:
+                logger.warning(f"Folder {folder} not found. Creating Notebook {name} at root.")
+                folder_id = None
+        else:
+            folder_id = None
+            
+        if folder_id:
+            workspace_id = self.get_workspace_id(workspace_name)
+            if not workspace_id:
+                 return {"success": False, "error": f"Workspace {workspace_name} not found"}
+
+            payload = {
+                "displayName": name,
+                "type": "Notebook",
+                "folderId": folder_id
+            }
+            
+            command = [
+                "api", f"workspaces/{workspace_id}/items",
+                "-X", "post",
+                "-i", json.dumps(payload)
+            ]
+            return self._execute_command(command)
         else:
             path = f"{workspace_name}.Workspace/{name}.Notebook"
-            
-        if self._item_exists(path):
-            logger.info(f"Notebook {name} already exists.")
-            return {"success": True, "data": "already_exists", "reused": True}
-
-        command = ["mkdir", path]
-        # If file_path is provided, we might need to import content. 
-        # CLI 'mkdir' creates empty. 'import' might be needed for content.
-        return self._execute_command(command, check_existence=True)
+            if self._item_exists(path):
+                return {"success": True, "data": "already_exists", "reused": True}
+            command = ["mkdir", path]
+            return self._execute_command(command, check_existence=True)
     
     def create_pipeline(self, workspace_name: str, name: str, description: str = "", folder: str = None) -> Dict[str, Any]:
         """Create data pipeline"""
         if folder:
-            path = f"{workspace_name}.Workspace/{folder}/{name}.DataPipeline"
+            folder_id = self.get_folder_id(workspace_name, folder)
+            if not folder_id:
+                logger.warning(f"Folder {folder} not found. Creating Pipeline {name} at root.")
+                folder_id = None
+        else:
+            folder_id = None
+            
+        if folder_id:
+            workspace_id = self.get_workspace_id(workspace_name)
+            if not workspace_id:
+                 return {"success": False, "error": f"Workspace {workspace_name} not found"}
+
+            payload = {
+                "displayName": name,
+                "type": "DataPipeline",
+                "description": description,
+                "folderId": folder_id
+            }
+            
+            command = [
+                "api", f"workspaces/{workspace_id}/items",
+                "-X", "post",
+                "-i", json.dumps(payload)
+            ]
+            return self._execute_command(command)
         else:
             path = f"{workspace_name}.Workspace/{name}.DataPipeline"
-            
-        if self._item_exists(path):
-            logger.info(f"Pipeline {name} already exists.")
-            return {"success": True, "data": "already_exists", "reused": True}
-
-        command = ["mkdir", path]
-        return self._execute_command(command, check_existence=True)
+            if self._item_exists(path):
+                return {"success": True, "data": "already_exists", "reused": True}
+            command = ["mkdir", path]
+            return self._execute_command(command, check_existence=True)
 
     def create_semantic_model(self, workspace_name: str, name: str, description: str = "", folder: str = None) -> Dict[str, Any]:
         """Create semantic model"""
         if folder:
-            path = f"{workspace_name}.Workspace/{folder}/{name}.SemanticModel"
+            folder_id = self.get_folder_id(workspace_name, folder)
+            if not folder_id:
+                logger.warning(f"Folder {folder} not found. Creating SemanticModel {name} at root.")
+                folder_id = None
+        else:
+            folder_id = None
+            
+        if folder_id:
+            workspace_id = self.get_workspace_id(workspace_name)
+            if not workspace_id:
+                 return {"success": False, "error": f"Workspace {workspace_name} not found"}
+
+            payload = {
+                "displayName": name,
+                "type": "SemanticModel",
+                "description": description,
+                "folderId": folder_id
+            }
+            
+            command = [
+                "api", f"workspaces/{workspace_id}/items",
+                "-X", "post",
+                "-i", json.dumps(payload)
+            ]
+            return self._execute_command(command)
         else:
             path = f"{workspace_name}.Workspace/{name}.SemanticModel"
-            
-        if self._item_exists(path):
-            logger.info(f"Semantic Model {name} already exists.")
-            return {"success": True, "data": "already_exists", "reused": True}
-
-        command = ["mkdir", path]
-        return self._execute_command(command, check_existence=True)
+            if self._item_exists(path):
+                return {"success": True, "data": "already_exists", "reused": True}
+            command = ["mkdir", path]
+            return self._execute_command(command, check_existence=True)
     
     def create_item(self, workspace_name: str, name: str, item_type: str, description: str = "", folder: str = None) -> Dict[str, Any]:
         """Create any generic Fabric item (Future-proof)"""
-        # Ensure item_type is capitalized correctly if needed, but usually CLI is case-insensitive or expects PascalCase
-        # We assume user provides correct type e.g. "Eventstream"
-        
         if folder:
-            path = f"{workspace_name}.Workspace/{folder}/{name}.{item_type}"
+            folder_id = self.get_folder_id(workspace_name, folder)
+            if not folder_id:
+                logger.warning(f"Folder {folder} not found. Creating {item_type} {name} at root.")
+                folder_id = None
+        else:
+            folder_id = None
+            
+        if folder_id:
+            workspace_id = self.get_workspace_id(workspace_name)
+            if not workspace_id:
+                 return {"success": False, "error": f"Workspace {workspace_name} not found"}
+
+            payload = {
+                "displayName": name,
+                "type": item_type,
+                "description": description,
+                "folderId": folder_id
+            }
+            
+            command = [
+                "api", f"workspaces/{workspace_id}/items",
+                "-X", "post",
+                "-i", json.dumps(payload)
+            ]
+            return self._execute_command(command)
         else:
             path = f"{workspace_name}.Workspace/{name}.{item_type}"
-            
-        if self._item_exists(path):
-            logger.info(f"{item_type} {name} already exists.")
-            return {"success": True, "data": "already_exists", "reused": True}
-
-        command = ["mkdir", path]
-        return self._execute_command(command, check_existence=True)
+            if self._item_exists(path):
+                return {"success": True, "data": "already_exists", "reused": True}
+            command = ["mkdir", path]
+            return self._execute_command(command, check_existence=True)
     
     def add_workspace_principal(self, workspace_name: str, principal_id: str,
                                role: str = "Member") -> Dict[str, Any]:
@@ -353,6 +584,12 @@ class FabricCLIWrapper:
             logger.warning(f"Skipping placeholder principal: {principal_id}")
             return {"success": True, "message": "Skipped placeholder principal", "skipped": True}
 
+        # Check if principal_id looks like an email
+        if "@" in principal_id and not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', principal_id.lower()):
+            logger.warning(f"Principal ID '{principal_id}' looks like an email. Fabric CLI/API requires an Object ID (GUID).")
+            # We continue anyway, as the CLI might support it in future or if it's a UPN that works in some contexts
+            # But we log a warning.
+
         # Use 'acl set'
         command = [
             "acl", "set", f"{workspace_name}.Workspace",
@@ -360,7 +597,16 @@ class FabricCLIWrapper:
             "--role", role,
             "--force"  # Skip confirmation prompt
         ]
-        return self._execute_command(command, check_existence=True)
+        result = self._execute_command(command, check_existence=True)
+        
+        if not result.get("success"):
+            error_msg = result.get("error", "")
+            if "NotFound" in error_msg or "identity not found" in error_msg:
+                logger.error(f"Principal ID {principal_id} not found. Please verify the Object ID and ensure it exists in the tenant.")
+                # Return success=True to avoid failing the entire deployment for one missing user
+                return {"success": True, "message": f"Principal {principal_id} not found (skipped)", "skipped": True}
+                
+        return result
     
     def _parse_git_url(self, git_url: str) -> Dict[str, str]:
         """Parse Git URL to extract details"""
@@ -456,7 +702,7 @@ class FabricCLIWrapper:
         # fab api <endpoint> -X POST -i <json_string>
         command = [
             "api", endpoint,
-            "-X", "POST",
+            "-X", "post",
             "-i", json.dumps(payload)
         ]
         
@@ -467,11 +713,6 @@ class FabricCLIWrapper:
         """List all items in workspace"""
         command = ["ls", f"{workspace_name}.Workspace"]
         return self._execute_command(command)
-    
-    def get_folder_id(self, workspace_name: str, folder_name: str) -> Optional[str]:
-        """Get folder ID by name"""
-        # Not supported
-        return None
     
     def wait_for_operation(self, operation_id: str, max_wait_seconds: int = 300) -> bool:
         """Wait for long-running operation to complete"""

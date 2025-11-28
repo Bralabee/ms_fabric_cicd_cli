@@ -2,27 +2,8 @@
 # These settings override the base configuration for development
 
 workspace:
-  name: analytics-workspace-dev # Dev-specific naming
   capacity_id: "${FABRIC_CAPACITY_ID}" # Use configured capacity
   git_branch: develop # Use develop branch
 
 # Minimal setup for development
-lakehouses:
-  - name: dev_raw_data
-    folder: Bronze
-    description: Development raw data (subset)
-
-# Development team access
-principals:
-  - id: "${DEV_ADMIN_EMAIL}"
-    role: Admin
-
-  - id: "${DEV_ADMIN_OBJECT_ID}"
-    role: Admin
-
-  # Mandatory Security Principals
-  - id: "${EU_M365_SEC_EMEA_AZ_PBI_IT_ADMIN_ID}" # EU-M365-SEC-EMEA-AZ-PBI-IT-ADMIN
-    role: "Admin"
-  
-  - id: "${EU_M365_SEC_EMEA_AZ_PBI_EDP_SUPPORT_ID}" # EU-M365-SEC-EMEA-AZ-PBI-EDP-SUPPORT
-    role: "Contributor"
+# (Lakehouses and Principals removed to respect project configuration)
