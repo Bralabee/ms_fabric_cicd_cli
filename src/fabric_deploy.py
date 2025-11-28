@@ -109,7 +109,13 @@ class FabricDeployer:
             self._add_principals()
             progress.update(task, description="✅ Principals added")
             
-            # Step 5: Connect Git (if configured)
+            # Step 5: Assign Domain (if configured)
+            if self.config.domain:
+                task = progress.add_task(f"Assigning to domain: {self.config.domain}...", total=None)
+                self._assign_domain()
+                progress.update(task, description="✅ Domain assigned")
+
+            # Step 6: Connect Git (if configured)
             if self.config.git_repo:
                 task = progress.add_task("Connecting Git...", total=None)
                 git_branch = branch or self.config.git_branch
@@ -319,6 +325,15 @@ class FabricDeployer:
                         pid, principal.get("role", "Member"),
                         self.workspace_id, self.config.name
                     )
+
+    def _assign_domain(self):
+        """Assign workspace to domain"""
+        if self.config.domain:
+            result = self.fabric.assign_to_domain(self.config.name, self.config.domain)
+            if result["success"]:
+                console.print(f"  Assigned to domain: {self.config.domain}")
+            else:
+                console.print(f"[yellow]Warning: Failed to assign domain: {result.get('error')}[/yellow]")
     
     def _connect_git(self, branch: str):
         """Connect workspace to Git"""

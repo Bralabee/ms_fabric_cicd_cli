@@ -713,6 +713,35 @@ class FabricCLIWrapper:
         logger.info(f"Connecting workspace {workspace_name} to Git repo {git_repo}...")
         return self._execute_command(command)
     
+    def assign_to_domain(self, workspace_name: str, domain_name: str) -> Dict[str, Any]:
+        """Assign workspace to a domain"""
+        # Command: fab assign <domain_path> -W <workspace_path>
+        # Example: fab assign .domains/Sales.Domain -W SalesWorkspace.Workspace
+        
+        # Ensure domain name has .Domain suffix if not present (though CLI might handle it, best to be explicit based on ls output)
+        # But wait, 'fab ls .domains' output shows names like "01 Strategy... .Domain"
+        # The user might provide just "Sales" or the full name.
+        # Let's assume the user provides the name and we might need to find the full path or just try to use it.
+        # Based on 'fab assign --help', example is '.domains/domain1.Domain'
+        
+        # We'll try to construct the path if it doesn't look like a path
+        domain_path = domain_name
+        if not domain_path.startswith(".domains/"):
+             # If it doesn't end with .Domain, append it? 
+             # The CLI seems to use .Domain suffix for items.
+             if not domain_path.endswith(".Domain"):
+                 domain_path = f"{domain_path}.Domain"
+             domain_path = f".domains/{domain_path}"
+             
+        command = [
+            "assign", 
+            domain_path,
+            "-W", f"{workspace_name}.Workspace"
+        ]
+        
+        logger.info(f"Assigning workspace {workspace_name} to domain {domain_name}...")
+        return self._execute_command(command)
+
     def list_workspace_items(self, workspace_name: str) -> Dict[str, Any]:
         """List all items in workspace"""
         command = ["ls", f"{workspace_name}.Workspace"]

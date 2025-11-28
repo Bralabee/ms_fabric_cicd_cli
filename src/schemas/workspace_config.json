@@ -9,6 +9,7 @@
         "name": { "type": "string" },
         "display_name": { "type": "string" },
         "description": { "type": "string" },
+        "domain": { "type": "string" },
         "capacity_id": { "type": "string" },
         "git_repo": { "type": "string" },
         "git_branch": { "type": "string" },

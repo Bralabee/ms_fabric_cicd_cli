@@ -28,6 +28,7 @@ class WorkspaceConfig:
     display_name: str
     description: str
     capacity_id: str
+    domain: Optional[str] = None
     
     # Git integration
     git_repo: Optional[str] = None
@@ -137,6 +138,7 @@ class ConfigManager:
             display_name=workspace_data.get('display_name', workspace_data['name']),
             description=workspace_data.get('description', ''),
             capacity_id=workspace_data['capacity_id'],
+            domain=workspace_data.get('domain'),
             git_repo=workspace_data.get('git_repo'),
             git_branch=workspace_data.get('git_branch', 'main'),
             git_directory=workspace_data.get('git_directory', '/'),
