@@ -8,6 +8,9 @@ workspace:
   description: "Data Engineering workspace for monitoring Fabric usage and metrics"
   # Ensure FABRIC_CAPACITY_ID is set in your .env file, or replace this with a specific ID (e.g., "F64")
   capacity_id: "${FABRIC_CAPACITY_ID}" 
+
+  # Optional Field
+  domain: "01 Strategy, Governance & Compliance" 
   
   # Git Integration (Replace with your actual repo)
   git_repo: "https://dev.azure.com/your-org/fabric-monitoring/_git/analytics"
@@ -83,3 +86,7 @@ principals:
   
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
+
+  # Dev Team Members
+  - id: "${DEV_MEMBERS_OBJECT_ID}"
+    role: "Member"

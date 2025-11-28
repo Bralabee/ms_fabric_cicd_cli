@@ -333,7 +333,8 @@ class FabricDeployer:
             if result["success"]:
                 console.print(f"  Assigned to domain: {self.config.domain}")
             else:
-                console.print(f"[yellow]Warning: Failed to assign domain: {result.get('error')}[/yellow]")
+                console.print(f"[red]❌ Failed to assign domain: {result.get('error')}[/red]")
+                console.print(f"[yellow]   Note: Ensure the Service Principal is a Domain Contributor or Fabric Admin.[/yellow]")
     
     def _connect_git(self, branch: str):
         """Connect workspace to Git"""
