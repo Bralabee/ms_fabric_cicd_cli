@@ -43,16 +43,15 @@ jobs:
       run: |
         pip install -r requirements.txt
     
-    - name: Install Fabric CLI
+    - name: Verify Fabric CLI
       run: |
-        pip install fabric-cli
-        fabric --version
+        fab --version
     
     - name: Validate configuration
       run: |
-        python src/fabric_deploy.py validate config/templates/basic_etl.yaml
-        python src/fabric_deploy.py validate config/templates/advanced_analytics.yaml
-        python src/fabric_deploy.py validate config/templates/data_science.yaml
+        python src/fabric_deploy.py validate examples/templates/basic_etl.yaml
+        python src/fabric_deploy.py validate examples/templates/advanced_analytics.yaml
+        python src/fabric_deploy.py validate examples/templates/data_science.yaml
     
     - name: Run unit tests
       run: |
@@ -85,10 +84,9 @@ jobs:
       run: |
         pip install -r requirements.txt
     
-    - name: Install Fabric CLI
+    - name: Verify Fabric CLI
       run: |
-        echo "Installing Fabric CLI..."
-        # Add actual installation steps here
+        fab --version
     
     - name: Deploy to Development
       env:
@@ -100,7 +98,7 @@ jobs:
         
         # Deploy workspace
         python src/fabric_deploy.py deploy \
-          config/templates/${CONFIG_TEMPLATE}.yaml \
+          examples/templates/${CONFIG_TEMPLATE}.yaml \
           --env dev \
           --branch ${{ github.ref_name }} \
           --diagnose
@@ -131,9 +129,9 @@ jobs:
       run: |
         pip install -r requirements.txt
     
-    - name: Install Fabric CLI
+    - name: Verify Fabric CLI
       run: |
-        echo "Installing Fabric CLI..."
+        fab --version
     
     - name: Deploy to Staging
       env:
@@ -141,7 +139,7 @@ jobs:
         TENANT_ID: ${{ secrets.TENANT_ID }}
       run: |
         python src/fabric_deploy.py deploy \
-          config/templates/basic_etl.yaml \
+          examples/templates/basic_etl.yaml \
           --env staging \
           --diagnose
     
@@ -175,9 +173,9 @@ jobs:
       run: |
         pip install -r requirements.txt
     
-    - name: Install Fabric CLI
+    - name: Verify Fabric CLI
       run: |
-        echo "Installing Fabric CLI..."
+        fab --version
     
     - name: Deploy to Production
       env:
@@ -185,7 +183,7 @@ jobs:
         TENANT_ID: ${{ secrets.TENANT_ID }}
       run: |
         python src/fabric_deploy.py deploy \
-          config/templates/basic_etl.yaml \
+          examples/templates/basic_etl.yaml \
           --env prod \
           --diagnose
     
@@ -231,9 +229,9 @@ jobs:
       run: |
         pip install -r requirements.txt
     
-    - name: Install Fabric CLI
+    - name: Verify Fabric CLI
       run: |
-        echo "Installing Fabric CLI..."
+        fab --version
     
     - name: Deploy feature branch workspace
       env:
@@ -242,7 +240,7 @@ jobs:
       run: |
         # Create feature-branch specific workspace
         python src/fabric_deploy.py deploy \
-          config/templates/basic_etl.yaml \
+          examples/templates/basic_etl.yaml \
           --env dev \
           --branch ${{ github.head_ref }} \
           --force-branch-workspace \
