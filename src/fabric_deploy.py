@@ -296,17 +296,29 @@ class FabricDeployer:
         """Add principals to workspace"""
         workspace_name = self.config.name
         for principal in self.config.principals:
-            result = self.fabric.add_workspace_principal(
-                workspace_name,
-                principal["id"],
-                principal.get("role", "Member")
-            )
+            # Handle comma-separated lists of IDs (e.g. from env vars)
+            principal_id_raw = principal["id"]
+            if not principal_id_raw:
+                continue
+                
+            # Split by comma if present, otherwise use as single item
+            principal_ids = [pid.strip() for pid in principal_id_raw.split(',')] if ',' in principal_id_raw else [principal_id_raw]
             
-            if result["success"]:
-                self.audit.log_principal_assignment(
-                    principal["id"], principal.get("role", "Member"),
-                    self.workspace_id, self.config.name
+            for pid in principal_ids:
+                if not pid:
+                    continue
+                    
+                result = self.fabric.add_workspace_principal(
+                    workspace_name,
+                    pid,
+                    principal.get("role", "Member")
                 )
+                
+                if result["success"]:
+                    self.audit.log_principal_assignment(
+                        pid, principal.get("role", "Member"),
+                        self.workspace_id, self.config.name
+                    )
     
     def _connect_git(self, branch: str):
         """Connect workspace to Git"""
