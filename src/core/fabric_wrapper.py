@@ -579,8 +579,12 @@ class FabricCLIWrapper:
     def add_workspace_principal(self, workspace_name: str, principal_id: str,
                                role: str = "Member") -> Dict[str, Any]:
         """Add principal (user/service principal) to workspace"""
-        # Skip placeholder emails
-        if not principal_id or "your-company.com" in principal_id or "example.com" in principal_id:
+        # Skip empty or placeholder emails
+        if not principal_id:
+             # Silent skip for empty ID (handled by config warning)
+             return {"success": True, "message": "Skipped empty principal", "skipped": True}
+
+        if "your-company.com" in principal_id or "example.com" in principal_id:
             logger.warning(f"Skipping placeholder principal: {principal_id}")
             return {"success": True, "message": "Skipped placeholder principal", "skipped": True}
 

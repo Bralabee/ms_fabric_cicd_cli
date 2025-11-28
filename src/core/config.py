@@ -97,7 +97,7 @@ class ConfigManager:
             var_name = match.group(1)
             value = os.getenv(var_name)
             if value is None:
-                print(f"⚠️  Warning: Optional environment variable '{var_name}' is not set. Skipping.")
+                print(f"ℹ️  Note: Value for '{var_name}' not provided. Proceeding without it.")
                 return ""
             return value
             
