@@ -107,7 +107,7 @@ class FabricCLIWrapper:
         except FabricCLIError as exc:
             return {"success": False, "error": str(exc), "exception": exc}
 
-    def _run_fabric_command(self, command: List[str], check_existence: bool = False) -> Dict[str, Any]:
+    def _run_fabric_command(self, command: List[str], check_existence: bool = False, timeout: int = 300) -> Dict[str, Any]:
         """Execute Fabric CLI command with error handling and telemetry."""
         # The Microsoft Fabric CLI command is 'fab', not 'fabric'
         # But we are using 'fabric-cli' executable now
@@ -132,7 +132,8 @@ class FabricCLIWrapper:
                 capture_output=True,
                 text=True,
                 check=True,
-                env=env
+                env=env,
+                timeout=timeout
             )
 
             payload: Dict[str, Any] = {"success": True, "data": None}
@@ -149,6 +150,12 @@ class FabricCLIWrapper:
                 reused=payload.get("reused", False)
             )
             return payload
+
+        except subprocess.TimeoutExpired as exc:
+            error_msg = f"Command timed out after {timeout} seconds"
+            self._emit_telemetry("fabric_cli.timeout", full_command, time.time() - start_time, error=error_msg)
+            logger.error(error_msg)
+            return {"success": False, "error": error_msg}
 
         except FileNotFoundError as exc:
             error = FabricCLINotFoundError(full_command)
@@ -736,11 +743,12 @@ class FabricCLIWrapper:
         command = [
             "assign", 
             domain_path,
-            "-W", f"{workspace_name}.Workspace"
+            "-W", f"{workspace_name}.Workspace",
+            "-f"
         ]
         
         logger.info(f"Assigning workspace {workspace_name} to domain {domain_name}...")
-        return self._execute_command(command)
+        return self._execute_command(command, timeout=60)
 
     def list_workspace_items(self, workspace_name: str) -> Dict[str, Any]:
         """List all items in workspace"""
