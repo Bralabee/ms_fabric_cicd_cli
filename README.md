@@ -58,13 +58,13 @@ vim config/my_project.yaml
 
 ```bash
 # Deploy to development (FABRIC_TOKEN and TENANT_ID pulled from .env automatically)
-python src/fabric_deploy.py deploy --config config/my_project.yaml --env dev
+python src/fabric_deploy.py deploy config/my_project.yaml --env dev
 
 # Deploy feature branch
-python src/fabric_deploy.py deploy --config config/my_project.yaml --env dev --branch feature/new-analytics
+python src/fabric_deploy.py deploy config/my_project.yaml --env dev --branch feature/new-analytics
 
 # Deploy to production
-python src/fabric_deploy.py deploy --config config/my_project.yaml --env prod
+python src/fabric_deploy.py deploy config/my_project.yaml --env prod
 ```
 
 ## Project Structure
@@ -75,10 +75,9 @@ src/
 │   ├── config.py          # Configuration management (~50 LOC)
 │   ├── fabric_wrapper.py  # Thin CLI wrapper (~80 LOC)
 │   ├── git_integration.py # Git + Fabric sync (~60 LOC)
-│   └── audit.py          # Audit logging (~30 LOC)
-├── templates/
-│   ├── etl_workspace.py   # ETL workspace template (~40 LOC)
-│   └── analytics_workspace.py # Analytics template (~20 LOC)
+│   ├── audit.py          # Audit logging (~30 LOC)
+│   ├── telemetry.py      # Telemetry tracking
+│   └── exceptions.py     # Custom exceptions
 └── fabric_deploy.py       # Main CLI (~50 LOC)
 
 config/
@@ -96,6 +95,12 @@ examples/
     ├── basic_etl.yaml
     ├── advanced_analytics.yaml
     └── data_science.yaml
+
+scripts/
+├── analyze_migration.py   # Migration analysis tool
+├── bulk_destroy.py        # Bulk cleanup utility
+├── generate_project.py    # Project scaffolding
+└── preflight_check.py     # Environment validation
 ```
 
 ## Total LOC: ~270 (vs original 1,830)
@@ -161,7 +166,7 @@ This project incorporates key learnings from the original implementation:
 
 If migrating from a custom Fabric API solution:
 
-1. **Assessment** - Use `scripts/analyze_custom_solution.py` to identify what can be replaced with CLI
+1. **Assessment** - Use `scripts/analyze_migration.py` to identify what can be replaced with CLI
 2. **Migration** - Incremental replacement of custom components
 3. **Validation** - Side-by-side testing during transition
 4. **Deprecation** - Sunset plan for custom components
