@@ -101,9 +101,9 @@ class FabricCLIWrapper:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def _execute_command(self, command: List[str], check_existence: bool = False) -> Dict[str, Any]:
+    def _execute_command(self, command: List[str], check_existence: bool = False, timeout: int = 300) -> Dict[str, Any]:
         try:
-            return self._run_fabric_command(command, check_existence)
+            return self._run_fabric_command(command, check_existence, timeout=timeout)
         except FabricCLIError as exc:
             return {"success": False, "error": str(exc), "exception": exc}
 

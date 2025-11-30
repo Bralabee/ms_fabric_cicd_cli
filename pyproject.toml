@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "usf-fabric-cli"
+version = "1.0.0"
+description = "CLI tool for Microsoft Fabric CI/CD automation"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Sanmi Ibitoye", email = "sanmi.ibitoye@leit.ltd"}
+]
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    "jsonschema>=4.0.0",
+    "azure-identity>=1.15.0",
+    "requests>=2.31.0"
+]
+
+[project.scripts]
+fabric-cicd = "fabric_deploy:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
