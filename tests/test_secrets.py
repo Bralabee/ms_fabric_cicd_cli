@@ -56,9 +56,14 @@ class TestFabricSecrets:
         assert is_valid is True
         assert error_msg == ""
     
-    def test_validate_fabric_auth_missing_credentials(self):
+    def test_validate_fabric_auth_missing_credentials(self, monkeypatch):
         """Test validation with missing credentials"""
-        secrets = FabricSecrets()
+        # Clear potential environment variables
+        for var in ["AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET", "TENANT_ID", "FABRIC_TOKEN"]:
+            monkeypatch.delenv(var, raising=False)
+            
+        # Use non-existent env file to avoid reading local .env
+        secrets = FabricSecrets(_env_file="non_existent_env_file")
         is_valid, error_msg = secrets.validate_fabric_auth()
         
         assert is_valid is False
@@ -100,10 +105,28 @@ class TestFabricSecrets:
         # Should detect CI environment
         assert os.getenv("CI") == "true"
     
-    def test_get_secrets_raises_on_invalid(self):
+    def test_get_secrets_raises_on_invalid(self, monkeypatch):
         """Test get_secrets raises ValueError on missing credentials"""
-        with pytest.raises(ValueError, match="Missing Fabric authentication"):
-            get_secrets()
+        # Clear potential environment variables
+        for var in ["AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET", "TENANT_ID", "FABRIC_TOKEN"]:
+            monkeypatch.delenv(var, raising=False)
+            
+        # Patch FabricSecrets to ignore .env file
+        with patch('src.core.secrets.FabricSecrets') as MockSecrets:
+            # We want to use the real logic but with empty config
+            # So we can't just mock the class entirely easily without side effects.
+            # Instead, let's patch the model_config on the class temporarily?
+            # Or better, patch the constructor call inside get_secrets?
+            # get_secrets calls FabricSecrets()
+            
+            # Let's use a side_effect to return a real instance with _env_file=None
+            def side_effect(*args, **kwargs):
+                return FabricSecrets(_env_file="non_existent_env_file", **kwargs)
+            
+            MockSecrets.side_effect = side_effect
+            
+            with pytest.raises(ValueError, match="Missing Fabric authentication"):
+                get_secrets()
     
     def test_backward_compatibility(self, monkeypatch):
         """Test backward compatibility with get_environment_variables"""
@@ -135,8 +158,11 @@ class TestPriorityLoading:
         # Environment variable should win
         assert secrets.azure_client_id == "env-client-id"
     
-    def test_fallback_to_env_file(self, tmp_path):
+    def test_fallback_to_env_file(self, tmp_path, monkeypatch):
         """Test fallback to .env file when env var not set"""
+        # Clear env var to ensure fallback
+        monkeypatch.delenv("AZURE_CLIENT_ID", raising=False)
+        
         # Create .env file
         env_file = tmp_path / ".env"
         env_file.write_text("AZURE_CLIENT_ID=file-client-id\n")
