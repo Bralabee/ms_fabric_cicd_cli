@@ -1,44 +1,71 @@
-# Architectural Gap Analysis & Alignment Report
+# Architectural Gap Analysis & Resolution
 
 ## 1. Configuration Architecture
-**Current State:**
-- **Source of Truth:** `config/project.yaml` (Human-readable, supports comments & variables).
-- **Secrets/Environment:** `.env` (Injects values into YAML variables like `${FABRIC_CAPACITY_ID}`).
-- **Validation:** `src/schemas/workspace_config.json` (Technical schema to validate YAML structure).
 
-**Alignment Check:**
-- ✅ **Separation of Concerns:** Config (YAML) is separated from Secrets (.env) and Logic (Python).
-- ✅ **Validation:** JSON Schema ensures the YAML is valid before deployment starts.
-- ✅ **Multi-Org Support:** Configuration templates now use generic variable names (e.g., `${ADDITIONAL_ADMIN_PRINCIPAL_ID}`) instead of hardcoded organization-specific IDs, allowing for seamless reuse across different tenants.
+### Current Implementation
+- **Configuration Layer**: `config/project.yaml` provides declarative infrastructure definitions with variable interpolation support
+- **Secret Management**: `.env` file supplies credential injection through environment variable substitution (e.g., `${FABRIC_CAPACITY_ID}`)
+- **Schema Validation**: `src/schemas/workspace_config.json` enforces structural integrity before deployment execution
 
-## 2. Functional Gaps (Fabric Wrapper)
-The `FabricCLIWrapper` is a "thin wrapper" around the `fab` CLI. Current limitations:
+### Architecture Validation
+- ✅ **Separation of Concerns**: Clear boundaries between configuration (YAML), credentials (.env), and execution logic (Python)
+- ✅ **Pre-deployment Validation**: JSON Schema enforcement prevents invalid configurations from reaching deployment stage
+- ✅ **Organization Agnostic**: Parameterized templates support multi-tenant deployment through variable abstraction (e.g., `${ADDITIONAL_ADMIN_PRINCIPAL_ID}`)
 
-| Feature | Status | Gap Description |
-|---------|--------|-----------------|
-| **Git Integration** | ✅ Implemented | Supports both Azure DevOps and GitHub via `fab api` calls. |
-| **Folder Support** | ✅ Implemented | Items are now correctly placed in folders using `mkdir Workspace/Folder/Item`. |
-| **Generic Resources** | ✅ Implemented | "Future-proof" support for any Fabric item type via `resources` config. |
-| **Idempotency** | 🟢 Robust | Uses `fab exists` checks before creation to avoid error parsing fragility. |
-| **UX Improvements** | ✅ Implemented | Added visual progress indicators and wait steps for propagation delays. |
-| **State Management** | 🔴 Missing | No state file (like Terraform). Renaming an item in YAML creates a duplicate; the old one is orphaned. |
+## 2. Feature Coverage Analysis
 
-## 3. Deployment Logic
-**Current State:**
-- `fabric_deploy.py` orchestrates the deployment linearly.
-- It handles Authentication (Service Principal), Folder Creation, and Item Creation (Specific & Generic).
+### FabricCLIWrapper Implementation Status
 
-**Alignment Check:**
-- ✅ **Authentication:** Fixed. Now uses explicit Service Principal login.
-- ✅ **Resilience:** Retries on capacity assignment failure.
-- ✅ **Flexibility:** Supports any Fabric item type without code changes.
-- ✅ **Config Robustness:** Gracefully handles missing optional environment variables by skipping the associated resources (e.g., optional admins) instead of failing.
-- ⚠️ **Error Handling:** If a deployment fails halfway, there is no "rollback" mechanism.
+The `FabricCLIWrapper` provides a lightweight orchestration layer over the Microsoft Fabric CLI. Current capability matrix:
 
-## 4. Recommendations
-1.  **State Tracking:** Consider a simple `.state.json` to track created Resource IDs against Config Names to detect drift/renames.
-2.  **Cleanup:** Remove legacy JSON config files from the workspace to avoid confusion.
+| Feature | Status | Implementation Details |
+|---------|--------|------------------------|
+| **Git Integration** | ✅ Operational | REST API implementation supporting Azure DevOps and GitHub providers |
+| **Folder Hierarchy** | ✅ Operational | Workspace organization through `mkdir Workspace/Folder/Item` pattern |
+| **Extensible Resources** | ✅ Operational | Generic item type support through `resources` configuration section |
+| **Idempotent Operations** | ✅ Operational | Pre-flight existence checks prevent duplicate resource creation |
+| **User Experience** | ✅ Operational | Progress visualization and propagation delay handling |
+| **State Management** | 🔴 Not Implemented | Resource renaming creates duplicates without orphan cleanup |
 
-## 5. Next Steps
-- **Future:** Implement State Tracking (`.state.json`) to handle renames and drift detection.
-- **Future:** Add rollback capabilities for failed deployments.
+## 3. Deployment Orchestration
+
+### Current Implementation
+The `fabric_deploy.py` module executes sequential deployment operations including Service Principal authentication, workspace provisioning, folder hierarchy creation, and item deployment (both type-specific and generic).
+
+### Capability Assessment
+- ✅ **Authentication**: Service Principal flow with explicit token acquisition
+- ✅ **Resilience**: Retry logic for transient capacity assignment failures
+- ✅ **Extensibility**: Type-agnostic item deployment without code modification requirements
+- ✅ **Configuration Robustness**: Optional resource graceful degradation for missing environment variables
+- ⚠️ **Transaction Safety**: Partial deployment failures lack automatic rollback mechanism
+
+## 4. Enhancement Recommendations
+
+### Priority 1: State Management
+Implement persistent state tracking (`.state.json`) to maintain Resource ID to configuration name mappings. This enables:
+- Configuration drift detection
+- Safe resource renaming operations
+- Orphaned resource identification
+
+### Priority 2: Transaction Safety
+Develop deployment rollback capability for partial failure scenarios through:
+- Pre-deployment state snapshot
+- Failure point identification
+- Automated cleanup of partially created resources
+
+### Priority 3: Configuration Hygiene
+Remove deprecated JSON configuration artifacts from workspace to prevent configuration ambiguity.
+
+## 5. Implementation Roadmap
+
+**Short-term** (Current Sprint):
+- Complete documentation updates
+- Validate existing feature completeness
+
+**Medium-term** (Next Quarter):
+- Implement state tracking system
+- Develop rollback mechanism
+
+**Long-term** (Future Releases):
+- Advanced drift detection and remediation
+- Configuration migration utilities

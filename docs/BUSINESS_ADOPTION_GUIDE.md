@@ -1,10 +1,10 @@
-# Business Adoption Guide: Fabric CLI CI/CD Tool
+# Business Adoption Guide: Fabric CLI CI/CD Framework
 
 ## Executive Summary
 
-The **Fabric CLI CI/CD Tool** (`usf_fabric_cli_cicd`) is a lightweight, configuration-driven solution designed to automate the lifecycle management of Microsoft Fabric workspaces. Unlike traditional, heavy "Enterprise Frameworks" that require thousands of lines of custom code, this tool leverages the official Microsoft Fabric CLI (`fab`) to provide a robust, maintainable, and scalable automation platform with **85% less code**.
+The Fabric CLI CI/CD Framework provides enterprise-grade Microsoft Fabric workspace lifecycle management through configuration-driven automation. This framework achieves 85% code reduction compared to traditional custom implementations by leveraging the official Microsoft Fabric CLI while adding enterprise capabilities including secret management, artifact templating, and Git integration.
 
-This guide outlines the business value, operational processes (SIPOC), and strategic roadmap for adopting this tool within the organization.
+This guide presents the business value proposition, operational model, and organizational adoption strategy for enterprise deployment.
 
 ---
 
@@ -60,44 +60,55 @@ This guide outlines the business value, operational processes (SIPOC), and strat
 | **Failure Rate** | High (API changes, human error) | Low (Official CLI stability) | **Reliability** |
 | **Cost Management** | Manual cleanup (often forgotten) | Automated `destroy` command | **Cost Avoidance** |
 
-### Annual Savings Projection - Presumptions
-*   *Assumptions*: 50 deployments/year, £100/hr engineering cost.
-*   **Manual Cost**: 50 * 6 hours * £100 = **£30,000/year**
-*   **Automated Cost**: 50 * 0.1 hours * £100 = **£500/year**
-*   **Net Savings**: **£29,500/year** (plus unquantified capacity savings from cleanup).
+### Annual Savings Projection
+
+**Model Assumptions**: 50 deployments annually, £100/hour engineering cost.
+
+| Approach | Calculation | Annual Cost |
+|----------|-------------|-------------|
+| Manual Process | 50 deployments × 6 hours × £100 | £30,000 |
+| Automated Framework | 50 deployments × 0.1 hours × £100 | £500 |
+| **Net Savings** | | **£29,500** |
+
+Additional benefits include capacity cost avoidance through automated ephemeral workspace cleanup and reduced technical debt maintenance costs.
 
 ---
 
 ## 4. Strategic Comparison
 
-| Feature | Legacy Enterprise Framework (`usf-fabric-cicd`) | Modern CLI Tool (`usf_fabric_cli_cicd`) |
+| Feature | Custom Enterprise Framework | Fabric CLI CI/CD Framework |
 | :--- | :--- | :--- |
-| **Architecture** | Heavy Python/Requests + Bicep | Thin Python Wrapper around `fab` CLI |
-| **Complexity** | High (Custom API logic) | Low (Orchestration only) |
-| **Maintenance** | Requires deep API knowledge | Minimal (Updates with CLI) |
-| **Lifecycle** | Create-only (mostly) | Full Lifecycle (Create, Update, Destroy) |
-| **Adoption** | Steep learning curve | Simple YAML configuration |
+| **Architecture** | Direct REST API + Infrastructure as Code | Thin wrapper leveraging official CLI |
+| **Code Complexity** | 1,800+ lines custom logic | ~270 lines orchestration |
+| **Maintenance Burden** | Deep API expertise required | Minimal, CLI-aligned updates |
+| **Lifecycle Coverage** | Partial (create-focused) | Complete (create, update, destroy) |
+| **Learning Curve** | Extensive code understanding | YAML configuration proficiency |
+| **Upgrade Path** | Manual API migration | Automatic with CLI updates |
 
-**Recommendation**: Transition new projects to the **CLI Tool** immediately. Migrate legacy projects as they require updates.
+**Recommendation**: Deploy this framework for all new Fabric projects. Schedule legacy workspace migration during planned maintenance windows.
 
 ---
 
 ## 5. Implementation Roadmap
 
-### Phase 1: Pilot (Weeks 1-2)
-*   [x] Deploy `usf_fabric_cli_cicd` to a sandbox environment.
-*   [x] Validate "Golden Path" templates (Basic ETL, Advanced Analytics).
-*   [ ] Onboard one "Friendly User" team (e.g., Data Science).
+### Phase 1: Foundation (Weeks 1-2)
+- Deploy framework to isolated sandbox environment
+- Validate standard templates (Basic ETL, Advanced Analytics, Data Science)
+- Execute proof-of-concept with early adopter team
+- Document organization-specific configuration patterns
 
-### Phase 2: Standardization (Weeks 3-4)
-*   [ ] Integrate into GitHub Actions / Azure DevOps pipelines.
-*   [ ] Publish internal "Self-Service" documentation.
-*   [ ] Establish "Ephemeral Environment" policy for Pull Requests.
+### Phase 2: Integration (Weeks 3-4)
+- Integrate framework into CI/CD pipelines (GitHub Actions / Azure DevOps)
+- Establish ephemeral workspace policy for feature branch development
+- Publish internal documentation and training materials
+- Define support model and escalation procedures
 
-### Phase 3: Scale & Retire (Month 2+)
-*   [ ] Mandate CLI tool for all new workspaces.
-*   [ ] Begin migration of legacy workspaces to YAML configs.
-*   [ ] Decommission the legacy "Enterprise Framework" code.
+### Phase 3: Organizational Adoption (Month 2+)
+- Mandate framework for all new workspace provisioning
+- Execute staged migration of existing workspaces to YAML configuration
+- Implement automated cleanup policies for development environments
+- Retire legacy provisioning tools and custom scripts
+- Conduct post-implementation review and optimization
 
 ---
 

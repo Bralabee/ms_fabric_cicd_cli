@@ -1,15 +1,15 @@
 # Fabric CLI CI/CD - Enterprise Deployment Framework
 
-Organization-agnostic Microsoft Fabric deployment automation using official Fabric CLI with enterprise-grade secret management, artifact templating, and Git integration.
+Enterprise-grade Microsoft Fabric deployment automation leveraging the official Fabric CLI with 12-Factor App configuration management, Jinja2 artifact templating, and REST API Git integration. Designed for organization-agnostic operation with 85% code reduction from traditional enterprise frameworks.
 
 ## Core Capabilities
 
-- Automated workspace deployment with idempotent operations
-- 12-Factor App compliant secret management (Environment variables → .env fallback)
-- Jinja2-based artifact templating for environment-specific configurations
-- REST API integration for automatic Git repository connection
-- Comprehensive audit logging for compliance
-- Feature branch workspace isolation  
+- **Automated Deployment**: Idempotent workspace provisioning with intelligent state management
+- **Secret Management**: 12-Factor App compliant credential handling (Environment Variables → .env fallback)
+- **Artifact Templating**: Jinja2 engine for environment-specific artifact transformation
+- **Git Integration**: REST API-driven repository connections for Azure DevOps and GitHub
+- **Audit Compliance**: Structured JSONL logging for regulatory requirements
+- **Branch Isolation**: Feature branch workspaces for parallel development workflows  
 
 ## Architecture
 
@@ -35,42 +35,49 @@ Organization-agnostic Microsoft Fabric deployment automation using official Fabr
 conda env create -f environment.yml
 conda activate fabric-cli-cicd
 
-# Verify Fabric CLI installation
+# Verify Fabric CLI installation and dependencies
 python scripts/preflight_check.py --auto-install
 
-# Configure authentication
+# Configure authentication credentials
 cp .env.template .env
-# Edit .env with required credentials:
-# - AZURE_CLIENT_ID: Service Principal application ID
-# - AZURE_CLIENT_SECRET: Service Principal secret
-# - TENANT_ID: Azure AD tenant ID
-# Optional: FABRIC_TOKEN for direct token authentication
+# Edit .env with Service Principal credentials:
+#   AZURE_CLIENT_ID       - Service Principal application ID
+#   AZURE_CLIENT_SECRET   - Service Principal secret value
+#   TENANT_ID             - Azure AD tenant identifier
+#   FABRIC_TOKEN          - Direct token (alternative authentication)
 ```
 
 ### 2. Configure Your Project
 
 ```bash
-# Copy template configuration
-cp examples/templates/basic_etl.yaml config/my_project.yaml
+# Generate project configuration from template
+python scripts/generate_project.py "Your Org" "Project Name" \
+  --template basic_etl \
+  --capacity-id F64 \
+  --git-repo https://github.com/your-org/your-repo
 
-# Edit configuration for your organization
-vim config/my_project.yaml
+# Customize generated configuration
+vim config/your-org-project-name.yaml
 ```
 
 ### 3. Execute Deployment
 
 ```bash
+# Validate configuration syntax and structure
+python src/fabric_deploy.py validate config/your-project.yaml
+
 # Deploy to development environment
-python src/fabric_deploy.py deploy config/my_project.yaml --env dev
+python src/fabric_deploy.py deploy config/your-project.yaml --env dev
 
 # Deploy with automatic Git repository connection
-python src/fabric_deploy.py deploy config/my_project.yaml --env dev --connect-git
+python src/fabric_deploy.py deploy config/your-project.yaml --env dev --connect-git
 
 # Deploy feature branch to isolated workspace
-python src/fabric_deploy.py deploy config/my_project.yaml --env dev --branch feature/new-analytics
+python src/fabric_deploy.py deploy config/your-project.yaml \
+  --env dev --branch feature/new-analytics --force-branch-workspace
 
-# Production deployment
-python src/fabric_deploy.py deploy config/my_project.yaml --env prod
+# Production deployment with diagnostics
+python src/fabric_deploy.py deploy config/your-project.yaml --env prod --diagnose
 ```
 
 ## Project Structure

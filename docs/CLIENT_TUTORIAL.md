@@ -1,8 +1,8 @@
-# Fabric Automation Tool - User Guide
+# Fabric CLI CI/CD Framework - User Guide
 
 ## 1. Introduction
 
-The **Fabric Automation Tool** serves as an automated administrator for Microsoft Fabric environments. This application streamlines the creation and management of workspaces by replacing manual portal interactions with a configuration-driven approach. Users define requirements in a structured configuration file, and the tool executes the necessary operations to build and maintain the environment.
+The Fabric CLI CI/CD Framework automates Microsoft Fabric workspace lifecycle management through configuration-driven deployment. This framework eliminates manual portal operations by translating declarative YAML configurations into fully provisioned environments. Users specify infrastructure requirements once, and the framework handles creation, updates, and ongoing maintenance.
 
 **Key Capabilities:**
 *   **Infrastructure as Code**: Define complete Fabric environments (Workspaces, Lakehouses, Warehouses, Pipelines) using a single configuration file.
@@ -14,13 +14,13 @@ The **Fabric Automation Tool** serves as an automated administrator for Microsof
 
 ---
 
-## 2. Core Concept: The Configuration Blueprint
+## 2. Configuration Architecture
 
-The system relies on a **Configuration File** (YAML) that acts as the architectural blueprint for a project.
+The framework operates from declarative YAML configuration files that define complete Fabric environments as infrastructure as code.
 
-### Blueprint Structure (`config/your-project.yaml`)
+### Configuration Structure (`config/your-project.yaml`)
 
-A standard configuration file consists of the following sections:
+Each configuration file contains five core sections that comprehensively define workspace requirements:
 
 #### A. Workspace Definition
 Defines the primary container for the project.
@@ -90,13 +90,18 @@ workspace:
 
 ---
 
-## 3. Usage Instructions
+## 3. Operational Procedures
 
-### Step 1: Setup & Configuration
-Ensure the `.env` file is configured with the necessary credentials. This file contains sensitive information such as authentication keys and IDs.
-*   **AZURE_CLIENT_ID**: The Service Principal ID used for automation.
-*   **FABRIC_CAPACITY_ID**: The identifier for the Fabric Capacity.
-*   **DEV_ADMIN_OBJECT_ID**: The Object ID for the primary administrator.
+### Step 1: Environment Configuration
+
+Configure authentication and environment variables in the `.env` file. This file manages sensitive credentials through the 12-Factor App configuration pattern.
+
+**Required Credentials:**
+- **AZURE_CLIENT_ID**: Service Principal application identifier for API authentication
+- **AZURE_CLIENT_SECRET**: Service Principal credential value
+- **TENANT_ID**: Azure AD tenant identifier
+- **FABRIC_CAPACITY_ID**: Target Fabric capacity resource identifier
+- **DEV_ADMIN_OBJECT_ID**: Primary administrator principal identifier
 
 ### Step 2: Project Generation
 Use the provided script to generate a new project configuration. This script prompts for the Client Name, Project Name, and Capacity ID.
