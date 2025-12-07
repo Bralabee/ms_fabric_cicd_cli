@@ -45,10 +45,6 @@ jobs:
         pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Verify Fabric CLI
-      run: |
-        fab --version || echo "Fabric CLI not available"
-    
     - name: Run linting
       run: |
         pip install flake8 black mypy
@@ -84,10 +80,10 @@ jobs:
 
     - name: Run integration tests
       run: |
-        if command -v fabric &> /dev/null; then
+        if [ -d tests/integration ]; then
           pytest tests/integration -m integration -v
         else
-          echo "Fabric CLI not available, skipping integration tests"
+          echo "tests/integration directory not found, skipping integration tests"
         fi
     
     - name: Test Docker build
@@ -112,10 +108,6 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
-    
-    - name: Verify Fabric CLI
-      run: |
-        fab --version
     
     - name: Deploy to Development
       env:
@@ -158,10 +150,6 @@ jobs:
       run: |
         pip install -r requirements.txt
     
-    - name: Verify Fabric CLI
-      run: |
-        fab --version
-    
     - name: Deploy to Staging
       env:
         FABRIC_TOKEN: ${{ secrets.FABRIC_STAGING_TOKEN }}
@@ -201,10 +189,6 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
-    
-    - name: Verify Fabric CLI
-      run: |
-        fab --version
     
     - name: Deploy to Production
       env:
@@ -257,10 +241,6 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
-    
-    - name: Verify Fabric CLI
-      run: |
-        fab --version
     
     - name: Deploy feature branch workspace
       env:
