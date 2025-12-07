@@ -1,15 +1,15 @@
-# Fabric CLI CI/CD - Thin Wrapper Solution
+# Fabric CLI CI/CD - Enterprise Deployment Framework
 
-A configurable, organization-agnostic Fabric CI/CD solution that applies all learnings from the original 1,830 LOC project, now optimized to just ~270 LOC by leveraging Microsoft's official Fabric CLI.
+Organization-agnostic Microsoft Fabric deployment automation using official Fabric CLI with enterprise-grade secret management, artifact templating, and Git integration.
 
-## Key Principles Applied
+## Core Capabilities
 
-✅ **Official Tools First** - 90% Fabric CLI, 10% thin wrapper  
-✅ **Configurable** - Works for any organization/project  
-✅ **Idempotent** - Safe to re-run deployments  
-✅ **Audit Trail** - Compliance-ready logging  
-✅ **Git Integration** - Feature branch workflows  
-✅ **Principal Management** - Automated workspace access  
+- Automated workspace deployment with idempotent operations
+- 12-Factor App compliant secret management (Environment variables → .env fallback)
+- Jinja2-based artifact templating for environment-specific configurations
+- REST API integration for automatic Git repository connection
+- Comprehensive audit logging for compliance
+- Feature branch workspace isolation  
 
 ## Architecture
 
@@ -28,20 +28,23 @@ A configurable, organization-agnostic Fabric CI/CD solution that applies all lea
 
 ## Quick Start
 
-### 1. Setup Environment
+### 1. Environment Setup
 
 ```bash
-# Create conda environment
+# Create and activate conda environment
 conda env create -f environment.yml
 conda activate fabric-cli-cicd
 
-# Run the preflight helper to install/verify Fabric CLI
+# Verify Fabric CLI installation
 python scripts/preflight_check.py --auto-install
 
-# Configure secrets once ready (.env is auto-loaded by python-dotenv)
+# Configure authentication
 cp .env.template .env
-vim .env
-# Add your Fabric Token, Tenant ID, and Principal IDs (e.g., ADDITIONAL_ADMIN_PRINCIPAL_ID)
+# Edit .env with required credentials:
+# - AZURE_CLIENT_ID: Service Principal application ID
+# - AZURE_CLIENT_SECRET: Service Principal secret
+# - TENANT_ID: Azure AD tenant ID
+# Optional: FABRIC_TOKEN for direct token authentication
 ```
 
 ### 2. Configure Your Project
@@ -54,16 +57,19 @@ cp examples/templates/basic_etl.yaml config/my_project.yaml
 vim config/my_project.yaml
 ```
 
-### 3. Deploy Workspace
+### 3. Execute Deployment
 
 ```bash
-# Deploy to development (FABRIC_TOKEN and TENANT_ID pulled from .env automatically)
+# Deploy to development environment
 python src/fabric_deploy.py deploy config/my_project.yaml --env dev
 
-# Deploy feature branch
+# Deploy with automatic Git repository connection
+python src/fabric_deploy.py deploy config/my_project.yaml --env dev --connect-git
+
+# Deploy feature branch to isolated workspace
 python src/fabric_deploy.py deploy config/my_project.yaml --env dev --branch feature/new-analytics
 
-# Deploy to production
+# Production deployment
 python src/fabric_deploy.py deploy config/my_project.yaml --env prod
 ```
 
@@ -72,13 +78,16 @@ python src/fabric_deploy.py deploy config/my_project.yaml --env prod
 ```
 src/
 ├── core/
-│   ├── config.py          # Configuration management (~50 LOC)
-│   ├── fabric_wrapper.py  # Thin CLI wrapper (~80 LOC)
-│   ├── git_integration.py # Git + Fabric sync (~60 LOC)
-│   ├── audit.py          # Audit logging (~30 LOC)
-│   ├── telemetry.py      # Telemetry tracking
-│   └── exceptions.py     # Custom exceptions
-└── fabric_deploy.py       # Main CLI (~50 LOC)
+│   ├── secrets.py         # 12-Factor App secret management with waterfall loading
+│   ├── fabric_git_api.py  # REST API client for Git integration  
+│   ├── templating.py      # Jinja2 artifact transformation engine
+│   ├── config.py          # YAML configuration management
+│   ├── fabric_wrapper.py  # Fabric CLI wrapper with version validation
+│   ├── git_integration.py # Git synchronization
+│   ├── audit.py          # Compliance audit logging
+│   ├── telemetry.py      # Operational telemetry
+│   └── exceptions.py     # Exception hierarchy
+└── fabric_deploy.py       # Main deployment orchestrator
 
 config/
 ├── ProductA/

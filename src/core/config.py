@@ -181,9 +181,22 @@ class ConfigManager:
 
 
 def get_environment_variables() -> Dict[str, str]:
-    """Get required environment variables with validation"""
+    """
+    Get required environment variables with validation.
+    
+    DEPRECATED: Use core.secrets.get_secrets() instead for new code.
+    This function is maintained for backward compatibility.
+    """
     # Load variables from .env to simplify local workflows
     load_dotenv()
+    
+    # Try the new secrets module first
+    try:
+        from core.secrets import get_environment_variables as get_secrets_env
+        return get_secrets_env()
+    except ImportError:
+        # Fallback to legacy behavior if secrets module not available
+        pass
     
     # If FABRIC_TOKEN is not found, try looking for .env files in config directory
     if not os.getenv('FABRIC_TOKEN') and not os.getenv('AZURE_CLIENT_ID'):

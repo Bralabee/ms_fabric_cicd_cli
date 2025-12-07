@@ -1,44 +1,58 @@
 """
-Main Deployment CLI - Thin Wrapper Component 5/5
-~50 LOC - CLI interface and orchestration
+Microsoft Fabric deployment orchestrator with enterprise features.
 
-Key Learning Applied: Simple User Experience
-- Single command deployment
-- Progress tracking
-- Clear error messages with remediation
-- Support for any organization/project configuration
+Coordinates workspace creation, artifact deployment, Git integration,
+and audit logging. Supports environment-specific deployments with
+automatic credential management and template-based transformations.
 """
 
 import typer
 import time
+import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.panel import Panel
 from rich.table import Table
 
+logger = logging.getLogger(__name__)
+
 from core.config import ConfigManager, get_environment_variables
 from core.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
 from core.git_integration import GitFabricIntegration
 from core.audit import AuditLogger
+from core.fabric_git_api import FabricGitAPI, GitProviderType
+from core.secrets import FabricSecrets
 
 app = typer.Typer(help="Fabric CLI CI/CD - Thin Wrapper Solution")
 console = Console()
 
 
 class FabricDeployer:
-    """Main deployment orchestrator - coordinates all components"""
+    """
+    Orchestrates Microsoft Fabric workspace deployments with integrated
+    secret management, Git connectivity, and audit logging.
+    """
     
     def __init__(self, config_path: str, environment: str = None):
         self.config_manager = ConfigManager(config_path)
         self.config = self.config_manager.load_config(environment)
         self.environment = environment
         
-        # Initialize components
-        env_vars = get_environment_variables()
+        try:
+            self.secrets = FabricSecrets.load_with_fallback()
+            is_valid, error_msg = self.secrets.validate_fabric_auth()
+            if not is_valid:
+                raise ValueError(error_msg)
+            env_vars = get_environment_variables()
+        except ImportError:
+            env_vars = get_environment_variables()
+            self.secrets = None
+        
         self.fabric = FabricCLIWrapper(env_vars['FABRIC_TOKEN'])
         self.git = GitFabricIntegration(self.fabric)
+        self.git_api = FabricGitAPI(env_vars['FABRIC_TOKEN'])
         self.audit = AuditLogger()
         
         self.workspace_id = None
@@ -337,19 +351,197 @@ class FabricDeployer:
                 console.print(f"[yellow]   Note: Ensure the Service Principal is a Domain Contributor or Fabric Admin.[/yellow]")
     
     def _connect_git(self, branch: str):
-        """Connect workspace to Git"""
-        workspace_name = self.config.name
-        result = self.fabric.connect_git(
-            workspace_name,
-            self.config.git_repo,
-            branch,
-            self.config.git_directory
-        )
+        """
+        Connect workspace to Git repository using Fabric Git REST APIs.
         
-        if result["success"]:
+        This implements Gap Closing Enhancement: Automatic Git Connection
+        """
+        if not self.workspace_id:
+            console.print("[red]Cannot connect Git: Workspace ID not available[/red]")
+            return
+        
+        workspace_name = self.config.name
+        git_repo = self.config.git_repo
+        git_directory = self.config.git_directory or "/"
+        
+        console.print(f"[blue]Connecting workspace to Git repository: {git_repo}[/blue]")
+        console.print(f"  Branch: {branch}")
+        console.print(f"  Directory: {git_directory}")
+        
+        # Parse Git URL to determine provider type and extract details
+        git_details = self._parse_git_repo_url(git_repo)
+        if not git_details:
+            console.print(f"[yellow]Warning: Could not parse Git URL. Skipping Git connection.[/yellow]")
+            return
+        
+        provider_type = git_details["provider_type"]
+        
+        try:
+            # Step 1: Check if we need to create a connection (for authentication)
+            connection_id = None
+            
+            if self.secrets:
+                # Use new secrets module to get Git credentials
+                if provider_type == GitProviderType.GITHUB:
+                    is_valid, error_msg = self.secrets.validate_git_auth("github")
+                    if is_valid and self.secrets.github_token:
+                        # Create GitHub connection
+                        console.print("[blue]Creating GitHub connection...[/blue]")
+                        conn_result = self.git_api.create_git_connection(
+                            display_name=f"GitHub-{workspace_name}",
+                            provider_type=GitProviderType.GITHUB,
+                            credential_type="Key",
+                            credential_value=self.secrets.github_token,
+                            repository_url=git_repo
+                        )
+                        
+                        if conn_result["success"]:
+                            connection_id = conn_result["connection"]["id"]
+                            console.print(f"[green]✓ Created GitHub connection: {connection_id}[/green]")
+                        else:
+                            console.print(f"[yellow]Warning: Could not create connection: {conn_result.get('error')}[/yellow]")
+                            console.print("[yellow]Attempting connection without explicit credentials...[/yellow]")
+                
+                elif provider_type == GitProviderType.AZURE_DEVOPS:
+                    is_valid, error_msg = self.secrets.validate_git_auth("azure_devops")
+                    if is_valid and self.secrets.azure_client_id and self.secrets.azure_client_secret:
+                        # Create Azure DevOps connection with Service Principal
+                        console.print("[blue]Creating Azure DevOps connection...[/blue]")
+                        conn_result = self.git_api.create_git_connection(
+                            display_name=f"AzureDevOps-{workspace_name}",
+                            provider_type=GitProviderType.AZURE_DEVOPS,
+                            credential_type="ServicePrincipal",
+                            credential_value=self.secrets.azure_client_secret,
+                            repository_url=git_repo,
+                            tenant_id=self.secrets.get_tenant_id(),
+                            client_id=self.secrets.azure_client_id
+                        )
+                        
+                        if conn_result["success"]:
+                            connection_id = conn_result["connection"]["id"]
+                            console.print(f"[green]✓ Created Azure DevOps connection: {connection_id}[/green]")
+                        else:
+                            console.print(f"[yellow]Warning: Could not create connection: {conn_result.get('error')}[/yellow]")
+                            console.print("[yellow]Attempting connection without explicit credentials...[/yellow]")
+            
+            # Step 2: Connect workspace to Git
+            console.print("[blue]Connecting workspace to Git repository...[/blue]")
+            
+            if provider_type == GitProviderType.GITHUB:
+                result = self.git_api.connect_workspace_to_git(
+                    workspace_id=self.workspace_id,
+                    provider_type=GitProviderType.GITHUB,
+                    connection_id=connection_id,
+                    owner_name=git_details["owner"],
+                    repository_name=git_details["repo"],
+                    branch_name=branch,
+                    directory_name=git_directory
+                )
+            else:  # Azure DevOps
+                result = self.git_api.connect_workspace_to_git(
+                    workspace_id=self.workspace_id,
+                    provider_type=GitProviderType.AZURE_DEVOPS,
+                    connection_id=connection_id,
+                    organization_name=git_details["organization"],
+                    project_name=git_details["project"],
+                    repository_name=git_details["repo"],
+                    branch_name=branch,
+                    directory_name=git_directory
+                )
+            
+            if not result["success"]:
+                console.print(f"[red]Failed to connect workspace to Git: {result.get('error')}[/red]")
+                console.print(f"[yellow]Details: {result.get('details', 'N/A')}[/yellow]")
+                return
+            
+            console.print("[green]✓ Workspace connected to Git[/green]")
+            
+            # Step 3: Initialize the Git connection
+            console.print("[blue]Initializing Git connection...[/blue]")
+            init_result = self.git_api.initialize_git_connection(self.workspace_id)
+            
+            if not init_result["success"]:
+                console.print(f"[yellow]Warning: Could not initialize Git connection: {init_result.get('error')}[/yellow]")
+                return
+            
+            required_action = init_result.get("required_action", "None")
+            console.print(f"[blue]Required action: {required_action}[/blue]")
+            
+            # Step 4: Handle required action (UpdateFromGit if needed)
+            if required_action == "UpdateFromGit":
+                console.print("[blue]Updating workspace from Git repository...[/blue]")
+                update_result = self.git_api.update_from_git(
+                    workspace_id=self.workspace_id,
+                    remote_commit_hash=init_result["remote_commit_hash"],
+                    workspace_head=init_result["workspace_head"]
+                )
+                
+                if update_result["success"]:
+                    # Poll the operation
+                    operation_id = update_result["operation_id"]
+                    console.print(f"[blue]Polling operation {operation_id}...[/blue]")
+                    
+                    poll_result = self.git_api.poll_operation(
+                        operation_id=operation_id,
+                        retry_after=update_result.get("retry_after", 5)
+                    )
+                    
+                    if poll_result["success"]:
+                        console.print("[green]✓ Workspace updated from Git successfully[/green]")
+                    else:
+                        console.print(f"[yellow]Warning: Git update operation status: {poll_result.get('status')}[/yellow]")
+                else:
+                    console.print(f"[yellow]Warning: Could not update from Git: {update_result.get('error')}[/yellow]")
+            
+            # Log successful connection
             self.audit.log_git_connection(
-                self.config.git_repo, branch, self.workspace_id, self.config.name
+                git_repo, branch, self.workspace_id, workspace_name
             )
+            
+        except Exception as e:
+            console.print(f"[red]Error connecting to Git: {e}[/red]")
+            import traceback
+            console.print(f"[red]{traceback.format_exc()}[/red]")
+    
+    def _parse_git_repo_url(self, git_url: str) -> Optional[Dict[str, str]]:
+        """
+        Parse Git repository URL to extract provider type and details.
+        
+        Supports:
+        - GitHub: https://github.com/owner/repo
+        - Azure DevOps: https://dev.azure.com/org/project/_git/repo
+        
+        Returns:
+            Dictionary with provider_type and extracted details, or None if parsing fails
+        """
+        import re
+        
+        # GitHub pattern
+        github_pattern = r'(?:https?://)?(?:www\.)?github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$'
+        github_match = re.match(github_pattern, git_url)
+        
+        if github_match:
+            return {
+                "provider_type": GitProviderType.GITHUB,
+                "owner": github_match.group(1),
+                "repo": github_match.group(2)
+            }
+        
+        # Azure DevOps pattern
+        ado_pattern = r'(?:https?://)?dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)/?$'
+        ado_match = re.match(ado_pattern, git_url)
+        
+        if ado_match:
+            return {
+                "provider_type": GitProviderType.AZURE_DEVOPS,
+                "organization": ado_match.group(1),
+                "project": ado_match.group(2),
+                "repo": ado_match.group(3)
+            }
+        
+        # Could not parse
+        logger.warning(f"Could not parse Git URL: {git_url}")
+        return None
     
     def _show_deployment_summary(self, workspace_name: str, duration: float):
         """Show deployment summary"""

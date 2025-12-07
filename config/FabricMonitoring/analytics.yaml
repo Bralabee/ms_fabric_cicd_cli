@@ -10,7 +10,7 @@ workspace:
   capacity_id: "${FABRIC_CAPACITY_ID}" 
 
   # Optional Field
-  domain: "01 Strategy, Governance & Compliance" 
+  #domain: "01 Strategy, Governance & Compliance" 
   
   # Git Integration (Replace with your actual repo)
   git_repo: "https://dev.azure.com/your-org/fabric-monitoring/_git/analytics"

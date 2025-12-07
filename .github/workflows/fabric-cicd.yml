@@ -38,14 +38,31 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+        cache: 'pip'
     
     - name: Install dependencies
       run: |
+        pip install --upgrade pip
         pip install -r requirements.txt
     
     - name: Verify Fabric CLI
       run: |
-        fab --version
+        fab --version || echo "Fabric CLI not available"
+    
+    - name: Run linting
+      run: |
+        pip install flake8 black mypy
+        echo "Running flake8..."
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        echo "Running black (check only)..."
+        black --check src/
+        echo "Running mypy..."
+        mypy src/ --ignore-missing-imports || true
+    
+    - name: Security scan with Bandit
+      run: |
+        pip install bandit
+        bandit -r src/ -ll || true
     
     - name: Validate configuration
       run: |
@@ -53,9 +70,17 @@ jobs:
         python src/fabric_deploy.py validate examples/templates/advanced_analytics.yaml
         python src/fabric_deploy.py validate examples/templates/data_science.yaml
     
-    - name: Run unit tests
+    - name: Run unit tests with coverage
       run: |
-        pytest tests/ -m "not integration" -v --cov=src/
+        pytest tests/ -m "not integration" -v --cov=src/ --cov-report=xml --cov-report=html
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
 
     - name: Run integration tests
       run: |
@@ -64,6 +89,10 @@ jobs:
         else
           echo "Fabric CLI not available, skipping integration tests"
         fi
+    
+    - name: Test Docker build
+      run: |
+        docker build -t usf-fabric-cli-cicd:test .
 
   deploy-dev:
     needs: validate

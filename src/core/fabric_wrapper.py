@@ -10,20 +10,95 @@ import re
 from typing import Any, Dict, List, Optional
 import os
 
+from packaging import version
+
 from core.exceptions import FabricCLIError, FabricCLINotFoundError, FabricTelemetryError
 from core.telemetry import TelemetryClient
 
 logger = logging.getLogger(__name__)
 
+# Expected CLI version range (can be configured)
+MINIMUM_CLI_VERSION = "1.0.0"
+RECOMMENDED_CLI_VERSION = "1.0.0"
+
 
 class FabricCLIWrapper:
     """Thin wrapper around Fabric CLI with idempotency and error handling."""
 
-    def __init__(self, fabric_token: str, telemetry_client: Optional[TelemetryClient] = None):
+    def __init__(
+        self, 
+        fabric_token: str, 
+        telemetry_client: Optional[TelemetryClient] = None,
+        validate_version: bool = True,
+        min_version: Optional[str] = None
+    ):
         self.fabric_token = fabric_token
         self.telemetry = telemetry_client or TelemetryClient()
         self._last_command: List[str] | None = None
+        self.cli_version: Optional[str] = None
+        self.min_version = min_version or MINIMUM_CLI_VERSION
+        
+        # Validate CLI version if requested
+        if validate_version:
+            self._validate_cli_version()
+        
         self._setup_auth()
+    
+    def _validate_cli_version(self) -> None:
+        """
+        Validate that the installed Fabric CLI version meets minimum requirements.
+        
+        This addresses Gap A: Dependency on External CLI by ensuring version compatibility.
+        """
+        try:
+            result = subprocess.run(
+                ['fab', '--version'],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=10
+            )
+            
+            # Parse version from output (e.g., "Fabric CLI 1.2.3" or just "1.2.3")
+            version_output = result.stdout.strip()
+            version_match = re.search(r'(\d+\.\d+\.\d+)', version_output)
+            
+            if version_match:
+                self.cli_version = version_match.group(1)
+                logger.info(f"Detected Fabric CLI version: {self.cli_version}")
+                
+                # Compare versions
+                try:
+                    if version.parse(self.cli_version) < version.parse(self.min_version):
+                        logger.warning(
+                            f"Fabric CLI version {self.cli_version} is below minimum "
+                            f"required version {self.min_version}. This may cause compatibility issues."
+                        )
+                        logger.warning(
+                            f"Recommended version: {RECOMMENDED_CLI_VERSION}"
+                        )
+                except Exception as e:
+                    logger.debug(f"Could not compare versions: {e}")
+            else:
+                logger.warning(f"Could not parse CLI version from: {version_output}")
+                self.cli_version = "unknown"
+                
+        except FileNotFoundError:
+            error_msg = (
+                "Fabric CLI ('fab' command) not found. Please install it:\n"
+                "  pip install ms-fabric-cli\n"
+                "Or see: https://github.com/microsoft/fabric-cli"
+            )
+            logger.error(error_msg)
+            raise FabricCLINotFoundError(['fab', '--version']) from None
+            
+        except subprocess.TimeoutExpired:
+            logger.warning("Fabric CLI version check timed out")
+            self.cli_version = "unknown"
+            
+        except Exception as e:
+            logger.warning(f"Could not validate CLI version: {e}")
+            self.cli_version = "unknown"
     
     def _setup_auth(self):
         """Setup Fabric CLI authentication"""
@@ -784,7 +859,7 @@ class FabricDiagnostics:
         self.cli = cli_wrapper
     
     def validate_fabric_cli_installation(self) -> Dict[str, Any]:
-        """Validate Fabric CLI is properly installed"""
+        """Validate Fabric CLI is properly installed with version checking"""
         try:
             result = subprocess.run(
                 ['fab', '--version'],
@@ -792,16 +867,45 @@ class FabricDiagnostics:
                 text=True,
                 check=True
             )
-            return {
+            
+            version_output = result.stdout.strip()
+            
+            # Enhanced validation with version compatibility check
+            validation_result = {
                 "success": True,
-                "version": result.stdout.strip(),
+                "version": version_output,
                 "message": "Fabric CLI is properly installed"
             }
+            
+            # Check if we have a parsed version from the wrapper
+            if self.cli.cli_version and self.cli.cli_version != "unknown":
+                validation_result["parsed_version"] = self.cli.cli_version
+                validation_result["minimum_version"] = self.cli.min_version
+                
+                try:
+                    current = version.parse(self.cli.cli_version)
+                    minimum = version.parse(self.cli.min_version)
+                    
+                    if current < minimum:
+                        validation_result["warning"] = (
+                            f"CLI version {self.cli.cli_version} is below minimum "
+                            f"required version {self.cli.min_version}. "
+                            f"Consider upgrading to {RECOMMENDED_CLI_VERSION}."
+                        )
+                    elif current >= minimum:
+                        validation_result["compatibility"] = "compatible"
+                        
+                except Exception:
+                    pass
+            
+            return validation_result
+            
         except (subprocess.CalledProcessError, FileNotFoundError):
             return {
                 "success": False,
                 "error": "Fabric CLI not found or not properly installed",
-                "remediation": "Install Fabric CLI: https://github.com/microsoft/fabric-cli"
+                "remediation": "Install Fabric CLI: https://github.com/microsoft/fabric-cli",
+                "install_command": "pip install ms-fabric-cli"
             }
     
     def validate_authentication(self) -> Dict[str, Any]:
