@@ -111,6 +111,15 @@ class FabricCLIWrapper:
         client_secret = os.getenv("AZURE_CLIENT_SECRET")
         tenant_id = os.getenv("TENANT_ID") or os.getenv("AZURE_TENANT_ID")
 
+        # Sanitize credentials to handle inline comments in .env files
+        # Docker's --env-file includes inline comments in the value
+        if client_id:
+            client_id = client_id.split(" #")[0].strip()
+        if client_secret:
+            client_secret = client_secret.split(" #")[0].strip()
+        if tenant_id:
+            tenant_id = tenant_id.split(" #")[0].strip()
+
         if client_id and client_secret and tenant_id:
             try:
                 logger.info(
@@ -309,6 +318,7 @@ class FabricCLIWrapper:
         self, name: str, capacity_name: str = None, description: str = ""
     ) -> Dict[str, Any]:
         """Create workspace with idempotency"""
+        print(f"DEBUG: create_workspace called with name='{name}', capacity_name='{capacity_name}'")
 
         # Check existence first
         if self._item_exists(f"{name}.Workspace"):
@@ -354,6 +364,30 @@ class FabricCLIWrapper:
             command = ["api", "workspaces", "-X", "post", "-i", json.dumps(payload)]
 
             result = self._execute_command(command)
+            
+            # Check for API errors in the response
+            if result.get("success") and isinstance(result.get("data"), dict):
+                response_data = result["data"]
+                if response_data.get("status_code", 0) >= 400:
+                    error_text = response_data.get("text", {})
+                    error_message = error_text.get("message") if isinstance(error_text, dict) else str(error_text)
+                    error_code = error_text.get("errorCode") if isinstance(error_text, dict) else "Unknown"
+                    
+                    print(f"Error creating workspace with capacity: {error_code} - {error_message}")
+                    if error_code == "InsufficientPermissionsOverCapacity":
+                        print("ACTION REQUIRED: The Service Principal needs 'Capacity Admin' or 'Contributor' permissions on the Fabric Capacity.")
+                    
+                    return {
+                        "success": False,
+                        "error": f"{error_code}: {error_message}"
+                    }
+
+            if result.get("success"):
+                # If status_code is missing or 2xx, assume success (though _execute_command usually returns success=True even for 4xx if the command ran)
+                # We need to verify if the workspace was actually created.
+                # However, for now, let's assume if we didn't catch a 4xx above, it might be okay or we fall through.
+                # Actually, if it failed, we should probably return False.
+                pass
 
             if result.get("success"):
                 # Check for API error in data (fab api returns 0 even on error)
@@ -398,6 +432,7 @@ class FabricCLIWrapper:
                             result["workspace_id"] = data.get("id")
             return result
         else:
+            print(f"DEBUG: Not a GUID capacity. Using mkdir.")
             # Use 'mkdir' with -P capacityName=... (Legacy/Name-based)
             command = ["mkdir", f"{name}.Workspace"]
 

@@ -96,11 +96,13 @@ class TestFabricSecrets:
 
     def test_validate_git_auth_missing(self):
         """Test Git authentication validation with missing credentials"""
-        secrets = FabricSecrets()
-        is_valid, error_msg = secrets.validate_git_auth("github")
+        # Ensure no token is present regardless of environment
+        with patch.dict(os.environ, {}, clear=True):
+            secrets = FabricSecrets(_env_file=None)
+            is_valid, error_msg = secrets.validate_git_auth("github")
 
-        assert is_valid is False
-        assert "Missing GitHub authentication" in error_msg
+            assert is_valid is False
+            assert "Missing GitHub authentication" in error_msg
 
     @patch.dict(os.environ, {"CI": "true"})
     def test_load_with_fallback_ci_environment(self):

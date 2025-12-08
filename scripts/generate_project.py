@@ -18,7 +18,7 @@ def generate_project_config(
     """Generate customized project configuration"""
 
     # Load base template
-    template_path = Path(f"examples/templates/{template}.yaml")
+    template_path = Path(f"templates/blueprints/{template}.yaml")
     if not template_path.exists():
         raise ValueError(f"Template {template} not found")
 
@@ -48,7 +48,7 @@ def generate_project_config(
 
     # Save customized config
     # Create organization directory
-    output_dir = Path(f"config/{org_slug}")
+    output_dir = Path(f"config/projects/{org_slug}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     output_path = output_dir / f"{project_slug}.yaml"

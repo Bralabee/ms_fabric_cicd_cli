@@ -55,7 +55,7 @@ graph LR
 
 The foundation of the factory is the **Configuration File**. This YAML file acts as the "blueprint" for your data product.
 
-**Action:** Create a new file at `config/products/sales_analytics.yaml`.
+**Action:** Create a new file at `config/projects/sales_analytics/config.yaml`.
 
 **Content:**
 ```yaml
@@ -112,7 +112,7 @@ This step fulfills the requirement to **automatically create a DEV workspace** a
 **Command:**
 ```bash
 python src/fabric_deploy.py deploy \
-  --config config/products/sales_analytics.yaml \
+  --config config/projects/sales_analytics/config.yaml \
   --environment dev
 ```
 
@@ -142,7 +142,7 @@ Deploy a dedicated workspace linked specifically to this new feature branch.
 **Command:**
 ```bash
 python src/fabric_deploy.py deploy \
-  --config config/products/sales_analytics.yaml \
+  --config config/projects/sales_analytics/config.yaml \
   --environment feature_123
 ```
 
@@ -162,7 +162,7 @@ To ensure that every environment looks the same, we use the **Templating Engine*
 **Command:**
 ```bash
 python src/fabric_deploy.py validate \
-  --config config/products/sales_analytics.yaml \
+  --config config/projects/sales_analytics/config.yaml \
   --environment feature_123
 ```
 

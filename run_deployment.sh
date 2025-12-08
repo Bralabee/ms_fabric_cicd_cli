@@ -8,7 +8,7 @@ ENV=${2:-dev}
 
 if [ -z "$CONFIG_FILE" ]; then
     echo "Usage: ./run_deployment.sh <config_file> [env]"
-    echo "Example: ./run_deployment.sh config/my_project.yaml dev"
+    echo "Example: ./run_deployment.sh config/projects/my_org/my_project.yaml dev"
     exit 1
 fi
 

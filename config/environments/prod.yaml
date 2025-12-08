@@ -3,10 +3,11 @@
 
 workspace:
   name: "analytics-workspace-prod"
-  capacity_id: "F64"  # High capacity for production
+  capacity_id: "${FABRIC_CAPACITY_ID}"  # Use configured capacity
   git_branch: "main"
 
 # Production principals with restricted access
+# Note: Mandatory principals are also injected automatically by the CLI
 principals:
   - id: "${PROD_ADMIN_EMAIL}"
     role: "Admin"
@@ -19,8 +20,10 @@ principals:
     role: "Contributor"
 
   # Mandatory Security Principals
-  - id: "${EU_M365_SEC_EMEA_AZ_PBI_IT_ADMIN_ID}" # EU-M365-SEC-EMEA-AZ-PBI-IT-ADMIN
+  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
+    description: "Mandatory Additional Admin"
   
-  - id: "${EU_M365_SEC_EMEA_AZ_PBI_EDP_SUPPORT_ID}" # EU-M365-SEC-EMEA-AZ-PBI-EDP-SUPPORT
+  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
+    description: "Mandatory Additional Contributor"

@@ -185,10 +185,11 @@ class FabricDeployer:
             error_code = data.get("errorCode", "")
 
         if not result["success"] and (
-            "capacity" in error_msg
+            ("capacity" in error_msg
             or "entitynotfound" in error_msg
             or "could not be found" in error_msg
-            or error_code == "EntityNotFound"
+            or error_code == "EntityNotFound")
+            and "insufficientpermissionsovercapacity" not in error_msg
         ):
             console.print(
                 "[yellow]Warning: Capacity assignment failed. Retrying without capacity...[/yellow]"

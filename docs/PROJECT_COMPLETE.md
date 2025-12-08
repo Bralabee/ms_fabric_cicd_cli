@@ -140,7 +140,7 @@ principals:
 ### ✅ **Migration Tools**
 ```bash
 # Analyze existing custom solution
-python scripts/analyze_migration.py /path/to/old/solution
+python scripts/utilities/analyze_migration.py /path/to/old/solution
 ```
 
 ### ✅ **Audit Compliance**

@@ -98,32 +98,61 @@ class ConfigManager:
         def replace(match):
             var_name = match.group(1)
             value = os.getenv(var_name)
+            
+            # Sanitize env vars to remove inline comments
+            if value and "#" in value:
+                value = value.split("#")[0].strip()
+                
             if value is None:
-                print(
-                    f"ℹ️  Note: Value for '{var_name}' not provided. Proceeding without it."
-                )
-                return ""
+                # Don't fail yet, let validation catch it or leave as is
+                return match.group(0)
             return value
 
         return pattern.sub(replace, content)
 
     def _load_environment_config(self, environment: str) -> Dict[str, Any]:
         """Load environment-specific overrides"""
-        # Try standard structure: config/templates/../environments/env.yaml
-        env_path = (
-            self.config_path.parent.parent / "environments" / f"{environment}.yaml"
-        )
+        # Strategy 1: Look for 'environments' folder at the project root (config/environments)
+        # We assume the config file is somewhere inside config/ (e.g. config/projects/Org/proj.yaml)
+        
+        # Walk up the tree until we find 'config' directory
+        current_path = self.config_path.parent
+        config_root = None
+        
+        # Try to find the 'config' root directory
+        for _ in range(4): # Limit depth
+            if current_path.name == "config":
+                config_root = current_path
+                break
+            if (current_path / "environments").exists():
+                config_root = current_path
+                break
+            current_path = current_path.parent
+            
+        if not config_root:
+            # Fallback: assume relative path from current working directory
+            if Path("config/environments").exists():
+                config_root = Path("config")
+            else:
+                # Last resort: try standard relative paths
+                env_path = self.config_path.parent.parent / "environments" / f"{environment}.yaml"
+                if env_path.exists():
+                    return self._read_yaml(env_path)
+                return {}
 
-        if not env_path.exists():
-            # Try subdirectory: config/environments/env.yaml (if config is in config/)
-            env_path = self.config_path.parent / "environments" / f"{environment}.yaml"
+        env_path = config_root / "environments" / f"{environment}.yaml"
 
         if env_path.exists():
-            with open(env_path, "r") as f:
-                content = f.read()
-                content = self._substitute_env_vars(content)
-                return yaml.safe_load(content)
+            return self._read_yaml(env_path)
+            
         return {}
+
+    def _read_yaml(self, path: Path) -> Dict[str, Any]:
+        """Helper to read and substitute YAML"""
+        with open(path, "r") as f:
+            content = f.read()
+            content = self._substitute_env_vars(content)
+            return yaml.safe_load(content)
 
     def _merge_configs(
         self, base: Dict[str, Any], override: Dict[str, Any]
@@ -137,6 +166,14 @@ class ConfigManager:
                 and isinstance(result[key], dict)
             ):
                 result[key] = self._merge_configs(result[key], value)
+            elif (
+                isinstance(value, list)
+                and key in result
+                and isinstance(result[key], list)
+            ):
+                # Merge lists instead of replacing (e.g. for principals)
+                # We'll deduplicate later in _to_workspace_config
+                result[key] = result[key] + value
             else:
                 result[key] = value
         return result
@@ -144,6 +181,49 @@ class ConfigManager:
     def _to_workspace_config(self, data: Dict[str, Any]) -> WorkspaceConfig:
         """Convert dict to WorkspaceConfig dataclass"""
         workspace_data = data.get("workspace", {})
+        
+        # Start with principals from config (merged project + env)
+        raw_principals = data.get("principals", [])
+        
+        # Helper to check if ID exists
+        existing_ids = {p.get("id") for p in raw_principals if p.get("id")}
+        
+        final_principals = list(raw_principals)
+
+        # Inject mandatory principals from environment variables (if not already present)
+        
+        # Add Additional Admin
+        additional_admin = os.getenv("ADDITIONAL_ADMIN_PRINCIPAL_ID")
+        if additional_admin and additional_admin not in existing_ids:
+            final_principals.append({
+                "id": additional_admin,
+                "role": "Admin",
+                "description": "Mandatory Additional Admin"
+            })
+            existing_ids.add(additional_admin)
+            
+        # Add Additional Contributor
+        additional_contributor = os.getenv("ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID")
+        if additional_contributor and additional_contributor not in existing_ids:
+            final_principals.append({
+                "id": additional_contributor,
+                "role": "Contributor",
+                "description": "Mandatory Additional Contributor"
+            })
+            existing_ids.add(additional_contributor)
+
+        # Final deduplication by ID (just in case merge created duplicates)
+        unique_principals = []
+        seen_ids = set()
+        for p in final_principals:
+            pid = p.get("id")
+            if pid and pid not in seen_ids:
+                unique_principals.append(p)
+                seen_ids.add(pid)
+            elif not pid:
+                # Keep entries without ID (though invalid, we let schema validation handle it)
+                unique_principals.append(p)
+
         return WorkspaceConfig(
             name=workspace_data["name"],
             display_name=workspace_data.get("display_name", workspace_data["name"]),
@@ -162,7 +242,7 @@ class ConfigManager:
             pipelines=data.get("pipelines", []),
             semantic_models=data.get("semantic_models", []),
             resources=data.get("resources", []),
-            principals=data.get("principals", []),
+            principals=unique_principals,
         )
 
     def _load_schema(self) -> Dict[str, Any]:

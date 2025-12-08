@@ -61,15 +61,15 @@ python src/fabric_deploy.py deploy config/contoso-inc-customer-analytics.yaml \
 This tool is designed to manage multiple projects and organizations from a single codebase.
 
 1.  **Create Specific Configs**:
-    *   Create `config/ProductA.yaml`
-    *   Create `config/ProductB.yaml`
+    *   Create `config/projects/ProductA/config.yaml`
+    *   Create `config/projects/ProductB/config.yaml`
 2.  **Define Environments**:
     *   Ensure `config/environments/prod.yaml` contains your production secrets/capacity IDs.
 3.  **Deploy with Specifics**:
-    *   Run: `python src/fabric_deploy.py deploy config/ProductA.yaml --env prod`
-    *   Run: `python src/fabric_deploy.py deploy config/ProductB.yaml --env dev`
+    *   Run: `python src/fabric_deploy.py deploy config/projects/ProductA/config.yaml --env prod`
+    *   Run: `python src/fabric_deploy.py deploy config/projects/ProductB/config.yaml --env dev`
 
-The `ConfigManager` looks at the file you passed (`config/ProductA.yaml`), loads it, and then automatically looks for the environment override in `config/environments/{env}.yaml` to merge them. This allows you to maintain one "structure" file per project, while sharing "environment" settings (like Service Principals or Capacities) across them if needed.
+The `ConfigManager` looks at the file you passed (`config/projects/ProductA/config.yaml`), loads it, and then automatically looks for the environment override in `config/environments/{env}.yaml` to merge them. This allows you to maintain one "structure" file per project, while sharing "environment" settings (like Service Principals or Capacities) across them if needed.
 
 ## End-to-End Scenarios
 
@@ -85,7 +85,7 @@ python scripts/generate_project.py \
   --git-repo https://github.com/acme/production-analytics
 
 # Customize the generated config
-vim config/acme-manufacturing-production-analytics.yaml
+vim config/projects/acme_manufacturing/production_analytics.yaml
 ```
 
 **Customization for Manufacturing:**

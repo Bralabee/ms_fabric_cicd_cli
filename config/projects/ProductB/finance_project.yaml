@@ -8,7 +8,7 @@ workspace:
   capacity_id: ""  # Change to your Fabric capacity ID (leave empty for Trial/Pro)
   
   # Git integration (optional)
-  git_repo: "https://github.com/your-org/your-repo"  # Change to your repo
+  git_repo: "https://github.com/BralaBee-LEIT/usf_cli_test_repo_cicd_fabric_workspaces.git"  # Change to your repo
   git_branch: "main"
   git_directory: "/"
 
@@ -63,9 +63,6 @@ pipelines:
 
 # Principals (users/service principals) to add to workspace
 principals:
-  - id: "${DEV_ADMIN_EMAIL}"        # User email (UPN)
-    role: "Admin"
-  
   - id: "${DEV_ADMIN_OBJECT_ID}"  # Group Object ID (Recommended over email)
     role: "Contributor"
   
@@ -73,16 +70,9 @@ principals:
   - id: "${AZURE_CLIENT_ID}"  # Service Principal Object ID (Required)
     role: "Contributor"
 
-  # Mandatory Security Principals
-  - id: "${EU_M365_SEC_EMEA_AZ_PBI_IT_ADMIN_ID}" # EU-M365-SEC-EMEA-AZ-PBI-IT-ADMIN
-    role: "Admin"
-  
-  - id: "${EU_M365_SEC_EMEA_AZ_PBI_EDP_SUPPORT_ID}" # EU-M365-SEC-EMEA-AZ-PBI-EDP-SUPPORT
-    role: "Contributor"
-
 # Configuration notes:
 # 1. Replace all placeholder values with your organization's details
 # 2. Capacity ID should match your Fabric capacity
 # 3. Git repository should be accessible with your credentials
-# 4. Principal IDs: Use emails for Users, but Object IDs (GUIDs) for Groups and Service Principals
+# 4. Principal IDs: Use Object IDs (GUIDs) for Users, Groups and Service Principals
 # 5. Remove sections you don't need (e.g., if no Git integration needed)

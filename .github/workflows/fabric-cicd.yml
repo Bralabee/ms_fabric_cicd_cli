@@ -62,9 +62,9 @@ jobs:
     
     - name: Validate configuration
       run: |
-        python src/fabric_deploy.py validate examples/templates/basic_etl.yaml
-        python src/fabric_deploy.py validate examples/templates/advanced_analytics.yaml
-        python src/fabric_deploy.py validate examples/templates/data_science.yaml
+        python src/fabric_deploy.py validate templates/blueprints/basic_etl.yaml
+        python src/fabric_deploy.py validate templates/blueprints/advanced_analytics.yaml
+        python src/fabric_deploy.py validate templates/blueprints/data_science.yaml
     
     - name: Run unit tests with coverage
       run: |
@@ -119,7 +119,7 @@ jobs:
         
         # Deploy workspace
         python src/fabric_deploy.py deploy \
-          examples/templates/${CONFIG_TEMPLATE}.yaml \
+          templates/blueprints/${CONFIG_TEMPLATE}.yaml \
           --env dev \
           --branch ${{ github.ref_name }} \
           --diagnose
@@ -156,7 +156,7 @@ jobs:
         TENANT_ID: ${{ secrets.TENANT_ID }}
       run: |
         python src/fabric_deploy.py deploy \
-          examples/templates/basic_etl.yaml \
+          templates/blueprints/basic_etl.yaml \
           --env staging \
           --diagnose
     
@@ -196,7 +196,7 @@ jobs:
         TENANT_ID: ${{ secrets.TENANT_ID }}
       run: |
         python src/fabric_deploy.py deploy \
-          examples/templates/basic_etl.yaml \
+          templates/blueprints/basic_etl.yaml \
           --env prod \
           --diagnose
     
@@ -249,7 +249,7 @@ jobs:
       run: |
         # Create feature-branch specific workspace
         python src/fabric_deploy.py deploy \
-          examples/templates/basic_etl.yaml \
+          templates/blueprints/basic_etl.yaml \
           --env dev \
           --branch ${{ github.head_ref }} \
           --force-branch-workspace \
