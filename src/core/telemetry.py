@@ -14,10 +14,14 @@ from .exceptions import FabricTelemetryError
 class TelemetryClient:
     """Writes Fabric CLI command telemetry to JSONL for later analysis."""
 
-    def __init__(self, log_directory: str | Path | None = None, enabled: bool | None = None):
+    def __init__(
+        self, log_directory: str | Path | None = None, enabled: bool | None = None
+    ):
         self._log_dir = Path(log_directory or "audit_logs")
         env_override = os.getenv("DISABLE_FABRIC_TELEMETRY")
-        self.enabled = (enabled if enabled is not None else True) and env_override != "1"
+        self.enabled = (
+            enabled if enabled is not None else True
+        ) and env_override != "1"
         self._log_file = self._log_dir / "fabric_cli_telemetry.jsonl"
         if self.enabled:
             self._log_dir.mkdir(parents=True, exist_ok=True)

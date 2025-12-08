@@ -8,7 +8,13 @@ from typing import List
 class FabricCLIError(RuntimeError):
     """Base exception for Fabric CLI execution failures."""
 
-    def __init__(self, command: List[str], exit_code: int, stderr: str | None = None, stdout: str | None = None):
+    def __init__(
+        self,
+        command: List[str],
+        exit_code: int,
+        stderr: str | None = None,
+        stdout: str | None = None,
+    ):
         self.command = command
         self.exit_code = exit_code
         self.stderr = (stderr or "").strip()
@@ -24,7 +30,9 @@ class FabricCLINotFoundError(FabricCLIError):
     """Raised when the Fabric CLI binary cannot be located."""
 
     def __init__(self, command: List[str]):
-        super().__init__(command=command, exit_code=127, stderr="Fabric CLI binary not found on PATH")
+        super().__init__(
+            command=command, exit_code=127, stderr="Fabric CLI binary not found on PATH"
+        )
 
 
 class FabricTelemetryError(RuntimeError):

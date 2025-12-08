@@ -36,7 +36,9 @@ def run_preflight(auto_install: bool, skip_env: bool) -> int:
             _install_fabric_cli()
             cli_path = shutil.which("fab")
         if not cli_path:
-            print("❌ Fabric CLI binary is not available on PATH. See https://github.com/microsoft/fabric-cli for manual steps.")
+            print(
+                "❌ Fabric CLI binary is not available on PATH. See https://github.com/microsoft/fabric-cli for manual steps."
+            )
             return 1
 
     print(f"✅ Fabric CLI detected at {cli_path}")
@@ -49,7 +51,9 @@ def run_preflight(auto_install: bool, skip_env: bool) -> int:
         missing = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
         if missing:
             print("⚠️  Missing required environment variables:", ", ".join(missing))
-            print("    Create or update your .env file and rerun. Example entries are available in .env.template.")
+            print(
+                "    Create or update your .env file and rerun. Example entries are available in .env.template."
+            )
             return 1
         print("✅ Required environment variables detected")
     return 0
@@ -69,7 +73,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    exit_code = run_preflight(auto_install=args.auto_install, skip_env=args.skip_env_check)
+    exit_code = run_preflight(
+        auto_install=args.auto_install, skip_env=args.skip_env_check
+    )
     raise SystemExit(exit_code)
 
 
