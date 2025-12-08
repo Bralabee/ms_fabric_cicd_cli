@@ -153,6 +153,8 @@ GitHub Actions workflows included for:
 - Feature branch deployments
 - Principal management
 
+**Important:** For CI/CD pipelines to function, you must configure the required secrets (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) in your GitHub repository settings. See [Usage Guide](docs/USAGE_GUIDE.md#troubleshooting) for details.
+
 ## Features
 
 ### Core Capabilities

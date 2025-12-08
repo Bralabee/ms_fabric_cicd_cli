@@ -472,6 +472,25 @@ All operations are logged to `audit_logs/fabric_operations_YYYY-MM-DD.jsonl`:
 
 Use for compliance reporting and troubleshooting.
 
+## Troubleshooting
+
+### CI/CD Pipeline Failures
+
+#### Authentication Failed (Exit Code 1)
+If your CI/CD pipeline fails with `[AuthenticationFailed] Failed to get access token`, it means the GitHub Actions runner cannot authenticate with Microsoft Fabric.
+
+**Solution:**
+Ensure the following secrets are defined in your GitHub Repository Settings > Secrets and variables > Actions:
+
+| Secret Name | Description |
+|-------------|-------------|
+| `AZURE_CLIENT_ID` | Service Principal Application ID |
+| `AZURE_CLIENT_SECRET` | Service Principal Secret |
+| `AZURE_TENANT_ID` | Azure AD Tenant ID |
+| `FABRIC_CAPACITY_ID` | Fabric Capacity ID (for workspace creation) |
+
+**Note:** Do not commit these values to `.env` files in the repository. Use GitHub Secrets for secure injection.
+
 ## Best Practices
 
 ### 1. Configuration Management
