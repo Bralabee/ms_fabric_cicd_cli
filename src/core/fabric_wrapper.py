@@ -318,7 +318,9 @@ class FabricCLIWrapper:
         self, name: str, capacity_name: str = None, description: str = ""
     ) -> Dict[str, Any]:
         """Create workspace with idempotency"""
-        print(f"DEBUG: create_workspace called with name='{name}', capacity_name='{capacity_name}'")
+        print(
+            f"DEBUG: create_workspace called with name='{name}', capacity_name='{capacity_name}'"
+        )
 
         # Check existence first
         if self._item_exists(f"{name}.Workspace"):
@@ -364,23 +366,32 @@ class FabricCLIWrapper:
             command = ["api", "workspaces", "-X", "post", "-i", json.dumps(payload)]
 
             result = self._execute_command(command)
-            
+
             # Check for API errors in the response
             if result.get("success") and isinstance(result.get("data"), dict):
                 response_data = result["data"]
                 if response_data.get("status_code", 0) >= 400:
                     error_text = response_data.get("text", {})
-                    error_message = error_text.get("message") if isinstance(error_text, dict) else str(error_text)
-                    error_code = error_text.get("errorCode") if isinstance(error_text, dict) else "Unknown"
-                    
-                    print(f"Error creating workspace with capacity: {error_code} - {error_message}")
+                    error_message = (
+                        error_text.get("message")
+                        if isinstance(error_text, dict)
+                        else str(error_text)
+                    )
+                    error_code = (
+                        error_text.get("errorCode")
+                        if isinstance(error_text, dict)
+                        else "Unknown"
+                    )
+
+                    print(
+                        f"Error creating workspace with capacity: {error_code} - {error_message}"
+                    )
                     if error_code == "InsufficientPermissionsOverCapacity":
-                        print("ACTION REQUIRED: The Service Principal needs 'Capacity Admin' or 'Contributor' permissions on the Fabric Capacity.")
-                    
-                    return {
-                        "success": False,
-                        "error": f"{error_code}: {error_message}"
-                    }
+                        print(
+                            "ACTION REQUIRED: The Service Principal needs 'Capacity Admin' or 'Contributor' permissions on the Fabric Capacity."
+                        )
+
+                    return {"success": False, "error": f"{error_code}: {error_message}"}
 
             if result.get("success"):
                 # If status_code is missing or 2xx, assume success (though _execute_command usually returns success=True even for 4xx if the command ran)

@@ -98,11 +98,11 @@ class ConfigManager:
         def replace(match):
             var_name = match.group(1)
             value = os.getenv(var_name)
-            
+
             # Sanitize env vars to remove inline comments
             if value and "#" in value:
                 value = value.split("#")[0].strip()
-                
+
             if value is None:
                 # Don't fail yet, let validation catch it or leave as is
                 return match.group(0)
@@ -114,13 +114,13 @@ class ConfigManager:
         """Load environment-specific overrides"""
         # Strategy 1: Look for 'environments' folder at the project root (config/environments)
         # We assume the config file is somewhere inside config/ (e.g. config/projects/Org/proj.yaml)
-        
+
         # Walk up the tree until we find 'config' directory
         current_path = self.config_path.parent
         config_root = None
-        
+
         # Try to find the 'config' root directory
-        for _ in range(4): # Limit depth
+        for _ in range(4):  # Limit depth
             if current_path.name == "config":
                 config_root = current_path
                 break
@@ -128,14 +128,18 @@ class ConfigManager:
                 config_root = current_path
                 break
             current_path = current_path.parent
-            
+
         if not config_root:
             # Fallback: assume relative path from current working directory
             if Path("config/environments").exists():
                 config_root = Path("config")
             else:
                 # Last resort: try standard relative paths
-                env_path = self.config_path.parent.parent / "environments" / f"{environment}.yaml"
+                env_path = (
+                    self.config_path.parent.parent
+                    / "environments"
+                    / f"{environment}.yaml"
+                )
                 if env_path.exists():
                     return self._read_yaml(env_path)
                 return {}
@@ -144,7 +148,7 @@ class ConfigManager:
 
         if env_path.exists():
             return self._read_yaml(env_path)
-            
+
         return {}
 
     def _read_yaml(self, path: Path) -> Dict[str, Any]:
@@ -181,35 +185,39 @@ class ConfigManager:
     def _to_workspace_config(self, data: Dict[str, Any]) -> WorkspaceConfig:
         """Convert dict to WorkspaceConfig dataclass"""
         workspace_data = data.get("workspace", {})
-        
+
         # Start with principals from config (merged project + env)
         raw_principals = data.get("principals", [])
-        
+
         # Helper to check if ID exists
         existing_ids = {p.get("id") for p in raw_principals if p.get("id")}
-        
+
         final_principals = list(raw_principals)
 
         # Inject mandatory principals from environment variables (if not already present)
-        
+
         # Add Additional Admin
         additional_admin = os.getenv("ADDITIONAL_ADMIN_PRINCIPAL_ID")
         if additional_admin and additional_admin not in existing_ids:
-            final_principals.append({
-                "id": additional_admin,
-                "role": "Admin",
-                "description": "Mandatory Additional Admin"
-            })
+            final_principals.append(
+                {
+                    "id": additional_admin,
+                    "role": "Admin",
+                    "description": "Mandatory Additional Admin",
+                }
+            )
             existing_ids.add(additional_admin)
-            
+
         # Add Additional Contributor
         additional_contributor = os.getenv("ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID")
         if additional_contributor and additional_contributor not in existing_ids:
-            final_principals.append({
-                "id": additional_contributor,
-                "role": "Contributor",
-                "description": "Mandatory Additional Contributor"
-            })
+            final_principals.append(
+                {
+                    "id": additional_contributor,
+                    "role": "Contributor",
+                    "description": "Mandatory Additional Contributor",
+                }
+            )
             existing_ids.add(additional_contributor)
 
         # Final deduplication by ID (just in case merge created duplicates)
