@@ -48,6 +48,15 @@ notebooks:
     # file_path: "notebooks/data_ingestion.py"  # Optional: import from file
   
   - name: "data_transformation"
+
+# Security & Access Control
+principals:
+  - id: "admin@yourcompany.com"
+    role: "Admin"
+  - id: "developer@yourcompany.com"
+    role: "Member"
+  - id: "88e55555-5555-5555-5555-555555555555" # Service Principal Object ID
+    role: "Contributor"
     folder: "Notebooks"
     description: "Data cleaning and transformation"
   
@@ -74,11 +83,12 @@ resources:
     description: "Real-time logs database"
 
 # Principals (users/service principals) to add to workspace
+# NOTE: Use Object IDs (GUIDs) for all principals. Email addresses are not supported.
 principals:
-  - id: "${DEV_ADMIN_EMAIL}"        # User email (UPN)
+  - id: "${DEV_ADMIN_OBJECT_ID}"  # User/Group Object ID
     role: "Admin"
   
-  - id: "${DEV_ADMIN_OBJECT_ID}"  # Group Object ID (Recommended over email)
+  - id: "${DEV_CONTRIBUTOR_OBJECT_ID}"  # User/Group Object ID
     role: "Contributor"
   
   # Service principal for automation

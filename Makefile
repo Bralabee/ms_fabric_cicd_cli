@@ -48,5 +48,27 @@ bulk-destroy: ## Bulk destroy workspaces from list (Usage: make bulk-destroy fil
 	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make bulk-destroy file=list.txt"; exit 1; fi
 	$(PYTHON) scripts/bulk_destroy.py $(file)
 
+# Docker Commands
+DOCKER_IMAGE := fabric-cli-cicd
+
+docker-build: ## Build the Docker image
+	docker build -t $(DOCKER_IMAGE) .
+
+docker-validate: ## Validate config using Docker (Usage: make docker-validate config=path/to/config.yaml)
+	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
+	docker run --rm --env-file .env -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) validate $(config)
+
+docker-deploy: ## Deploy using Docker (Usage: make docker-deploy config=path/to/config.yaml env=dev)
+	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
+	@if [ -z "$(env)" ]; then echo "Error: env argument required"; exit 1; fi
+	docker run --rm --env-file .env -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) deploy $(config) --env $(env)
+
+docker-destroy: ## Destroy using Docker (Usage: make docker-destroy config=path/to/config.yaml)
+	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
+	docker run --rm --env-file .env -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) destroy $(config)
+
+docker-shell: ## Run interactive shell in Docker container
+	docker run --rm -it --entrypoint /bin/bash --env-file .env -v $$(pwd)/config:/app/config $(DOCKER_IMAGE)
+
 diagnose: ## Run diagnostic checks
 	$(PYTHON) src/fabric_deploy.py diagnose

@@ -89,9 +89,19 @@ environments:
       repository: "sales-analytics-repo"
       branch: "feature/123"
       directory: "/sales-analytics-feature-123"
+
+# Security & Access Control
+principals:
+  - id: "d0555555-5555-5555-5555-555555555555" # Admin User Object ID
+    role: "Admin"
+  - id: "e0555555-5555-5555-5555-555555555555" # Developer User Object ID
+    role: "Member"
+  - id: "88e55555-5555-5555-5555-555555555555" # Service Principal Object ID
+    role: "Contributor"
 ```
 
 > **Note:** Ensure the `organization`, `project`, and `repository` fields match your actual Azure DevOps/GitHub setup.
+> **Security:** Always use **Object IDs (GUIDs)** for both Users and Service Principals. Email addresses (UPNs) are not supported by the underlying Fabric API for principal assignment.
 
 ---
 
