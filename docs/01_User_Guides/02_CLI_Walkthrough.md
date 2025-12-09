@@ -29,11 +29,10 @@ Instead of writing YAML from scratch, use the generator script to scaffold your 
 python scripts/generate_project.py \
   "Acme Corp" \
   "Supply Chain" \
-  --template basic_etl \
-  --capacity-id ${FABRIC_CAPACITY_ID} \
-  --git-repo ${GIT_REPO_URL}
+  --template basic_etl
 
-# Note: You can omit --capacity-id and --git-repo to use the environment variables
+# Note: --capacity-id and --git-repo default to ${FABRIC_CAPACITY_ID} and ${GIT_REPO_URL}
+# This ensures your configuration is portable and uses your .env file.
 ```
 
 **Output:**
