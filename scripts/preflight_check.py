@@ -26,6 +26,26 @@ def _ensure_env_loaded() -> None:
         load_dotenv(dotenv_path=env_path)
 
 
+def _validate_auth_vars() -> List[str]:
+    """Check for valid authentication configuration (Token OR Service Principal)."""
+    # Check 1: Direct Token
+    if os.getenv("FABRIC_TOKEN"):
+        return []
+
+    # Check 2: Service Principal
+    sp_vars = ["AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET"]
+    missing_sp = [var for var in sp_vars if not os.getenv(var)]
+    
+    # Tenant ID can be TENANT_ID or AZURE_TENANT_ID
+    if not (os.getenv("TENANT_ID") or os.getenv("AZURE_TENANT_ID")):
+        missing_sp.append("TENANT_ID (or AZURE_TENANT_ID)")
+
+    if not missing_sp:
+        return []
+
+    return ["FABRIC_TOKEN"] + missing_sp
+
+
 def run_preflight(auto_install: bool, skip_env: bool) -> int:
     _ensure_env_loaded()
 
@@ -48,9 +68,15 @@ def run_preflight(auto_install: bool, skip_env: bool) -> int:
     if skip_env:
         print("ℹ️  Skipping environment variable validation per flag")
     else:
-        missing = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
+        missing = _validate_auth_vars()
         if missing:
-            print("⚠️  Missing required environment variables:", ", ".join(missing))
+            # If we have missing vars, it means NEITHER method was fully complete.
+            # We'll report that we couldn't find a complete set for either method.
+            print("⚠️  Missing required environment variables for authentication.")
+            print("    You must provide EITHER:")
+            print("      1. FABRIC_TOKEN")
+            print("    OR")
+            print("      2. AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, and TENANT_ID/AZURE_TENANT_ID")
             print(
                 "    Create or update your .env file and rerun. Example entries are available in .env.template."
             )

@@ -11,8 +11,8 @@ Ensure your environment is set up:
 conda activate fabric-cli-cicd
 
 # 2. Verify credentials are loaded
-# Ensure .env exists with FABRIC_TOKEN and TENANT_ID
-grep "FABRIC_TOKEN" .env
+# Ensure .env exists with either FABRIC_TOKEN or AZURE_CLIENT_ID
+grep -E "FABRIC_TOKEN|AZURE_CLIENT_ID" .env
 ```
 
 ---
