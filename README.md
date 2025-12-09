@@ -43,8 +43,19 @@ cp .env.template .env
 # Edit .env with Service Principal credentials:
 #   AZURE_CLIENT_ID       - Service Principal application ID
 #   AZURE_CLIENT_SECRET   - Service Principal secret value
-#   TENANT_ID             - Azure AD tenant identifier
-#   FABRIC_TOKEN          - Direct token (alternative authentication)
+#   AZURE_TENANT_ID       - Azure AD tenant identifier
+#   FABRIC_TOKEN          - Direct token (optional, auto-generated from SP)
+
+### 2. Azure DevOps Integration (Prerequisites)
+
+If using Azure DevOps with a Service Principal, ensure the following:
+
+1.  **Service Principal Access Level**: The Service Principal must have **Basic** access level in Azure DevOps Organization Settings -> Users.
+2.  **Project Permissions**: The Service Principal must be added to the **Contributors** group of the target Azure DevOps Project.
+3.  **Fabric Tenant Settings**: Enable "Service principals can use Fabric APIs" and "Service principals can create workspaces" in Fabric Admin Portal.
+4.  **Workspace Admin**: The Service Principal must be assigned the **Admin** role in the workspace configuration (`project.yaml`).
+
+### 3. Configure Your Project
 ```
 
 ### 2. Configure Your Project
@@ -81,6 +92,46 @@ python src/fabric_deploy.py deploy config/projects/your_org/your_project.yaml \
 
 # Production deployment with diagnostics
 python src/fabric_deploy.py deploy config/projects/your_org/your_project.yaml --env prod --diagnose
+```
+
+## Utility Tools
+
+The framework includes several utility scripts in `scripts/utilities/` to assist with setup and troubleshooting. These scripts automatically load credentials from your `.env` file.
+
+### Initialize Azure DevOps Repository
+Initializes an empty Azure DevOps repository with a `main` branch. This is required because Fabric Git integration fails if the target repository is completely empty (0 branches).
+
+```bash
+python scripts/utilities/init_ado_repo.py \
+  --organization "your-org-name" \
+  --project "your-project-name" \
+  --repository "your-repo-name"
+```
+
+### Debug Azure DevOps Access
+Verifies that your Service Principal has the correct permissions to access Azure DevOps.
+
+```bash
+python scripts/utilities/debug_ado_access.py \
+  --organization "your-org-name" \
+  --project "your-project-name"
+```
+
+### Debug Git Connection
+Tests the connection to a Git repository using the configured credentials.
+
+```bash
+python scripts/utilities/debug_connection.py \
+  --organization "your-org-name" \
+  --project "your-project-name" \
+  --repository "your-repo-name"
+```
+
+### List Workspace Items
+Lists all items in a specified Fabric workspace to verify deployment.
+
+```bash
+python scripts/utilities/list_workspace_items.py --workspace "Workspace Name"
 ```
 
 ## Project Structure

@@ -9,6 +9,7 @@ automatic credential management and template-based transformations.
 import typer
 import time
 import logging
+import os
 from pathlib import Path
 from typing import Optional, Dict
 from rich.console import Console
@@ -36,6 +37,10 @@ class FabricDeployer:
     """
 
     def __init__(self, config_path: str, environment: str = None):
+        # Ensure .env is loaded
+        from dotenv import load_dotenv
+        load_dotenv()
+
         self.config_manager = ConfigManager(config_path)
         self.config = self.config_manager.load_config(environment)
         self.environment = environment
@@ -45,6 +50,22 @@ class FabricDeployer:
             is_valid, error_msg = self.secrets.validate_fabric_auth()
             if not is_valid:
                 raise ValueError(error_msg)
+            
+            # Ensure token is available in environment
+            if self.secrets and not os.getenv("FABRIC_TOKEN"):
+                if self.secrets.fabric_token:
+                    os.environ["FABRIC_TOKEN"] = self.secrets.fabric_token
+                elif self.secrets.azure_client_id and self.secrets.azure_client_secret:
+                    console.print("[blue]Generating Fabric token from secrets...[/blue]")
+                    from azure.identity import ClientSecretCredential
+                    cred = ClientSecretCredential(
+                        tenant_id=self.secrets.tenant_id,
+                        client_id=self.secrets.azure_client_id,
+                        client_secret=self.secrets.azure_client_secret
+                    )
+                    token = cred.get_token("https://api.fabric.microsoft.com/.default").token
+                    os.environ["FABRIC_TOKEN"] = token
+            
             env_vars = get_environment_variables()
         except ImportError:
             env_vars = get_environment_variables()
@@ -453,22 +474,24 @@ class FabricDeployer:
                             )
 
                 elif provider_type == GitProviderType.AZURE_DEVOPS:
-                    is_valid, error_msg = self.secrets.validate_git_auth("azure_devops")
+                    # Check for Service Principal credentials
                     if (
-                        is_valid
-                        and self.secrets.azure_client_id
+                        self.secrets.azure_client_id
                         and self.secrets.azure_client_secret
                     ):
                         # Create Azure DevOps connection with Service Principal
                         console.print(
                             "[blue]Creating Azure DevOps connection...[/blue]"
                         )
+                        # Reconstruct clean URL without credentials
+                        clean_repo_url = f"https://dev.azure.com/{git_details['organization']}/{git_details['project']}/_git/{git_details['repo']}"
+                        
                         conn_result = self.git_api.create_git_connection(
                             display_name=f"AzureDevOps-{workspace_name}",
                             provider_type=GitProviderType.AZURE_DEVOPS,
                             credential_type="ServicePrincipal",
                             credential_value=self.secrets.azure_client_secret,
-                            repository_url=git_repo,
+                            repository_url=clean_repo_url,
                             tenant_id=self.secrets.get_tenant_id(),
                             client_id=self.secrets.azure_client_id,
                         )
@@ -479,12 +502,25 @@ class FabricDeployer:
                                 f"[green]✓ Created Azure DevOps connection: {connection_id}[/green]"
                             )
                         else:
-                            console.print(
-                                f"[yellow]Warning: Could not create connection: {conn_result.get('error')}[/yellow]"
-                            )
-                            console.print(
-                                "[yellow]Attempting connection without explicit credentials...[/yellow]"
-                            )
+                            # Check if it's a duplicate connection
+                            error_msg = str(conn_result.get("error", ""))
+                            response_body = conn_result.get("response", "")
+                            
+                            if "DuplicateConnectionName" in response_body or "Conflict" in error_msg:
+                                console.print("[yellow]Connection name already exists. Trying to find existing connection...[/yellow]")
+                                existing_conn = self.git_api.get_connection_by_name(f"AzureDevOps-{workspace_name}")
+                                if existing_conn:
+                                    connection_id = existing_conn["id"]
+                                    console.print(f"[green]✓ Found existing connection: {connection_id}[/green]")
+                                else:
+                                    console.print("[red]Could not find existing connection despite conflict error.[/red]")
+                            else:
+                                console.print(
+                                    f"[yellow]Warning: Could not create connection: {conn_result.get('error')}[/yellow]"
+                                )
+                                console.print(
+                                    "[yellow]Attempting connection without explicit credentials...[/yellow]"
+                                )
 
             # Step 2: Connect workspace to Git
             console.print("[blue]Connecting workspace to Git repository...[/blue]")
@@ -605,7 +641,7 @@ class FabricDeployer:
             }
 
         # Azure DevOps pattern
-        ado_pattern = r"(?:https?://)?dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)/?$"
+        ado_pattern = r"(?:https?://)?(?:[^@]+@)?dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)/?$"
         ado_match = re.match(ado_pattern, git_url)
 
         if ado_match:

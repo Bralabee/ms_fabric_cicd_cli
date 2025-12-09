@@ -169,6 +169,10 @@ class FabricGitAPI:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to create Git connection: {e}")
+            if hasattr(e, "response") and e.response is not None:
+                logger.error(f"Response Status: {e.response.status_code}")
+                logger.error(f"Response Body: {e.response.text}")
+            
             return {
                 "success": False,
                 "error": str(e),
@@ -197,6 +201,15 @@ class FabricGitAPI:
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to list connections: {e}")
             return {"success": False, "error": str(e)}
+
+    def get_connection_by_name(self, display_name: str) -> Optional[Dict[str, Any]]:
+        """Find a connection by its display name."""
+        result = self.list_connections()
+        if result["success"]:
+            for conn in result["connections"]:
+                if conn.get("displayName") == display_name:
+                    return conn
+        return None
 
     def connect_workspace_to_git(
         self,
