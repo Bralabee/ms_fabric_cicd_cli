@@ -30,10 +30,10 @@ python scripts/generate_project.py \
   "Acme Corp" \
   "Supply Chain" \
   --template basic_etl \
-  --capacity-id "F64-CAPACITY-GUID" \
-  --git-repo "https://github.com/acme/supply-chain-analytics"
+  --capacity-id ${FABRIC_CAPACITY_ID} \
+  --git-repo ${GIT_REPO_URL}
 
-# Note: You can omit --capacity-id to use the ${FABRIC_CAPACITY_ID} environment variable
+# Note: You can omit --capacity-id and --git-repo to use the environment variables
 ```
 
 **Output:**

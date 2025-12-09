@@ -10,7 +10,7 @@ workspace:
   
   # Git Integration (Optional)
   # Connects the workspace to a specific Git repository and branch for version control.
-  git_repo: "https://github.com/your-org/enterprise-analytics"
+  git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
   git_directory: "/fabric-artifacts"
 

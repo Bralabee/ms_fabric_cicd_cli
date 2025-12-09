@@ -36,10 +36,10 @@ python scripts/generate_project.py \
   "Contoso Inc" \
   "Customer Analytics" \
   --template basic_etl \
-  --capacity-id F64 \
-  --git-repo https://github.com/contoso/customer-analytics
+  --capacity-id ${FABRIC_CAPACITY_ID} \
+  --git-repo ${GIT_REPO_URL}
 
-# Note: --capacity-id is optional. If omitted, it defaults to ${FABRIC_CAPACITY_ID}
+# Note: --capacity-id and --git-repo are optional. If omitted, they default to ${FABRIC_CAPACITY_ID} and ${GIT_REPO_URL}
 # This creates: config/projects/contoso_inc/customer_analytics.yaml
 ```
 
@@ -82,8 +82,8 @@ python scripts/generate_project.py \
   "Acme Manufacturing" \
   "Production Analytics" \
   --template basic_etl \
-  --capacity-id F32 \
-  --git-repo https://github.com/acme/production-analytics
+  --capacity-id ${FABRIC_CAPACITY_ID} \
+  --git-repo ${GIT_REPO_URL}
 
 # Customize the generated config
 vim config/projects/acme_manufacturing/production_analytics.yaml

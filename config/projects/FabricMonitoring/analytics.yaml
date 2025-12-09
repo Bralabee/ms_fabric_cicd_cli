@@ -13,7 +13,7 @@ workspace:
   #domain: "01 Strategy, Governance & Compliance" 
   
   # Git Integration (Replace with your actual repo)
-  git_repo: "https://dev.azure.com/your-org/fabric-monitoring/_git/analytics"
+  git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
   git_directory: "/"
 

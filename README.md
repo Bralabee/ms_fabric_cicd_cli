@@ -53,8 +53,8 @@ cp .env.template .env
 # Generate project configuration from template
 python scripts/generate_project.py "Your Org" "Project Name" \
   --template basic_etl \
-  --capacity-id F64 \
-  --git-repo https://github.com/your-org/your-repo
+  --capacity-id ${FABRIC_CAPACITY_ID} \
+  --git-repo ${GIT_REPO_URL}
 
 # Customize generated configuration
 vim config/projects/your_org/your_project.yaml
