@@ -120,12 +120,12 @@ To create a "Sales" project for client "Contoso" using Capacity ID `F64-12345`:
     ```
 
 2.  **Outcome:**
-    *   A directory is created: `config/contoso/`
-    *   A configuration file is generated: `config/contoso/sales.yaml`
+    *   A directory is created: `config/projects/contoso/`
+    *   A configuration file is generated: `config/projects/contoso/sales.yaml`
     *   The file is populated with a standard best-practice template.
 
 3.  **Customization**:
-    *   Open `config/contoso/sales.yaml`.
+    *   Open `config/projects/contoso/sales.yaml`.
     *   **Review**: Adjust folder names as required (e.g., "01_Raw" vs "01_Bronze").
     *   **Security**: Verify that principal IDs match the intended users or groups.
     *   **Save** the file.
@@ -134,11 +134,11 @@ To create a "Sales" project for client "Contoso" using Capacity ID `F64-12345`:
 Execute the deployment command to apply the configuration.
 
 ```bash
-make deploy config=config/MyClient/SalesProject.yaml env=dev
+make deploy config=config/projects/MyClient/SalesProject.yaml env=dev
 ```
 
 **Execution Process:**
-1.  **Configuration Merge**: The tool combines the project blueprint (`config/contoso/sales.yaml`) with environment-specific settings (`config/environments/dev.yaml`) to ensure appropriate security configurations.
+1.  **Configuration Merge**: The tool combines the project blueprint (`config/projects/contoso/sales.yaml`) with environment-specific settings (`config/environments/dev.yaml`) to ensure appropriate security configurations.
 2.  **Authentication**: Secure login to Fabric is established.
 3.  **Validation**: The configuration is checked for errors.
 4.  **Workspace Verification**: The tool checks for the existence of the workspace.

@@ -39,20 +39,20 @@ python scripts/generate_project.py \
   --capacity-id F64 \
   --git-repo https://github.com/contoso/customer-analytics
 
-# This creates: config/contoso-inc-customer-analytics.yaml
+# This creates: config/projects/contoso_inc/customer_analytics.yaml
 ```
 
 ### 3. Deploy Your First Workspace
 
 ```bash
 # Validate configuration
-python src/fabric_deploy.py validate config/contoso-inc-customer-analytics.yaml
+python src/fabric_deploy.py validate config/projects/contoso_inc/customer_analytics.yaml
 
 # Deploy to development
-python src/fabric_deploy.py deploy config/contoso-inc-customer-analytics.yaml --env dev
+python src/fabric_deploy.py deploy config/projects/contoso_inc/customer_analytics.yaml --env dev
 
 # Deploy feature branch (creates separate workspace)
-python src/fabric_deploy.py deploy config/contoso-inc-customer-analytics.yaml \
+python src/fabric_deploy.py deploy config/projects/contoso_inc/customer_analytics.yaml \
   --env dev --branch feature/new-analytics --force-branch-workspace
 ```
 

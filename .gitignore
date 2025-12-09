@@ -5,3 +5,4 @@ __pycache__/
 .vscode/
 debug_login.py
 *.log
+.env.ricoh

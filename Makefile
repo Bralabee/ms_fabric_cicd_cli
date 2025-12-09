@@ -54,21 +54,31 @@ DOCKER_IMAGE := fabric-cli-cicd
 docker-build: ## Build the Docker image
 	docker build -t $(DOCKER_IMAGE) .
 
-docker-validate: ## Validate config using Docker (Usage: make docker-validate config=path/to/config.yaml)
+docker-validate: ## Validate config using Docker (Usage: make docker-validate config=config/projects/...yaml ENVFILE=.env.ricoh)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
-	docker run --rm --env-file .env -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) validate $(config)
+	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) validate $(config)
 
-docker-deploy: ## Deploy using Docker (Usage: make docker-deploy config=path/to/config.yaml env=dev)
+docker-deploy: ## Deploy using Docker (Usage: make docker-deploy config=config/projects/...yaml env=dev ENVFILE=.env.ricoh)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
 	@if [ -z "$(env)" ]; then echo "Error: env argument required"; exit 1; fi
-	docker run --rm --env-file .env -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) deploy $(config) --env $(env)
+	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) deploy $(config) --env $(env)
 
-docker-destroy: ## Destroy using Docker (Usage: make docker-destroy config=path/to/config.yaml)
+docker-destroy: ## Destroy using Docker (Usage: make docker-destroy config=config/projects/...yaml ENVFILE=.env.ricoh)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
-	docker run --rm --env-file .env -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) destroy $(config)
+	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) destroy $(config)
 
-docker-shell: ## Run interactive shell in Docker container
-	docker run --rm -it --entrypoint /bin/bash --env-file .env -v $$(pwd)/config:/app/config $(DOCKER_IMAGE)
+docker-shell: ## Run interactive shell in Docker container (Usage: make docker-shell ENVFILE=.env.ricoh)
+	docker run --rm -it --entrypoint /bin/bash --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE)
+	
+# Default env file for Docker runs. Override with `ENVFILE=.env.other` when needed.
+ENVFILE ?= .env
+
+docker-feature-deploy: ## Deploy feature workspace using Docker (Usage: make docker-feature-deploy config=config/projects/...yaml env=dev branch=feature/x ENVFILE=.env.ricoh)
+	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
+	@if [ -z "$(env)" ]; then echo "Error: env argument required"; exit 1; fi
+	@if [ -z "$(branch)" ]; then echo "Error: branch argument required"; exit 1; fi
+	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+		deploy $(config) --env $(env) --branch $(branch) --force-branch-workspace
 
 diagnose: ## Run diagnostic checks
 	$(PYTHON) src/fabric_deploy.py diagnose

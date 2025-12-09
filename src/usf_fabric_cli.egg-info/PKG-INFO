@@ -10,9 +10,15 @@ Requires-Dist: typer>=0.9.0
 Requires-Dist: rich>=13.0.0
 Requires-Dist: pyyaml>=6.0
 Requires-Dist: python-dotenv>=1.0.0
-Requires-Dist: jsonschema>=4.0.0
+Requires-Dist: jsonschema>=4.19.0
 Requires-Dist: azure-identity>=1.15.0
 Requires-Dist: requests>=2.31.0
+Requires-Dist: gitpython>=3.1.0
+Requires-Dist: azure-storage-blob>=12.19.0
+Requires-Dist: pydantic>=2.5.0
+Requires-Dist: pydantic-settings>=2.1.0
+Requires-Dist: jinja2>=3.1.2
+Requires-Dist: packaging>=23.0
 
 # Fabric CLI CI/CD - Enterprise Deployment Framework
 
@@ -168,6 +174,8 @@ GitHub Actions workflows included for:
 - Environment promotion (dev → staging → prod)
 - Feature branch deployments
 - Principal management
+
+**Important:** For CI/CD pipelines to function, you must configure the required secrets (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) in your GitHub repository settings. See [Usage Guide](docs/USAGE_GUIDE.md#troubleshooting) for details.
 
 ## Features
 

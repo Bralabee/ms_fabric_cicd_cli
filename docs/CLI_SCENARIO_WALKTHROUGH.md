@@ -169,3 +169,50 @@ python scripts/bulk_destroy.py delete_list.txt
 | **Deploy (Feature)** | `python src/fabric_deploy.py deploy <config> --env dev --branch <name> --force-branch-workspace` |
 | **Deploy (Prod)** | `python src/fabric_deploy.py deploy <config> --env prod` |
 | **Cleanup** | `python scripts/bulk_destroy.py <list_file>` |
+
+## Makefile Quick Reference (Local & Docker)
+
+For day-to-day usage, the `Makefile` wraps the most common commands.
+
+### Local Python
+
+```bash
+# Run unit tests
+make test
+
+# Validate a project config
+make validate config=config/projects/acme_corp/supply_chain.yaml
+
+# Deploy to dev
+make deploy config=config/projects/acme_corp/supply_chain.yaml env=dev
+```
+
+### Docker (Multi-tenant via ENVFILE)
+
+The Docker targets default to `.env`, but you can override the env file per organisation using `ENVFILE=...`.
+
+```bash
+# Build image
+make docker-build
+
+# Validate using Docker (Ricoh org)
+make docker-validate \
+  config=config/projects/ProductA/sales_project.yaml \
+  ENVFILE=.env.ricoh
+
+# Deploy to dev using Docker (Ricoh org)
+make docker-deploy \
+  config=config/projects/ProductA/sales_project.yaml \
+  env=dev \
+  ENVFILE=.env.ricoh
+
+# Feature branch deploy using Docker
+make docker-feature-deploy \
+  config=config/projects/ProductA/sales_project.yaml \
+  env=dev \
+  branch=feature/new-analytics \
+  ENVFILE=.env.ricoh
+
+# Interactive shell inside the container
+make docker-shell ENVFILE=.env.ricoh
+```
