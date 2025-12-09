@@ -32,6 +32,8 @@ python scripts/generate_project.py \
   --template basic_etl \
   --capacity-id "F64-CAPACITY-GUID" \
   --git-repo "https://github.com/acme/supply-chain-analytics"
+
+# Note: You can omit --capacity-id to use the ${FABRIC_CAPACITY_ID} environment variable
 ```
 
 **Output:**

@@ -5,10 +5,10 @@ workspace:
   name: "usf-fabric-cli-cicd-workspace"
   display_name: "USF Fabric CLI CICD Workspace"
   description: "Workspace for USF Fabric CLI CICD Project"
-  capacity_id: "Fabric Capacity - REDA"
+  capacity_id: "${FABRIC_CAPACITY_ID}"
   
   # Git integration
-  git_repo: "https://github.com/${GITHUB_ORG}/${GITHUB_REPO}"
+  git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
   git_directory: "/"
 

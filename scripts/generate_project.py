@@ -78,8 +78,16 @@ def main():
         choices=["basic_etl", "advanced_analytics", "data_science"],
         help="Configuration template to use",
     )
-    parser.add_argument("--capacity-id", required=True, help="Fabric capacity ID")
-    parser.add_argument("--git-repo", help="Git repository URL (optional)")
+    parser.add_argument(
+        "--capacity-id",
+        default="${FABRIC_CAPACITY_ID}",
+        help="Fabric capacity ID (defaults to ${FABRIC_CAPACITY_ID})",
+    )
+    parser.add_argument(
+        "--git-repo",
+        default="${GIT_REPO_URL}",
+        help="Git repository URL (defaults to ${GIT_REPO_URL})",
+    )
 
     args = parser.parse_args()
 

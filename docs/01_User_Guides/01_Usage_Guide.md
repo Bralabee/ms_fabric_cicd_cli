@@ -39,6 +39,7 @@ python scripts/generate_project.py \
   --capacity-id F64 \
   --git-repo https://github.com/contoso/customer-analytics
 
+# Note: --capacity-id is optional. If omitted, it defaults to ${FABRIC_CAPACITY_ID}
 # This creates: config/projects/contoso_inc/customer_analytics.yaml
 ```
 

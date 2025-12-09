@@ -5,9 +5,9 @@ workspace:
   name: "data-science-lab"
   display_name: "Data Science Laboratory"
   description: "Experimental workspace for data science research"
-  capacity_id: "F2"  # Smaller capacity for experimentation
+  capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
   
-  git_repo: "https://github.com/your-org/ds-experiments"
+  git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
 
 # Research-focused folder structure

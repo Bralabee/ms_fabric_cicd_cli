@@ -5,9 +5,9 @@ workspace:
   name: "advanced-analytics"
   display_name: "Advanced Analytics & Data Science"
   description: "Workspace for ML, AI, and advanced analytics"
-  capacity_id: "F64"  # Change to your capacity
+  capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
   
-  git_repo: "https://github.com/your-org/analytics-repo"
+  git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
   git_directory: "/"
 

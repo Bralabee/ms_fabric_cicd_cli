@@ -5,10 +5,10 @@ workspace:
   name: "analytics-workspace"  # Change this to your project name
   display_name: "Analytics Workspace"
   description: "ETL workspace for data analytics"
-  capacity_id: ""  # Change to your Fabric capacity ID (leave empty for Trial/Pro)
+  capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
   
   # Git integration (optional)
-  git_repo: "https://github.com/BralaBee-LEIT/usf_cli_test_repo_cicd_fabric_workspaces.git"  # Change to your repo
+  git_repo: "${GIT_REPO_URL}"  # Environment variable substitution
   git_branch: "main"
   git_directory: "/"
 
