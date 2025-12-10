@@ -67,10 +67,20 @@ If using Azure DevOps with a Service Principal, ensure the following:
 Follow these steps to deploy a new project from scratch:
 
 **Step 1: Generate Project Configuration**
-Use the template generator to create a standardized configuration file.
+Use the template generator to create a standardized configuration file. Choose from **10 production-ready blueprints**:
+
 ```bash
+# Standard ETL (Medallion architecture)
 python scripts/generate_project.py "Contoso Inc" "Finance Analytics" --template basic_etl
-# Output: config/projects/contoso_inc/finance_analytics.yaml
+
+# Real-time streaming (IoT, events, Eventstreams + KQL)
+python scripts/generate_project.py "TechCorp" "IoT Platform" --template realtime_streaming
+
+# Compliance-heavy (Healthcare, Finance, Government)
+python scripts/generate_project.py "HealthCo" "Patient Platform" --template compliance_regulated
+
+# See all 10 templates: docs/BLUEPRINT_CATALOG.md
+# Output: config/projects/{org_name}/{project_name}.yaml
 ```
 
 **Step 2: Initialize Azure DevOps Repository**

@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2025-12-10
+
+### Added
+- **Blueprint Template Library**: 6 new production-ready templates for specialized use cases:
+  - `realtime_streaming.yaml` - IoT/event-driven architectures with Eventstreams, KQL, Reflex (4.4KB)
+  - `minimal_starter.yaml` - Quick POC/learning template (1.9KB)
+  - `compliance_regulated.yaml` - Healthcare/Finance/Government compliance (6.2KB)
+  - `data_mesh_domain.yaml` - Domain-driven data ownership (6.4KB)
+  - `migration_hybrid.yaml` - Cloud migration with mirrored databases (8.2KB)
+  - `specialized_timeseries.yaml` - Time-series/APM/operational intelligence (8.5KB)
+- **Blueprint Documentation**: Comprehensive `docs/BLUEPRINT_CATALOG.md` (11K+ lines) with:
+  - Quick reference table (cost estimates, complexity, min capacity)
+  - Detailed feature breakdowns for all 10 templates
+  - Decision tree for template selection
+  - Industry and team size recommendations
+  - Customization guide
+- **Advanced Fabric Item Types**: All templates leverage native Fabric CLI support for 54+ item types:
+  - Eventstream, Eventhouse, KQLDatabase, KQLQueryset, Reflex, KQLDashboard
+  - MirroredDatabase, MirroredWarehouse, GraphQLApi, ExternalDataShare
+  - MLModel, MLExperiment, Environment, MetricSet, SparkJobDefinition
+  - Gateway, Connection, ManagedPrivateEndpoint (and more)
+- **Template Generator Update**: Added all 10 templates to `scripts/generate_project.py` choices.
+
+### Changed
+- **README.md**: Updated quick start to showcase template variety (basic_etl → 10 templates).
+- **Template Coverage**: Increased from 4 to 10 templates, covering 95%+ of enterprise scenarios.
+
 ## [1.1.0] - 2025-12-10
 
 ### Added

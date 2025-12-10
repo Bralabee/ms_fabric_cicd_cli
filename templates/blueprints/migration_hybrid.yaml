@@ -1,0 +1,250 @@
+# Migration & Hybrid Architecture Blueprint
+# Optimized for: Cloud migration projects, hybrid on-prem/cloud deployments
+# Use Cases: Lift-and-shift migrations, incremental cloud adoption, multi-cloud integration
+# Strategy: Minimize disruption while enabling gradual modernization
+
+workspace:
+  name: "Hybrid_Migration_Platform"
+  display_name: "Hybrid Migration & Integration Platform"
+  description: "Bridge between legacy systems and modern cloud analytics"
+  capacity_id: "${FABRIC_CAPACITY_ID}"
+  domain: "${MIGRATION_DOMAIN}"
+  
+  # Git Integration
+  git_repo: "${GIT_REPO_URL}"
+  git_branch: "main"
+  git_directory: "/migration"
+
+# Folder Structure (Migration Phases)
+folders:
+  - "Legacy"  # Data from on-prem systems
+  - "Transition"  # Hybrid processing logic
+  - "Modern"  # Cloud-native analytics
+  - "Staging"  # Temporary migration staging
+  - "Validation"  # Migration validation and testing
+
+# Lakehouses (Hybrid Data Storage)
+lakehouses:
+  - name: "legacy_data_landing"
+    folder: "Legacy"
+    description: "Landing zone for data from on-premises systems"
+  
+  - name: "migration_staging"
+    folder: "Staging"
+    description: "Temporary staging for data validation during migration"
+  
+  - name: "modernized_data_lake"
+    folder: "Modern"
+    description: "Cloud-native data lake (target architecture)"
+
+# Warehouses (Both Legacy-Compatible and Modern)
+warehouses:
+  - name: "legacy_compatibility_dw"
+    folder: "Legacy"
+    description: "SQL warehouse compatible with legacy queries"
+  
+  - name: "modern_analytics_dw"
+    folder: "Modern"
+    description: "Optimized cloud warehouse (target architecture)"
+
+# Mirrored Databases (Real-Time Sync)
+resources:
+  # Mirror on-premises SQL Server
+  - type: "MirroredDatabase"
+    name: "mirrored_onprem_erp"
+    description: "Real-time mirror of on-premises ERP SQL Server database"
+    folder: "Legacy"
+  
+  - type: "MirroredDatabase"
+    name: "mirrored_azure_sql"
+    description: "Mirror of Azure SQL Database (hybrid cloud)"
+    folder: "Transition"
+  
+  # Mirror Snowflake (multi-cloud scenario)
+  - type: "MirroredDatabase"
+    name: "mirrored_snowflake_dw"
+    description: "Mirror Snowflake warehouse (multi-cloud integration)"
+    folder: "Transition"
+
+  # Mirrored Data Warehouse
+  - type: "MirroredWarehouse"
+    name: "mirrored_synapse_dw"
+    description: "Mirror Azure Synapse dedicated SQL pool"
+    folder: "Legacy"
+
+  # Data Gateway (On-Premises Connectivity)
+  - type: "Gateway"
+    name: "onprem_data_gateway"
+    description: "Gateway for secure on-premises data access"
+    folder: "Legacy"
+
+  # Mounted Data Factory (Legacy ADF Pipelines)
+  - type: "MountedDataFactory"
+    name: "mounted_legacy_adf"
+    description: "Mount existing Azure Data Factory pipelines"
+    folder: "Transition"
+
+# Notebooks (Migration & Validation Logic)
+notebooks:
+  - name: "data_migration_validator"
+    folder: "Validation"
+    description: "Validate data completeness and accuracy post-migration"
+  
+  - name: "schema_mapping_transformer"
+    folder: "Transition"
+    description: "Transform legacy schemas to modern data models"
+  
+  - name: "incremental_migration_orchestrator"
+    folder: "Transition"
+    description: "Manage incremental migration batches"
+  
+  - name: "legacy_query_translator"
+    folder: "Transition"
+    description: "Translate legacy SQL to Fabric-compatible queries"
+  
+  - name: "performance_comparison"
+    folder: "Validation"
+    description: "Compare query performance: legacy vs modern"
+
+# Pipelines (Migration Orchestration)
+pipelines:
+  - name: "phase1_lift_and_shift"
+    folder: "Transition"
+    description: "Phase 1: Copy data from on-prem to cloud as-is"
+  
+  - name: "phase2_schema_modernization"
+    folder: "Transition"
+    description: "Phase 2: Transform schemas to cloud-native models"
+  
+  - name: "phase3_cutover_orchestrator"
+    folder: "Transition"
+    description: "Phase 3: Cutover automation with rollback capability"
+  
+  - name: "hybrid_data_sync"
+    folder: "Transition"
+    description: "Ongoing hybrid sync during transition period"
+
+# Semantic Models (Hybrid Reporting)
+semantic_models:
+  - name: "unified_reporting_model"
+    folder: "Transition"
+    description: "Single semantic model accessing both legacy and modern data"
+
+# Advanced Integration Resources
+resources:
+  # Connections (External Systems)
+  - type: "Connection"
+    name: "connection_onprem_sql"
+    description: "Connection to on-premises SQL Server via gateway"
+    folder: "Legacy"
+  
+  - type: "Connection"
+    name: "connection_snowflake"
+    description: "Connection to Snowflake (multi-cloud)"
+    folder: "Transition"
+  
+  - type: "Connection"
+    name: "connection_aws_s3"
+    description: "Connection to AWS S3 buckets (multi-cloud)"
+    folder: "Transition"
+
+# Principals (Migration Team + Legacy System Access)
+principals:
+  # Migration Program Manager
+  - id: "${MIGRATION_PM_OID}"
+    role: "Admin"
+    description: "MANDATORY: Migration Program Manager - overall accountability"
+  
+  # Migration Engineering Team
+  - id: "${MIGRATION_TEAM_GROUP_OID}"
+    role: "Contributor"
+    description: "Migration engineering team - execute migration tasks"
+  
+  # Legacy System Admins (Transitional)
+  - id: "${LEGACY_ADMIN_GROUP_OID}"
+    role: "Contributor"
+    description: "Legacy system administrators - support transition"
+  
+  # Cloud Platform Team
+  - id: "${CLOUD_TEAM_GROUP_OID}"
+    role: "Contributor"
+    description: "Cloud platform team - target environment support"
+  
+  # Business Validation Team
+  - id: "${BUSINESS_VALIDATION_GROUP_OID}"
+    role: "Viewer"
+    description: "Business users - validate migrated data and reports"
+  
+  # Automation Service Principal
+  - id: "${AZURE_CLIENT_ID}"
+    role: "Contributor"
+    description: "CI/CD and migration automation"
+
+# Environment-Specific Overrides
+environments:
+  dev:
+    workspace:
+      capacity_id: "F8"
+      name: "Migration_Dev"
+  
+  test:
+    workspace:
+      capacity_id: "F16"
+      name: "Migration_Test"
+  
+  prod:
+    workspace:
+      capacity_id: "F64"
+      name: "Migration_Prod"
+
+# MIGRATION STRATEGY PHASES:
+# Phase 1: Lift & Shift (Weeks 1-4)
+#   - Mirror on-prem databases to Fabric
+#   - Replicate legacy warehouse structure
+#   - Parallel run: Legacy + Cloud
+#   - Validate data consistency (100% match required)
+#
+# Phase 2: Schema Modernization (Weeks 5-8)
+#   - Transform legacy schemas to medallion architecture
+#   - Optimize for cloud performance
+#   - Maintain backward compatibility layer
+#   - Validate query results (functional equivalence)
+#
+# Phase 3: Cutover (Weeks 9-12)
+#   - Blue/Green deployment strategy
+#   - Redirect users to modern platform
+#   - Keep legacy as fallback (2 weeks)
+#   - Decommission legacy systems post-validation
+#
+# Phase 4: Optimization (Weeks 13-16)
+#   - Remove backward compatibility layers
+#   - Optimize for cloud-native performance
+#   - Remove legacy folder structure
+#   - Full migration complete
+
+# ROLLBACK PLAN:
+# - MirroredDatabases enable instant rollback to on-prem
+# - Maintain dual-write during transition period
+# - Automated data drift detection every 15 minutes
+# - Rollback SLA: <1 hour to revert to legacy
+
+# HYBRID DEPLOYMENT CHECKLIST:
+# ☐ 1. Install and configure on-premises data gateway
+# ☐ 2. Set up VPN or ExpressRoute for secure connectivity
+# ☐ 3. Configure MirroredDatabase connections to legacy systems
+# ☐ 4. Establish baseline performance metrics (legacy)
+# ☐ 5. Create data validation checksums for accuracy verification
+# ☐ 6. Set up monitoring for replication lag (target: <5 min)
+# ☐ 7. Document all legacy dependencies and downstream consumers
+# ☐ 8. Create communication plan for end users
+# ☐ 9. Schedule migration windows with business stakeholders
+# ☐ 10. Set up emergency rollback procedures
+
+# Configuration Notes:
+# 1. MirroredDatabase supports: SQL Server, Azure SQL, Snowflake, Cosmos DB
+# 2. Gateway required for on-premises connectivity (install on VM with network access)
+# 3. ExpressRoute recommended for production (VPN acceptable for dev/test)
+# 4. Maintain legacy compatibility for minimum 2 weeks post-cutover
+# 5. Budget: $1000-5000/month during migration (dual environments)
+# 6. Post-migration budget: $500-2000/month (cloud-only)
+# 7. Consider phased migration by business unit to reduce risk

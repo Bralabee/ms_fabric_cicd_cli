@@ -75,7 +75,18 @@ def main():
     parser.add_argument(
         "--template",
         default="basic_etl",
-        choices=["basic_etl", "advanced_analytics", "data_science"],
+        choices=[
+            "basic_etl",
+            "advanced_analytics",
+            "data_science",
+            "extensive_example",
+            "realtime_streaming",
+            "minimal_starter",
+            "compliance_regulated",
+            "data_mesh_domain",
+            "migration_hybrid",
+            "specialized_timeseries",
+        ],
         help="Configuration template to use",
     )
     parser.add_argument(

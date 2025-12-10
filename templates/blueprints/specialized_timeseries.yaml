@@ -1,0 +1,258 @@
+# Specialized Time-Series & Operational Analytics Blueprint
+# Optimized for: Time-series data, IoT at scale, operational intelligence, APM
+# Use Cases: Equipment monitoring, financial tick data, log analytics, metrics aggregation
+# Performance: Sub-second queries on billions of time-stamped events
+
+workspace:
+  name: "Timeseries_Analytics_Platform"
+  display_name: "Time-Series & Operational Analytics"
+  description: "High-performance platform for time-series data and operational intelligence"
+  capacity_id: "${FABRIC_CAPACITY_ID}"
+  domain: "${OPERATIONS_DOMAIN}"
+  
+  # Git Integration
+  git_repo: "${GIT_REPO_URL}"
+  git_branch: "main"
+  git_directory: "/timeseries"
+
+# Folder Structure (Time-Based Organization)
+folders:
+  - "RealTime"  # Hot data (last 24 hours)
+  - "Recent"  # Warm data (last 30 days)
+  - "Historical"  # Cold data (>30 days)
+  - "Aggregates"  # Pre-computed rollups
+  - "Dashboards"  # Visualization layer
+
+# Lakehouses (Long-Term Storage)
+lakehouses:
+  - name: "historical_timeseries_archive"
+    folder: "Historical"
+    description: "Cost-optimized storage for historical time-series data"
+
+# KQL Databases (High-Performance Time-Series Engine)
+resources:
+  # Primary KQL Database (Hot Path)
+  - type: "KQLDatabase"
+    name: "realtime_metrics_db"
+    description: "Real-time metrics database (24h retention)"
+    folder: "RealTime"
+  
+  - type: "KQLDatabase"
+    name: "operational_logs_db"
+    description: "Application and infrastructure logs (30d retention)"
+    folder: "Recent"
+  
+  - type: "KQLDatabase"
+    name: "financial_tickdata_db"
+    description: "High-frequency financial market data"
+    folder: "RealTime"
+  
+  - type: "KQLDatabase"
+    name: "iot_telemetry_db"
+    description: "IoT device telemetry at scale"
+    folder: "RealTime"
+
+  # Eventhouse (Unified Analytics)
+  - type: "Eventhouse"
+    name: "timeseries_analytics_engine"
+    description: "Unified analytics engine for all time-series databases"
+    folder: "RealTime"
+
+  # KQL Querysets (Reusable Analytics)
+  - type: "KQLQueryset"
+    name: "operational_intelligence_queries"
+    description: "Common queries for operational dashboards"
+    folder: "Dashboards"
+  
+  - type: "KQLQueryset"
+    name: "anomaly_detection_queries"
+    description: "Statistical anomaly detection queries"
+    folder: "Aggregates"
+  
+  - type: "KQLQueryset"
+    name: "capacity_planning_queries"
+    description: "Trend analysis for capacity planning"
+    folder: "Aggregates"
+
+  # Eventstreams (Ingestion)
+  - type: "Eventstream"
+    name: "metrics_ingest_stream"
+    description: "Ingest metrics from applications and infrastructure"
+    folder: "RealTime"
+  
+  - type: "Eventstream"
+    name: "logs_ingest_stream"
+    description: "Ingest structured logs from all systems"
+    folder: "RealTime"
+  
+  - type: "Eventstream"
+    name: "iot_telemetry_stream"
+    description: "High-throughput IoT device telemetry ingestion"
+    folder: "RealTime"
+
+  # KQL Dashboards (Real-Time Visualization)
+  - type: "KQLDashboard"
+    name: "realtime_operations_dashboard"
+    description: "Live operational metrics (auto-refresh: 30s)"
+    folder: "Dashboards"
+  
+  - type: "KQLDashboard"
+    name: "infrastructure_health_dashboard"
+    description: "Infrastructure health monitoring"
+    folder: "Dashboards"
+  
+  - type: "KQLDashboard"
+    name: "application_performance_dashboard"
+    description: "APM dashboard (latency, throughput, errors)"
+    folder: "Dashboards"
+
+  # Reflex (Automated Actions)
+  - type: "Reflex"
+    name: "threshold_breach_alerting"
+    description: "Alert when metrics exceed defined thresholds"
+    folder: "RealTime"
+  
+  - type: "Reflex"
+    name: "auto_scaling_trigger"
+    description: "Trigger auto-scaling based on metrics"
+    folder: "RealTime"
+
+# Notebooks (Advanced Analytics)
+notebooks:
+  - name: "timeseries_forecasting"
+    folder: "Aggregates"
+    description: "ML-based forecasting on historical trends"
+  
+  - name: "anomaly_detection_ml"
+    folder: "Aggregates"
+    description: "Machine learning anomaly detection models"
+  
+  - name: "data_retention_archiver"
+    folder: "Historical"
+    description: "Archive old data from KQL to lakehouse for cost savings"
+  
+  - name: "metrics_aggregator"
+    folder: "Aggregates"
+    description: "Pre-compute 1min/5min/1h/1d aggregates"
+
+# Pipelines (Data Lifecycle Management)
+pipelines:
+  - name: "hot_to_warm_migration"
+    folder: "Recent"
+    description: "Move data from RealTime to Recent (daily)"
+  
+  - name: "warm_to_cold_archival"
+    folder: "Historical"
+    description: "Archive data from Recent to Historical (monthly)"
+  
+  - name: "aggregate_rollup_scheduler"
+    folder: "Aggregates"
+    description: "Schedule pre-computation of time-based aggregates"
+
+# Advanced Time-Series Resources
+resources:
+  # Spark Job Definitions (Batch Processing)
+  - type: "SparkJobDefinition"
+    name: "historical_batch_analyzer"
+    description: "Batch analysis of historical time-series data"
+    folder: "Historical"
+
+  # Metric Sets (Unified Metrics Catalog)
+  - type: "MetricSet"
+    name: "infrastructure_metrics_catalog"
+    description: "Centralized catalog of infrastructure metrics"
+    folder: "Aggregates"
+  
+  - type: "MetricSet"
+    name: "application_metrics_catalog"
+    description: "Centralized catalog of application metrics"
+    folder: "Aggregates"
+
+# Principals (Operations Team)
+principals:
+  # Platform Engineering (Admin)
+  - id: "${PLATFORM_ADMIN_GROUP_OID}"
+    role: "Admin"
+    description: "Platform engineering team - manage infrastructure"
+  
+  # SRE Team (Contributor)
+  - id: "${SRE_TEAM_GROUP_OID}"
+    role: "Contributor"
+    description: "Site Reliability Engineers - operational queries"
+  
+  # DevOps Engineers (Contributor)
+  - id: "${DEVOPS_TEAM_GROUP_OID}"
+    role: "Contributor"
+    description: "DevOps engineers - application monitoring"
+  
+  # Security Operations (Viewer)
+  - id: "${SECURITY_OPS_GROUP_OID}"
+    role: "Viewer"
+    description: "Security team - log analysis and threat hunting"
+  
+  # Business Analysts (Viewer)
+  - id: "${BUSINESS_ANALYST_GROUP_OID}"
+    role: "Viewer"
+    description: "Business analysts - trend analysis"
+  
+  # Automation Service Principal
+  - id: "${AZURE_CLIENT_ID}"
+    role: "Contributor"
+    description: "Automation for metric ingestion and alerting"
+
+# Environment-Specific Overrides
+environments:
+  dev:
+    workspace:
+      capacity_id: "F8"
+      name: "Timeseries_Dev"
+  
+  test:
+    workspace:
+      capacity_id: "F16"
+      name: "Timeseries_Test"
+  
+  prod:
+    workspace:
+      capacity_id: "F64"  # High capacity for production workloads
+      name: "Timeseries_Prod"
+
+# PERFORMANCE OPTIMIZATION STRATEGIES:
+# 1. Data Partitioning: Partition by time (hourly/daily) for efficient pruning
+# 2. Retention Policies: Hot (24h), Warm (30d), Cold (365d+)
+# 3. Materialized Views: Pre-aggregate common queries (1m, 5m, 1h rollups)
+# 4. Extent Merging: Configure merge policies for optimal query performance
+# 5. Ingestion Batching: Batch ingest for high throughput (10k events/sec)
+# 6. Caching: Enable query result caching for frequently accessed data
+# 7. Sharding: Shard by device_id/metric_name for parallel queries
+
+# DATA RETENTION POLICY:
+# RealTime KQL Database: 24 hours (hot)
+# Recent KQL Database: 30 days (warm)
+# Historical Lakehouse: 7 years (cold, Delta format)
+# Aggregates: Indefinite (pre-computed rollups)
+
+# QUERY PERFORMANCE TARGETS:
+# - Point queries (single device/metric): <100ms
+# - Range queries (1 hour): <500ms
+# - Range queries (24 hours): <2 seconds
+# - Range queries (30 days): <10 seconds
+# - Historical queries (1 year): <60 seconds
+
+# USE CASE EXAMPLES:
+# 1. IoT Fleet Management: 1M devices sending metrics every 10 seconds
+# 2. Financial Trading: Tick-by-tick market data (100k ticks/sec)
+# 3. Application Performance Monitoring: Request traces, latency histograms
+# 4. Infrastructure Monitoring: CPU, memory, disk, network metrics
+# 5. Log Aggregation: Structured logs from microservices (1TB/day)
+# 6. Anomaly Detection: Real-time statistical anomaly detection
+# 7. Capacity Planning: Trend analysis and forecasting
+
+# Configuration Notes:
+# 1. KQL is optimized for time-series data (10-100x faster than SQL for this use case)
+# 2. Eventhouse provides unified query interface across multiple KQL databases
+# 3. Use .show extents for monitoring data distribution and fragmentation
+# 4. Enable continuous export to lakehouse for long-term retention
+# 5. Configure ingestion batching policies for optimal throughput
+# 6. Budget: $1000-5000/month for high-volume production workloads
+# 7. Consider Azure Monitor integration for hybrid monitoring

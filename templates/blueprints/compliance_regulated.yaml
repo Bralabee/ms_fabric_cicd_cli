@@ -1,0 +1,170 @@
+# Compliance-First Architecture Blueprint
+# Optimized for: Regulated industries (Healthcare, Finance, Government)
+# Use Cases: HIPAA, SOC 2, GDPR, PCI-DSS, FedRAMP compliance requirements
+# Security Features: Strict RBAC, audit logging, data classification, encryption
+
+workspace:
+  name: "Compliance_Data_Platform"
+  display_name: "Compliance & Regulated Data Platform"
+  description: "Enterprise-grade platform with compliance controls and audit trails"
+  capacity_id: "${FABRIC_CAPACITY_ID}"
+  domain: "${COMPLIANCE_DOMAIN}"  # Assign to compliance-governed domain
+  
+  # Git Integration (REQUIRED for audit trail)
+  git_repo: "${GIT_REPO_URL}"
+  git_branch: "main"
+  git_directory: "/compliance"
+
+# Folder Structure (Classification-Based)
+folders:
+  - "Restricted"  # Highest sensitivity
+  - "Confidential"  # Medium sensitivity
+  - "Internal"  # Low sensitivity
+  - "Audit"  # Audit logs and compliance reports
+  - "Governance"  # Policies and controls
+
+# Lakehouses (Separate by sensitivity)
+lakehouses:
+  - name: "restricted_data_vault"
+    folder: "Restricted"
+    description: "PII, PHI, financial records - strictest access controls"
+  
+  - name: "confidential_data_zone"
+    folder: "Confidential"
+    description: "Internal business data - standard access controls"
+  
+  - name: "audit_log_repository"
+    folder: "Audit"
+    description: "Immutable audit logs for compliance reporting"
+
+# Warehouses (Structured, queryable compliance data)
+warehouses:
+  - name: "compliance_reporting_dw"
+    folder: "Governance"
+    description: "Star-schema warehouse for compliance dashboards"
+
+# Notebooks (Governance & Compliance)
+notebooks:
+  - name: "data_quality_validator"
+    folder: "Governance"
+    description: "Automated data quality checks per compliance standards"
+  
+  - name: "pii_detection_scanner"
+    folder: "Governance"
+    description: "Scan datasets for PII/PHI and enforce masking"
+  
+  - name: "access_audit_reporter"
+    folder: "Audit"
+    description: "Generate access audit reports for compliance reviews"
+  
+  - name: "data_lineage_tracker"
+    folder: "Governance"
+    description: "Track data lineage for regulatory reporting"
+
+# Pipelines (Compliance-Aware ETL)
+pipelines:
+  - name: "secure_data_ingestion"
+    folder: "Governance"
+    description: "Ingestion pipeline with encryption and validation"
+  
+  - name: "audit_log_aggregator"
+    folder: "Audit"
+    description: "Aggregate and archive audit logs for retention policy"
+
+# Semantic Models (Compliance Dashboards)
+semantic_models:
+  - name: "compliance_dashboard_model"
+    folder: "Governance"
+    description: "Certified dataset for compliance KPI reporting"
+
+# Advanced Resources (Compliance-Specific)
+resources:
+  # Managed Private Endpoints (Network isolation)
+  - type: "ManagedPrivateEndpoint"
+    name: "secure_storage_endpoint"
+    description: "Private endpoint to Azure Storage (no public access)"
+    folder: "Governance"
+  
+  # Data Classification (Purview integration placeholder)
+  # Note: Actual Purview integration requires Azure Purview setup
+  - type: "Environment"
+    name: "compliance_environment"
+    description: "Locked-down compute environment with approved libraries only"
+    folder: "Governance"
+
+# Principals (STRICT Role-Based Access Control)
+principals:
+  # Security Team (Admin)
+  - id: "${SECURITY_ADMIN_GROUP_OID}"
+    role: "Admin"
+    description: "MANDATORY: Information Security team - full admin rights"
+  
+  # Compliance Officers (Admin - Read/Audit)
+  - id: "${COMPLIANCE_OFFICER_GROUP_OID}"
+    role: "Admin"
+    description: "MANDATORY: Compliance officers - audit and reporting access"
+  
+  # Data Governance Team (Contributor)
+  - id: "${DATA_GOVERNANCE_GROUP_OID}"
+    role: "Contributor"
+    description: "Data governance team - manage policies and lineage"
+  
+  # Data Engineers (Contributor - Restricted)
+  - id: "${DATA_ENGINEER_GROUP_OID}"
+    role: "Contributor"
+    description: "Data engineers - access to Confidential and Internal only"
+  
+  # Analysts (Viewer - Highly Restricted)
+  - id: "${ANALYST_GROUP_OID}"
+    role: "Viewer"
+    description: "Business analysts - read-only access to approved datasets"
+  
+  # Automation Service Principal
+  - id: "${AZURE_CLIENT_ID}"
+    role: "Contributor"
+    description: "CI/CD automation - deployment only, no data access"
+  
+  # Audit Service Account
+  - id: "${AUDIT_SERVICE_PRINCIPAL_OID}"
+    role: "Admin"
+    description: "MANDATORY: Automated audit log collection service"
+
+# Environment-Specific Overrides
+environments:
+  dev:
+    workspace:
+      capacity_id: "F8"  # Minimum F8 for development (compliance controls)
+      name: "Compliance_Platform_Dev"
+  
+  test:
+    workspace:
+      capacity_id: "F16"  # UAT environment
+      name: "Compliance_Platform_Test"
+  
+  prod:
+    workspace:
+      capacity_id: "F64"  # Production (high availability)
+      name: "Compliance_Platform_Prod"
+
+# COMPLIANCE CHECKLIST (Implement these manually after deployment):
+# ☐ 1. Enable Microsoft Purview Data Catalog integration
+# ☐ 2. Configure sensitivity labels on all items (Restricted/Confidential/Internal)
+# ☐ 3. Enable audit logging at workspace and item level
+# ☐ 4. Configure data retention policies (7 years for financial, 6 years for healthcare)
+# ☐ 5. Implement row-level security (RLS) on semantic models
+# ☐ 6. Enable customer-managed keys (CMK) for encryption at rest
+# ☐ 7. Configure private endpoints for all external connections
+# ☐ 8. Enable multi-factor authentication (MFA) for all principals
+# ☐ 9. Set up automated compliance scanning (weekly)
+# ☐ 10. Document data flow diagrams for regulatory audits
+# ☐ 11. Implement data masking for PII/PHI in non-production environments
+# ☐ 12. Configure alert rules for unauthorized access attempts
+
+# Configuration Notes:
+# 1. This blueprint assumes Azure AD Premium P2 for advanced identity controls
+# 2. Requires Microsoft Purview for data classification and lineage
+# 3. Service principals MUST use certificate authentication (not secrets) in production
+# 4. All ${VARIABLE} placeholders must be Object IDs (GUIDs), not email addresses
+# 5. Minimum capacity: F8 (F2 lacks enterprise security features)
+# 6. Budget: $500-2000/month depending on capacity and data volume
+# 7. Legal review recommended before deploying to production
