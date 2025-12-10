@@ -5,7 +5,7 @@ Enterprise-grade Microsoft Fabric deployment automation leveraging the official 
 ## Core Capabilities
 
 - **Automated Deployment**: Idempotent workspace provisioning with intelligent state management
-- **Secret Management**: 12-Factor App compliant credential handling (Environment Variables → .env fallback)
+- **Secret Management**: 12-Factor App compliant credential handling (Environment Variables → .env fallback → Azure Key Vault)
 - **Artifact Templating**: Jinja2 engine for environment-specific artifact transformation
 - **Git Integration**: REST API-driven repository connections for Azure DevOps and GitHub
 - **Audit Compliance**: Structured JSONL logging for regulatory requirements
@@ -45,6 +45,7 @@ cp .env.template .env
 #   AZURE_CLIENT_SECRET   - Service Principal secret value
 #   AZURE_TENANT_ID       - Azure AD tenant identifier
 #   FABRIC_TOKEN          - Direct token (optional, auto-generated from SP)
+#   AZURE_KEYVAULT_URL    - Azure Key Vault URL (optional, for production)
 
 ### 2. Azure DevOps Integration (Prerequisites)
 

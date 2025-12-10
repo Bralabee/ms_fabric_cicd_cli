@@ -1,2 +1,2 @@
 [console_scripts]
-fabric-cicd = fabric_deploy:app
+fabric-cicd = core.cli:app

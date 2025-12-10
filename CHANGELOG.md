@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 ## [1.1.0] - 2025-12-10
 
 ### Added
+- **Azure Key Vault Integration**: Optional support for enterprise secret management.
+  - Added `azure-keyvault-secrets>=4.7.0` dependency to `requirements.txt`.
+  - Implemented waterfall priority: Environment Variables → .env file → Azure Key Vault.
+  - Uses `DefaultAzureCredential` for authentication (supports Managed Identity, Azure CLI, etc.).
+  - Fully backward compatible—Key Vault is only used when `AZURE_KEYVAULT_URL` is set.
+  - Added comprehensive documentation in `docs/03_Project_Reports/07_Azure_KeyVault_Integration.md`.
 - **Docker Integration**: Full support for running the entire CI/CD workflow inside a Docker container.
   - Added `Dockerfile` for creating a reproducible build environment.
   - Added `Makefile` targets for Docker operations: `docker-build`, `docker-generate`, `docker-init-repo`, `docker-deploy`, `docker-validate`.

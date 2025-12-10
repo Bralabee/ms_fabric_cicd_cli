@@ -118,5 +118,5 @@ docker-feature-deploy: ## Deploy feature workspace using Docker (Usage: make doc
 	@if [ -z "$(env)" ]; then echo "Error: env argument required"; exit 1; fi
 	@if [ -z "$(branch)" ]; then echo "Error: branch argument required"; exit 1; fi
 	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
-	python src/fabric_deploy.py deploy $(config) --env $(env) --branch $(branch) --force-branch-workspace
+	deploy $(config) --env $(env) --branch $(branch) --force-branch-workspace
 

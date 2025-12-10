@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 src/core/audit.py
+src/core/cli.py
 src/core/config.py
 src/core/exceptions.py
 src/core/fabric_git_api.py

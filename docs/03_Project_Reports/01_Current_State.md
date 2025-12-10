@@ -45,7 +45,12 @@ packaging==25.0
    - Automatically loaded from project root
    - Excluded from version control
 
-3. **Direct Token** (Alternative)
+3. **Azure Key Vault** (Production - Optional)
+   - Set `AZURE_KEYVAULT_URL` to enable
+   - Uses `DefaultAzureCredential` for authentication
+   - Automatic fallback if secrets not found in environment
+
+4. **Direct Token** (Alternative)
    - `FABRIC_TOKEN`
 
 ### Configuration Methods

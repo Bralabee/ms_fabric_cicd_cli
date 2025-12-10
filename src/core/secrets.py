@@ -4,7 +4,8 @@ Enterprise secrets management with waterfall configuration loading.
 Priority hierarchy:
 1. Environment variables (production/CI/CD)
 2. .env file (local development)
-3. Error on missing required credentials
+3. Azure Key Vault (if AZURE_KEYVAULT_URL is configured)
+4. Error on missing required credentials
 
 Implements 12-Factor App configuration methodology for secure credential management
 across development, staging, and production environments.
@@ -15,6 +16,13 @@ from pathlib import Path
 from typing import Optional
 from pydantic import Field, field_validator, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+try:
+    from azure.identity import DefaultAzureCredential
+    from azure.keyvault.secrets import SecretClient
+    KEYVAULT_AVAILABLE = True
+except ImportError:
+    KEYVAULT_AVAILABLE = False
 
 
 class FabricSecrets(BaseSettings):
@@ -28,6 +36,9 @@ class FabricSecrets(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )
+
+    # Azure Key Vault Configuration (optional)
+    azure_keyvault_url: Optional[str] = Field(default=None, alias="AZURE_KEYVAULT_URL")
 
     # Service Principal Authentication (optional - validation happens in methods)
     azure_client_id: Optional[str] = Field(default=None, alias="AZURE_CLIENT_ID")
@@ -50,6 +61,43 @@ class FabricSecrets(BaseSettings):
         if v:
             return v
         return os.getenv("AZURE_TENANT_ID") or v
+
+    def _get_from_keyvault(self, secret_name: str) -> Optional[str]:
+        """Retrieve a secret from Azure Key Vault if configured."""
+        if not self.azure_keyvault_url or not KEYVAULT_AVAILABLE:
+            return None
+
+        try:
+            credential = DefaultAzureCredential()
+            client = SecretClient(vault_url=self.azure_keyvault_url, credential=credential)
+            secret = client.get_secret(secret_name)
+            return secret.value
+        except Exception:
+            # Silently fail and fall back to None
+            return None
+
+    def get_secret(self, secret_name: str, keyvault_name: Optional[str] = None) -> Optional[str]:
+        """Retrieve a secret from environment variables or Key Vault.
+        
+        Args:
+            secret_name: Name of the environment variable or Key Vault secret
+            keyvault_name: Optional Key Vault secret name if different from env var name
+            
+        Returns:
+            Secret value or None if not found
+        """
+        # 1. Try environment variable first (highest priority)
+        env_value = os.getenv(secret_name)
+        if env_value:
+            return env_value
+
+        # 2. Try Azure Key Vault if configured
+        kv_secret_name = keyvault_name or secret_name.replace("_", "-")
+        kv_value = self._get_from_keyvault(kv_secret_name)
+        if kv_value:
+            return kv_value
+
+        return None
 
     def get_tenant_id(self) -> Optional[str]:
         """Returns configured tenant ID."""
@@ -136,11 +184,29 @@ class FabricSecrets(BaseSettings):
     def load_with_fallback(cls) -> "FabricSecrets":
         """
         Instantiates secrets configuration, loading available credentials without validation.
+        Supports Key Vault fallback if AZURE_KEYVAULT_URL is configured.
 
         Returns:
             FabricSecrets instance
         """
-        return cls()
+        instance = cls()
+        
+        # If Key Vault is configured, attempt to populate missing secrets
+        if instance.azure_keyvault_url and KEYVAULT_AVAILABLE:
+            if not instance.azure_client_id:
+                instance.azure_client_id = instance.get_secret("AZURE_CLIENT_ID", "azure-client-id")
+            if not instance.azure_client_secret:
+                instance.azure_client_secret = instance.get_secret("AZURE_CLIENT_SECRET", "azure-client-secret")
+            if not instance.tenant_id:
+                instance.tenant_id = instance.get_secret("TENANT_ID", "tenant-id")
+            if not instance.fabric_token:
+                instance.fabric_token = instance.get_secret("FABRIC_TOKEN", "fabric-token")
+            if not instance.github_token:
+                instance.github_token = instance.get_secret("GITHUB_TOKEN", "github-token")
+            if not instance.azure_devops_pat:
+                instance.azure_devops_pat = instance.get_secret("AZURE_DEVOPS_PAT", "azure-devops-pat")
+        
+        return instance
 
 
 def get_secrets() -> FabricSecrets:

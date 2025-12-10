@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: usf-fabric-cli
-Version: 1.0.1
+Version: 1.1.0
 Summary: CLI tool for Microsoft Fabric CI/CD automation
 Author-email: Sanmi Ibitoye <sanmi.ibitoye@leit.ltd>
 License: MIT
@@ -12,6 +12,7 @@ Requires-Dist: pyyaml>=6.0
 Requires-Dist: python-dotenv>=1.0.0
 Requires-Dist: jsonschema>=4.19.0
 Requires-Dist: azure-identity>=1.15.0
+Requires-Dist: azure-keyvault-secrets>=4.7.0
 Requires-Dist: requests>=2.31.0
 Requires-Dist: gitpython>=3.1.0
 Requires-Dist: azure-storage-blob>=12.19.0
@@ -27,7 +28,7 @@ Enterprise-grade Microsoft Fabric deployment automation leveraging the official 
 ## Core Capabilities
 
 - **Automated Deployment**: Idempotent workspace provisioning with intelligent state management
-- **Secret Management**: 12-Factor App compliant credential handling (Environment Variables → .env fallback)
+- **Secret Management**: 12-Factor App compliant credential handling (Environment Variables → .env fallback → Azure Key Vault)
 - **Artifact Templating**: Jinja2 engine for environment-specific artifact transformation
 - **Git Integration**: REST API-driven repository connections for Azure DevOps and GitHub
 - **Audit Compliance**: Structured JSONL logging for regulatory requirements
@@ -65,44 +66,130 @@ cp .env.template .env
 # Edit .env with Service Principal credentials:
 #   AZURE_CLIENT_ID       - Service Principal application ID
 #   AZURE_CLIENT_SECRET   - Service Principal secret value
-#   TENANT_ID             - Azure AD tenant identifier
-#   FABRIC_TOKEN          - Direct token (alternative authentication)
+#   AZURE_TENANT_ID       - Azure AD tenant identifier
+#   FABRIC_TOKEN          - Direct token (optional, auto-generated from SP)
+#   AZURE_KEYVAULT_URL    - Azure Key Vault URL (optional, for production)
+
+### 2. Azure DevOps Integration (Prerequisites)
+
+If using Azure DevOps with a Service Principal, ensure the following:
+
+1.  **Service Principal Access Level**: The Service Principal must have **Basic** access level in Azure DevOps Organization Settings -> Users.
+2.  **Project Permissions**: The Service Principal must be added to the **Contributors** group of the target Azure DevOps Project.
+3.  **Fabric Tenant Settings**: Enable "Service principals can use Fabric APIs" and "Service principals can create workspaces" in Fabric Admin Portal.
+4.  **Workspace Admin**: The Service Principal must be assigned the **Admin** role in the workspace configuration (`project.yaml`).
+
+### 3. Configure Your Project
 ```
 
-### 2. Configure Your Project
+### 3. End-to-End Workflow (From Scratch)
 
+Follow these steps to deploy a new project from scratch:
+
+**Step 1: Generate Project Configuration**
+Use the template generator to create a standardized configuration file.
 ```bash
-# Generate project configuration from template
-python scripts/generate_project.py "Your Org" "Project Name" \
-  --template basic_etl \
-  --capacity-id F64 \
-  --git-repo https://github.com/your-org/your-repo
-
-# Customize generated configuration
-vim config/projects/your_org/your_project.yaml
+python scripts/generate_project.py "Contoso Inc" "Finance Analytics" --template basic_etl
+# Output: config/projects/contoso_inc/finance_analytics.yaml
 ```
 
-### 3. Execute Deployment
+**Step 2: Initialize Azure DevOps Repository**
+Create the backing Git repository for your new project.
+```bash
+python scripts/utilities/init_ado_repo.py \
+  --organization "your-ado-org" \
+  --project "your-ado-project" \
+  --repository "contoso-finance-repo" \
+  --branch "main"
+```
+
+**Step 3: Update Configuration**
+Edit the generated YAML file to point to your new repository.
+```yaml
+git:
+  repository: "contoso-finance-repo"
+```
+
+**Step 4: Deploy**
+Run the deployment command.
+```bash
+make deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev
+```
+
+### 4. Docker-Based Workflow
+
+You can run the entire workflow inside a Docker container to ensure a consistent environment.
+
+**Step 1: Build the Docker Image**
+```bash
+make docker-build
+```
+
+**Step 2: Generate Project Configuration (in Docker)**
+```bash
+make docker-generate ARGS='"Contoso Inc" "Finance Analytics" --template basic_etl'
+```
+
+**Step 3: Initialize Azure DevOps Repository (in Docker)**
+```bash
+make docker-init-repo ARGS='--organization "your-ado-org" --project "your-ado-project" --repository "contoso-finance-repo" --branch "main"'
+```
+
+**Step 4: Deploy (in Docker)**
+```bash
+make docker-deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev ENVFILE=.env
+```
+
+### 5. Execute Deployment
 
 > **Security Note:** The CLI automatically enforces mandatory security principals (Additional Admin/Contributor) on all workspaces by injecting them from your environment variables.
 
 ```bash
 # Validate configuration syntax and structure
-python src/fabric_deploy.py validate config/projects/your_org/your_project.yaml
+make validate config=config/projects/your_org/your_project.yaml
 
 # Deploy to development environment
-python src/fabric_deploy.py deploy config/projects/your_org/your_project.yaml --env dev
+make deploy config=config/projects/your_org/your_project.yaml env=dev
+```
 
-# Deploy with automatic Git repository connection
-python src/fabric_deploy.py deploy config/projects/your_org/your_project.yaml --env dev --connect-git
+## Utility Tools
 
-# Deploy feature branch to isolated workspace
-# (Uses 'dev' config but creates a unique workspace name)
-python src/fabric_deploy.py deploy config/projects/your_org/your_project.yaml \
-  --env dev --branch feature/new-analytics --force-branch-workspace
+The framework includes several utility scripts in `scripts/utilities/` to assist with setup and troubleshooting. These scripts automatically load credentials from your `.env` file.
 
-# Production deployment with diagnostics
-python src/fabric_deploy.py deploy config/projects/your_org/your_project.yaml --env prod --diagnose
+### Initialize Azure DevOps Repository
+Initializes an empty Azure DevOps repository with a `main` branch. This is required because Fabric Git integration fails if the target repository is completely empty (0 branches).
+
+```bash
+python scripts/utilities/init_ado_repo.py \
+  --organization "your-org-name" \
+  --project "your-project-name" \
+  --repository "your-repo-name"
+```
+
+### Debug Azure DevOps Access
+Verifies that your Service Principal has the correct permissions to access Azure DevOps.
+
+```bash
+python scripts/utilities/debug_ado_access.py \
+  --organization "your-org-name" \
+  --project "your-project-name"
+```
+
+### Debug Git Connection
+Tests the connection to a Git repository using the configured credentials.
+
+```bash
+python scripts/utilities/debug_connection.py \
+  --organization "your-org-name" \
+  --project "your-project-name" \
+  --repository "your-repo-name"
+```
+
+### List Workspace Items
+Lists all items in a specified Fabric workspace to verify deployment.
+
+```bash
+python scripts/utilities/list_workspace_items.py --workspace "Workspace Name"
 ```
 
 ## Project Structure
@@ -118,8 +205,9 @@ src/
 │   ├── git_integration.py # Git synchronization
 │   ├── audit.py          # Compliance audit logging
 │   ├── telemetry.py      # Operational telemetry
-│   └── exceptions.py     # Exception hierarchy
-└── fabric_deploy.py       # Main deployment orchestrator
+│   ├── exceptions.py     # Exception hierarchy
+│   └── cli.py            # Main deployment orchestrator (Entry Point)
+
 
 config/
 ├── projects/

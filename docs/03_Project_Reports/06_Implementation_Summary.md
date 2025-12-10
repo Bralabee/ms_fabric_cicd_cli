@@ -14,8 +14,9 @@ This document summarizes the comprehensive enhancements made to the `usf_fabric_
 **Purpose**: 12-Factor App configuration pattern for secrets management
 
 **Features**:
-- Waterfall priority loading (Environment Variables → .env file → Error)
+- Waterfall priority loading (Environment Variables → .env file → Azure Key Vault → Error)
 - Pydantic-based type-safe configuration
+- Optional Azure Key Vault integration with `DefaultAzureCredential`
 - Automatic CI/CD environment detection
 - Validation for Fabric and Git authentication
 - Backward compatible with existing `get_environment_variables()`
