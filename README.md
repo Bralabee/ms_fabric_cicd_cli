@@ -92,7 +92,31 @@ Run the deployment command.
 make deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev
 ```
 
-### 4. Execute Deployment
+### 4. Docker-Based Workflow
+
+You can run the entire workflow inside a Docker container to ensure a consistent environment.
+
+**Step 1: Build the Docker Image**
+```bash
+make docker-build
+```
+
+**Step 2: Generate Project Configuration (in Docker)**
+```bash
+make docker-generate ARGS='"Contoso Inc" "Finance Analytics" --template basic_etl'
+```
+
+**Step 3: Initialize Azure DevOps Repository (in Docker)**
+```bash
+make docker-init-repo ARGS='--organization "your-ado-org" --project "your-ado-project" --repository "contoso-finance-repo" --branch "main"'
+```
+
+**Step 4: Deploy (in Docker)**
+```bash
+make docker-deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev ENVFILE=.env
+```
+
+### 5. Execute Deployment
 
 > **Security Note:** The CLI automatically enforces mandatory security principals (Additional Admin/Contributor) on all workspaces by injecting them from your environment variables.
 
