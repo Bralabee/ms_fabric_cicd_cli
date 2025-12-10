@@ -24,8 +24,9 @@ steps:
     export AZURE_TENANT_ID=$(AZURE_TENANT_ID)
     
     # Validate configuration first
-    python src/fabric_deploy.py validate config/projects/contoso/finance_analytics.yaml
+    export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+    python -m core.cli validate config/projects/contoso/finance_analytics.yaml
     
     # Deploy
-    python src/fabric_deploy.py deploy config/projects/contoso/finance_analytics.yaml --env dev
+    python -m core.cli deploy config/projects/contoso/finance_analytics.yaml --env dev
   displayName: 'Deploy to Fabric'
