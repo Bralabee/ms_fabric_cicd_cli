@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.1.0] - 2025-12-10
 
 ### Added
 - **Docker Integration**: Full support for running the entire CI/CD workflow inside a Docker container.
