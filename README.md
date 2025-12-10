@@ -58,40 +58,50 @@ If using Azure DevOps with a Service Principal, ensure the following:
 ### 3. Configure Your Project
 ```
 
-### 2. Configure Your Project
+### 3. End-to-End Workflow (From Scratch)
 
+Follow these steps to deploy a new project from scratch:
+
+**Step 1: Generate Project Configuration**
+Use the template generator to create a standardized configuration file.
 ```bash
-# Generate project configuration from template
-python scripts/generate_project.py "Your Org" "Project Name" \
-  --template basic_etl \
-  --capacity-id ${FABRIC_CAPACITY_ID} \
-  --git-repo ${GIT_REPO_URL}
-
-# Customize generated configuration
-vim config/projects/your_org/your_project.yaml
+python scripts/generate_project.py "Contoso Inc" "Finance Analytics" --template basic_etl
+# Output: config/projects/contoso_inc/finance_analytics.yaml
 ```
 
-### 3. Execute Deployment
+**Step 2: Initialize Azure DevOps Repository**
+Create the backing Git repository for your new project.
+```bash
+python scripts/utilities/init_ado_repo.py \
+  --organization "your-ado-org" \
+  --project "your-ado-project" \
+  --repository "contoso-finance-repo" \
+  --branch "main"
+```
+
+**Step 3: Update Configuration**
+Edit the generated YAML file to point to your new repository.
+```yaml
+git:
+  repository: "contoso-finance-repo"
+```
+
+**Step 4: Deploy**
+Run the deployment command.
+```bash
+make deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev
+```
+
+### 4. Execute Deployment
 
 > **Security Note:** The CLI automatically enforces mandatory security principals (Additional Admin/Contributor) on all workspaces by injecting them from your environment variables.
 
 ```bash
 # Validate configuration syntax and structure
-python src/fabric_deploy.py validate config/projects/your_org/your_project.yaml
+make validate config=config/projects/your_org/your_project.yaml
 
 # Deploy to development environment
-python src/fabric_deploy.py deploy config/projects/your_org/your_project.yaml --env dev
-
-# Deploy with automatic Git repository connection
-python src/fabric_deploy.py deploy config/projects/your_org/your_project.yaml --env dev --connect-git
-
-# Deploy feature branch to isolated workspace
-# (Uses 'dev' config but creates a unique workspace name)
-python src/fabric_deploy.py deploy config/projects/your_org/your_project.yaml \
-  --env dev --branch feature/new-analytics --force-branch-workspace
-
-# Production deployment with diagnostics
-python src/fabric_deploy.py deploy config/projects/your_org/your_project.yaml --env prod --diagnose
+make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
 
 ## Utility Tools
