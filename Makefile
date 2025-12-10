@@ -92,7 +92,23 @@ docker-destroy: ## Destroy using Docker (Usage: make docker-destroy config=confi
 
 docker-shell: ## Run interactive shell in Docker container (Usage: make docker-shell ENVFILE=.env.ricoh)
 	docker run --rm -it --entrypoint /bin/bash --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE)
-	
+
+docker-diagnose: ## Run diagnostics in Docker (Usage: make docker-diagnose ENVFILE=.env)
+	docker run --rm --env-file $(ENVFILE) $(DOCKER_IMAGE) python scripts/preflight_check.py
+
+docker-generate: ## Generate project config in Docker (Usage: make docker-generate org="Org" project="Proj" template="basic_etl")
+	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
+	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
+	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+		python scripts/generate_project.py "$(org)" "$(project)" --template $(or $(template),basic_etl)
+
+docker-init-repo: ## Initialize ADO repo in Docker (Usage: make docker-init-repo org="Org" project="Proj" repo="Repo")
+	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
+	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
+	@if [ -z "$(repo)" ]; then echo "Error: repo argument required"; exit 1; fi
+	docker run --rm --env-file $(ENVFILE) $(DOCKER_IMAGE) \
+		python scripts/utilities/init_ado_repo.py --organization "$(org)" --project "$(project)" --repository "$(repo)"
+
 # Default env file for Docker runs. Override with `ENVFILE=.env.other` when needed.
 ENVFILE ?= .env
 
