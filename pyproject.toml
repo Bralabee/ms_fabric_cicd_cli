@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "usf-fabric-cli"
-version = "1.0.1"
+version = "1.1.0"
 description = "CLI tool for Microsoft Fabric CI/CD automation"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -29,7 +29,7 @@ dependencies = [
 ]
 
 [project.scripts]
-fabric-cicd = "fabric_deploy:app"
+fabric-cicd = "core.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]

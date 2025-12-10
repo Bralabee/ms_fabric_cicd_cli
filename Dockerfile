@@ -32,9 +32,14 @@ COPY src/ ./src/
 COPY config/ ./config/
 COPY templates/ ./templates/
 COPY scripts/ ./scripts/
+COPY pyproject.toml .
+COPY README.md .
+
+# Install the application itself
+RUN pip install --no-cache-dir .
 
 # Set Python path
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/src
 
 # Create non-root user for security
 RUN useradd -m -u 1000 fabric && chown -R fabric:fabric /app
@@ -44,12 +49,12 @@ USER fabric
 # Must be run as the user who will execute the commands
 RUN fab config set encryption_fallback_enabled true
 
+# Set entrypoint to the installed CLI
+ENTRYPOINT ["fabric-cicd"]
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD fab --version || exit 1
-
-# Default command
-ENTRYPOINT ["python", "src/fabric_deploy.py"]
 CMD ["--help"]
 
 # Build instructions:
