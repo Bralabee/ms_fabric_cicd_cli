@@ -1,0 +1,31 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: fabric-credentials # Variable group in ADO Library containing CLIENT_ID, SECRET, etc.
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.10'
+
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install Dependencies'
+
+- script: |
+    # Run the deployment script using secrets from ADO variables
+    export AZURE_CLIENT_ID=$(AZURE_CLIENT_ID)
+    export AZURE_CLIENT_SECRET=$(AZURE_CLIENT_SECRET)
+    export AZURE_TENANT_ID=$(AZURE_TENANT_ID)
+    
+    # Validate configuration first
+    python src/fabric_deploy.py validate config/projects/contoso/finance_analytics.yaml
+    
+    # Deploy
+    python src/fabric_deploy.py deploy config/projects/contoso/finance_analytics.yaml --env dev
+  displayName: 'Deploy to Fabric'

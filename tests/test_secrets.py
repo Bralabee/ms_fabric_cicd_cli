@@ -28,8 +28,11 @@ class TestFabricSecrets:
     def test_tenant_id_normalization(self, monkeypatch):
         """Test tenant ID normalization from AZURE_TENANT_ID"""
         monkeypatch.setenv("AZURE_TENANT_ID", "test-tenant-id")
+        # Ensure TENANT_ID doesn't interfere from .env or env vars
+        monkeypatch.delenv("TENANT_ID", raising=False)
 
-        secrets = FabricSecrets()
+        # Pass _env_file=None to ignore .env file
+        secrets = FabricSecrets(_env_file=None)
 
         # Should normalize to tenant_id
         assert secrets.get_tenant_id() == "test-tenant-id"

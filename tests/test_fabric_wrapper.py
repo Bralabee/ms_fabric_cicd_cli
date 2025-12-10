@@ -15,10 +15,14 @@ class TestFabricCLIWrapper:
         """Setup test fixtures"""
         telemetry = MagicMock()
         telemetry.emit = MagicMock()
-        # Disable version check to avoid subprocess call during init
-        self.fabric = FabricCLIWrapper(
-            "fake-token", telemetry_client=telemetry, validate_version=False
-        )
+        
+        # Patch subprocess.run to avoid actual CLI calls during init
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            # Disable version check to avoid subprocess call during init
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
 
     @patch("subprocess.run")
     def test_create_workspace_success(self, mock_run):
