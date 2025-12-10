@@ -62,9 +62,10 @@ jobs:
     
     - name: Validate configuration
       run: |
-        python src/fabric_deploy.py validate templates/blueprints/basic_etl.yaml
-        python src/fabric_deploy.py validate templates/blueprints/advanced_analytics.yaml
-        python src/fabric_deploy.py validate templates/blueprints/data_science.yaml
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+        python -m core.cli validate templates/blueprints/basic_etl.yaml
+        python -m core.cli validate templates/blueprints/advanced_analytics.yaml
+        python -m core.cli validate templates/blueprints/data_science.yaml
     
     - name: Run unit tests with coverage
       run: |
@@ -118,7 +119,8 @@ jobs:
         CONFIG_TEMPLATE="${{ github.event.inputs.config_template || 'basic_etl' }}"
         
         # Deploy workspace
-        python src/fabric_deploy.py deploy \
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+        python -m core.cli deploy \
           templates/blueprints/${CONFIG_TEMPLATE}.yaml \
           --env dev \
           --branch ${{ github.ref_name }} \
@@ -155,7 +157,8 @@ jobs:
         FABRIC_TOKEN: ${{ secrets.FABRIC_STAGING_TOKEN }}
         TENANT_ID: ${{ secrets.TENANT_ID }}
       run: |
-        python src/fabric_deploy.py deploy \
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+        python -m core.cli deploy \
           templates/blueprints/basic_etl.yaml \
           --env staging \
           --diagnose
@@ -195,7 +198,8 @@ jobs:
         FABRIC_TOKEN: ${{ secrets.FABRIC_PROD_TOKEN }}
         TENANT_ID: ${{ secrets.TENANT_ID }}
       run: |
-        python src/fabric_deploy.py deploy \
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+        python -m core.cli deploy \
           templates/blueprints/basic_etl.yaml \
           --env prod \
           --diagnose
@@ -248,7 +252,8 @@ jobs:
         TENANT_ID: ${{ secrets.TENANT_ID }}
       run: |
         # Create feature-branch specific workspace
-        python src/fabric_deploy.py deploy \
+        export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+        python -m core.cli deploy \
           templates/blueprints/basic_etl.yaml \
           --env dev \
           --branch ${{ github.head_ref }} \

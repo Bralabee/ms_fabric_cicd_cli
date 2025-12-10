@@ -181,8 +181,9 @@ src/
 │   ├── git_integration.py # Git synchronization
 │   ├── audit.py          # Compliance audit logging
 │   ├── telemetry.py      # Operational telemetry
-│   └── exceptions.py     # Exception hierarchy
-└── fabric_deploy.py       # Main deployment orchestrator
+│   ├── exceptions.py     # Exception hierarchy
+│   └── cli.py            # Main deployment orchestrator (Entry Point)
+
 
 config/
 ├── projects/

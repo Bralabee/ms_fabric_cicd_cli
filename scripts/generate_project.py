@@ -58,8 +58,8 @@ def generate_project_config(
     print(f"✅ Generated configuration: {output_path}")
     print(f"📝 Next steps:")
     print(f"   1. Review and edit {output_path}")
-    print(f"   2. Validate: python src/fabric_deploy.py validate {output_path}")
-    print(f"   3. Deploy: python src/fabric_deploy.py deploy {output_path} --env dev")
+    print(f"   2. Validate: make validate config={output_path}")
+    print(f"   3. Deploy: make deploy config={output_path} env=dev")
 
     return output_path
 
