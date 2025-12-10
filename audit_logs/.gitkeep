@@ -1,0 +1,2 @@
+# This directory stores audit logs
+# All .jsonl and .log files in this directory are ignored by git

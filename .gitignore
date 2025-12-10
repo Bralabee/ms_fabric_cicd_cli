@@ -1,8 +1,72 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv
+
+# Environment Variables & Secrets
 .env
+.env.*
+!.env.template
+!.env.example
+
+# Logs & Audit
+*.log
+audit_logs/
+!audit_logs/.gitkeep
+
+# IDE
 .DS_Store
 .vscode/
-debug_login.py
-*.log
-.env.ricoh
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Debug files
+debug_*.py
+debug_*.json
+
+# Build artifacts
+*.whl
+*.tar.gz
+
+# Sensitive configurations (if any contain secrets)
+# config/projects/*/secrets.yaml
+
+# Jupyter
+.ipynb_checkpoints
+
+# OS
+Thumbs.db
+.DS_Store

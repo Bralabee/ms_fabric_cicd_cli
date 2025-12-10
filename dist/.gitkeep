@@ -1,0 +1,2 @@
+# This directory stores build artifacts
+# All .whl and .tar.gz files in this directory are ignored by git
