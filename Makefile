@@ -43,6 +43,9 @@ validate: ## Validate a configuration file (Usage: make validate config=path/to/
 	fi
 	$(PYTHON) src/fabric_deploy.py validate $(config)
 
+diagnose: ## Run pre-flight system diagnostics
+	$(PYTHON) scripts/preflight_check.py
+
 deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env=dev)
 	@if [ -z "$(config)" ]; then \
 		echo "\033[31mError: 'config' argument is missing.\033[0m"; \
