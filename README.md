@@ -35,6 +35,9 @@ Enterprise-grade Microsoft Fabric deployment automation leveraging the official 
 conda env create -f environment.yml
 conda activate fabric-cli-cicd
 
+# Install dependencies and package in editable mode
+make install
+
 # Verify Fabric CLI installation and dependencies
 python scripts/preflight_check.py --auto-install
 

@@ -17,12 +17,16 @@ All notable changes to this project will be documented in this file.
 - **CI/CD Pipeline**: Added `azure-pipelines.yml` for Azure DevOps integration.
 - **Diagnostics**: Added `make diagnose` target to run preflight checks (`scripts/preflight_check.py`).
 - **Documentation**: Updated `README.md` with end-to-end workflow instructions.
+- **Entry Point Installation**: Added `pip install -e .` to `make install` target for CLI entry point registration.
 
 ### Changed
 - **Makefile Overhaul**: Restructured `Makefile` with grouped targets (Local Development, Local Operations, Docker Operations) and improved help output.
+- **Makefile Path Handling**: Fixed PYTHONPATH shell escaping issues by properly quoting variables to support paths with special characters.
 - **Testing**: Fixed unit tests (`tests/test_fabric_wrapper.py`, `tests/test_secrets.py`) to mock external CLI calls and pass in the CI environment.
 - **Environment**: Enforced strict usage of `fabric-cli-cicd` Conda environment.
 
 ### Fixed
+- **Shell Escaping**: Fixed Makefile commands to properly handle paths with apostrophes and special characters by quoting PYTHONPATH.
+- **Entry Point**: Resolved `fabric-cicd` command not found issue by adding editable install to setup process.
 - **Dependency Management**: Resolved issues with `requests` library in the base environment (though usage is now strictly in `fabric-cli-cicd`).
 - **Test Reliability**: Patched `subprocess.run` mocks to handle different call signatures.

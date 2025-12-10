@@ -11,8 +11,9 @@ help: ## Show this help message
 
 ##@ Local Development
 
-install: ## Install dependencies
+install: ## Install dependencies and package in editable mode
 	$(PIP) install -r requirements.txt
+	$(PIP) install -e .
 
 build: ## Build Python package (wheel)
 	$(PIP) install build
@@ -42,7 +43,7 @@ validate: ## Validate a configuration file (Usage: make validate config=path/to/
 	echo "Usage: make validate config=path/to/config.yaml"; \
 	exit 1; \
 	fi
-	export PYTHONPATH=$${PYTHONPATH}:$(PWD)/src && $(PYTHON) -m core.cli validate $(config)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m core.cli validate $(config)
 
 diagnose: ## Run pre-flight system diagnostics
 	$(PYTHON) scripts/preflight_check.py
@@ -58,7 +59,7 @@ deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env
 	echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
 	exit 1; \
 	fi
-	export PYTHONPATH=$${PYTHONPATH}:$(PWD)/src && $(PYTHON) -m core.cli deploy $(config) --env $(env)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m core.cli deploy $(config) --env $(env)
 
 destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml)
 	@if [ -z "$(config)" ]; then \
@@ -66,7 +67,7 @@ destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml)
 	echo "Usage: make destroy config=path/to/config.yaml"; \
 	exit 1; \
 	fi
-	export PYTHONPATH=$${PYTHONPATH}:$(PWD)/src && $(PYTHON) -m core.cli destroy $(config)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m core.cli destroy $(config)
 
 bulk-destroy: ## Bulk destroy workspaces from list (Usage: make bulk-destroy file=list.txt)
 	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make bulk-destroy file=list.txt"; exit 1; fi

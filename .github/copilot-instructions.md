@@ -1,0 +1,213 @@
+# GitHub Copilot Instructions for USF Fabric CLI CI/CD
+
+Enterprise Microsoft Fabric deployment automation using a **thin wrapper architecture** around official Fabric CLI (~270 LOC orchestration vs 90% CLI work).
+
+## 🏗 Architecture Fundamentals
+
+### Thin Wrapper Design Pattern
+```
+Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → fabric CLI
+                     ↓                                 ↓
+                  FabricSecrets (12-Factor)      FabricGitAPI (REST)
+                     ↓
+            AuditLogger (JSONL compliance)
+```
+
+**Core Components** (`src/core/`):
+- `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate commands)
+- `fabric_wrapper.py`: Thin abstraction over `fabric` CLI subprocess calls
+- `config.py`: YAML config loader with env-specific overrides + Jinja2 variable substitution
+- `secrets.py`: Waterfall credential management (Env Vars → .env → Azure Key Vault)
+- `git_integration.py`: Git connection automation via REST API (not CLI)
+- `templating.py`: Jinja2 sandboxed engine for artifact transformation
+- `audit.py`: Structured JSONL logging to `audit_logs/` for compliance
+
+### Organization-Agnostic Design
+All configurations use **environment variable substitution** (`${VAR_NAME}`). No hardcoded organization names.  
+Template blueprints in `templates/blueprints/*.yaml` are customized via `scripts/generate_project.py`.
+
+## 🔐 Secret Management (CRITICAL)
+
+**Waterfall Priority** (`src/core/secrets.py:FabricSecrets`):
+1. **Environment Variables** (production/CI/CD) - highest priority
+2. **`.env` file** (local development) - `python-dotenv` auto-loaded
+3. **Azure Key Vault** (optional) - via `DefaultAzureCredential` + `AZURE_KEYVAULT_URL`
+4. **Error** - raise if required credentials missing
+
+**Required Secrets**:
+- `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID` (Service Principal)
+- `FABRIC_TOKEN` (auto-generated from SP if missing)
+- `FABRIC_CAPACITY_ID` (for workspace deployments)
+- `AZURE_DEVOPS_PAT` or `GITHUB_TOKEN` (for Git integration)
+
+**NEVER**:
+- ❌ Hardcode credentials in code or config files
+- ❌ Commit `.env`, `.env.*`, or `audit_logs/*.jsonl` (see `.gitignore`)
+- ❌ Log secrets or tokens (obfuscation in `fabric_wrapper.py`)
+
+## 🛠 Developer Workflows
+
+### Environment Setup (REQUIRED FIRST)
+**Always activate the conda environment before running any Python commands:**
+```bash
+# Create environment (first time only)
+conda env create -f environment.yml
+
+# Activate environment (REQUIRED for all operations)
+conda activate fabric-cli-cicd
+
+# Verify you're in the correct environment
+conda env list  # Should show * next to fabric-cli-cicd
+```
+
+**All Python commands below assume `fabric-cli-cicd` conda environment is active.**
+
+### Standard Deployment Flow
+```bash
+# 1. Generate project config from template
+python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
+# Output: config/projects/acme_corp/sales_analytics.yaml
+
+# 2. Initialize Azure DevOps repo (if using Git integration)
+python scripts/utilities/init_ado_repo.py \
+  --organization "your-ado-org" \
+  --project "FabricProjects" \
+  --repository "acme-sales-repo"
+
+# 3. Update generated YAML with repo URL (edit config manually or via script)
+
+# 4. Deploy via Makefile (preferred) or direct CLI
+make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+# OR: python -m core.cli deploy config/projects/.../sales_analytics.yaml --env dev
+```
+
+### Testing Strategy
+```bash
+# Unit tests (mocked, no credentials required)
+make test  # OR: pytest -m "not integration"
+
+# Integration tests (requires real Fabric workspace + credentials in .env)
+make test-integration  # OR: pytest tests/integration -m integration
+
+# Pre-flight diagnostics (check CLI version, credentials, capacity access)
+python scripts/preflight_check.py --auto-install
+```
+
+### Docker Workflow
+```bash
+# Build image (installs Fabric CLI from GitHub)
+make docker-build  # OR: docker build -t fabric-cli-cicd .
+
+# Deploy using container (isolates dependencies)
+make docker-deploy config=config/projects/.../project.yaml env=dev ENVFILE=.env
+# ENVFILE parameter allows switching between .env, .env.prod, etc.
+```
+
+### Debugging Failed Deployments
+1. **Check audit logs**: `audit_logs/fabric_operations_YYYY-MM-DD.jsonl` (structured JSON)
+2. **Run diagnostics**: `python scripts/preflight_check.py` (validates CLI, credentials, capacity)
+3. **Validate config**: `make validate config=path/to/config.yaml` (schema + env var check)
+4. **Check Git connectivity**: `python scripts/utilities/debug_ado_access.py --organization X --project Y`
+5. **List workspace items**: `python scripts/utilities/list_workspace_items.py --workspace "workspace-name"`
+
+## 📝 Configuration Patterns
+
+### YAML Config Structure (`config/projects/org_name/project_name.yaml`)
+```yaml
+workspace:
+  name: "acme-sales-analytics"  # Workspace name (becomes DNS-safe slug)
+  capacity_id: "${FABRIC_CAPACITY_ID}"  # Env var substitution
+  git_repo: "${GIT_REPO_URL}"  # Optional: Azure DevOps or GitHub repo
+  git_branch: "main"
+
+folders: ["Bronze", "Silver", "Gold"]  # Lakehouse folder structure
+
+lakehouses:
+  - name: "raw_data_lakehouse"
+    folder: "Bronze"
+    description: "Raw ingestion layer"
+
+notebooks:
+  - name: "data_transformation"
+    folder: "Notebooks"
+    file_path: "templates/notebooks/transform.py"  # Import from file
+    # Content embedded in definition will be rendered via Jinja2
+
+environments:
+  dev:
+    workspace:
+      capacity_id: "F2"  # Override for dev environment
+  prod:
+    workspace:
+      capacity_id: "F64"  # Different capacity for prod
+```
+
+### Jinja2 Templating in Artifacts
+Notebooks, pipelines, and semantic models support Jinja2 variables:
+```python
+# In notebook definition (embedded or file_path)
+lakehouse_name = "{{ environment }}_data_lakehouse"  # Rendered: dev_data_lakehouse
+connection_string = "{{ secrets.STORAGE_ACCOUNT_URL }}"
+```
+
+**Rendering context** (`src/core/templating.py`):
+- `environment`: Current env (dev/test/prod)
+- `workspace_name`: Workspace display name
+- `capacity_id`: Fabric capacity ID
+- `secrets.*`: Access to secrets from `FabricSecrets` (use sparingly)
+
+## 🔗 Integration Points
+
+### Fabric CLI Dependency
+- **Installation**: `pip install https://github.com/microsoft/fabric-sdk-cli/archive/refs/heads/main.zip`
+- **Version Check**: `src/core/fabric_wrapper.py:_validate_cli_version()` ensures min version
+- **Command Pattern**: All CLI calls via `_run_command()` with `--output json` for parsing
+
+### Git Integration (REST API, not CLI)
+- **Why REST?**: Fabric CLI doesn't support Git connections yet (as of v1.0)
+- **Implementation**: `src/core/fabric_git_api.py:FabricGitAPI` uses Fabric REST API
+- **Supported Providers**: Azure DevOps, GitHub (via `GitProviderType` enum)
+- **Authentication**: Uses same Service Principal as Fabric operations
+
+### Azure DevOps Prerequisites
+Service Principal must have:
+1. **Basic** access level in ADO Organization Settings → Users
+2. **Contributor** role in target ADO project
+3. **Admin** role in Fabric workspace (defined in config YAML `principals` section)
+
+## 🧪 Code Conventions
+
+### Error Handling
+- **Custom Exceptions**: `src/core/exceptions.py` (`FabricCLIError`, `FabricCLINotFoundError`)
+- **Idempotency**: All operations check existence before creation (avoid "already exists" errors)
+- **Retry Logic**: Not implemented - rely on Fabric CLI's built-in retries
+
+### Logging
+- **Standard Library**: Use `logging` module (not `print()`)
+- **Rich Output**: User-facing messages via `rich.console.Console` for formatting
+- **Audit Trail**: All operations logged to `audit_logs/*.jsonl` via `AuditLogger`
+
+### Testing Marks
+- `@pytest.mark.integration` - requires credentials + real Fabric workspace
+- Default (no mark) - unit tests with mocks, safe for CI/CD
+
+## 🚨 Common Pitfalls
+
+1. **Not Using Conda Environment**: ALWAYS run `conda activate fabric-cli-cicd` before any Python operations. Check with `conda env list` to verify.
+2. **Entry Point Not Available**: Run `make install` or `pip install -e .` to enable the `fabric-cicd` command (alternative: use `python -m core.cli`)
+3. **Service Principal Permissions**: Most deployment failures = missing SP permissions (workspace admin, ADO contributor)
+4. **Capacity Exhausted**: F2 (trial) has low limits. Use `scripts/utilities/list_workspaces.py` to audit capacity usage
+5. **Git Branch Workspaces**: Feature branches auto-create workspaces like `main-workspace-feature-123`. Clean up manually if branch deleted.
+6. **Template Undefined Variables**: Jinja2 `StrictUndefined` mode raises errors. Check `templating.py` rendering context.
+
+## 📦 Packaging & Distribution
+
+- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.1.0-py3-none-any.whl`
+- **Entry Point**: `pyproject.toml` defines `fabric-cicd` command → `core.cli:app`
+- **Docker Image**: `Dockerfile` installs wheel + Fabric CLI, runs as non-root user
+
+## 🔗 Related Projects
+
+- **usf-fabric-cicd**: Original monolithic framework (this CLI is the lightweight successor)
+- **usf_fabric_monitoring**: Monitor Hub analysis for operational insights
+- **fabric-purview-playbook-webapp**: Delivery playbook web application
