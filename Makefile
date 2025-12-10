@@ -15,6 +15,10 @@ help: ## Show this help message
 install: ## Install dependencies
 	$(PIP) install -r requirements.txt
 
+build: ## Build Python package (wheel)
+	$(PIP) install build
+	$(PYTHON) -m build
+
 test: ## Run unit tests
 	$(PYTEST) -m "not integration"
 
@@ -32,16 +36,32 @@ clean: ## Clean up cache and temporary files
 	rm -f *.log
 
 validate: ## Validate a configuration file (Usage: make validate config=path/to/config.yaml)
-	@if [ -z "$(config)" ]; then echo "Error: config argument required. Usage: make validate config=path/to/config.yaml"; exit 1; fi
+	@if [ -z "$(config)" ]; then \
+		echo "\033[31mError: 'config' argument is missing.\033[0m"; \
+		echo "Usage: make validate config=path/to/config.yaml"; \
+		exit 1; \
+	fi
 	$(PYTHON) src/fabric_deploy.py validate $(config)
 
 deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env=dev)
-	@if [ -z "$(config)" ]; then echo "Error: config argument required. Usage: make deploy config=path/to/config.yaml env=dev"; exit 1; fi
-	@if [ -z "$(env)" ]; then echo "Error: env argument required. Usage: make deploy config=path/to/config.yaml env=dev"; exit 1; fi
+	@if [ -z "$(config)" ]; then \
+		echo "\033[31mError: 'config' argument is missing.\033[0m"; \
+		echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
+		exit 1; \
+	fi
+	@if [ -z "$(env)" ]; then \
+		echo "\033[31mError: 'env' argument is missing.\033[0m"; \
+		echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
+		exit 1; \
+	fi
 	$(PYTHON) src/fabric_deploy.py deploy $(config) --env $(env)
 
 destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml)
-	@if [ -z "$(config)" ]; then echo "Error: config argument required. Usage: make destroy config=path/to/config.yaml"; exit 1; fi
+	@if [ -z "$(config)" ]; then \
+		echo "\033[31mError: 'config' argument is missing.\033[0m"; \
+		echo "Usage: make destroy config=path/to/config.yaml"; \
+		exit 1; \
+	fi
 	$(PYTHON) src/fabric_deploy.py destroy $(config)
 
 bulk-destroy: ## Bulk destroy workspaces from list (Usage: make bulk-destroy file=list.txt)
