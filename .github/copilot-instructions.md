@@ -15,12 +15,14 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
 
 **Core Components** (`src/core/`):
 - `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate commands)
-- `fabric_wrapper.py`: Thin abstraction over `fabric` CLI subprocess calls
+- `fabric_wrapper.py`: Thin abstraction over `fabric` CLI subprocess calls. **Supports generic item creation** via `create_item` for 54+ Fabric item types.
 - `config.py`: YAML config loader with env-specific overrides + Jinja2 variable substitution
 - `secrets.py`: Waterfall credential management (Env Vars → .env → Azure Key Vault)
 - `git_integration.py`: Git connection automation via REST API (not CLI)
 - `templating.py`: Jinja2 sandboxed engine for artifact transformation
 - `audit.py`: Structured JSONL logging to `audit_logs/` for compliance
+- `telemetry.py`: Lightweight usage tracking (optional)
+- `exceptions.py`: Custom error handling classes
 
 ### Organization-Agnostic Design
 All configurations use **environment variable substitution** (`${VAR_NAME}`). No hardcoded organization names.  
@@ -65,7 +67,9 @@ conda env list  # Should show * next to fabric-cli-cicd
 ### Standard Deployment Flow
 ```bash
 # 1. Generate project config from template
-python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
+# Available templates: basic_etl, advanced_analytics, realtime_streaming, compliance_regulated, etc.
+# See docs/BLUEPRINT_CATALOG.md for full list.
+python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template realtime_streaming
 # Output: config/projects/acme_corp/sales_analytics.yaml
 
 # 2. Initialize Azure DevOps repo (if using Git integration)
@@ -119,6 +123,16 @@ workspace:
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Env var substitution
   git_repo: "${GIT_REPO_URL}"  # Optional: Azure DevOps or GitHub repo
   git_branch: "main"
+
+# Generic Resource Definition (supports all Fabric item types)
+resources:
+  - type: "Eventstream"
+    name: "iot_events"
+    description: "Ingest from IoT Hub"
+  - type: "KQLDatabase"
+    name: "telemetry_db"
+  - type: "Reflex"
+    name: "alert_monitor"
 
 folders: ["Bronze", "Silver", "Gold"]  # Lakehouse folder structure
 
