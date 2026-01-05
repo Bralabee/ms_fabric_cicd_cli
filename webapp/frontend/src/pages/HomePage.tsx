@@ -1,11 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { fetchScenarios, fetchCategories } from '@/lib/api'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   Clock, 
   BookOpen, 
@@ -14,15 +12,18 @@ import {
   GitBranch, 
   AlertTriangle,
   ChevronRight,
-  Layers
+  Layers,
+  ArrowRight,
+  Container,
+  Workflow
 } from 'lucide-react'
 import { formatDuration, cn } from '@/lib/utils'
 
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   'getting-started': Rocket,
   'configuration': Settings,
-  'deployment': Layers,
-  'workflows': GitBranch,
+  'deployment': Container,
+  'workflows': Workflow,
   'integration': GitBranch,
   'troubleshooting': AlertTriangle,
 }
@@ -32,6 +33,16 @@ const difficultyColors: Record<string, 'success' | 'warning' | 'destructive'> = 
   intermediate: 'warning',
   advanced: 'destructive',
 }
+
+// Visual workflow steps for the roadmap
+const workflowSteps = [
+  { id: 1, label: 'Setup', scenario: 'getting-started', icon: Rocket, color: 'bg-blue-500' },
+  { id: 2, label: 'Configure', scenario: 'project-generation', icon: Settings, color: 'bg-purple-500' },
+  { id: 3, label: 'Deploy', scenario: 'local-deployment', icon: Container, color: 'bg-green-500' },
+  { id: 4, label: 'Dockerize', scenario: 'docker-deployment', icon: Layers, color: 'bg-orange-500' },
+  { id: 5, label: 'Branch', scenario: 'feature-branch-workflows', icon: GitBranch, color: 'bg-pink-500' },
+  { id: 6, label: 'Integrate', scenario: 'git-integration', icon: Workflow, color: 'bg-cyan-500' },
+]
 
 export default function HomePage() {
   const { data: scenarios, isLoading: scenariosLoading } = useQuery({
@@ -94,38 +105,130 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Categories Overview */}
+      {/* Visual Workflow Roadmap */}
       <div className="mb-12">
-        <h2 className="text-2xl font-semibold mb-6">Learning Path</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {categories?.map((category, index) => {
-            const Icon = categoryIcons[category.id] || BookOpen
-            return (
-              <Card key={category.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Icon className="h-5 w-5 text-primary" />
+        <h2 className="text-2xl font-semibold mb-6 text-center">Your Learning Journey</h2>
+        <div className="relative">
+          {/* Desktop Flow - Horizontal */}
+          <div className="hidden md:flex items-center justify-between max-w-4xl mx-auto">
+            {workflowSteps.map((step, index) => {
+              const Icon = step.icon
+              return (
+                <div key={step.id} className="flex items-center">
+                  <Link to={`/scenario/${step.scenario}`} className="group">
+                    <div className="flex flex-col items-center">
+                      <div className={cn(
+                        "h-14 w-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110",
+                        step.color
+                      )}>
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <span className="mt-2 text-sm font-medium group-hover:text-primary transition-colors">
+                        {step.label}
+                      </span>
+                      <span className="text-xs text-muted-foreground">Step {step.id}</span>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{category.name}</CardTitle>
-                      <CardDescription className="text-xs">
-                        {category.scenario_count} scenario{category.scenario_count !== 1 ? 's' : ''}
-                      </CardDescription>
+                  </Link>
+                  {index < workflowSteps.length - 1 && (
+                    <ArrowRight className="h-5 w-5 text-muted-foreground mx-4 flex-shrink-0" />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          
+          {/* Mobile Flow - Vertical */}
+          <div className="md:hidden space-y-3">
+            {workflowSteps.map((step) => {
+              const Icon = step.icon
+              return (
+                <Link key={step.id} to={`/scenario/${step.scenario}`}>
+                  <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className={cn(
+                      "h-10 w-10 rounded-full flex items-center justify-center text-white shadow-md flex-shrink-0",
+                      step.color
+                    )}>
+                      <Icon className="h-5 w-5" />
                     </div>
+                    <div className="flex-1">
+                      <div className="font-medium">{step.label}</div>
+                      <div className="text-xs text-muted-foreground">Step {step.id}</div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{category.description}</p>
-                </CardContent>
-                <CardFooter>
-                  <Badge variant="outline" className="text-xs">
-                    Step {index + 1}
-                  </Badge>
-                </CardFooter>
-              </Card>
-            )
-          })}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Typical Workflow Example */}
+      <div className="mb-12 bg-muted/30 rounded-xl p-6 md:p-8">
+        <h2 className="text-xl font-semibold mb-4">📋 Typical Deployment Workflow</h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="font-medium mb-3 flex items-center gap-2">
+              <span className="h-6 w-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center">1</span>
+              First Time Setup
+            </h3>
+            <div className="space-y-2 text-sm pl-8">
+              <div className="flex items-start gap-2">
+                <code className="bg-background px-2 py-1 rounded text-xs">conda activate fabric-cli-cicd</code>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="bg-background px-2 py-1 rounded text-xs">cp .env.template .env</code>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="bg-background px-2 py-1 rounded text-xs">make diagnose</code>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="font-medium mb-3 flex items-center gap-2">
+              <span className="h-6 w-6 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center">2</span>
+              Generate Config
+            </h3>
+            <div className="space-y-2 text-sm pl-8">
+              <div className="flex items-start gap-2">
+                <code className="bg-background px-2 py-1 rounded text-xs whitespace-nowrap overflow-x-auto">python scripts/generate_project.py "Org" "Project" --template basic_etl</code>
+              </div>
+              <div className="text-muted-foreground text-xs mt-1">
+                → Creates <code className="bg-background px-1 rounded">config/projects/org/project.yaml</code>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="font-medium mb-3 flex items-center gap-2">
+              <span className="h-6 w-6 rounded-full bg-green-500 text-white text-xs flex items-center justify-center">3</span>
+              Deploy to Fabric
+            </h3>
+            <div className="space-y-2 text-sm pl-8">
+              <div className="flex items-start gap-2">
+                <code className="bg-background px-2 py-1 rounded text-xs">make validate config=path/to/config.yaml</code>
+              </div>
+              <div className="flex items-start gap-2">
+                <code className="bg-background px-2 py-1 rounded text-xs">make deploy config=path/to/config.yaml env=dev</code>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="font-medium mb-3 flex items-center gap-2">
+              <span className="h-6 w-6 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center">4</span>
+              Verify in Portal
+            </h3>
+            <div className="space-y-2 text-sm pl-8">
+              <div className="text-muted-foreground">
+                ✓ Workspace created in Microsoft Fabric<br/>
+                ✓ Lakehouse with Bronze/Silver/Gold folders<br/>
+                ✓ Notebooks uploaded and configured<br/>
+                ✓ Git connection established (if configured)
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
