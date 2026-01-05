@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { cn } from '@/lib/utils'
@@ -12,6 +13,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
   return (
     <div className={cn('markdown-content', className)}>
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           code({ node, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '')
@@ -44,21 +46,31 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
           },
           table({ children }) {
             return (
-              <div className="my-4 overflow-x-auto">
-                <table className="w-full border-collapse">{children}</table>
+              <div className="my-4 overflow-x-auto rounded-lg border border-border">
+                <table className="w-full border-collapse text-sm">{children}</table>
               </div>
+            )
+          },
+          thead({ children }) {
+            return (
+              <thead className="bg-muted/50">{children}</thead>
             )
           },
           th({ children }) {
             return (
-              <th className="bg-muted px-4 py-2 text-left font-semibold border border-border">
+              <th className="px-4 py-3 text-left font-semibold border-b border-border whitespace-nowrap">
                 {children}
               </th>
             )
           },
           td({ children }) {
             return (
-              <td className="px-4 py-2 border border-border">{children}</td>
+              <td className="px-4 py-3 border-b border-border/50">{children}</td>
+            )
+          },
+          tr({ children }) {
+            return (
+              <tr className="hover:bg-muted/30 transition-colors">{children}</tr>
             )
           },
           a({ href, children }) {

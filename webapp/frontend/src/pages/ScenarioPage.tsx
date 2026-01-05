@@ -261,7 +261,7 @@ export default function ScenarioPage() {
                         {currentStep.tips.map((tip, index) => (
                           <li key={index} className="flex items-start gap-2 text-sm">
                             <span className="text-blue-500 mt-1">•</span>
-                            <span>{tip}</span>
+                            <MarkdownContent content={tip} className="flex-1 [&>p]:my-0 [&>p]:leading-normal" />
                           </li>
                         ))}
                       </ul>
@@ -283,7 +283,7 @@ export default function ScenarioPage() {
                         {currentStep.warnings.map((warning, index) => (
                           <li key={index} className="flex items-start gap-2 text-sm">
                             <span className="text-amber-500 mt-1">⚠</span>
-                            <span>{warning}</span>
+                            <MarkdownContent content={warning} className="flex-1 [&>p]:my-0 [&>p]:leading-normal" />
                           </li>
                         ))}
                       </ul>
