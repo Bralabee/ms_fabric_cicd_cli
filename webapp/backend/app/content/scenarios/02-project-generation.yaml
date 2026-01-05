@@ -1,0 +1,417 @@
+# Project Generation Scenario
+# Based on scripts/generate_project.py and docs/BLUEPRINT_CATALOG.md
+
+id: project-generation
+title: Generate Project Configurations
+description: Learn how to use the 10 production-ready blueprint templates to scaffold new Fabric projects with standardized configurations and best practices.
+difficulty: beginner
+estimated_duration_minutes: 25
+category: configuration
+order: 2
+
+prerequisites:
+  - getting-started
+
+learning_outcomes:
+  - Understand the available blueprint templates and their use cases
+  - Generate project configurations using the CLI
+  - Customize generated configurations for specific needs
+  - Apply naming conventions and organizational standards
+
+tags:
+  - blueprints
+  - templates
+  - configuration
+  - project-scaffolding
+  - yaml
+  - generate
+
+related_scenarios:
+  - configuration-deep-dive
+  - local-deployment
+
+steps:
+  - id: overview
+    title: Blueprint Templates Overview
+    type: info
+    content: |
+      The framework includes **10 production-ready blueprint templates** optimized for different use cases.
+      Instead of writing YAML configurations from scratch, you generate them from these templates.
+      
+      **Blueprint Categories:**
+      
+      | Complexity | Templates |
+      |------------|-----------|
+      | ★☆☆☆☆ Starter | `minimal_starter` |
+      | ★★☆☆☆ Basic | `basic_etl`, `data_science` |
+      | ★★★☆☆ Intermediate | `advanced_analytics` |
+      | ★★★★☆ Advanced | `extensive_example`, `realtime_streaming`, `data_mesh_domain`, `migration_hybrid`, `specialized_timeseries` |
+      | ★★★★★ Enterprise | `compliance_regulated` |
+      
+      Each template includes pre-configured:
+      - Folder structure (Bronze/Silver/Gold or custom)
+      - Lakehouse and warehouse definitions
+      - Notebook scaffolds
+      - Pipeline templates
+      - Security principal placeholders
+    tips:
+      - Start with `minimal_starter` for learning
+      - Use `basic_etl` for most production projects
+
+  - id: minimal-starter
+    title: "Template 1: Minimal Starter"
+    type: info
+    content: |
+      **Best For:** Learning, POCs, Solo projects
+      
+      The absolute minimum viable Fabric workspace for quick prototyping and learning.
+      
+      **Resources:**
+      - 1 lakehouse (all-in-one data storage)
+      - 1 notebook (clear entry point)
+      - 1 pipeline (basic ETL)
+      - No Git integration (simplicity first)
+      
+      **Cost:** $0/month (F2 trial) or $50-100/month (F8)
+      
+      **Use Cases:**
+      - Learning Microsoft Fabric
+      - Individual contributor projects
+      - Proof-of-concept development
+      - Training environments
+    code:
+      language: bash
+      content: |
+        # Generate minimal starter configuration
+        python scripts/generate_project.py "My Company" "Quick POC" \
+          --template minimal_starter
+        
+        # Output: config/projects/my_company/quick_poc.yaml
+    tips:
+      - Graduate to `basic_etl` when you need Git version control
+
+  - id: basic-etl
+    title: "Template 2: Basic ETL"
+    type: info
+    content: |
+      **Best For:** Standard ETL pipelines, Team collaboration
+      
+      Standard medallion architecture (Bronze → Silver → Gold) for production ETL pipelines.
+      This is the **recommended starting template** for most projects.
+      
+      **Resources:**
+      - 3 lakehouses (Bronze, Silver, Gold)
+      - 1 data warehouse
+      - 3 notebooks (ingestion, transform, reporting)
+      - 2 pipelines
+      - 1 semantic model
+      - Git integration
+      
+      **Cost:** $100-500/month (F8-F16)
+      
+      **Use Cases:**
+      - Standard ETL workflows
+      - Batch data processing
+      - Data lake modernization
+      - Team-based development
+    code:
+      language: bash
+      content: |
+        # Generate basic ETL configuration
+        python scripts/generate_project.py "Acme Corp" "Sales Analytics" \
+          --template basic_etl \
+          --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
+        
+        # Output: config/projects/acme_corp/sales_analytics.yaml
+    tips:
+      - The medallion architecture is the industry standard for data lakes
+
+  - id: realtime-streaming
+    title: "Template 3: Real-Time Streaming"
+    type: info
+    content: |
+      **Best For:** IoT, Events, Real-time analytics
+      
+      High-throughput streaming platform with real-time analytics and alerting.
+      
+      **Resources:**
+      - 1 lakehouse (archival)
+      - 3 eventstreams (ingestion)
+      - 1 eventhouse (real-time analytics)
+      - 2 KQL databases
+      - 1 KQL queryset
+      - 2 Reflex (event-driven automation)
+      - 1 KQL dashboard (live monitoring)
+      
+      **Cost:** $800-2500/month (F16-F32)
+      
+      **Use Cases:**
+      - IoT device telemetry (1M+ devices)
+      - Real-time log aggregation
+      - Clickstream analysis
+      - Monitoring and alerting systems
+    code:
+      language: bash
+      content: |
+        # Generate real-time streaming configuration
+        python scripts/generate_project.py "TechCorp" "IoT Platform" \
+          --template realtime_streaming
+        
+        # Output: config/projects/techcorp/iot_platform.yaml
+
+  - id: compliance-regulated
+    title: "Template 4: Compliance Regulated"
+    type: info
+    content: |
+      **Best For:** Healthcare (HIPAA), Finance, Government
+      
+      Enterprise template with comprehensive audit logging, data classification, 
+      and regulatory compliance features.
+      
+      **Resources:**
+      - 4 lakehouses (PHI, Business, Analytics, Audit)
+      - 2 warehouses
+      - Multiple pipelines with lineage tracking
+      - Compliance audit notebooks
+      - Retention policy configurations
+      
+      **Cost:** $1500-5000/month (F16+)
+      
+      **Compliance Features:**
+      - ✅ Data classification tiers
+      - ✅ Audit trail notebooks
+      - ✅ PHI/PII isolation zones
+      - ✅ Access control matrices
+      - ✅ Retention policy support
+    code:
+      language: bash
+      content: |
+        # Generate compliance-regulated configuration
+        python scripts/generate_project.py "HealthCo" "Patient Platform" \
+          --template compliance_regulated
+        
+        # Output: config/projects/healthco/patient_platform.yaml
+    warnings:
+      - Review with your compliance team before deploying to production
+      - Additional Azure policies may be required
+
+  - id: generate-command
+    title: Generate Project Command
+    type: command
+    content: |
+      The `generate_project.py` script creates a complete configuration file 
+      from a blueprint template.
+      
+      **Command Syntax:**
+      ```
+      python scripts/generate_project.py "Organization Name" "Project Name" [OPTIONS]
+      ```
+      
+      **Options:**
+      
+      | Option | Description | Default |
+      |--------|-------------|---------|
+      | `--template` | Blueprint template name | `basic_etl` |
+      | `--capacity-id` | Fabric capacity ID | `${FABRIC_CAPACITY_ID}` |
+      | `--git-repo` | Git repository URL | `${GIT_REPO_URL}` |
+      
+      **Output:** `config/projects/{org_slug}/{project_slug}.yaml`
+    code:
+      language: bash
+      content: |
+        # Generate configuration for a financial services project
+        python scripts/generate_project.py \
+          "Global Bank Corp" \
+          "Risk Analytics Platform" \
+          --template advanced_analytics \
+          --capacity-id F128
+        
+        # Check the generated file
+        cat config/projects/global_bank_corp/risk_analytics_platform.yaml
+    tips:
+      - Organization and project names are converted to slugs (lowercase, underscores)
+      - Use `${VAR}` syntax for environment variable substitution
+
+  - id: customization
+    title: Customize Generated Configuration
+    type: config
+    content: |
+      After generation, customize the YAML file for your specific requirements.
+      
+      **Common Customizations:**
+      
+      1. **Folder Structure** - Add domain-specific folders
+      2. **Lakehouse Names** - Match your naming conventions
+      3. **Principals** - Add team members and service principals
+      4. **Git Configuration** - Set repository and branch
+    code:
+      language: yaml
+      filename: config/projects/acme_corp/sales_analytics.yaml
+      content: |
+        workspace:
+          name: "acme-sales-analytics"
+          display_name: "Acme Sales Analytics [{{ env }}]"
+          capacity_id: "${FABRIC_CAPACITY_ID}"
+          
+        # Custom folder structure for manufacturing
+        folders:
+          - "01_Raw_Sensors"      # IoT sensor data
+          - "02_Production"       # Production line analytics
+          - "03_Quality"          # QC data and reports
+          - "04_Maintenance"      # Predictive maintenance
+          - "99_Notebooks"        # Analysis notebooks
+        
+        lakehouses:
+          - name: "sensor_data_raw"
+            folder: "01_Raw_Sensors"
+            description: "Raw IoT sensor data from production floor"
+          
+          - name: "production_metrics"
+            folder: "02_Production"
+            description: "Processed production line metrics"
+        
+        # Team access control
+        principals:
+          - id: "${ADMIN_SERVICE_PRINCIPAL}"
+            role: "Admin"
+          - id: "production-team@acme.com"
+            role: "Contributor"
+          - id: "quality-control@acme.com"
+            role: "Viewer"
+    tips:
+      - Use `{{ env }}` for environment-specific values
+      - Use `${VAR}` for environment variable substitution
+
+  - id: generic-resources
+    title: Generic Resources (Future-Proof)
+    type: info
+    content: |
+      The framework supports **54+ Fabric item types** through a generic resource definition.
+      This ensures your configurations remain valid as Microsoft adds new item types.
+      
+      **Syntax:**
+      ```yaml
+      resources:
+        - type: "ItemTypeName"
+          name: "item_name"
+          folder: "Optional/Folder"
+          description: "Optional description"
+      ```
+      
+      **Supported Types Include:**
+      - Eventstream, Eventhouse
+      - KQLDatabase, KQLQueryset, KQLDashboard
+      - Reflex (event-driven automation)
+      - MLModel, MLExperiment
+      - SparkJobDefinition
+      - And 45+ more...
+    code:
+      language: yaml
+      content: |
+        # Generic resource definitions
+        resources:
+          - type: "Eventstream"
+            name: "iot_ingestion"
+            folder: "01_Raw_Sensors"
+            description: "Real-time IoT data stream"
+          
+          - type: "KQLDatabase"
+            name: "sensor_logs"
+            folder: "01_Raw_Sensors"
+          
+          - type: "Reflex"
+            name: "alert_monitor"
+            folder: "04_Maintenance"
+            description: "Predictive maintenance alerts"
+    tips:
+      - Check Fabric documentation for the exact type names
+      - Use `fabric-cicd` CLI to list supported types
+
+  - id: environment-overrides
+    title: Environment-Specific Overrides
+    type: config
+    content: |
+      Configurations support environment-specific overrides for dev/staging/prod 
+      without duplicating files.
+      
+      **Structure:**
+      ```
+      config/
+      ├── projects/
+      │   └── acme_corp/
+      │       └── sales_analytics.yaml  # Base configuration
+      └── environments/
+          ├── dev.yaml                  # Development overrides
+          ├── staging.yaml              # Staging overrides
+          └── prod.yaml                 # Production overrides
+      ```
+    code:
+      language: yaml
+      filename: config/environments/prod.yaml
+      content: |
+        # Production environment overrides
+        workspace:
+          capacity_id: "F64"  # Higher capacity for production
+          
+        principals:
+          - id: "${PROD_ADMIN_PRINCIPAL}"
+            role: "Admin"
+          - id: "${PROD_TEAM_GROUP}"
+            role: "Contributor"
+    tips:
+      - Environment overrides are merged with the base config at deploy time
+      - Use different capacity sizes for dev vs prod
+
+  - id: validation
+    title: Validate Configuration
+    type: command
+    content: |
+      Always validate your configuration before deploying to catch syntax 
+      errors and missing required fields.
+    code:
+      language: bash
+      content: |
+        # Validate the generated configuration
+        make validate config=config/projects/acme_corp/sales_analytics.yaml
+        
+        # OR using the CLI directly
+        fabric-cicd validate config/projects/acme_corp/sales_analytics.yaml
+    expected_output: |
+      ✓ YAML syntax valid
+      ✓ Required fields present
+      ✓ Environment variables resolved
+      ✓ Template syntax valid
+      
+      Configuration is valid!
+    tips:
+      - Run validation before every deployment
+      - CI/CD pipelines should always validate first
+
+  - id: next-steps
+    title: Next Steps
+    type: info
+    content: |
+      🎉 You've learned how to generate and customize project configurations!
+      
+      **Recommended Next Steps:**
+      
+      1. **Configuration Deep Dive** → Understand all YAML options in detail
+      2. **Local Deployment** → Deploy your configuration to Fabric
+      3. **Docker Deployment** → Use containerized deployments
+      
+      **All Available Templates:**
+      
+      | Template | Best For |
+      |----------|----------|
+      | `minimal_starter` | Learning, POCs |
+      | `basic_etl` | Standard ETL (recommended) |
+      | `advanced_analytics` | ML/AI workloads |
+      | `data_science` | Research projects |
+      | `extensive_example` | Enterprise reference |
+      | `realtime_streaming` | IoT, events |
+      | `compliance_regulated` | Healthcare, Finance, Gov |
+      | `data_mesh_domain` | Domain-driven orgs |
+      | `migration_hybrid` | Cloud migration |
+      | `specialized_timeseries` | Time-series, APM |
+    tips:
+      - See `docs/BLUEPRINT_CATALOG.md` for detailed template documentation

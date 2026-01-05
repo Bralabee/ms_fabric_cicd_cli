@@ -142,6 +142,31 @@ make validate config=config/projects/your_org/your_project.yaml
 make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
 
+## Interactive Learning Guide
+
+The project includes an **interactive web application** to help users understand and learn the CLI workflows:
+
+```bash
+cd webapp
+
+# Quick start (requires Python 3.11+ and Node.js 18+)
+make install  # Install backend + frontend dependencies
+make dev      # Start both servers (backend: 8001, frontend: 5173)
+
+# Open http://localhost:5173 in your browser
+```
+
+The guide covers:
+- **Getting Started**: Environment setup, credentials, preflight checks
+- **Project Generation**: All 10 blueprint templates with examples
+- **Local Deployment**: Step-by-step deployment workflows
+- **Docker Deployment**: Containerized deployment options
+- **Feature Branch Workflows**: Branch isolation and parallel development
+- **Git Integration**: Azure DevOps and GitHub repository connections
+- **Troubleshooting**: Common issues and solutions
+
+See [webapp/README.md](webapp/README.md) for detailed documentation.
+
 ## Utility Tools
 
 The framework includes several utility scripts in `scripts/utilities/` to assist with setup and troubleshooting. These scripts automatically load credentials from your `.env` file.

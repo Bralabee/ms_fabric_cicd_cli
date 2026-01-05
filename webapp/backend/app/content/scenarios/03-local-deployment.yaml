@@ -1,0 +1,339 @@
+# Local Deployment Scenario
+# Based on docs/01_User_Guides/02_CLI_Walkthrough.md
+
+id: local-deployment
+title: Deploy Using Local Python
+description: Learn how to validate and deploy Fabric workspaces using the Python CLI and Makefile commands on your local machine.
+difficulty: beginner
+estimated_duration_minutes: 20
+category: deployment
+order: 3
+
+prerequisites:
+  - getting-started
+  - project-generation
+
+learning_outcomes:
+  - Validate configurations before deployment
+  - Deploy workspaces using the CLI and Makefile
+  - Understand idempotent deployment behavior
+  - Verify deployment results in Fabric portal
+
+tags:
+  - deployment
+  - cli
+  - makefile
+  - validate
+  - workspace
+
+related_scenarios:
+  - docker-deployment
+  - feature-branch-workflows
+
+steps:
+  - id: overview
+    title: Local Deployment Overview
+    type: info
+    content: |
+      Local deployment uses your conda environment and `.env` credentials to 
+      provision Fabric workspaces directly from your machine.
+      
+      **Deployment Flow:**
+      
+      ```
+      Configuration (YAML) → Validation → Authentication → Deployment → Verification
+      ```
+      
+      **Key Commands:**
+      
+      | Task | Command |
+      |------|---------|
+      | Validate | `make validate config=...` |
+      | Deploy | `make deploy config=... env=dev` |
+      | Destroy | `make destroy config=... env=dev` |
+    tips:
+      - Always validate before deploying
+      - Deployments are idempotent (safe to rerun)
+
+  - id: activate-environment
+    title: Activate Conda Environment
+    type: command
+    content: |
+      Before any deployment operation, ensure your conda environment is active.
+      
+      **This is critical** - running commands in the wrong environment will fail.
+    code:
+      language: bash
+      content: |
+        # Activate the conda environment
+        conda activate fabric-cli-cicd
+        
+        # Verify you're in the correct environment
+        conda env list
+        
+        # The active environment shows an asterisk (*)
+    expected_output: |
+      # conda environments:
+      #
+      base                     /home/user/miniconda3
+      fabric-cli-cicd       *  /home/user/miniconda3/envs/fabric-cli-cicd
+    warnings:
+      - Import errors indicate wrong environment is active
+      - Always check with `conda env list` if unsure
+
+  - id: validate-config
+    title: Validate Configuration
+    type: command
+    content: |
+      Validation checks your configuration for:
+      - YAML syntax errors
+      - Required fields (workspace name, etc.)
+      - Environment variable resolution
+      - Jinja2 template syntax
+      
+      **Always validate before deploying!**
+    code:
+      language: bash
+      content: |
+        # Validate using Makefile
+        make validate config=config/projects/acme_corp/sales_analytics.yaml
+        
+        # OR using CLI directly
+        fabric-cicd validate config/projects/acme_corp/sales_analytics.yaml
+        
+        # OR using Python module
+        python -m core.cli validate config/projects/acme_corp/sales_analytics.yaml
+    expected_output: |
+      ✓ YAML syntax valid
+      ✓ Required fields present
+      ✓ Environment variables resolved
+      ✓ Template syntax valid
+      
+      Configuration is valid!
+    tips:
+      - Fix all validation errors before deploying
+      - Common errors include missing env vars and YAML indentation issues
+
+  - id: deploy-dev
+    title: Deploy to Development
+    type: command
+    content: |
+      Deploy your workspace to the development environment.
+      
+      **What happens during deployment:**
+      
+      1. Configuration is loaded and merged with environment overrides
+      2. Fabric CLI authenticates using your credentials
+      3. Workspace is created (or updated if it exists)
+      4. Folders are created within the workspace
+      5. Items (lakehouses, warehouses, etc.) are provisioned
+      6. Principals are assigned access roles
+      7. Git integration is configured (if specified)
+      8. Audit log is written to `audit_logs/`
+    code:
+      language: bash
+      content: |
+        # Deploy using Makefile
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+        
+        # OR using CLI directly
+        fabric-cicd deploy config/projects/acme_corp/sales_analytics.yaml --env dev
+        
+        # With diagnostic output
+        fabric-cicd deploy config/projects/acme_corp/sales_analytics.yaml --env dev --diagnose
+    expected_output: |
+      Loading configuration: config/projects/acme_corp/sales_analytics.yaml
+      Environment: dev
+      
+      ✓ Authenticated successfully
+      ✓ Workspace 'acme-sales-analytics-dev' created
+      ✓ Folder '01_Raw_Data' created
+      ✓ Folder '02_Silver' created
+      ✓ Folder '03_Gold' created
+      ✓ Lakehouse 'sales_raw' created
+      ✓ Lakehouse 'sales_curated' created
+      ✓ Warehouse 'sales_reporting' created
+      ✓ Principal 'admin@acme.com' assigned role 'Admin'
+      ✓ Git integration configured
+      
+      Deployment completed successfully!
+    tips:
+      - Use `--diagnose` flag for detailed output during troubleshooting
+      - Check `audit_logs/` for deployment records
+
+  - id: idempotent-behavior
+    title: Idempotent Deployments
+    type: info
+    content: |
+      Deployments are **idempotent** - meaning you can safely run them multiple times.
+      
+      **Idempotent Behavior:**
+      
+      | Item State | Deployment Action |
+      |------------|-------------------|
+      | Does not exist | Create |
+      | Exists (same config) | No change |
+      | Exists (different config) | Update |
+      
+      **Benefits:**
+      - ✅ Safe to rerun after failures
+      - ✅ Can run in CI/CD without special logic
+      - ✅ Configuration drift is automatically corrected
+      - ✅ No "already exists" errors
+    code:
+      language: bash
+      content: |
+        # Run deployment multiple times - it's safe!
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+        
+        # Second run will report "already exists" for items
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+    expected_output: |
+      # First run:
+      ✓ Workspace 'acme-sales-analytics-dev' created
+      ✓ Lakehouse 'sales_raw' created
+      
+      # Second run:
+      ℹ Workspace 'acme-sales-analytics-dev' already exists
+      ℹ Lakehouse 'sales_raw' already exists
+      
+      Deployment completed successfully!
+    tips:
+      - Idempotency is a key principle for infrastructure as code
+
+  - id: verify-portal
+    title: Verify in Fabric Portal
+    type: checkpoint
+    content: |
+      After deployment, verify your workspace in the Microsoft Fabric portal.
+      
+      **Verification Checklist:**
+      
+      - [ ] Workspace appears in the workspace list
+      - [ ] Folder structure matches configuration
+      - [ ] Lakehouses and warehouses are created
+      - [ ] Team members have correct access roles
+      - [ ] Git integration shows connected status
+      
+      **Navigate to:** `https://app.powerbi.com/groups/<workspace-id>`
+    code:
+      language: bash
+      content: |
+        # List workspace items to verify
+        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-dev"
+    expected_output: |
+      Workspace: acme-sales-analytics-dev
+      
+      Items:
+      - Folder: 01_Raw_Data
+        - Lakehouse: sales_raw
+      - Folder: 02_Silver
+        - Lakehouse: sales_curated
+      - Folder: 03_Gold
+        - Warehouse: sales_reporting
+    checkpoint_question: Does your workspace appear in the Fabric portal with the correct items?
+
+  - id: deploy-environments
+    title: Deploy to Multiple Environments
+    type: command
+    content: |
+      The same configuration can be deployed to different environments (dev, staging, prod)
+      using the `--env` flag.
+      
+      Each environment can have different:
+      - Capacity sizes (F8 for dev, F64 for prod)
+      - Service principals
+      - Git branches
+    code:
+      language: bash
+      content: |
+        # Deploy to development
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+        
+        # Deploy to staging
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=staging
+        
+        # Deploy to production
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=prod
+    tips:
+      - Create environment-specific overrides in `config/environments/`
+      - Production deployments should go through CI/CD approval
+
+  - id: destroy-workspace
+    title: Destroy Workspace
+    type: command
+    content: |
+      Remove a workspace when it's no longer needed (e.g., feature branch cleanup).
+      
+      **⚠️ Warning:** This permanently deletes the workspace and all its contents!
+    code:
+      language: bash
+      content: |
+        # Destroy workspace using Makefile
+        make destroy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+        
+        # OR using CLI directly
+        fabric-cicd destroy config/projects/acme_corp/sales_analytics.yaml --env dev
+    expected_output: |
+      ⚠️ This will permanently delete workspace 'acme-sales-analytics-dev'
+      Type 'yes' to confirm: yes
+      
+      ✓ Workspace 'acme-sales-analytics-dev' deleted
+      
+      Destruction completed.
+    warnings:
+      - This action cannot be undone
+      - All data in the workspace will be lost
+      - Use with caution in production environments
+
+  - id: audit-logs
+    title: Review Audit Logs
+    type: info
+    content: |
+      All deployments are logged in JSONL format for compliance and debugging.
+      
+      **Log Location:** `audit_logs/fabric_operations_YYYY-MM-DD.jsonl`
+      
+      **Log Fields:**
+      
+      | Field | Description |
+      |-------|-------------|
+      | `timestamp` | ISO 8601 timestamp |
+      | `operation` | create, update, delete |
+      | `resource_type` | workspace, lakehouse, etc. |
+      | `resource_name` | Item name |
+      | `status` | success, failure |
+      | `duration_ms` | Operation duration |
+    code:
+      language: bash
+      content: |
+        # View recent audit logs
+        cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl | jq '.'
+        
+        # Filter for failures
+        cat audit_logs/*.jsonl | jq 'select(.status == "failure")'
+    tips:
+      - Audit logs are essential for compliance and troubleshooting
+      - Consider forwarding logs to a central logging system
+
+  - id: next-steps
+    title: Next Steps
+    type: info
+    content: |
+      🎉 You've successfully deployed a Fabric workspace!
+      
+      **Recommended Next Steps:**
+      
+      1. **Docker Deployment** → Run deployments in containers
+      2. **Feature Branch Workflows** → Create isolated development workspaces
+      3. **Git Integration** → Connect workspaces to version control
+      
+      **Quick Reference:**
+      
+      | Task | Command |
+      |------|---------|
+      | Validate | `make validate config=<path>` |
+      | Deploy Dev | `make deploy config=<path> env=dev` |
+      | Deploy Prod | `make deploy config=<path> env=prod` |
+      | Destroy | `make destroy config=<path> env=<env>` |
+      | List Items | `python scripts/utilities/list_workspace_items.py --workspace <name>` |

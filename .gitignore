@@ -70,3 +70,10 @@ debug_*.json
 # OS
 Thumbs.db
 .DS_Store
+
+# Webapp
+webapp/frontend/node_modules/
+webapp/frontend/dist/
+webapp/frontend/.vite/
+webapp/backend/__pycache__/
+webapp/backend/.pytest_cache/

@@ -220,7 +220,39 @@ Service Principal must have:
 - **Entry Point**: `pyproject.toml` defines `fabric-cicd` command → `core.cli:app`
 - **Docker Image**: `Dockerfile` installs wheel + Fabric CLI, runs as non-root user
 
-## 🔗 Related Projects
+## � Interactive Learning Guide (`webapp/`)
+
+The project includes an interactive web application for learning and utilizing the CLI toolkit.
+
+### Architecture
+- **Backend**: FastAPI (Python 3.11+) - `webapp/backend/`
+  - REST API for scenarios, search, and progress tracking
+  - Content stored in YAML files under `app/content/scenarios/`
+  - Models in `app/models.py` (Pydantic v2)
+- **Frontend**: React + TypeScript + Tailwind CSS - `webapp/frontend/`
+  - shadcn/ui component patterns
+  - React Query for data fetching
+  - Progress tracking with local state
+  - Code-split bundles for better caching
+
+### Quick Start
+```bash
+cd webapp
+make install    # Install backend + frontend dependencies
+make dev        # Start both servers (backend: 8001, frontend: 5173)
+```
+
+### Content Structure
+Scenario YAML files in `webapp/backend/app/content/scenarios/`:
+- `01-getting-started.yaml` - Environment setup, credentials
+- `02-project-generation.yaml` - Blueprint templates, all 10 templates covered
+- `03-local-deployment.yaml` - Validate, deploy, idempotency, verify
+- `04-docker-deployment.yaml` - Build, deploy, multi-tenant, debugging
+- `05-feature-branch-workflows.yaml` - Isolation, branch workspaces, cleanup
+- `06-git-integration.yaml` - Azure DevOps, GitHub, debugging
+- `07-troubleshooting.yaml` - Common issues and solutions
+
+## �🔗 Related Projects
 
 - **usf-fabric-cicd**: Original monolithic framework (this CLI is the lightweight successor)
 - **usf_fabric_monitoring**: Monitor Hub analysis for operational insights

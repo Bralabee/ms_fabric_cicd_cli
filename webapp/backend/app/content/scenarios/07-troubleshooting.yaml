@@ -1,0 +1,431 @@
+# Troubleshooting Scenario
+# Based on docs/TROUBLESHOOTING.md
+
+id: troubleshooting
+title: Troubleshooting Guide
+description: Solutions to common issues encountered when using the Fabric CLI CI/CD framework, including authentication, permissions, Docker, and configuration problems.
+difficulty: intermediate
+estimated_duration_minutes: 15
+category: troubleshooting
+order: 7
+
+prerequisites: []
+
+learning_outcomes:
+  - Diagnose authentication failures
+  - Resolve permission issues
+  - Fix environment configuration problems
+  - Debug Docker deployment issues
+
+tags:
+  - troubleshooting
+  - debugging
+  - errors
+  - authentication
+  - permissions
+
+related_scenarios:
+  - getting-started
+  - docker-deployment
+
+steps:
+  - id: overview
+    title: Common Issues Overview
+    type: info
+    content: |
+      This guide covers the most common issues and their solutions.
+      
+      **Issue Categories:**
+      
+      | Category | Common Causes |
+      |----------|---------------|
+      | **Environment** | Wrong conda environment, missing packages |
+      | **Authentication** | Invalid credentials, expired tokens |
+      | **Permissions** | Service Principal lacks required roles |
+      | **Configuration** | YAML syntax, missing variables |
+      | **Docker** | Build failures, mount issues |
+      | **Git** | Repository access, branch not found |
+    tips:
+      - Start with the preflight check to identify most issues
+      - Check the audit logs for detailed error messages
+
+  - id: wrong-environment
+    title: "Issue: Wrong Conda Environment"
+    type: info
+    content: |
+      **Symptom:**
+      ```
+      ModuleNotFoundError: No module named 'typer'
+      # or
+      ModuleNotFoundError: No module named 'rich'
+      ```
+      
+      **Cause:** Running commands in base or wrong conda environment.
+      
+      **Solution:**
+    code:
+      language: bash
+      content: |
+        # Check current environment
+        conda env list
+        # Look for * next to fabric-cli-cicd
+        
+        # Activate correct environment
+        conda activate fabric-cli-cicd
+        
+        # Verify activation
+        python -c "import typer; print('OK')"
+    tips:
+      - Always run `conda activate fabric-cli-cicd` before any commands
+      - Add activation to your shell startup script
+
+  - id: cli-not-found
+    title: "Issue: fabric-cicd Command Not Found"
+    type: info
+    content: |
+      **Symptom:**
+      ```
+      fabric-cicd: command not found
+      ```
+      
+      **Cause:** Package not installed in editable mode, entry point not registered.
+      
+      **Solution:**
+    code:
+      language: bash
+      content: |
+        # Ensure conda environment is active
+        conda activate fabric-cli-cicd
+        
+        # Install package with entry points
+        make install
+        # OR
+        pip install -e .
+        
+        # Verify installation
+        fabric-cicd --help
+        
+        # Alternative: Use Python module syntax
+        python -m core.cli --help
+    tips:
+      - The `-e` flag installs in "editable" mode
+
+  - id: auth-failure
+    title: "Issue: Authentication Failures"
+    type: info
+    content: |
+      **Symptom:**
+      ```
+      Error: Missing credentials
+      # or
+      Error: Token generation failed
+      # or
+      403 Forbidden
+      ```
+      
+      **Cause:** Missing or invalid credentials in environment.
+      
+      **Solution:**
+    code:
+      language: bash
+      content: |
+        # 1. Check .env file exists
+        ls -la .env
+        
+        # 2. Verify required variables (don't print actual values!)
+        python -c "import os; print('AZURE_CLIENT_ID:', 'SET' if os.getenv('AZURE_CLIENT_ID') else 'MISSING')"
+        python -c "import os; print('AZURE_CLIENT_SECRET:', 'SET' if os.getenv('AZURE_CLIENT_SECRET') else 'MISSING')"
+        python -c "import os; print('AZURE_TENANT_ID:', 'SET' if os.getenv('AZURE_TENANT_ID') else 'MISSING')"
+        
+        # 3. Validate credentials programmatically
+        python -c "from core.secrets import FabricSecrets; s = FabricSecrets.load_with_fallback(); print(s.validate_fabric_auth())"
+        
+        # 4. If needed, copy template and edit
+        cp .env.template .env
+        nano .env
+    tips:
+      - Credentials are loaded automatically via python-dotenv
+      - Check for typos in variable names
+
+  - id: permission-issues
+    title: "Issue: Service Principal Permission Errors"
+    type: info
+    content: |
+      **Symptom:**
+      ```
+      403 Forbidden
+      # or
+      Error: Access denied
+      # or
+      Error: Unauthorized
+      ```
+      
+      **Cause:** Service Principal lacks required permissions.
+      
+      **Required Permissions:**
+      
+      **Fabric (Admin Portal → Tenant Settings):**
+      - ✅ "Service principals can use Fabric APIs"
+      - ✅ "Service principals can create workspaces"
+      - ✅ "Service principals can use Git integration" (for Git)
+      
+      **Azure DevOps (for Git integration):**
+      - **Basic** access level (not Stakeholder!)
+      - **Contributor** role in ADO project
+      - **Contribute** permission on repositories
+    code:
+      language: bash
+      content: |
+        # Verify ADO permissions
+        python scripts/utilities/debug_ado_access.py \
+          --organization "your-org" \
+          --project "your-project"
+        
+        # Check workspace access
+        python scripts/utilities/list_workspaces.py
+    warnings:
+      - Most deployment failures are permission-related
+      - Stakeholder access level in ADO is NOT sufficient
+
+  - id: capacity-issues
+    title: "Issue: Capacity Assignment Failures"
+    type: info
+    content: |
+      **Symptom:**
+      ```
+      Error: Capacity not found
+      # or
+      Error: Cannot assign workspace to capacity
+      ```
+      
+      **Causes:**
+      1. Incorrect `FABRIC_CAPACITY_ID`
+      2. Service Principal not a capacity admin
+      3. Capacity is paused or deleted
+      
+      **Solution:**
+    code:
+      language: bash
+      content: |
+        # 1. Verify capacity ID in .env
+        grep FABRIC_CAPACITY_ID .env
+        
+        # 2. List available capacities (requires Fabric admin)
+        # In Fabric Admin Portal → Capacity Settings
+        
+        # 3. Verify capacity is active
+        # Check in Azure Portal → Fabric Capacities
+        
+        # 4. Update .env with correct ID
+        # FABRIC_CAPACITY_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    tips:
+      - Capacity ID is a GUID, not a name
+      - F2 trial capacities have strict limits
+
+  - id: yaml-errors
+    title: "Issue: Configuration Validation Errors"
+    type: info
+    content: |
+      **Symptom:**
+      ```
+      Error: Configuration validation failed
+      # or
+      Error: YAML syntax error
+      ```
+      
+      **Common YAML Mistakes:**
+      
+      | Error | Cause | Fix |
+      |-------|-------|-----|
+      | Indentation | Spaces vs tabs | Use 2 spaces consistently |
+      | Missing quotes | Special characters | Quote strings with `:`, `#`, etc. |
+      | Unresolved variable | Missing env var | Set in .env or use default |
+      
+      **Solution:**
+    code:
+      language: bash
+      content: |
+        # Validate YAML syntax
+        python -c "import yaml; yaml.safe_load(open('config/projects/your/config.yaml'))"
+        
+        # Validate with framework
+        make validate config=config/projects/your/config.yaml
+        
+        # Check for unset environment variables
+        grep '\${' config/projects/your/config.yaml
+    tips:
+      - Use a YAML linter in your IDE
+      - Most IDEs show YAML syntax errors inline
+
+  - id: docker-build-errors
+    title: "Issue: Docker Build Failures"
+    type: info
+    content: |
+      **Symptom:**
+      ```
+      Error during docker build
+      # or
+      ERROR [internal] load metadata
+      ```
+      
+      **Common Causes:**
+      1. Docker daemon not running
+      2. Network issues (can't download packages)
+      3. Disk space full
+      4. Fabric CLI download failure
+      
+      **Solution:**
+    code:
+      language: bash
+      content: |
+        # 1. Check Docker is running
+        docker ps
+        
+        # 2. Clean up Docker resources
+        docker system prune -a
+        
+        # 3. Build with verbose output
+        docker build -t fabric-cli-cicd . --progress=plain
+        
+        # 4. Check Fabric CLI inside container
+        docker run --rm fabric-cli-cicd fab --version
+    tips:
+      - Build with `--progress=plain` to see detailed output
+      - Check Docker disk usage with `docker system df`
+
+  - id: git-connection-errors
+    title: "Issue: Git Connection Failures"
+    type: info
+    content: |
+      **Symptom:**
+      ```
+      Error: Git connection failed
+      # or
+      Error: Repository not found
+      # or
+      Error: Branch not found
+      ```
+      
+      **Common Causes:**
+      
+      | Error | Cause | Solution |
+      |-------|-------|----------|
+      | Repository is empty | No commits | Run `init_ado_repo.py` |
+      | Access denied | Wrong permissions | Add SP to Contributors |
+      | Branch not found | Branch doesn't exist | Create branch first |
+    code:
+      language: bash
+      content: |
+        # Initialize repository (if empty)
+        python scripts/utilities/init_ado_repo.py \
+          --organization "your-org" \
+          --project "your-project" \
+          --repository "your-repo"
+        
+        # Debug Git connection
+        python scripts/utilities/debug_connection.py \
+          --organization "your-org" \
+          --project "your-project" \
+          --repository "your-repo"
+    tips:
+      - Fabric cannot connect to repositories with 0 commits
+      - Always test Git connection in dev first
+
+  - id: makefile-errors
+    title: "Issue: Makefile Syntax Errors"
+    type: info
+    content: |
+      **Symptom:**
+      ```
+      Syntax error: Unterminated quoted string
+      # or
+      make: *** [validate] Error 1
+      ```
+      
+      **Cause:** Path contains special characters (apostrophes, spaces).
+      
+      **Solution (Fixed in v1.1.0):**
+    code:
+      language: bash
+      content: |
+        # Update to latest version
+        git pull
+        make install
+        
+        # Alternative: Use Python directly
+        python -m core.cli validate config/projects/your/config.yaml
+        python -m core.cli deploy config/projects/your/config.yaml --env dev
+    tips:
+      - Avoid special characters in paths
+      - Use Python module syntax as alternative
+
+  - id: preflight-check
+    title: Run Comprehensive Preflight Check
+    type: command
+    content: |
+      The preflight check validates your entire setup and reports all issues:
+    code:
+      language: bash
+      content: |
+        # Run comprehensive preflight check
+        python scripts/preflight_check.py --auto-install
+    expected_output: |
+      === Fabric CLI CI/CD Preflight Check ===
+      
+      [Environment]
+      ✓ Python version: 3.11.x
+      ✓ Conda environment: fabric-cli-cicd
+      
+      [Dependencies]
+      ✓ Fabric CLI installed: 1.x.x
+      ✓ Required packages installed
+      
+      [Credentials]
+      ✓ AZURE_CLIENT_ID: Set
+      ✓ AZURE_CLIENT_SECRET: Set
+      ✓ AZURE_TENANT_ID: Set
+      ✓ FABRIC_CAPACITY_ID: Set
+      
+      [Connectivity]
+      ✓ Azure authentication successful
+      ✓ Fabric API accessible
+      ✓ Capacity access verified
+      
+      All preflight checks passed!
+    tips:
+      - Run preflight check first when troubleshooting
+      - Use `--auto-install` to automatically fix missing Fabric CLI
+
+  - id: getting-help
+    title: Getting Help
+    type: info
+    content: |
+      **Resources:**
+      
+      | Resource | Location |
+      |----------|----------|
+      | Documentation | `docs/` directory |
+      | Troubleshooting Guide | `docs/TROUBLESHOOTING.md` |
+      | Blueprint Catalog | `docs/BLUEPRINT_CATALOG.md` |
+      | Audit Logs | `audit_logs/` directory |
+      
+      **Debug Information to Collect:**
+      
+      1. Preflight check output
+      2. Relevant audit log entries
+      3. Configuration file (redact secrets!)
+      4. Full error message and stack trace
+    code:
+      language: bash
+      content: |
+        # Collect debug information
+        python scripts/preflight_check.py > debug_preflight.txt
+        
+        # Recent audit logs
+        tail -100 audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl > debug_audit.txt
+        
+        # Configuration (redact secrets first!)
+        cat config/projects/your/config.yaml > debug_config.txt
+    tips:
+      - Always redact credentials before sharing debug info
+      - Include the full error message, not just a summary

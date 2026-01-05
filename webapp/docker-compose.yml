@@ -1,0 +1,48 @@
+# Docker Compose for Fabric CLI CI/CD Interactive Guide
+# Usage:
+#   Development: docker compose up --build
+#   Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fabric-cli-guide-backend
+    ports:
+      - "8001:8001"
+    environment:
+      - CORS_ORIGINS=http://localhost:8080,http://localhost:5173
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - fabric-cli-guide-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fabric-cli-guide-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - fabric-cli-guide-network
+
+networks:
+  fabric-cli-guide-network:
+    driver: bridge
