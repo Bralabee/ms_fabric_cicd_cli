@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-01-05
+
+### Added
+- **Interactive Webapp Enhancements**:
+  - **Visual Workflow Diagrams** (`/workflows` page): Interactive flowcharts for 4 tested deployment workflows:
+    - Local Python Deployment (6-step flow)
+    - Docker Containerized Deployment (6-step flow)
+    - Feature Branch Workflow (6-step flow)
+    - Advanced Analytics Deployment (6-step flow)
+  - **Scenario Page Improvements**: Expected output display, checkpoint questions, learning outcomes sidebar, related scenarios navigation
+  - **Navigation**: Added "Workflows" button to header navigation
+
+- **Webapp Dockerization** (production-ready):
+  - `docker-quickstart.sh`: One-command local Docker startup
+  - `deploy-azure.sh`: Automated Azure Container Apps deployment script
+  - `docker-compose.prod.yml`: Production overlay with resource limits
+  - `.env.template`: Environment configuration template
+  - `.dockerignore` files for optimized image builds
+  - Fixed nginx.conf API proxy (port correction + trailing slash handling)
+
+- **New Makefile Targets**:
+  - `make docker-status`: Show container status
+  - `make docker-clean`: Remove images and volumes
+  - `make deploy-azure`: Deploy webapp to Azure Container Apps
+  - `make deploy-azure-dryrun`: Preview Azure deployment
+
+### Fixed
+- **Frontend API Interfaces**: Aligned TypeScript interfaces with backend API field names:
+  - `step.type` (was `step_type`)
+  - `step.code` object (was `code_blocks` array)
+  - `estimated_duration_minutes` (was `estimated_time_minutes`)
+- **nginx Proxy**: Fixed backend port (8000 → 8001) and API path handling
+
+### Documentation
+- Updated webapp README with Docker and Azure deployment instructions
+- Added comprehensive deployment options section
+
 ## [1.2.0] - 2025-12-10
 
 ### Added

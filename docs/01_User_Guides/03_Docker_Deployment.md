@@ -125,3 +125,32 @@ make docker-shell
 - **Capacity Assignment Failed**: Ensure the `FABRIC_CAPACITY_ID` is correct and the Service Principal has permissions on it.
 - **Authentication Failed**: Verify `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET` in your `.env` file.
 - **Encryption Error**: The container automatically sets `encryption_fallback_enabled` to `true` to avoid keyring issues in headless environments.
+
+## 7. Interactive Learning Webapp
+
+The project includes a Dockerized interactive webapp to guide you through all workflows:
+
+```bash
+cd webapp
+
+# Quick start (builds and runs)
+./docker-quickstart.sh
+# → Open http://localhost:8080
+
+# Or using Make
+make docker-build
+make docker-up
+```
+
+### Features
+- **Visual Workflow Diagrams**: Step-by-step flowcharts for deployment processes
+- **7 Guided Scenarios**: From environment setup to troubleshooting
+- **Code Snippets**: Copy-ready commands for each step
+
+### Deploy Webapp to Azure
+```bash
+cd webapp
+make deploy-azure  # Deploys to Azure Container Apps
+```
+
+See [webapp/README.md](../../webapp/README.md) for detailed documentation.

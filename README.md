@@ -149,21 +149,29 @@ The project includes an **interactive web application** to help users understand
 ```bash
 cd webapp
 
-# Quick start (requires Python 3.11+ and Node.js 18+)
+# Option 1: Docker (Recommended)
+./docker-quickstart.sh
+# → Open http://localhost:8080
+
+# Option 2: Development mode (requires Python 3.11+ and Node.js 18+)
 make install  # Install backend + frontend dependencies
 make dev      # Start both servers (backend: 8001, frontend: 5173)
-
-# Open http://localhost:5173 in your browser
+# → Open http://localhost:5173
 ```
 
-The guide covers:
-- **Getting Started**: Environment setup, credentials, preflight checks
-- **Project Generation**: All 10 blueprint templates with examples
-- **Local Deployment**: Step-by-step deployment workflows
-- **Docker Deployment**: Containerized deployment options
-- **Feature Branch Workflows**: Branch isolation and parallel development
-- **Git Integration**: Azure DevOps and GitHub repository connections
-- **Troubleshooting**: Common issues and solutions
+### Features
+- **Visual Workflow Diagrams**: Interactive flowcharts showing deployment processes step-by-step
+- **7 Comprehensive Scenarios**: Getting Started, Project Generation, Local/Docker Deployment, Feature Branches, Git Integration, Troubleshooting
+- **Progress Tracking**: Track your learning progress through each guide
+- **Code Snippets with Copy**: Easily copy commands and configurations
+
+### Azure Deployment
+Deploy the webapp to Azure Container Apps:
+```bash
+cd webapp
+make deploy-azure        # Full deployment
+make deploy-azure-dryrun # Preview what will be deployed
+```
 
 See [webapp/README.md](webapp/README.md) for detailed documentation.
 
