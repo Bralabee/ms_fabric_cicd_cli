@@ -166,19 +166,95 @@ Once running, visit http://localhost:8001/docs for the interactive API documenta
 
 ## Deployment Options
 
-### Azure Container Apps
+### 🐳 Docker Quick Start (Recommended)
+
+The fastest way to get started locally or share with others:
 
 ```bash
-# Build and push to Azure Container Registry
-az acr login --name <your-registry>
+cd webapp
+
+# Option 1: Quick start script (build + run)
+./docker-quickstart.sh
+
+# Option 2: Using Make
+make docker-build    # Build images
+make docker-up       # Start containers
+```
+
+**Access the application at http://localhost:8080**
+
+```bash
+# Other Docker commands
+make docker-logs     # View container logs
+make docker-status   # Show container status
+make docker-down     # Stop containers
+make docker-clean    # Remove images and volumes
+```
+
+### ☁️ Azure Container Apps Deployment
+
+Deploy to Azure Container Apps with a single command:
+
+```bash
+cd webapp
+
+# Preview deployment (no changes made)
+make deploy-azure-dryrun
+
+# Deploy to Azure
+make deploy-azure
+```
+
+The script will:
+1. Create a resource group and Azure Container Registry
+2. Build and push Docker images
+3. Create Container Apps Environment
+4. Deploy backend (internal ingress) and frontend (external ingress)
+5. Output the public URL
+
+**Prerequisites:**
+- Azure CLI installed (`az login` completed)
+- Docker running locally
+- Sufficient Azure permissions (Contributor role)
+
+**Customization:**
+```bash
+# Custom resource names and location
+./deploy-azure.sh --name my-fabric-guide --location westus2
+
+# Use existing images (skip build)
+./deploy-azure.sh --skip-build --tag v1.0.0
+```
+
+**Teardown:**
+```bash
+az group delete --name fabric-cli-guide-rg --yes --no-wait
+```
+
+### Manual Docker Deployment
+
+```bash
+# Build images
 docker compose build
-docker tag fabric-cli-guide-frontend <your-registry>.azurecr.io/fabric-cli-guide-frontend:latest
-docker tag fabric-cli-guide-backend <your-registry>.azurecr.io/fabric-cli-guide-backend:latest
-docker push <your-registry>.azurecr.io/fabric-cli-guide-frontend:latest
-docker push <your-registry>.azurecr.io/fabric-cli-guide-backend:latest
+
+# Start containers
+docker compose up -d
+
+# For production with resource limits
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ### Environment Variables
 
-For production, set these environment variables:
-- `CORS_ORIGINS`: Allowed origins for CORS (default: `*`)
+Copy `.env.template` to `.env` and customize:
+
+```bash
+# Azure Container Registry (for production)
+ACR_NAME=fabriccliguide
+TAG=latest
+
+# Backend Configuration
+CORS_ORIGINS=http://localhost:8080
+LOG_LEVEL=info
+```
+

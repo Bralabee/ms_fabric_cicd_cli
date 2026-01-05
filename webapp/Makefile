@@ -17,11 +17,17 @@ help:
 	@echo "  make stop      - Stop any running development servers"
 	@echo "  make install   - Install all dependencies"
 	@echo ""
-	@echo "$(YELLOW)Docker:$(NC)"
-	@echo "  make docker-build  - Build Docker images"
-	@echo "  make docker-up     - Start containers (http://localhost:8080)"
-	@echo "  make docker-down   - Stop and remove containers"
-	@echo "  make docker-logs   - View container logs"
+	@echo "$(YELLOW)Docker (Local):$(NC)"
+	@echo "  make docker-build   - Build Docker images"
+	@echo "  make docker-up      - Start containers (http://localhost:8080)"
+	@echo "  make docker-down    - Stop and remove containers"
+	@echo "  make docker-logs    - View container logs"
+	@echo "  make docker-status  - Show container status"
+	@echo "  make docker-clean   - Remove images and volumes"
+	@echo ""
+	@echo "$(YELLOW)Azure Deployment:$(NC)"
+	@echo "  make deploy-azure        - Deploy to Azure Container Apps"
+	@echo "  make deploy-azure-dryrun - Preview Azure deployment"
 	@echo ""
 	@echo "$(YELLOW)Testing:$(NC)"
 	@echo "  make test          - Run all tests"
@@ -111,3 +117,21 @@ docker-logs:
 docker-restart:
 	@echo "$(GREEN)Restarting containers...$(NC)"
 	docker compose restart
+
+docker-clean:
+	@echo "$(GREEN)Removing Docker images and volumes...$(NC)"
+	docker compose down --rmi all --volumes --remove-orphans
+
+docker-status:
+	@docker compose ps
+
+# Azure Deployment
+deploy-azure:
+	@echo "$(GREEN)Deploying to Azure Container Apps...$(NC)"
+	@chmod +x deploy-azure.sh
+	./deploy-azure.sh
+
+deploy-azure-dryrun:
+	@echo "$(GREEN)Azure deployment dry run...$(NC)"
+	@chmod +x deploy-azure.sh
+	./deploy-azure.sh --dry-run
