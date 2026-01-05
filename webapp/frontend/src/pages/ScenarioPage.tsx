@@ -1,12 +1,10 @@
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { 
   fetchScenario, 
   fetchProgress, 
-  updateProgress, 
-  type Scenario, 
-  type Step 
+  updateProgress
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,28 +18,48 @@ import {
   ChevronRight, 
   Clock, 
   CheckCircle2, 
-  Circle, 
   AlertTriangle,
   Lightbulb,
   BookOpen,
   Play,
   CheckSquare,
   Wrench,
-  Home
+  Home,
+  Terminal,
+  ArrowRight,
+  HelpCircle
 } from 'lucide-react'
 import { formatDuration, cn } from '@/lib/utils'
 
 // Simple user ID for demo (in production, use auth)
 const USER_ID = 'demo-user'
 
+// Map backend step types to icons
 const stepTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  info: BookOpen,
+  command: Play,
+  code: Play,
+  config: CheckSquare,
+  checkpoint: CheckSquare,
+  warning: AlertTriangle,
+  tip: Lightbulb,
+  // Legacy mappings for compatibility
   concept: BookOpen,
   action: Play,
   verification: CheckSquare,
   troubleshooting: Wrench,
 }
 
+// Map backend step types to colors
 const stepTypeColors: Record<string, string> = {
+  info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100',
+  command: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
+  code: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
+  config: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100',
+  checkpoint: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100',
+  warning: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100',
+  tip: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-100',
+  // Legacy mappings
   concept: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100',
   action: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
   verification: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100',
@@ -50,7 +68,6 @@ const stepTypeColors: Record<string, string> = {
 
 export default function ScenarioPage() {
   const { scenarioId } = useParams<{ scenarioId: string }>()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
@@ -101,12 +118,6 @@ export default function ScenarioPage() {
     }
   }
 
-  const handleNextStep = () => {
-    if (currentStepIndex < (scenario?.steps.length || 0) - 1) {
-      setCurrentStepIndex(prev => prev + 1)
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="container py-12">
@@ -139,7 +150,7 @@ export default function ScenarioPage() {
     )
   }
 
-  const StepIcon = currentStep ? stepTypeIcons[currentStep.step_type] || BookOpen : BookOpen
+  const StepIcon = currentStep ? stepTypeIcons[currentStep.type] || BookOpen : BookOpen
 
   return (
     <div className="min-h-screen flex">
@@ -153,7 +164,7 @@ export default function ScenarioPage() {
           <h2 className="font-semibold text-lg line-clamp-2">{scenario.title}</h2>
           <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>{formatDuration(scenario.estimated_time_minutes)}</span>
+            <span>{formatDuration(scenario.estimated_duration_minutes)}</span>
           </div>
         </div>
 
@@ -166,13 +177,36 @@ export default function ScenarioPage() {
           <Progress value={progressPercent} className="h-2" />
         </div>
 
+        {/* Learning Outcomes */}
+        {scenario.learning_outcomes && scenario.learning_outcomes.length > 0 && (
+          <div className="p-4 border-b">
+            <h3 className="text-sm font-medium mb-2 flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+              You'll Learn
+            </h3>
+            <ul className="space-y-1">
+              {scenario.learning_outcomes.slice(0, 4).map((outcome, index) => (
+                <li key={index} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                  <span className="text-green-500 mt-0.5">✓</span>
+                  <span className="line-clamp-2">{outcome}</span>
+                </li>
+              ))}
+              {scenario.learning_outcomes.length > 4 && (
+                <li className="text-xs text-muted-foreground italic">
+                  +{scenario.learning_outcomes.length - 4} more...
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
+
         {/* Step List */}
         <ScrollArea className="flex-1">
           <div className="p-2">
             {scenario.steps.map((step, index) => {
               const isActive = index === currentStepIndex
               const isCompleted = isStepCompleted(step.id)
-              const StepTypeIcon = stepTypeIcons[step.step_type] || BookOpen
+              const StepTypeIcon = stepTypeIcons[step.type] || BookOpen
 
               return (
                 <button
@@ -200,7 +234,7 @@ export default function ScenarioPage() {
                       <div className="flex items-center gap-1 mt-1">
                         <StepTypeIcon className="h-3 w-3 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground capitalize">
-                          {step.step_type}
+                          {step.type}
                         </span>
                       </div>
                     </div>
@@ -231,9 +265,9 @@ export default function ScenarioPage() {
             <>
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-3">
-                  <Badge className={stepTypeColors[currentStep.step_type]}>
+                  <Badge className={stepTypeColors[currentStep.type]}>
                     <StepIcon className="h-3 w-3 mr-1" />
-                    {currentStep.step_type}
+                    {currentStep.type}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
                     Step {currentStepIndex + 1} of {scenario.steps.length}
@@ -291,13 +325,41 @@ export default function ScenarioPage() {
                   </Card>
                 )}
 
-                {/* Code Blocks */}
-                {currentStep.code_blocks && currentStep.code_blocks.length > 0 && (
-                  <div className="space-y-4">
-                    {currentStep.code_blocks.map((block, index) => (
-                      <CodeBlock key={index} codeBlock={block} />
-                    ))}
-                  </div>
+                {/* Code Block - backend returns single code object */}
+                {currentStep.code && (
+                  <CodeBlock codeBlock={currentStep.code} />
+                )}
+
+                {/* Expected Output */}
+                {currentStep.expected_output && (
+                  <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center gap-2 text-green-700 dark:text-green-300">
+                        <Terminal className="h-5 w-5" />
+                        Expected Output
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <pre className="text-sm font-mono whitespace-pre-wrap bg-black/5 dark:bg-white/5 p-3 rounded-lg overflow-x-auto">
+                        {currentStep.expected_output}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Checkpoint Question */}
+                {currentStep.checkpoint_question && (
+                  <Card className="border-purple-200 bg-purple-50/50 dark:border-purple-900 dark:bg-purple-950/50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                        <HelpCircle className="h-5 w-5" />
+                        Checkpoint
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm">{currentStep.checkpoint_question}</p>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
 
@@ -341,6 +403,32 @@ export default function ScenarioPage() {
                   )}
                 </div>
               </div>
+
+              {/* Related Scenarios - show on last step */}
+              {currentStepIndex === scenario.steps.length - 1 && scenario.related_scenarios && scenario.related_scenarios.length > 0 && (
+                <div className="mt-8 pt-6 border-t">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <ArrowRight className="h-5 w-5 text-primary" />
+                    Continue Learning
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {scenario.related_scenarios.map((relatedId) => (
+                      <Link key={relatedId} to={`/scenario/${relatedId}`}>
+                        <Card className="hover:shadow-md transition-all hover:border-primary/50 cursor-pointer h-full">
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium capitalize">
+                                {relatedId.replace(/-/g, ' ')}
+                              </span>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

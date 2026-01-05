@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Search, Home, BookOpen, Github } from 'lucide-react'
+import { Search, Home, BookOpen, Github, Workflow } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useState } from 'react'
@@ -41,6 +41,15 @@ export default function Layout() {
                 >
                   <Home className="h-4 w-4 mr-2" />
                   Home
+                </Button>
+              </Link>
+              <Link to="/workflows">
+                <Button
+                  variant={location.pathname === '/workflows' ? 'secondary' : 'ghost'}
+                  size="sm"
+                >
+                  <Workflow className="h-4 w-4 mr-2" />
+                  Workflows
                 </Button>
               </Link>
               <Link to="/search">

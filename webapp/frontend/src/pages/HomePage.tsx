@@ -99,7 +99,7 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
             <span>
-              {scenarios?.reduce((sum, s) => sum + s.estimated_time_minutes, 0) || 0} min total
+              {scenarios?.reduce((sum, s) => sum + s.estimated_duration_minutes, 0) || 0} min total
             </span>
           </div>
         </div>
@@ -160,6 +160,16 @@ export default function HomePage() {
               )
             })}
           </div>
+        </div>
+        
+        {/* Link to detailed visual workflows */}
+        <div className="text-center mt-6">
+          <Link to="/workflows">
+            <Button variant="outline" size="sm">
+              <Workflow className="h-4 w-4 mr-2" />
+              View Detailed Workflow Diagrams
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -270,7 +280,7 @@ export default function HomePage() {
                         </Badge>
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <Clock className="h-4 w-4" />
-                          <span>{formatDuration(scenario.estimated_time_minutes)}</span>
+                          <span>{formatDuration(scenario.estimated_duration_minutes)}</span>
                         </div>
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <BookOpen className="h-4 w-4" />

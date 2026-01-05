@@ -13,12 +13,15 @@ interface CodeBlockProps {
 
 export function CodeBlock({ codeBlock, className }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
+  
+  // Support both 'content' (backend) and 'code' (legacy) field names
+  const codeContent = codeBlock.content || codeBlock.code || ''
 
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(codeBlock.code)
+    await navigator.clipboard.writeText(codeContent)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }, [codeBlock.code])
+  }, [codeContent])
 
   const languageMap: Record<string, string> = {
     bash: 'bash',
@@ -39,7 +42,7 @@ export function CodeBlock({ codeBlock, className }: CodeBlockProps) {
     docker: 'dockerfile',
   }
 
-  const language = languageMap[codeBlock.language.toLowerCase()] || codeBlock.language
+  const language = languageMap[codeBlock.language?.toLowerCase() || 'bash'] || codeBlock.language || 'bash'
 
   return (
     <div className={cn('code-block rounded-lg overflow-hidden border', className)}>
@@ -83,9 +86,9 @@ export function CodeBlock({ codeBlock, className }: CodeBlockProps) {
           borderRadius: 0,
           fontSize: '0.875rem',
         }}
-        showLineNumbers={codeBlock.code.split('\n').length > 5}
+        showLineNumbers={codeContent.split('\n').length > 5}
       >
-        {codeBlock.code}
+        {codeContent}
       </SyntaxHighlighter>
 
       {/* Description */}

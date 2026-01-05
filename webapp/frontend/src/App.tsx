@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import HomePage from './pages/HomePage'
 import ScenarioPage from './pages/ScenarioPage'
 import SearchPage from './pages/SearchPage'
+import ProcessFlowPage from './pages/ProcessFlowPage'
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Route index element={<HomePage />} />
         <Route path="scenario/:scenarioId" element={<ScenarioPage />} />
         <Route path="search" element={<SearchPage />} />
+        <Route path="workflows" element={<ProcessFlowPage />} />
       </Route>
     </Routes>
   )

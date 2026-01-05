@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { searchContent, fetchCategories, type SearchResult } from '@/lib/api'
+import { searchContent, fetchCategories } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { 
   Search, 
   FileText, 
@@ -15,7 +15,6 @@ import {
   Filter,
   X
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 const matchTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   title: BookOpen,
@@ -51,7 +50,7 @@ export default function SearchPage() {
     queryFn: fetchCategories,
   })
 
-  const { data: results, isLoading, isFetching } = useQuery({
+  const { data: results, isFetching } = useQuery({
     queryKey: ['search', debouncedQuery, selectedCategory],
     queryFn: () => searchContent(debouncedQuery, selectedCategory || undefined),
     enabled: debouncedQuery.length >= 2,
