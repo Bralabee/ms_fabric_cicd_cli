@@ -1,21 +1,28 @@
 # Troubleshooting Scenario
-# Based on docs/TROUBLESHOOTING.md
+# Comprehensive guide to diagnosing and fixing common issues
 
 id: troubleshooting
 title: Troubleshooting Guide
-description: Solutions to common issues encountered when using the Fabric CLI CI/CD framework, including authentication, permissions, Docker, and configuration problems.
+description: |
+  Master debugging with the framework's diagnostic tools. Learn to use 
+  `make diagnose` for preflight checks, `python scripts/preflight_check.py` 
+  for detailed diagnostics, review audit logs in `audit_logs/`, and debug 
+  ADO connectivity with `debug_ado_access.py`. Covers all common error scenarios.
 difficulty: intermediate
-estimated_duration_minutes: 15
+estimated_duration_minutes: 20
 category: troubleshooting
 order: 7
 
 prerequisites: []
 
 learning_outcomes:
-  - Diagnose authentication failures
-  - Resolve permission issues
-  - Fix environment configuration problems
-  - Debug Docker deployment issues
+  - Run preflight diagnostics with `make diagnose`
+  - Use `python scripts/preflight_check.py --auto-install` for comprehensive checks
+  - Examine audit logs in `audit_logs/fabric_operations_*.jsonl`
+  - Debug ADO access with `python scripts/utilities/debug_ado_access.py`
+  - List workspaces with `python scripts/utilities/list_workspaces.py`
+  - List workspace items with `python scripts/utilities/list_workspace_items.py`
+  - Resolve authentication, permission, and configuration errors
 
 tags:
   - troubleshooting
@@ -23,78 +30,242 @@ tags:
   - errors
   - authentication
   - permissions
+  - make-diagnose
+  - preflight-check
+  - audit-logs
 
 related_scenarios:
   - getting-started
   - docker-deployment
+  - git-integration
 
 steps:
   - id: overview
-    title: Common Issues Overview
+    title: Troubleshooting Strategy
     type: info
     content: |
-      This guide covers the most common issues and their solutions.
+      When something goes wrong, follow this systematic approach:
       
-      **Issue Categories:**
+      ## Debugging Workflow
       
-      | Category | Common Causes |
-      |----------|---------------|
+      ```
+      1. Run preflight check → make diagnose
+      2. Check audit logs → audit_logs/fabric_operations_*.jsonl
+      3. Verify credentials → .env file
+      4. Test connectivity → debug_ado_access.py
+      5. Validate config → make validate
+      ```
+      
+      ## Diagnostic Commands
+      
+      | Purpose | Command |
+      |---------|---------|
+      | **Preflight check** | `make diagnose` |
+      | **Detailed diagnostics** | `python scripts/preflight_check.py --auto-install` |
+      | **Docker diagnostics** | `make docker-diagnose ENVFILE=.env` |
+      | **Validate config** | `make validate config=...` |
+      | **Debug ADO access** | `python scripts/utilities/debug_ado_access.py` |
+      | **List workspaces** | `python scripts/utilities/list_workspaces.py` |
+      | **List workspace items** | `python scripts/utilities/list_workspace_items.py --workspace "..."` |
+      
+      ## Common Issue Categories
+      
+      | Category | Likely Cause |
+      |----------|--------------|
       | **Environment** | Wrong conda environment, missing packages |
-      | **Authentication** | Invalid credentials, expired tokens |
-      | **Permissions** | Service Principal lacks required roles |
-      | **Configuration** | YAML syntax, missing variables |
-      | **Docker** | Build failures, mount issues |
-      | **Git** | Repository access, branch not found |
+      | **Authentication** | Invalid/expired credentials in .env |
+      | **Permissions** | Service Principal lacks Fabric/ADO roles |
+      | **Configuration** | YAML syntax errors, unresolved variables |
+      | **Docker** | Build failures, mount issues, env-file missing |
+      | **Git** | Empty repo, wrong branch, PAT expired |
     tips:
-      - Start with the preflight check to identify most issues
-      - Check the audit logs for detailed error messages
+      - ALWAYS start with `make diagnose` or `python scripts/preflight_check.py`
+      - Check audit logs for detailed error messages
 
-  - id: wrong-environment
-    title: "Issue: Wrong Conda Environment"
-    type: info
+  - id: preflight-check
+    title: "Step 1: Run Preflight Diagnostics"
+    type: command
     content: |
-      **Symptom:**
-      ```
-      ModuleNotFoundError: No module named 'typer'
-      # or
-      ModuleNotFoundError: No module named 'rich'
-      ```
+      The preflight check is your FIRST troubleshooting step. It validates 
+      everything automatically:
       
-      **Cause:** Running commands in base or wrong conda environment.
+      ## What It Checks
       
-      **Solution:**
+      | Check | What It Validates |
+      |-------|-------------------|
+      | Environment | Python version, conda activation |
+      | Fabric CLI | Installation, version |
+      | Credentials | All required .env variables present |
+      | Authentication | Token generation works |
+      | Connectivity | Fabric API is accessible |
+      | Capacity | Capacity ID is valid and accessible |
     code:
       language: bash
       content: |
-        # Check current environment
+        # Quick check using Make (RECOMMENDED)
+        make diagnose
+        
+        # Detailed check with auto-install option
+        python scripts/preflight_check.py --auto-install
+        
+        # Docker environment check
+        make docker-diagnose ENVFILE=.env
+    expected_output: |
+      ╔══════════════════════════════════════════════════════════════╗
+      ║            Fabric CLI CI/CD Preflight Check                  ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+      [Environment]
+      ✓ Python version: 3.11.9
+      ✓ Conda environment: fabric-cli-cicd
+      
+      [Fabric CLI]
+      ✓ Fabric CLI installed (version 0.1.5)
+      
+      [Credentials]
+      ✓ AZURE_CLIENT_ID: Set
+      ✓ AZURE_CLIENT_SECRET: Set
+      ✓ AZURE_TENANT_ID: Set
+      ✓ FABRIC_CAPACITY_ID: Set
+      
+      [Authentication]
+      ✓ Token generation successful
+      
+      [Connectivity]
+      ✓ Fabric API accessible
+      ✓ Capacity access verified
+      
+      ════════════════════════════════════════════════════════════════
+      ✅ All preflight checks passed!
+      ════════════════════════════════════════════════════════════════
+    tips:
+      - If any check fails, fix it before proceeding
+      - `--auto-install` will install missing Fabric CLI automatically
+
+  - id: audit-logs
+    title: "Step 2: Check Audit Logs"
+    type: command
+    content: |
+      Every operation is logged to `audit_logs/`. These logs contain detailed 
+      error information that console output may not show.
+      
+      ## Log Location
+      
+      ```
+      audit_logs/
+      ├── fabric_operations_2025-01-15.jsonl   # Today's operations
+      ├── fabric_operations_2025-01-14.jsonl   # Yesterday
+      └── fabric_cli_telemetry.jsonl           # CLI usage stats
+      ```
+      
+      ## Log Format (JSONL)
+      
+      Each line is a JSON object with:
+      - `timestamp` - When it happened
+      - `operation` - What was being done
+      - `status` - success/failure
+      - `error` - Error message if failed
+      - `details` - Additional context
+    code:
+      language: bash
+      content: |
+        # View today's audit log
+        cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl
+        
+        # Find errors only
+        grep '"status":"failure"' audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl
+        
+        # Pretty print JSON (requires jq)
+        cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl | jq .
+        
+        # Last 20 entries
+        tail -20 audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl
+        
+        # Search for specific operation
+        grep "create_workspace" audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl
+    expected_output: |
+      # Example log entries:
+      {"timestamp":"2025-01-15T10:30:00Z","operation":"deployment_start","config_file":"config/projects/acme/sales.yaml","environment":"dev","status":"success"}
+      {"timestamp":"2025-01-15T10:30:05Z","operation":"create_workspace","workspace":"acme-sales-dev","status":"success","workspace_id":"abc123"}
+      {"timestamp":"2025-01-15T10:30:10Z","operation":"create_item","item_type":"Lakehouse","item_name":"sales_raw","status":"failure","error":"Capacity limit exceeded"}
+    tips:
+      - Use `jq` for pretty-printing JSON logs
+      - Look for the `error` field in failed operations
+      - Logs are rotated daily for easy searching
+
+  - id: wrong-environment
+    title: "Error: Wrong Conda Environment"
+    type: info
+    content: |
+      ## Symptom
+      
+      ```
+      ModuleNotFoundError: No module named 'typer'
+      ModuleNotFoundError: No module named 'rich'
+      ModuleNotFoundError: No module named 'yaml'
+      ```
+      
+      ## Cause
+      
+      Running commands in `base` or wrong conda environment.
+      
+      ## Solution
+    code:
+      language: bash
+      content: |
+        # Check which environment is active
         conda env list
         # Look for * next to fabric-cli-cicd
         
-        # Activate correct environment
+        # If wrong environment, activate correct one
         conda activate fabric-cli-cicd
         
         # Verify activation
-        python -c "import typer; print('OK')"
+        which python
+        # Should show: /home/user/miniconda3/envs/fabric-cli-cicd/bin/python
+        
+        # Verify imports work
+        python -c "import typer; import rich; import yaml; print('All imports OK')"
+        
+        # If environment doesn't exist, create it
+        conda env create -f environment.yml
+    expected_output: |
+      # conda env list output (correct):
+      base                     /home/user/miniconda3
+      fabric-cli-cicd       *  /home/user/miniconda3/envs/fabric-cli-cicd
+      
+      # python path (correct):
+      /home/user/miniconda3/envs/fabric-cli-cicd/bin/python
+      
+      # import test (correct):
+      All imports OK
     tips:
-      - Always run `conda activate fabric-cli-cicd` before any commands
-      - Add activation to your shell startup script
+      - ALWAYS run `conda activate fabric-cli-cicd` before any command
+      - Add to your shell profile for automatic activation
+    warnings:
+      - This is the #1 most common issue for new users
 
   - id: cli-not-found
-    title: "Issue: fabric-cicd Command Not Found"
+    title: "Error: fabric-cicd Command Not Found"
     type: info
     content: |
-      **Symptom:**
+      ## Symptom
+      
       ```
       fabric-cicd: command not found
+      # or
+      bash: fabric-cicd: command not found
       ```
       
-      **Cause:** Package not installed in editable mode, entry point not registered.
+      ## Cause
       
-      **Solution:**
+      Package not installed in editable mode, or entry point not registered.
+      
+      ## Solution
     code:
       language: bash
       content: |
-        # Ensure conda environment is active
+        # First, ensure conda environment is active
         conda activate fabric-cli-cicd
         
         # Install package with entry points
@@ -105,176 +276,296 @@ steps:
         # Verify installation
         fabric-cicd --help
         
-        # Alternative: Use Python module syntax
+        # Alternative: Use Python module syntax (always works)
         python -m core.cli --help
+        python -m core.cli deploy config/your/config.yaml --env dev
+        
+        # Check if entry point is registered
+        pip show usf-fabric-cli | grep Entry
+    expected_output: |
+      # After make install:
+      Successfully installed usf-fabric-cli-1.1.0
+      
+      # fabric-cicd --help output:
+      Usage: fabric-cicd [OPTIONS] COMMAND [ARGS]...
+      
+        Fabric CLI CI/CD - Enterprise Deployment Framework
+      
+      Options:
+        --version  Show version
+        --help     Show this message and exit.
+      
+      Commands:
+        deploy    Deploy Fabric workspace from configuration file.
+        destroy   Destroy Fabric workspace and all items.
+        diagnose  Run preflight diagnostics.
+        validate  Validate configuration file syntax and structure.
     tips:
-      - The `-e` flag installs in "editable" mode
+      - `pip install -e .` installs in "editable" mode (changes apply immediately)
+      - `python -m core.cli` is equivalent and always works
 
   - id: auth-failure
-    title: "Issue: Authentication Failures"
+    title: "Error: Authentication Failures"
     type: info
     content: |
-      **Symptom:**
+      ## Symptoms
+      
       ```
       Error: Missing credentials
-      # or
       Error: Token generation failed
-      # or
+      Error: ClientSecretCredential authentication failed
       403 Forbidden
+      401 Unauthorized
       ```
       
-      **Cause:** Missing or invalid credentials in environment.
+      ## Common Causes
       
-      **Solution:**
+      | Error | Cause |
+      |-------|-------|
+      | "Missing credentials" | .env file missing or incomplete |
+      | "Token generation failed" | Client secret expired/wrong |
+      | "403 Forbidden" | SP lacks permissions |
+      | "401 Unauthorized" | Wrong tenant ID |
+      
+      ## Solution
     code:
       language: bash
       content: |
         # 1. Check .env file exists
         ls -la .env
         
-        # 2. Verify required variables (don't print actual values!)
-        python -c "import os; print('AZURE_CLIENT_ID:', 'SET' if os.getenv('AZURE_CLIENT_ID') else 'MISSING')"
-        python -c "import os; print('AZURE_CLIENT_SECRET:', 'SET' if os.getenv('AZURE_CLIENT_SECRET') else 'MISSING')"
-        python -c "import os; print('AZURE_TENANT_ID:', 'SET' if os.getenv('AZURE_TENANT_ID') else 'MISSING')"
+        # 2. Verify required variables are set (without showing values)
+        python -c "
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        vars = ['AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_TENANT_ID', 'FABRIC_CAPACITY_ID']
+        for var in vars:
+            status = '✓ SET' if os.getenv(var) else '✗ MISSING'
+            print(f'{var}: {status}')
+        "
         
-        # 3. Validate credentials programmatically
-        python -c "from core.secrets import FabricSecrets; s = FabricSecrets.load_with_fallback(); print(s.validate_fabric_auth())"
+        # 3. Test credential validation
+        python -c "
+        from core.secrets import FabricSecrets
+        s = FabricSecrets.load_with_fallback()
+        is_valid, msg = s.validate_fabric_auth()
+        print(f'Valid: {is_valid}')
+        print(f'Message: {msg}')
+        "
         
-        # 4. If needed, copy template and edit
+        # 4. If .env is missing, create from template
         cp .env.template .env
-        nano .env
+        # Then edit .env with your credentials
+    expected_output: |
+      # Variable check (good):
+      AZURE_CLIENT_ID: ✓ SET
+      AZURE_CLIENT_SECRET: ✓ SET
+      AZURE_TENANT_ID: ✓ SET
+      FABRIC_CAPACITY_ID: ✓ SET
+      
+      # Validation (good):
+      Valid: True
+      Message: All credentials valid
     tips:
+      - Never commit .env files to Git
       - Credentials are loaded automatically via python-dotenv
       - Check for typos in variable names
+    warnings:
+      - Client secrets expire - check Azure Portal if auth suddenly fails
 
   - id: permission-issues
-    title: "Issue: Service Principal Permission Errors"
+    title: "Error: Service Principal Permission Errors"
     type: info
     content: |
-      **Symptom:**
+      ## Symptoms
+      
       ```
       403 Forbidden
-      # or
       Error: Access denied
-      # or
       Error: Unauthorized
+      Error: Service principal cannot create workspaces
       ```
       
-      **Cause:** Service Principal lacks required permissions.
+      ## Required Permissions
       
-      **Required Permissions:**
+      ### Fabric Tenant Settings (Admin Portal)
       
-      **Fabric (Admin Portal → Tenant Settings):**
-      - ✅ "Service principals can use Fabric APIs"
-      - ✅ "Service principals can create workspaces"
-      - ✅ "Service principals can use Git integration" (for Git)
+      | Setting | Required |
+      |---------|----------|
+      | "Service principals can use Fabric APIs" | ✓ Enabled |
+      | "Service principals can create workspaces" | ✓ Enabled |
+      | "Service principals can use Git integration" | ✓ Enabled (for Git) |
       
-      **Azure DevOps (for Git integration):**
-      - **Basic** access level (not Stakeholder!)
-      - **Contributor** role in ADO project
-      - **Contribute** permission on repositories
+      ### Azure DevOps (for Git integration)
+      
+      | Permission | Required |
+      |------------|----------|
+      | Access level | **Basic** (NOT Stakeholder!) |
+      | Project role | Contributor |
+      | Repository | Contribute permission |
+      
+      ## Debugging
     code:
       language: bash
       content: |
-        # Verify ADO permissions
+        # Check if you can list workspaces (basic connectivity test)
+        python scripts/utilities/list_workspaces.py
+        
+        # Debug Azure DevOps access
         python scripts/utilities/debug_ado_access.py \
           --organization "your-org" \
           --project "your-project"
         
-        # Check workspace access
-        python scripts/utilities/list_workspaces.py
+        # List items in a workspace (verifies read access)
+        python scripts/utilities/list_workspace_items.py \
+          --workspace "your-workspace-name"
+    expected_output: |
+      # list_workspaces.py (good):
+      Found 3 workspaces:
+      - analytics-dev
+      - analytics-staging
+      - analytics-prod
+      
+      # debug_ado_access.py (good):
+      ✓ PAT authentication successful
+      ✓ Organization accessible
+      ✓ Project accessible
+      ✓ Service Principal access level: Basic
     warnings:
+      - Stakeholder access level in ADO is READ-ONLY
       - Most deployment failures are permission-related
-      - Stakeholder access level in ADO is NOT sufficient
+      - Check BOTH Fabric tenant settings AND ADO permissions
 
   - id: capacity-issues
-    title: "Issue: Capacity Assignment Failures"
+    title: "Error: Capacity Assignment Failures"
     type: info
     content: |
-      **Symptom:**
+      ## Symptoms
+      
       ```
       Error: Capacity not found
-      # or
       Error: Cannot assign workspace to capacity
+      Error: Capacity limit exceeded
+      Error: No available capacity
       ```
       
-      **Causes:**
-      1. Incorrect `FABRIC_CAPACITY_ID`
-      2. Service Principal not a capacity admin
-      3. Capacity is paused or deleted
+      ## Common Causes
       
-      **Solution:**
+      | Error | Cause | Solution |
+      |-------|-------|----------|
+      | "Capacity not found" | Wrong capacity ID | Verify GUID in Azure Portal |
+      | "Cannot assign" | SP not capacity admin | Add SP as capacity admin |
+      | "Limit exceeded" | F2 trial exhausted | Delete workspaces or upgrade |
+      | "No available" | Capacity paused | Resume capacity in Azure |
+      
+      ## Solution
     code:
       language: bash
       content: |
         # 1. Verify capacity ID in .env
         grep FABRIC_CAPACITY_ID .env
         
-        # 2. List available capacities (requires Fabric admin)
-        # In Fabric Admin Portal → Capacity Settings
+        # 2. List existing workspaces (shows capacity usage)
+        python scripts/utilities/list_workspaces.py
         
-        # 3. Verify capacity is active
-        # Check in Azure Portal → Fabric Capacities
+        # 3. Check capacity in Azure Portal:
+        #    - Go to portal.azure.com
+        #    - Search "Microsoft Fabric"
+        #    - Find your capacity
+        #    - Verify: Status = Active, copy the Resource ID/GUID
         
-        # 4. Update .env with correct ID
-        # FABRIC_CAPACITY_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        # 4. Update .env with correct capacity ID
+        echo "FABRIC_CAPACITY_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" >> .env
     tips:
       - Capacity ID is a GUID, not a name
-      - F2 trial capacities have strict limits
+      - F2 trial: ~3 workspaces max
+      - F4: ~5 workspaces
+      - Paused capacities cannot be used
 
   - id: yaml-errors
-    title: "Issue: Configuration Validation Errors"
+    title: "Error: Configuration Validation Errors"
     type: info
     content: |
-      **Symptom:**
+      ## Symptoms
+      
       ```
       Error: Configuration validation failed
-      # or
       Error: YAML syntax error
+      Error: Missing required field
+      Error: Variable not found: ${VAR_NAME}
       ```
       
-      **Common YAML Mistakes:**
+      ## Common YAML Mistakes
       
       | Error | Cause | Fix |
       |-------|-------|-----|
-      | Indentation | Spaces vs tabs | Use 2 spaces consistently |
-      | Missing quotes | Special characters | Quote strings with `:`, `#`, etc. |
-      | Unresolved variable | Missing env var | Set in .env or use default |
+      | Indentation error | Tabs instead of spaces | Use 2 spaces |
+      | Special chars | Unquoted `:`, `#`, `@` | Quote the string |
+      | Missing variable | ${VAR} not in .env | Add to .env or use default |
+      | Wrong structure | Copy-paste error | Check template format |
       
-      **Solution:**
+      ## Solution
     code:
       language: bash
       content: |
-        # Validate YAML syntax
+        # 1. Validate YAML syntax (basic)
         python -c "import yaml; yaml.safe_load(open('config/projects/your/config.yaml'))"
         
-        # Validate with framework
+        # 2. Validate with framework (comprehensive)
         make validate config=config/projects/your/config.yaml
         
-        # Check for unset environment variables
+        # 3. Find unresolved environment variables
         grep '\${' config/projects/your/config.yaml
+        
+        # 4. Check if those variables are in .env
+        cat .env | grep -E "VAR1|VAR2|VAR3"
+        
+        # 5. Docker validation
+        make docker-validate config=config/projects/your/config.yaml ENVFILE=.env
+    expected_output: |
+      # Good validation output:
+      ╔══════════════════════════════════════════════════════════════╗
+      ║              Configuration Validation                        ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+      Loading: config/projects/your/config.yaml
+      
+      ✓ YAML syntax valid
+      ✓ Required fields present
+      ✓ Environment variables resolved (4 variables)
+      ✓ Jinja2 template syntax valid
+      
+      ════════════════════════════════════════════════════════════════
+      ✅ Configuration is valid!
+      ════════════════════════════════════════════════════════════════
     tips:
-      - Use a YAML linter in your IDE
-      - Most IDEs show YAML syntax errors inline
+      - Use a YAML linter in your IDE (VS Code YAML extension)
+      - Always validate before deploying
 
-  - id: docker-build-errors
-    title: "Issue: Docker Build Failures"
+  - id: docker-errors
+    title: "Error: Docker Build/Run Failures"
     type: info
     content: |
-      **Symptom:**
+      ## Symptoms
+      
       ```
       Error during docker build
-      # or
       ERROR [internal] load metadata
+      Error: Cannot connect to Docker daemon
+      Error: ENVFILE not found
       ```
       
-      **Common Causes:**
-      1. Docker daemon not running
-      2. Network issues (can't download packages)
-      3. Disk space full
-      4. Fabric CLI download failure
+      ## Common Causes & Solutions
       
-      **Solution:**
+      | Error | Cause | Solution |
+      |-------|-------|----------|
+      | "Cannot connect" | Docker not running | Start Docker Desktop/daemon |
+      | "Load metadata" | Network issues | Check internet, retry |
+      | "ENVFILE not found" | Wrong path | Use `ENVFILE=.env` |
+      | "Disk space" | Docker cache full | `docker system prune -a` |
+      
+      ## Solution
     code:
       language: bash
       content: |
@@ -284,148 +575,227 @@ steps:
         # 2. Clean up Docker resources
         docker system prune -a
         
-        # 3. Build with verbose output
+        # 3. Check disk space
+        docker system df
+        df -h
+        
+        # 4. Build with verbose output
         docker build -t fabric-cli-cicd . --progress=plain
         
-        # 4. Check Fabric CLI inside container
+        # 5. Test container directly
         docker run --rm fabric-cli-cicd fab --version
+        
+        # 6. Verify env file
+        ls -la .env
+        
+        # 7. Run with explicit env file
+        make docker-deploy config=... env=dev ENVFILE=.env
     tips:
-      - Build with `--progress=plain` to see detailed output
-      - Check Docker disk usage with `docker system df`
+      - Build with `--progress=plain` for detailed output
+      - Use `docker system df` to check disk usage
+      - Default ENVFILE is `.env` - override for different clients
 
-  - id: git-connection-errors
-    title: "Issue: Git Connection Failures"
+  - id: git-errors
+    title: "Error: Git Connection Failures"
     type: info
     content: |
-      **Symptom:**
+      ## Symptoms
+      
       ```
       Error: Git connection failed
-      # or
       Error: Repository not found
-      # or
+      Error: Repository is empty
       Error: Branch not found
+      Error: 401 Unauthorized (Git)
       ```
       
-      **Common Causes:**
+      ## Common Causes & Solutions
       
       | Error | Cause | Solution |
       |-------|-------|----------|
-      | Repository is empty | No commits | Run `init_ado_repo.py` |
-      | Access denied | Wrong permissions | Add SP to Contributors |
-      | Branch not found | Branch doesn't exist | Create branch first |
+      | "Repository is empty" | 0 commits in repo | Run `init_ado_repo.py` |
+      | "Not found" | Typo in URL | Verify git_repo in YAML |
+      | "Branch not found" | Branch doesn't exist | Create branch or fix YAML |
+      | "401 Unauthorized" | PAT expired/wrong | Generate new PAT |
+      | "Access denied" | SP not Contributor | Add to ADO project |
+      
+      ## Solution
     code:
       language: bash
       content: |
-        # Initialize repository (if empty)
+        # 1. Debug ADO access first
+        python scripts/utilities/debug_ado_access.py \
+          --organization "your-org" \
+          --project "your-project"
+        
+        # 2. Initialize empty repository
         python scripts/utilities/init_ado_repo.py \
           --organization "your-org" \
           --project "your-project" \
           --repository "your-repo"
         
-        # Debug Git connection
-        python scripts/utilities/debug_connection.py \
-          --organization "your-org" \
-          --project "your-project" \
-          --repository "your-repo"
+        # 3. Check remote branches
+        git ls-remote --heads https://dev.azure.com/your-org/your-project/_git/your-repo
+        
+        # 4. Verify PAT in .env
+        grep AZURE_DEVOPS_PAT .env
+    expected_output: |
+      # debug_ado_access.py (good):
+      ✓ PAT authentication successful
+      ✓ Organization 'your-org' accessible
+      ✓ Project 'your-project' accessible
+      ✓ Service Principal access level: Basic
+      
+      # init_ado_repo.py (good):
+      ✓ Repository 'your-repo' initialized
+      ✓ Branch 'main' created
+      ✓ Initial README committed
     tips:
       - Fabric cannot connect to repositories with 0 commits
-      - Always test Git connection in dev first
+      - PAT scope needs "Code (Read & Write)"
 
-  - id: makefile-errors
-    title: "Issue: Makefile Syntax Errors"
+  - id: utility-scripts
+    title: "Reference: All Utility Scripts"
     type: info
     content: |
-      **Symptom:**
-      ```
-      Syntax error: Unterminated quoted string
-      # or
-      make: *** [validate] Error 1
-      ```
+      ## Diagnostic Scripts
       
-      **Cause:** Path contains special characters (apostrophes, spaces).
+      | Script | Purpose |
+      |--------|---------|
+      | `scripts/preflight_check.py` | Comprehensive environment validation |
+      | `scripts/utilities/debug_ado_access.py` | Test Azure DevOps connectivity |
+      | `scripts/utilities/list_workspaces.py` | List all accessible workspaces |
+      | `scripts/utilities/list_workspace_items.py` | List items in a workspace |
       
-      **Solution (Fixed in v1.1.0):**
+      ## Repository Scripts
+      
+      | Script | Purpose |
+      |--------|---------|
+      | `scripts/utilities/init_ado_repo.py` | Initialize empty ADO repository |
+      
+      ## Deployment Scripts
+      
+      | Script | Purpose |
+      |--------|---------|
+      | `scripts/generate_project.py` | Generate project config from template |
+      | `scripts/bulk_destroy.py` | Bulk delete workspaces from list |
     code:
       language: bash
       content: |
-        # Update to latest version
-        git pull
-        make install
+        # Full syntax for each script:
         
-        # Alternative: Use Python directly
-        python -m core.cli validate config/projects/your/config.yaml
-        python -m core.cli deploy config/projects/your/config.yaml --env dev
-    tips:
-      - Avoid special characters in paths
-      - Use Python module syntax as alternative
-
-  - id: preflight-check
-    title: Run Comprehensive Preflight Check
-    type: command
-    content: |
-      The preflight check validates your entire setup and reports all issues:
-    code:
-      language: bash
-      content: |
-        # Run comprehensive preflight check
+        # Preflight check
         python scripts/preflight_check.py --auto-install
-    expected_output: |
-      === Fabric CLI CI/CD Preflight Check ===
-      
-      [Environment]
-      ✓ Python version: 3.11.x
-      ✓ Conda environment: fabric-cli-cicd
-      
-      [Dependencies]
-      ✓ Fabric CLI installed: 1.x.x
-      ✓ Required packages installed
-      
-      [Credentials]
-      ✓ AZURE_CLIENT_ID: Set
-      ✓ AZURE_CLIENT_SECRET: Set
-      ✓ AZURE_TENANT_ID: Set
-      ✓ FABRIC_CAPACITY_ID: Set
-      
-      [Connectivity]
-      ✓ Azure authentication successful
-      ✓ Fabric API accessible
-      ✓ Capacity access verified
-      
-      All preflight checks passed!
+        
+        # Debug ADO access
+        python scripts/utilities/debug_ado_access.py \
+          --organization "org" \
+          --project "project"
+        
+        # List workspaces
+        python scripts/utilities/list_workspaces.py
+        
+        # List workspace items
+        python scripts/utilities/list_workspace_items.py \
+          --workspace "workspace-name"
+        
+        # Initialize ADO repo
+        python scripts/utilities/init_ado_repo.py \
+          --organization "org" \
+          --project "project" \
+          --repository "repo" \
+          --branch "main"
+        
+        # Generate project
+        python scripts/generate_project.py "Org Name" "Project Name" \
+          --template basic_etl
+        
+        # Bulk destroy
+        python scripts/bulk_destroy.py workspace_list.txt
     tips:
-      - Run preflight check first when troubleshooting
-      - Use `--auto-install` to automatically fix missing Fabric CLI
+      - All scripts have `--help` for additional options
+      - Scripts work in both local and Docker environments
 
   - id: getting-help
-    title: Getting Help
+    title: "Getting Help & Resources"
     type: info
     content: |
-      **Resources:**
+      ## Documentation Resources
       
       | Resource | Location |
       |----------|----------|
-      | Documentation | `docs/` directory |
-      | Troubleshooting Guide | `docs/TROUBLESHOOTING.md` |
+      | Main README | `README.md` |
+      | CLI Walkthrough | `docs/01_User_Guides/02_CLI_Walkthrough.md` |
       | Blueprint Catalog | `docs/BLUEPRINT_CATALOG.md` |
-      | Audit Logs | `audit_logs/` directory |
+      | Troubleshooting | `docs/TROUBLESHOOTING.md` |
       
-      **Debug Information to Collect:**
+      ## Debug Information to Collect
+      
+      When reporting issues, gather:
       
       1. Preflight check output
       2. Relevant audit log entries
-      3. Configuration file (redact secrets!)
+      3. Configuration file (REDACT SECRETS!)
       4. Full error message and stack trace
+      5. Python and Fabric CLI versions
     code:
       language: bash
       content: |
-        # Collect debug information
-        python scripts/preflight_check.py > debug_preflight.txt
+        # Collect all debug info to a file
+        echo "=== Preflight Check ===" > debug_info.txt
+        python scripts/preflight_check.py >> debug_info.txt 2>&1
         
-        # Recent audit logs
-        tail -100 audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl > debug_audit.txt
+        echo "\n=== Version Info ===" >> debug_info.txt
+        python --version >> debug_info.txt
+        fab --version >> debug_info.txt 2>&1
         
-        # Configuration (redact secrets first!)
-        cat config/projects/your/config.yaml > debug_config.txt
+        echo "\n=== Recent Audit Logs ===" >> debug_info.txt
+        tail -50 audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl >> debug_info.txt 2>&1
+        
+        echo "\n=== Environment Variables (names only) ===" >> debug_info.txt
+        python -c "
+        import os
+        for var in ['AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_TENANT_ID', 'FABRIC_CAPACITY_ID']:
+            status = 'SET' if os.getenv(var) else 'MISSING'
+            print(f'{var}: {status}')
+        " >> debug_info.txt
+        
+        echo "Debug info saved to debug_info.txt"
     tips:
-      - Always redact credentials before sharing debug info
-      - Include the full error message, not just a summary
+      - ALWAYS redact credentials before sharing debug info
+      - Include the FULL error message, not just a summary
+
+  - id: next-steps
+    title: "🛠️ Troubleshooting Complete!"
+    type: info
+    content: |
+      You now have all the tools to diagnose and fix common issues!
+      
+      ## Quick Reference
+      
+      | Problem | First Step |
+      |---------|------------|
+      | Anything | `make diagnose` |
+      | Authentication | Check `.env`, run preflight |
+      | Permissions | `debug_ado_access.py` |
+      | Config errors | `make validate config=...` |
+      | Docker issues | `docker ps`, `docker system prune` |
+      | Git errors | `init_ado_repo.py`, `debug_ado_access.py` |
+      
+      ## Command Cheat Sheet
+      
+      | Command | Purpose |
+      |---------|---------|
+      | `make diagnose` | Quick preflight check |
+      | `python scripts/preflight_check.py --auto-install` | Detailed check + auto-fix |
+      | `make docker-diagnose ENVFILE=.env` | Docker environment check |
+      | `python scripts/utilities/debug_ado_access.py` | ADO connectivity test |
+      | `python scripts/utilities/list_workspaces.py` | Verify workspace access |
+      | `make validate config=...` | Validate config file |
+      
+      ## Return to Previous Scenarios
+      
+      - [Getting Started](#getting-started) - Environment setup
+      - [Local Deployment](#local-deployment) - Deploy without Docker
+      - [Docker Deployment](#docker-deployment) - Containerized deployment
+      - [Git Integration](#git-integration) - Version control setup

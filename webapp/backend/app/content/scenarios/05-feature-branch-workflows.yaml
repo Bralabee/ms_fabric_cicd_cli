@@ -1,22 +1,30 @@
 # Feature Branch Workflows Scenario
-# Based on docs/01_User_Guides/02_CLI_Walkthrough.md
+# Comprehensive guide to isolated development workspaces
 
 id: feature-branch-workflows
 title: Feature Branch Workflows
-description: Learn how to create isolated development workspaces for feature branches, enabling parallel development without impacting shared environments.
+description: |
+  Master isolated development with feature branch workspaces. Learn to use 
+  `make docker-feature-deploy` for creating per-branch workspaces, understand 
+  workspace naming conventions, clean up with `make bulk-destroy`, and integrate 
+  with CI/CD pipelines for automated workspace lifecycle management.
 difficulty: intermediate
-estimated_duration_minutes: 15
+estimated_duration_minutes: 20
 category: workflows
 order: 5
 
 prerequisites:
   - local-deployment
+  - docker-deployment
 
 learning_outcomes:
-  - Create isolated workspaces for feature branches
-  - Understand workspace naming conventions for branches
-  - Clean up feature workspaces after merge
-  - Integrate branch workflows with CI/CD
+  - Deploy feature branch workspaces with `make docker-feature-deploy`
+  - Use `fabric-cicd deploy --branch` for branch-specific deployments
+  - Understand the automatic workspace naming convention
+  - List and verify workspaces with `list_workspaces.py`
+  - Clean up workspaces with `fabric-cicd destroy`
+  - Bulk destroy multiple workspaces with `make bulk-destroy`
+  - Automate feature workspace lifecycle in CI/CD
 
 tags:
   - feature-branch
@@ -24,290 +32,621 @@ tags:
   - parallel-development
   - git
   - branching
+  - docker-feature-deploy
+  - bulk-destroy
 
 related_scenarios:
+  - docker-deployment
   - git-integration
-  - cicd-pipelines
+  - troubleshooting
 
 steps:
   - id: overview
-    title: Feature Branch Isolation
+    title: Why Feature Branch Workspaces?
     type: info
     content: |
       Feature branch workflows allow developers to work in **isolated workspaces** 
       without affecting the shared development environment.
       
-      **Benefits:**
+      ## Key Benefits
       
       | Benefit | Description |
       |---------|-------------|
-      | **Isolation** | Changes don't break other developers' work |
-      | **Testing** | Full integration testing before merge |
-      | **Review** | Stakeholders can review in a live environment |
-      | **Parallel Work** | Multiple features developed simultaneously |
+      | **Isolation** | Your changes don't break other developers' work |
+      | **Integration Testing** | Full testing before merge to main |
+      | **Stakeholder Review** | Share a live workspace for demos |
+      | **Parallel Development** | Multiple features developed simultaneously |
+      | **Risk Reduction** | Problems stay contained to feature workspace |
       
-      **Workspace Naming:**
+      ## How It Works
       
-      - Base: `acme-sales-dev`
-      - Feature: `acme-sales-feature-inventory-opt-dev`
+      1. You have a main workspace: `acme-sales-dev`
+      2. You create a feature branch: `feature/inventory-opt`
+      3. Framework creates: `acme-sales-feature-inventory-opt-dev`
+      4. You develop/test in isolation
+      5. After merge, you destroy the feature workspace
       
-      The framework automatically generates unique workspace names from branch names.
+      ## Commands Overview
+      
+      | Purpose | Command |
+      |---------|---------|
+      | Deploy feature workspace | `make docker-feature-deploy config=... env=dev branch=feature/x` |
+      | Local feature deploy | `fabric-cicd deploy <config> --env dev --branch feature/x --force-branch-workspace` |
+      | Destroy feature workspace | `fabric-cicd destroy <config> --env dev --branch feature/x` |
+      | Bulk cleanup | `make bulk-destroy file=list.txt` |
     tips:
-      - Feature workspaces clone the dev configuration
-      - Clean up feature workspaces after merging to save capacity
+      - Feature workspaces clone the dev environment configuration
+      - Always clean up feature workspaces after merging to save capacity
 
   - id: create-branch
-    title: Create a Feature Branch
+    title: "Step 1: Create Your Feature Branch"
     type: command
     content: |
       Start with standard Git workflow - create a feature branch from main.
+      
+      ## Naming Convention
+      
+      | Pattern | Example | Best For |
+      |---------|---------|----------|
+      | `feature/*` | `feature/inventory-opt` | New functionality |
+      | `bugfix/*` | `bugfix/data-load` | Bug fixes |
+      | `hotfix/*` | `hotfix/urgent-fix` | Production fixes |
+      | `refactor/*` | `refactor/cleanup` | Code improvements |
     code:
       language: bash
       content: |
-        # Ensure you're on the main branch
+        # Ensure you're on the main branch and up to date
         git checkout main
         git pull origin main
         
         # Create your feature branch
         git checkout -b feature/inventory-optimization
         
-        # Push the branch to remote
+        # Push the branch to remote (required for Git integration)
         git push -u origin feature/inventory-optimization
+        
+        # Verify your branch
+        git branch --show-current
+    expected_output: |
+      Switched to branch 'main'
+      Already up to date.
+      Switched to a new branch 'feature/inventory-optimization'
+      Total 0 (delta 0), reused 0 (delta 0)
+      To https://dev.azure.com/org/project/_git/repo
+       * [new branch]      feature/inventory-optimization -> feature/inventory-optimization
+      Branch 'feature/inventory-optimization' set up to track remote branch
+      
+      feature/inventory-optimization
     tips:
-      - Use descriptive branch names (they become part of workspace names)
-      - Keep branch names short to avoid workspace name length limits
+      - Keep branch names short (they become part of workspace names)
+      - Avoid special characters - use hyphens, not underscores
+      - Fabric workspace names have a maximum length limit
 
-  - id: deploy-feature
-    title: Deploy Feature Branch Workspace
+  - id: docker-feature-deploy
+    title: "Step 2: Deploy Feature Workspace (Docker - RECOMMENDED)"
     type: command
     content: |
-      Deploy an isolated workspace for your feature branch using the 
-      `--force-branch-workspace` flag.
+      The easiest way to deploy a feature workspace is using the Docker command:
       
-      **Important:** You do NOT need a separate YAML configuration for feature branches.
-      The CLI uses the dev environment configuration as a base.
+      ## Command Syntax
+      
+      ```bash
+      make docker-feature-deploy config=<path> env=<env> branch=<branch>
+      ```
+      
+      ## Parameters
+      
+      | Parameter | Required | Description |
+      |-----------|----------|-------------|
+      | `config` | ✓ | Path to your project YAML config |
+      | `env` | ✓ | Target environment (dev, staging, prod) |
+      | `branch` | ✓ | Your feature branch name |
     code:
       language: bash
       content: |
-        # Deploy feature branch workspace
+        # Deploy feature workspace using Docker (RECOMMENDED)
+        make docker-feature-deploy \
+          config=config/projects/acme_corp/sales_analytics.yaml \
+          env=dev \
+          branch=feature/inventory-optimization
+        
+        # If using a different env file
+        make docker-feature-deploy \
+          config=config/projects/acme_corp/sales_analytics.yaml \
+          env=dev \
+          branch=feature/inventory-optimization \
+          ENVFILE=.env.dev
+    expected_output: |
+      ╔══════════════════════════════════════════════════════════════╗
+      ║               Fabric Workspace Deployment                    ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+      Configuration: config/projects/acme_corp/sales_analytics.yaml
+      Environment: dev
+      Branch: feature/inventory-optimization
+      
+      [yellow]Creating branch-specific workspace: acme-sales-analytics-feature-inventory-optimization-dev[/yellow]
+      
+      ✓ Authenticated as Service Principal
+      ✓ Workspace 'acme-sales-analytics-feature-inventory-optimization-dev' created
+      ✓ Folder '01_Bronze' created
+      ✓ Folder '02_Silver' created
+      ✓ Folder '03_Gold' created
+      ✓ Lakehouse 'sales_raw' created
+      ✓ Lakehouse 'sales_curated' created
+      ✓ Principal 'dev-team@acme.com' added with 'Member' role
+      
+      ════════════════════════════════════════════════════════════════
+      ✅ Feature workspace deployment completed successfully!
+      ════════════════════════════════════════════════════════════════
+    tips:
+      - The workspace name is automatically generated from your branch
+      - All items from the dev config are created in the new workspace
+      - Principals/permissions are copied to the feature workspace
+
+  - id: local-feature-deploy
+    title: "Step 2 (Alternative): Local Feature Deploy"
+    type: command
+    content: |
+      If you prefer local deployment (not Docker), use the CLI directly:
+      
+      ## CLI Flags for Feature Branches
+      
+      | Flag | Description |
+      |------|-------------|
+      | `--branch` | Specifies the feature branch name |
+      | `--force-branch-workspace` | Creates a separate workspace for this branch |
+    code:
+      language: bash
+      content: |
+        # Option A: Using fabric-cicd CLI directly
         fabric-cicd deploy \
           config/projects/acme_corp/sales_analytics.yaml \
           --env dev \
           --branch feature/inventory-optimization \
           --force-branch-workspace
         
-        # OR using Makefile (simplified)
-        make deploy \
-          config=config/projects/acme_corp/sales_analytics.yaml \
-          env=dev \
-          BRANCH=feature/inventory-optimization
+        # Option B: Using Python module directly
+        export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
+        python -m core.cli deploy \
+          config/projects/acme_corp/sales_analytics.yaml \
+          --env dev \
+          --branch feature/inventory-optimization \
+          --force-branch-workspace
     expected_output: |
       Loading configuration: config/projects/acme_corp/sales_analytics.yaml
       Environment: dev
       Branch: feature/inventory-optimization
       
+      [yellow]Creating branch-specific workspace: acme-sales-analytics-feature-inventory-optimization-dev[/yellow]
+      
       ✓ Authenticated successfully
-      ✓ Workspace 'acme-sales-analytics-feature-inventory-opt-dev' created
-      ✓ Folder structure replicated
+      ✓ Workspace created
+      ✓ Folders created
       ✓ Items created
       ✓ Principals assigned
       
-      Feature workspace deployed successfully!
+      ✅ Feature workspace deployment completed!
     tips:
-      - The workspace name is auto-generated from the branch name
-      - All items from dev are replicated to the feature workspace
+      - `--force-branch-workspace` is REQUIRED for feature branches
+      - Without this flag, it would try to deploy to the shared dev workspace
 
   - id: workspace-naming
-    title: Workspace Naming Convention
+    title: "Understanding Workspace Naming"
     type: info
     content: |
-      Feature workspaces follow a predictable naming pattern:
+      The framework automatically generates workspace names from your branch:
       
-      **Pattern:** `{base-name}-{branch-slug}-{env}`
+      ## Naming Pattern
       
-      **Examples:**
+      ```
+      {base-workspace-name}-{branch-slug}-{environment}
+      ```
       
-      | Base | Branch | Environment | Workspace Name |
-      |------|--------|-------------|----------------|
+      ## Branch Slug Transformation
+      
+      Your branch name is transformed:
+      - Slashes (`/`) → Hyphens (`-`)
+      - Underscores (`_`) → Hyphens (`-`)
+      - Converted to lowercase
+      
+      ## Examples
+      
+      | Base Workspace | Branch | Environment | Generated Name |
+      |----------------|--------|-------------|----------------|
       | acme-sales | feature/inventory-opt | dev | acme-sales-feature-inventory-opt-dev |
       | acme-sales | feature/new-reports | dev | acme-sales-feature-new-reports-dev |
       | acme-sales | bugfix/data-load | dev | acme-sales-bugfix-data-load-dev |
+      | acme-sales | hotfix/123 | prod | acme-sales-hotfix-123-prod |
+      | analytics | refactor/cleanup | staging | analytics-refactor-cleanup-staging |
       
-      **Branch Slug Transformation:**
-      - Slashes (`/`) → Hyphens (`-`)
-      - Underscores (`_`) → Hyphens (`-`)
-      - Lowercase
+      ## Length Considerations
+      
+      - Fabric workspace names have a maximum length
+      - Keep branch names SHORT to avoid truncation
+      - Recommend: Branch names under 25 characters
     tips:
-      - Keep branch names under 30 characters for readable workspace names
-      - Fabric has a maximum workspace name length
+      - The naming logic is in `src/core/git_integration.py`
+      - Predictable naming makes it easy to find workspaces
 
-  - id: develop-test
-    title: Develop and Test
-    type: info
-    content: |
-      With your isolated workspace, you can:
-      
-      **Development:**
-      - Add new notebooks without affecting others
-      - Modify pipelines freely
-      - Test data transformations
-      - Experiment with new Fabric features
-      
-      **Testing:**
-      - Run end-to-end integration tests
-      - Validate data quality
-      - Performance testing
-      - User acceptance testing
-      
-      **Collaboration:**
-      - Share workspace URL with reviewers
-      - Demonstrate features to stakeholders
-      - Pair programming sessions
-    code:
-      language: bash
-      content: |
-        # Get workspace URL
-        python scripts/utilities/list_workspaces.py | grep "feature-inventory-opt"
-        
-        # List items in feature workspace
-        python scripts/utilities/list_workspace_items.py \
-          --workspace "acme-sales-analytics-feature-inventory-opt-dev"
-    tips:
-      - Feature workspaces have the same permissions as dev
-      - Changes in feature workspace don't sync back automatically
-
-  - id: cleanup-manual
-    title: Clean Up Feature Workspace (Manual)
+  - id: verify-workspace
+    title: "Step 3: Verify Your Feature Workspace"
     type: command
     content: |
-      After your feature is merged, delete the temporary workspace to free up 
-      capacity units.
+      After deployment, verify the workspace was created correctly:
     code:
       language: bash
       content: |
-        # Destroy the feature workspace
+        # List all workspaces and find yours
+        python scripts/utilities/list_workspaces.py | grep "feature-inventory"
+        
+        # List items in your feature workspace
+        python scripts/utilities/list_workspace_items.py \
+          --workspace "acme-sales-analytics-feature-inventory-optimization-dev"
+        
+        # Or search by partial name
+        python scripts/utilities/list_workspace_items.py \
+          --workspace "feature-inventory"
+    expected_output: |
+      # list_workspaces.py output:
+      Found 5 workspaces:
+      - acme-sales-analytics-dev
+      - acme-sales-analytics-staging
+      - acme-sales-analytics-prod
+      - acme-sales-analytics-feature-inventory-optimization-dev   ← Your feature workspace
+      - acme-marketing-reports-dev
+      
+      # list_workspace_items.py output:
+      Workspace: acme-sales-analytics-feature-inventory-optimization-dev
+      
+      Items (8):
+        📁 Folders:
+          - 01_Bronze
+          - 02_Silver
+          - 03_Gold
+        🏠 Lakehouses:
+          - sales_raw (folder: 01_Bronze)
+          - sales_curated (folder: 02_Silver)
+        📓 Notebooks:
+          - data_transformation
+          - reporting_notebook
+        🔗 Pipelines:
+          - daily_load_pipeline
+    tips:
+      - The workspace URL will be in the Fabric portal
+      - Share the workspace URL with reviewers
+
+  - id: develop-test
+    title: "Step 4: Develop and Test"
+    type: info
+    content: |
+      With your isolated workspace, you can safely:
+      
+      ## Development Activities
+      
+      | Activity | Safe? | Notes |
+      |----------|-------|-------|
+      | Add new notebooks | ✅ | Won't affect shared dev |
+      | Modify pipelines | ✅ | Test changes freely |
+      | Change lakehouse schema | ✅ | No impact on others |
+      | Test new Fabric features | ✅ | Experiment safely |
+      | Break things | ✅ | It's YOUR sandbox |
+      
+      ## Testing Activities
+      
+      | Test Type | Description |
+      |-----------|-------------|
+      | Integration | End-to-end pipeline runs |
+      | Data Quality | Validate transformations |
+      | Performance | Load testing |
+      | UAT | User acceptance with stakeholders |
+      
+      ## Collaboration
+      
+      - Share the workspace URL with your team
+      - Stakeholders can view in Fabric portal
+      - Pair programming in shared notebooks
+    tips:
+      - Changes in feature workspace DON'T sync back to main
+      - When ready, merge your Git branch (code), not the workspace
+
+  - id: destroy-workspace
+    title: "Step 5: Clean Up Feature Workspace"
+    type: command
+    content: |
+      After your feature branch is merged, delete the temporary workspace 
+      to free up capacity units.
+      
+      ## IMPORTANT
+      
+      - Delete AFTER merging your Git branch to main
+      - This frees Fabric capacity for other features
+      - Cannot be undone!
+    code:
+      language: bash
+      content: |
+        # Destroy using CLI (will ask for confirmation)
         fabric-cicd destroy \
           config/projects/acme_corp/sales_analytics.yaml \
           --env dev \
           --branch feature/inventory-optimization
         
-        # Confirm deletion
-        python scripts/utilities/list_workspaces.py | grep "feature-inventory-opt"
+        # Verify it's gone
+        python scripts/utilities/list_workspaces.py | grep "feature-inventory"
         # Should return empty
     expected_output: |
-      ⚠️ This will permanently delete workspace 'acme-sales-analytics-feature-inventory-opt-dev'
-      Type 'yes' to confirm: yes
+      ╔══════════════════════════════════════════════════════════════╗
+      ║               ⚠️  WORKSPACE DESTRUCTION                       ║
+      ╚══════════════════════════════════════════════════════════════╝
       
-      ✓ Workspace deleted
+      Workspace: acme-sales-analytics-feature-inventory-optimization-dev
+      Environment: dev
+      Branch: feature/inventory-optimization
+      
+      ⚠️  WARNING: This will permanently delete:
+        - All lakehouses and their data
+        - All notebooks
+        - All pipelines
+        - All other workspace items
+      
+      Type 'yes' to confirm destruction: yes
+      
+      ✓ Workspace 'acme-sales-analytics-feature-inventory-optimization-dev' deleted
+      
+      # Verification (grep returns nothing):
+      # (empty output - workspace is gone)
     warnings:
-      - This action cannot be undone
+      - This permanently deletes ALL data in the workspace
       - Ensure the feature is merged before deleting
+      - There is NO UNDO for workspace deletion
 
-  - id: cleanup-bulk
-    title: Bulk Cleanup of Feature Workspaces
+  - id: bulk-destroy
+    title: "Bulk Cleanup: Multiple Feature Workspaces"
     type: command
     content: |
-      For teams with many feature workspaces, use the bulk destroy script.
+      For teams with many stale feature workspaces, use the bulk destroy utility:
+      
+      ## Workflow
+      
+      1. List all workspaces
+      2. Filter to feature workspaces
+      3. Review the list
+      4. Run bulk destroy
     code:
       language: bash
       content: |
-        # First, identify workspaces to delete
+        # Step 1: List all workspaces to a file
         python scripts/utilities/list_workspaces.py > all_workspaces.txt
-        grep "feature-" all_workspaces.txt > feature_workspaces.txt
         
-        # Review the list
-        cat feature_workspaces.txt
+        # Step 2: Filter to just feature workspaces
+        grep "feature-" all_workspaces.txt > feature_workspaces_to_delete.txt
         
-        # Run bulk destroy
-        python scripts/bulk_destroy.py feature_workspaces.txt
+        # Step 3: Review the list carefully!
+        cat feature_workspaces_to_delete.txt
+        
+        # Step 4: Bulk destroy (will ask for confirmation)
+        make bulk-destroy file=feature_workspaces_to_delete.txt
+        
+        # OR using Python directly
+        python scripts/bulk_destroy.py feature_workspaces_to_delete.txt
     expected_output: |
+      # all_workspaces.txt content:
+      acme-sales-analytics-dev
+      acme-sales-analytics-staging
+      acme-sales-analytics-prod
+      acme-sales-analytics-feature-inventory-opt-dev
+      acme-sales-analytics-feature-new-reports-dev
+      acme-sales-analytics-bugfix-data-load-dev
+      acme-marketing-dev
+      
+      # feature_workspaces_to_delete.txt content:
+      acme-sales-analytics-feature-inventory-opt-dev
+      acme-sales-analytics-feature-new-reports-dev
+      acme-sales-analytics-bugfix-data-load-dev
+      
+      # bulk_destroy.py output:
+      ╔══════════════════════════════════════════════════════════════╗
+      ║               Bulk Workspace Destruction                      ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
       Found 3 workspaces to delete:
-      - acme-sales-feature-inventory-opt-dev
-      - acme-sales-feature-new-reports-dev
-      - acme-sales-bugfix-data-load-dev
+        1. acme-sales-analytics-feature-inventory-opt-dev
+        2. acme-sales-analytics-feature-new-reports-dev
+        3. acme-sales-analytics-bugfix-data-load-dev
       
-      Proceed? [y/N]: y
+      ⚠️  This action cannot be undone!
       
-      ✓ Deleted acme-sales-feature-inventory-opt-dev
-      ✓ Deleted acme-sales-feature-new-reports-dev
-      ✓ Deleted acme-sales-bugfix-data-load-dev
+      Proceed with deletion? [y/N]: y
       
-      3 workspaces deleted.
+      ✓ Deleted acme-sales-analytics-feature-inventory-opt-dev
+      ✓ Deleted acme-sales-analytics-feature-new-reports-dev
+      ✓ Deleted acme-sales-analytics-bugfix-data-load-dev
+      
+      ════════════════════════════════════════════════════════════════
+      ✅ 3 workspaces deleted successfully
+      ════════════════════════════════════════════════════════════════
     tips:
-      - Run this weekly to clean up stale feature workspaces
-      - Integrate into CI/CD for automatic cleanup after PR merge
+      - Run bulk cleanup weekly to free capacity
+      - ALWAYS review the list before confirming deletion
+      - Consider automating in CI/CD after PR merge/close
+    warnings:
+      - Double-check the list before confirming
+      - No way to recover deleted workspaces
 
   - id: cicd-integration
-    title: CI/CD Integration
+    title: "CI/CD Integration: Automated Lifecycle"
     type: info
     content: |
-      Feature branch workflows can be fully automated in CI/CD pipelines.
+      The best practice is to automate feature workspace lifecycle in CI/CD.
       
-      **GitHub Actions Example:**
-      
-      ```yaml
-      # On PR opened/updated
-      - name: Deploy Feature Workspace
-        if: github.event_name == 'pull_request'
-        run: |
-          make docker-deploy \
-            config=config/projects/acme/sales.yaml \
-            env=dev \
-            BRANCH=${{ github.head_ref }}
-      
-      # On PR closed/merged
-      - name: Cleanup Feature Workspace
-        if: github.event.action == 'closed'
-        run: |
-          make docker-destroy \
-            config=config/projects/acme/sales.yaml \
-            env=dev \
-            BRANCH=${{ github.head_ref }}
-      ```
+      ## GitHub Actions Example
+    code:
+      language: yaml
+      filename: .github/workflows/feature-workspace.yml
+      content: |
+        name: Feature Branch Workspace Lifecycle
+        
+        on:
+          pull_request:
+            types: [opened, synchronize, closed]
+        
+        env:
+          CONFIG_FILE: config/projects/acme_corp/sales_analytics.yaml
+        
+        jobs:
+          deploy-feature-workspace:
+            # Only run on PR open/update (not close)
+            if: github.event.action != 'closed'
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              
+              - name: Build Docker image
+                run: make docker-build
+              
+              - name: Create .env from secrets
+                run: |
+                  cat > .env << EOF
+                  AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}
+                  AZURE_CLIENT_SECRET=${{ secrets.AZURE_CLIENT_SECRET }}
+                  AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}
+                  FABRIC_CAPACITY_ID=${{ secrets.FABRIC_CAPACITY_ID }}
+                  EOF
+              
+              - name: Deploy Feature Workspace
+                run: |
+                  make docker-feature-deploy \
+                    config=${{ env.CONFIG_FILE }} \
+                    env=dev \
+                    branch=${{ github.head_ref }}
+              
+              - name: Post workspace URL
+                uses: actions/github-script@v7
+                with:
+                  script: |
+                    github.rest.issues.createComment({
+                      issue_number: context.issue.number,
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      body: '🚀 Feature workspace deployed!\n\n' +
+                            'Workspace: `${{ github.head_ref }}`\n' +
+                            '[Open in Fabric Portal](https://app.fabric.microsoft.com)'
+                    })
+          
+          cleanup-feature-workspace:
+            # Only run when PR is closed (merged or abandoned)
+            if: github.event.action == 'closed'
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              
+              - name: Build Docker image
+                run: make docker-build
+              
+              - name: Create .env from secrets
+                run: |
+                  cat > .env << EOF
+                  AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}
+                  AZURE_CLIENT_SECRET=${{ secrets.AZURE_CLIENT_SECRET }}
+                  AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}
+                  FABRIC_CAPACITY_ID=${{ secrets.FABRIC_CAPACITY_ID }}
+                  EOF
+              
+              - name: Destroy Feature Workspace
+                run: |
+                  # Use yes to auto-confirm in CI
+                  echo "yes" | make docker-destroy \
+                    config=${{ env.CONFIG_FILE }} \
+                    env=dev \
+                    BRANCH=${{ github.head_ref }}
+              
+              - name: Post cleanup notice
+                uses: actions/github-script@v7
+                with:
+                  script: |
+                    github.rest.issues.createComment({
+                      issue_number: context.issue.number,
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      body: '🧹 Feature workspace cleaned up!'
+                    })
     tips:
-      - See the CI/CD Pipelines guide for complete examples
-      - Automate cleanup on PR merge/close
+      - Store credentials in GitHub Secrets
+      - PR comments help reviewers know where to test
+      - Consider adding approval gates for expensive operations
 
-  - id: best-practices
-    title: Best Practices
+  - id: capacity-planning
+    title: "Capacity Planning for Feature Branches"
     type: info
     content: |
-      **Feature Branch Best Practices:**
+      Each feature workspace consumes Fabric capacity. Plan accordingly!
       
-      | Practice | Reason |
-      |----------|--------|
-      | Short-lived branches | Reduces capacity usage |
-      | Clear naming convention | Easy to identify workspaces |
-      | Automatic cleanup | Prevents orphaned workspaces |
-      | PR-based workflow | Clear merge process |
-      | Resource limits | Prevent runaway capacity usage |
+      ## Capacity Guidelines
       
-      **Capacity Planning:**
+      | Capacity SKU | Concurrent Feature Workspaces | Notes |
+      |--------------|-------------------------------|-------|
+      | Trial (F2) | 2-3 | Very limited, clean up frequently |
+      | F4 | 3-5 | Small team |
+      | F8 | 5-10 | Medium team |
+      | F16 | 10-20 | Large team |
+      | F64+ | 20+ | Enterprise scale |
       
-      - Each feature workspace consumes capacity units
-      - F2 trial: ~2-3 concurrent feature workspaces
-      - F8: ~5-10 concurrent feature workspaces
-      - Consider capacity limits when planning sprints
+      ## Best Practices
+      
+      | Practice | Why |
+      |----------|-----|
+      | Short-lived branches | Less capacity usage |
+      | Auto-cleanup on PR merge | Prevents orphaned workspaces |
+      | Weekly bulk cleanup | Catches missed cleanups |
+      | Clear naming convention | Easy to identify stale workspaces |
+      | Resource limits | Prevent runaway capacity |
+      
+      ## Check Your Capacity Usage
+    code:
+      language: bash
+      content: |
+        # List all workspaces to see how many exist
+        python scripts/utilities/list_workspaces.py | wc -l
+        
+        # Count feature workspaces specifically
+        python scripts/utilities/list_workspaces.py | grep "feature-" | wc -l
+        
+        # List all with details
+        python scripts/utilities/list_workspaces.py
     warnings:
       - Too many feature workspaces can exhaust capacity
       - Set team policies for maximum concurrent feature branches
+      - Consider capacity costs in sprint planning
 
   - id: next-steps
-    title: Next Steps
+    title: "🎉 Feature Branch Mastery Complete!"
     type: info
     content: |
-      🎉 You've learned feature branch workflows!
+      You've mastered feature branch workflows!
       
-      **Recommended Next Steps:**
+      ## What You've Accomplished
       
-      1. **Git Integration** → Connect workspaces to Git repositories
-      2. **CI/CD Pipelines** → Automate feature workspace lifecycle
-      3. **Troubleshooting** → Debug common issues
+      - ✅ Create feature branches with proper naming
+      - ✅ Deploy isolated workspaces with `make docker-feature-deploy`
+      - ✅ Understand automatic workspace naming conventions
+      - ✅ Verify workspaces with `list_workspaces.py`
+      - ✅ Destroy individual workspaces with `fabric-cicd destroy`
+      - ✅ Bulk cleanup with `make bulk-destroy`
+      - ✅ CI/CD integration for automated lifecycle
+      - ✅ Capacity planning considerations
       
-      **Quick Reference:**
+      ## Command Quick Reference
       
       | Task | Command |
       |------|---------|
-      | Deploy Feature | `fabric-cicd deploy <config> --env dev --branch <branch> --force-branch-workspace` |
-      | Destroy Feature | `fabric-cicd destroy <config> --env dev --branch <branch>` |
-      | Bulk Cleanup | `python scripts/bulk_destroy.py <list_file>` |
+      | Deploy feature (Docker) | `make docker-feature-deploy config=... env=dev branch=feature/x` |
+      | Deploy feature (local) | `fabric-cicd deploy <config> --env dev --branch feature/x --force-branch-workspace` |
+      | Destroy feature | `fabric-cicd destroy <config> --env dev --branch feature/x` |
+      | List workspaces | `python scripts/utilities/list_workspaces.py` |
+      | Filter features | `python scripts/utilities/list_workspaces.py \| grep "feature-"` |
+      | Bulk destroy | `make bulk-destroy file=list.txt` |
+      
+      ## Recommended Next Steps
+      
+      1. **Next:** [Git Integration](#git-integration) - Connect workspaces to version control
+      2. **Then:** [Troubleshooting](#troubleshooting) - Debug common issues

@@ -1,11 +1,15 @@
 # Git Integration Scenario
-# Based on README.md and scripts/utilities
+# Comprehensive guide to connecting Fabric workspaces to version control
 
 id: git-integration
 title: Git Integration (Azure DevOps & GitHub)
-description: Learn how to connect Fabric workspaces to Git repositories for version control, enabling Infrastructure as Code and collaborative development.
+description: |
+  Master Git integration for Microsoft Fabric workspaces. Learn to use 
+  `init_ado_repo.py` for repository initialization, `debug_ado_access.py` for 
+  troubleshooting connectivity, `make docker-init-repo` for containerized setup, 
+  and configure workspace YAML for automatic Git connections during deployment.
 difficulty: intermediate
-estimated_duration_minutes: 20
+estimated_duration_minutes: 25
 category: integration
 order: 6
 
@@ -14,10 +18,13 @@ prerequisites:
   - local-deployment
 
 learning_outcomes:
-  - Initialize Azure DevOps repositories
-  - Configure workspace Git connections
-  - Understand Git sync behavior in Fabric
-  - Debug Git connectivity issues
+  - Initialize Azure DevOps repositories with `python scripts/utilities/init_ado_repo.py`
+  - Debug ADO connectivity with `python scripts/utilities/debug_ado_access.py`
+  - Use Docker for repo initialization with `make docker-init-repo`
+  - Configure `git_repo` and `git_branch` in workspace YAML
+  - Understand Git sync behavior in Fabric workspaces
+  - Troubleshoot common Git integration errors
+  - Connect to GitHub repositories
 
 tags:
   - git
@@ -25,75 +32,166 @@ tags:
   - github
   - version-control
   - integration
+  - init-ado-repo
+  - debug-ado-access
 
 related_scenarios:
   - feature-branch-workflows
-  - cicd-pipelines
+  - docker-deployment
+  - troubleshooting
 
 steps:
   - id: overview
-    title: Git Integration Overview
+    title: Why Git Integration?
     type: info
     content: |
       Git integration connects Fabric workspaces to version control repositories, 
-      enabling Infrastructure as Code (IaC) practices.
+      enabling true Infrastructure as Code (IaC) practices.
       
-      **Supported Providers:**
+      ## Supported Providers
       
-      | Provider | Authentication |
-      |----------|----------------|
-      | **Azure DevOps** | Service Principal + PAT |
-      | **GitHub** | Personal Access Token (PAT) |
+      | Provider | Authentication | Script |
+      |----------|----------------|--------|
+      | **Azure DevOps** | Service Principal + PAT | `init_ado_repo.py` |
+      | **GitHub** | Personal Access Token | Manual setup |
       
-      **Benefits:**
+      ## Key Benefits
       
-      - ✅ Version control for Fabric artifacts
-      - ✅ Code review workflows
-      - ✅ Rollback capabilities
-      - ✅ Environment promotion (dev → staging → prod)
-      - ✅ Collaboration across teams
+      | Benefit | Description |
+      |---------|-------------|
+      | **Version Control** | Track all changes to Fabric artifacts |
+      | **Code Review** | PR-based approval workflows |
+      | **Rollback** | Restore previous versions easily |
+      | **Environment Promotion** | dev → staging → prod via Git branches |
+      | **Collaboration** | Multiple developers working safely |
+      | **Audit Trail** | Complete history of all changes |
       
-      **Important:** The framework uses REST API for Git integration because 
-      the official Fabric CLI doesn't yet support Git connections.
+      ## How It Works
+      
+      1. You configure `git_repo` and `git_branch` in your YAML
+      2. During deployment, framework connects workspace to repo
+      3. Workspace artifacts sync to Git repository
+      4. Changes made in Fabric portal sync back to Git
+      5. Changes pushed to Git sync to workspace
+      
+      ## Commands Overview
+      
+      | Purpose | Command |
+      |---------|---------|
+      | Initialize ADO repo | `python scripts/utilities/init_ado_repo.py` |
+      | Docker repo init | `make docker-init-repo org="..." project="..." repo="..."` |
+      | Debug ADO access | `python scripts/utilities/debug_ado_access.py` |
     tips:
-      - Git integration requires an initialized repository (at least one commit)
+      - Git integration requires a repository with at least one commit
+      - The framework uses REST API because Fabric CLI doesn't support Git yet
 
   - id: prerequisites
-    title: Git Integration Prerequisites
+    title: "Step 1: Check Prerequisites"
     type: checkpoint
     content: |
-      Before configuring Git integration, ensure:
+      Before configuring Git integration, ensure you have the required permissions:
       
-      **Azure DevOps:**
-      - [ ] Service Principal has **Basic** access level in ADO Organization
-      - [ ] Service Principal is **Contributor** in ADO Project
-      - [ ] Azure DevOps PAT with `Code (Read & Write)` scope
+      ## Azure DevOps Requirements
       
-      **GitHub:**
-      - [ ] Personal Access Token with `repo` scope
+      | Requirement | How to Verify |
+      |-------------|---------------|
+      | Service Principal has **Basic** access level | ADO Organization Settings → Users |
+      | SP is **Contributor** in ADO Project | Project Settings → Permissions |
+      | PAT with `Code (Read & Write)` scope | Personal Access Tokens |
+      | Repository exists (or will be created) | Azure Repos |
       
-      **Fabric:**
-      - [ ] "Allow service principals to use Git integration" enabled in Tenant Settings
+      ## GitHub Requirements
+      
+      | Requirement | How to Verify |
+      |-------------|---------------|
+      | PAT with `repo` scope | Settings → Developer Settings → PATs |
+      | Repository exists | github.com/org/repo |
+      
+      ## Fabric Tenant Requirements
+      
+      - "Allow service principals to use Git integration" must be **enabled**
+      - Location: Admin Portal → Tenant Settings → Git integration
     code:
       language: bash
       content: |
-        # Check PAT is set in .env
+        # Check that PAT is configured in .env
         grep -E "AZURE_DEVOPS_PAT|GITHUB_TOKEN" .env
         
-        # Verify ADO access
-        python scripts/utilities/debug_ado_access.py \
-          --organization "your-org" \
-          --project "your-project"
-    checkpoint_question: Is your PAT configured and do you have the required permissions?
+        # Expected output for ADO:
+        # AZURE_DEVOPS_PAT=xxxxxxxxxxxxxxxxxxxx
+        
+        # Expected output for GitHub:
+        # GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+    expected_output: |
+      AZURE_DEVOPS_PAT=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    checkpoint_question: Do you have the required PAT and permissions configured?
+    warnings:
+      - Missing PAT will cause Git integration to fail silently
+      - SP needs Basic access level, not Stakeholder (which is read-only)
 
-  - id: init-repo
-    title: Initialize Azure DevOps Repository
+  - id: debug-ado-access
+    title: "Step 2: Debug ADO Access"
     type: command
     content: |
-      Fabric Git integration requires a repository with at least one commit.
-      Use the initialization script to set up a new repository.
+      Before initializing a repository, verify your Azure DevOps access:
       
-      **Why?** Fabric fails to connect to completely empty repositories (0 branches).
+      ## Why Debug First?
+      
+      The most common Git integration failures are permission-related. This script 
+      validates connectivity before you waste time on deployment.
+    code:
+      language: bash
+      content: |
+        # Debug Azure DevOps access
+        python scripts/utilities/debug_ado_access.py \
+          --organization "acme-corp" \
+          --project "FabricProjects"
+        
+        # This checks:
+        # 1. PAT authentication works
+        # 2. Organization is accessible
+        # 3. Project is accessible
+        # 4. Service Principal has correct permissions
+    expected_output: |
+      ╔══════════════════════════════════════════════════════════════╗
+      ║            Azure DevOps Access Debug                         ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+      Organization: acme-corp
+      Project: FabricProjects
+      
+      Checking PAT authentication...
+      ✓ PAT authentication successful
+      
+      Checking organization access...
+      ✓ Organization 'acme-corp' accessible
+      
+      Checking project access...
+      ✓ Project 'FabricProjects' accessible
+      
+      Checking service principal permissions...
+      ✓ Service Principal access level: Basic
+      ✓ Project role: Contributor
+      
+      ════════════════════════════════════════════════════════════════
+      ✅ All Azure DevOps access checks passed!
+      ════════════════════════════════════════════════════════════════
+    tips:
+      - Run this BEFORE initializing repositories
+      - If checks fail, fix permissions before proceeding
+
+  - id: init-repo-local
+    title: "Step 3A: Initialize ADO Repository (Local)"
+    type: command
+    content: |
+      Fabric Git integration requires a repository with **at least one commit**.
+      Empty repositories (0 branches) will fail.
+      
+      ## Why Initialize?
+      
+      - Azure DevOps creates repositories with 0 branches by default
+      - Fabric cannot connect to repositories with no branches
+      - This script creates an initial commit with a README
     code:
       language: bash
       content: |
@@ -103,23 +201,82 @@ steps:
           --project "FabricProjects" \
           --repository "sales-analytics-repo" \
           --branch "main"
+        
+        # Parameters:
+        #   --organization: Your ADO organization name
+        #   --project: Your ADO project name
+        #   --repository: Repository name to create/initialize
+        #   --branch: Initial branch name (default: main)
     expected_output: |
-      Connecting to Azure DevOps...
+      ╔══════════════════════════════════════════════════════════════╗
+      ║            Azure DevOps Repository Initialization            ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+      Organization: acme-corp
+      Project: FabricProjects
+      Repository: sales-analytics-repo
+      Branch: main
+      
+      Creating repository...
       ✓ Repository 'sales-analytics-repo' created (or already exists)
+      
+      Creating initial commit...
       ✓ Branch 'main' created
       ✓ Initial README.md committed
       
-      Repository ready for Fabric Git integration!
-      URL: https://dev.azure.com/acme-corp/FabricProjects/_git/sales-analytics-repo
+      ════════════════════════════════════════════════════════════════
+      ✅ Repository ready for Fabric Git integration!
+      
+      Repository URL: https://dev.azure.com/acme-corp/FabricProjects/_git/sales-analytics-repo
+      ════════════════════════════════════════════════════════════════
     tips:
-      - Run this once per repository before deploying
+      - Run this ONCE per repository before first deployment
       - Existing repositories with commits don't need initialization
+      - The script is idempotent - safe to run multiple times
+
+  - id: init-repo-docker
+    title: "Step 3B: Initialize ADO Repository (Docker)"
+    type: command
+    content: |
+      For containerized workflows, use the Docker command:
+    code:
+      language: bash
+      content: |
+        # Initialize repo using Docker (requires docker-build first)
+        make docker-init-repo \
+          org="acme-corp" \
+          project="FabricProjects" \
+          repo="sales-analytics-repo"
+        
+        # With custom env file
+        make docker-init-repo \
+          org="acme-corp" \
+          project="FabricProjects" \
+          repo="sales-analytics-repo" \
+          ENVFILE=.env.prod
+    expected_output: |
+      ✓ Repository 'sales-analytics-repo' initialized
+      ✓ Branch 'main' created
+      ✓ Initial README committed
+      
+      Repository URL: https://dev.azure.com/acme-corp/FabricProjects/_git/sales-analytics-repo
+    tips:
+      - Docker image must be built first (`make docker-build`)
+      - Uses ENVFILE for credentials (default: .env)
 
   - id: configure-yaml
-    title: Configure Git in YAML
+    title: "Step 4: Configure Git in Workspace YAML"
     type: config
     content: |
-      Add Git configuration to your workspace YAML:
+      Add Git configuration to your workspace YAML file:
+      
+      ## Key Fields
+      
+      | Field | Required | Description |
+      |-------|----------|-------------|
+      | `git_repo` | ✓ | Full URL to the repository |
+      | `git_branch` | ✓ | Branch to connect to |
+      | `git_directory` | Optional | Subdirectory in repo for Fabric files |
     code:
       language: yaml
       filename: config/projects/acme_corp/sales_analytics.yaml
@@ -132,136 +289,207 @@ steps:
           # Git Integration Configuration
           git_repo: "https://dev.azure.com/acme-corp/FabricProjects/_git/sales-analytics-repo"
           git_branch: "main"
-          git_directory: "/fabric"  # Optional: subdirectory in repo
+          git_directory: "/fabric"  # Optional: store artifacts in a subdirectory
           
-        # Alternative: Use environment variable
-        # git_repo: "${GIT_REPO_URL}"
+        # Rest of configuration...
+        lakehouses:
+          - name: "sales_raw"
+            folder: "01_Bronze"
+        
+        # ...
+        
+        # Environment-specific Git branches
+        environments:
+          dev:
+            workspace:
+              git_branch: "develop"
+          staging:
+            workspace:
+              git_branch: "staging"
+          prod:
+            workspace:
+              git_branch: "main"
     tips:
-      - Use `git_directory` to store Fabric artifacts in a subdirectory
-      - The branch should exist in the repository
+      - Use environment variables for flexibility: `git_repo: "${GIT_REPO_URL}"`
+      - Use environment overrides for branch-per-environment strategy
+      - The `git_directory` is useful when repo has non-Fabric content too
 
   - id: deploy-with-git
-    title: Deploy with Git Integration
+    title: "Step 5: Deploy with Git Integration"
     type: command
     content: |
-      When you deploy, the framework will:
+      When you deploy a workspace with Git configuration, the framework will:
+      
       1. Create the workspace
       2. Create folders and items
-      3. Connect the workspace to Git
-      4. Initial sync of workspace content to repository
+      3. Add principals
+      4. **Connect workspace to Git repository**
+      5. **Perform initial sync to commit workspace contents**
     code:
       language: bash
       content: |
-        # Deploy with Git integration
+        # Deploy workspace with Git integration
         make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+        
+        # OR using CLI directly
+        fabric-cicd deploy config/projects/acme_corp/sales_analytics.yaml --env dev
+        
+        # OR using Docker
+        make docker-deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev ENVFILE=.env
     expected_output: |
-      Loading configuration...
+      ╔══════════════════════════════════════════════════════════════╗
+      ║               Fabric Workspace Deployment                    ║
+      ╚══════════════════════════════════════════════════════════════╝
       
+      Configuration: config/projects/acme_corp/sales_analytics.yaml
+      Environment: dev
+      
+      Creating workspace...
       ✓ Workspace 'acme-sales-analytics-dev' created
-      ✓ Folders created
-      ✓ Items created
-      ✓ Principals assigned
+      
+      Creating folders...
+      ✓ Folder '01_Bronze' created
+      ✓ Folder '02_Silver' created
+      
+      Creating items...
+      ✓ Lakehouse 'sales_raw' created
+      ✓ Notebook 'transform_data' created
+      
+      Adding principals...
+      ✓ Principal 'dev-team@acme.com' added with 'Member' role
+      
+      Connecting Git...
       ✓ Git integration: Connecting to Azure DevOps...
-      ✓ Git integration: Connected to main branch
+      ✓ Git integration: Connected to 'main' branch
       ✓ Git sync: Initial commit created
       
-      Deployment completed successfully!
+      ════════════════════════════════════════════════════════════════
+      ✅ Deployment completed successfully!
+      ════════════════════════════════════════════════════════════════
     tips:
       - First deployment creates an initial commit with workspace contents
-      - Subsequent deployments sync changes bidirectionally
+      - Check the repository after deployment to see Fabric artifact definitions
 
   - id: verify-connection
-    title: Verify Git Connection
+    title: "Step 6: Verify Git Connection"
     type: checkpoint
     content: |
-      Verify the Git connection in the Fabric portal:
+      Verify the Git connection in multiple ways:
       
-      1. Navigate to your workspace
-      2. Click the **Source Control** icon in the toolbar
-      3. Verify the connection shows "Connected to [branch]"
+      ## In Fabric Portal
       
-      **Check repository contents:**
+      1. Navigate to your workspace in [app.fabric.microsoft.com](https://app.fabric.microsoft.com)
+      2. Look for the **Source Control** icon in the toolbar
+      3. Should show "Connected to main" (or your configured branch)
+      
+      ## Via Git Clone
     code:
       language: bash
       content: |
-        # Clone the repository to inspect
+        # Clone the repository to inspect Fabric artifacts
         git clone https://dev.azure.com/acme-corp/FabricProjects/_git/sales-analytics-repo temp_repo
         cd temp_repo
+        
+        # List the structure
         ls -la
         
-        # You should see Fabric artifact definitions
-        # .pbi files, .json definitions, etc.
-    checkpoint_question: Does the workspace show "Connected" status in Source Control?
-
-  - id: debug-connection
-    title: Debug Git Connectivity
-    type: command
-    content: |
-      If Git connection fails, use the debug utilities to diagnose:
-    code:
-      language: bash
-      content: |
-        # Debug Azure DevOps access
-        python scripts/utilities/debug_ado_access.py \
-          --organization "acme-corp" \
-          --project "FabricProjects"
+        # You should see Fabric artifact definitions:
+        # - .pbi/ folder (for semantic models)
+        # - *.json files (item definitions)
+        # - Notebook/ folders (with notebook content)
         
-        # Debug Git connection specifically
-        python scripts/utilities/debug_connection.py \
-          --organization "acme-corp" \
-          --project "FabricProjects" \
-          --repository "sales-analytics-repo"
+        # View the commit history
+        git log --oneline
+        
+        # Clean up
+        cd .. && rm -rf temp_repo
     expected_output: |
-      === Azure DevOps Access Debug ===
-      Organization: acme-corp
-      Project: FabricProjects
+      Cloning into 'temp_repo'...
+      remote: Azure Repos
+      remote: Found 15 objects to send.
+      Receiving objects: 100% (15/15), done.
       
-      ✓ PAT authentication successful
-      ✓ Project access verified
-      ✓ Repository permissions verified
-      ✓ Service Principal access level: Basic
+      total 4
+      drwxr-xr-x  5 user user 4096 Jan 15 10:00 .
+      drwxr-xr-x 10 user user 4096 Jan 15 10:00 ..
+      drwxr-xr-x  8 user user 4096 Jan 15 10:00 .git
+      -rw-r--r--  1 user user  256 Jan 15 10:00 README.md
+      drwxr-xr-x  2 user user 4096 Jan 15 10:00 fabric
       
-      All checks passed!
-    tips:
-      - Most issues are permission-related
-      - Ensure SP has Basic access level, not Stakeholder
+      # In fabric/ directory:
+      -rw-r--r--  1 user user 1024 Jan 15 10:00 sales_raw.Lakehouse
+      -rw-r--r--  1 user user 2048 Jan 15 10:00 transform_data.Notebook
+      
+      # Git log:
+      abc1234 Initial commit from Fabric workspace
+      def5678 Initial README
+    checkpoint_question: Does your workspace show "Connected" in Source Control and can you see artifacts in the Git repository?
 
-  - id: common-issues
-    title: Common Git Integration Issues
+  - id: common-errors
+    title: "Troubleshooting: Common Git Errors"
     type: info
     content: |
-      **Issue 1: "Repository is empty"**
+      ## Error 1: "Repository is empty"
       
-      - **Cause:** Repository has 0 branches/commits
-      - **Solution:** Run `init_ado_repo.py` to create initial commit
+      | Symptom | Cause | Solution |
+      |---------|-------|----------|
+      | Git connection fails | Repository has 0 branches | Run `init_ado_repo.py` to create initial commit |
       
-      **Issue 2: "Access denied"**
+      ```bash
+      # Fix:
+      python scripts/utilities/init_ado_repo.py \
+        --organization "acme-corp" \
+        --project "FabricProjects" \
+        --repository "sales-analytics-repo"
+      ```
       
-      - **Cause:** Service Principal lacks permissions
-      - **Solution:** Add SP to Project Contributors, ensure Basic access level
+      ## Error 2: "Access denied" / "Unauthorized"
       
-      **Issue 3: "Branch not found"**
+      | Symptom | Cause | Solution |
+      |---------|-------|----------|
+      | 401/403 errors | PAT expired or wrong scope | Generate new PAT with `Code (Read & Write)` |
+      | "User not found" | SP not in ADO organization | Add SP to Organization Users |
+      | "Permission denied" | SP not in project | Add SP to Project as Contributor |
       
-      - **Cause:** Configured branch doesn't exist
-      - **Solution:** Create the branch or update `git_branch` in YAML
+      ```bash
+      # Debug:
+      python scripts/utilities/debug_ado_access.py \
+        --organization "acme-corp" \
+        --project "FabricProjects"
+      ```
       
-      **Issue 4: "Git sync conflict"**
+      ## Error 3: "Branch not found"
       
-      - **Cause:** Local changes conflict with remote
-      - **Solution:** Resolve in Fabric portal or use Git commands
-    code:
-      language: bash
-      content: |
-        # Check repository branches
-        git ls-remote --heads https://dev.azure.com/acme-corp/FabricProjects/_git/sales-analytics-repo
+      | Symptom | Cause | Solution |
+      |---------|-------|----------|
+      | Branch doesn't exist | Typo in `git_branch` | Check exact branch name in ADO |
+      | Case sensitivity | `Main` vs `main` | Use exact case from repository |
+      
+      ```bash
+      # List remote branches:
+      git ls-remote --heads https://dev.azure.com/acme-corp/FabricProjects/_git/sales-analytics-repo
+      ```
+      
+      ## Error 4: "Git sync conflict"
+      
+      | Symptom | Cause | Solution |
+      |---------|-------|----------|
+      | Sync fails | Local changes conflict with remote | Resolve in Fabric portal |
+      | "Merge required" | Divergent histories | Pull changes, resolve, push |
     warnings:
-      - Always test Git connection in dev before production
+      - Most Git integration failures are permission-related
+      - Always verify access with `debug_ado_access.py` before deployment
 
   - id: github-config
-    title: GitHub Configuration
+    title: "Alternative: GitHub Configuration"
     type: config
     content: |
-      For GitHub repositories, use this configuration:
+      For GitHub repositories (instead of Azure DevOps):
+      
+      ## Prerequisites
+      
+      - GitHub Personal Access Token with `repo` scope
+      - Token stored as `GITHUB_TOKEN` in `.env`
     code:
       language: yaml
       filename: config/projects/acme_corp/sales_analytics.yaml
@@ -272,29 +500,42 @@ steps:
           capacity_id: "${FABRIC_CAPACITY_ID}"
           
           # GitHub Integration
-          git_provider: "github"  # Specify provider
+          git_provider: "github"  # Specify provider explicitly
           git_repo: "https://github.com/acme-corp/sales-analytics"
           git_branch: "main"
+          git_directory: "/fabric"
     tips:
-      - Ensure GITHUB_TOKEN is set in your .env file
+      - Ensure `GITHUB_TOKEN` is set in your `.env` file
       - Token needs `repo` scope for private repositories
+      - Public repositories work with read-only tokens
 
   - id: next-steps
-    title: Next Steps
+    title: "🎉 Git Integration Complete!"
     type: info
     content: |
-      🎉 You've configured Git integration!
+      You've mastered Git integration!
       
-      **Recommended Next Steps:**
+      ## What You've Accomplished
       
-      1. **CI/CD Pipelines** → Automate deployments on Git push
-      2. **Feature Branch Workflows** → Use Git branches for development
-      3. **Troubleshooting** → Debug common issues
+      - ✅ Verified permissions with `debug_ado_access.py`
+      - ✅ Initialized repositories with `init_ado_repo.py`
+      - ✅ Used Docker for repo init with `make docker-init-repo`
+      - ✅ Configured `git_repo` and `git_branch` in YAML
+      - ✅ Deployed workspaces with automatic Git connection
+      - ✅ Verified connections in Fabric portal and via Git clone
+      - ✅ Learned to troubleshoot common Git errors
       
-      **Git Commands Summary:**
+      ## Command Quick Reference
       
       | Task | Command |
       |------|---------|
-      | Initialize Repo | `python scripts/utilities/init_ado_repo.py --organization ... --project ... --repository ...` |
-      | Debug ADO Access | `python scripts/utilities/debug_ado_access.py --organization ... --project ...` |
-      | Debug Connection | `python scripts/utilities/debug_connection.py --organization ... --project ... --repository ...` |
+      | Debug ADO access | `python scripts/utilities/debug_ado_access.py --organization "..." --project "..."` |
+      | Initialize repo (local) | `python scripts/utilities/init_ado_repo.py --organization "..." --project "..." --repository "..."` |
+      | Initialize repo (Docker) | `make docker-init-repo org="..." project="..." repo="..."` |
+      | Deploy with Git | `make deploy config=... env=dev` |
+      | List remote branches | `git ls-remote --heads <repo-url>` |
+      
+      ## Recommended Next Steps
+      
+      1. **Previous:** [Feature Branch Workflows](#feature-branch-workflows) - Uses Git integration
+      2. **Next:** [Troubleshooting](#troubleshooting) - Debug deployment issues
