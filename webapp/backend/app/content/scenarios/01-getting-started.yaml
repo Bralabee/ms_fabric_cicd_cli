@@ -1,22 +1,26 @@
 # Getting Started Scenario
-# Based on actual project requirements from README.md and docs/
+# Comprehensive setup guide with exact terminal commands and expected outputs
 
 id: getting-started
 title: Getting Started with Fabric CLI CI/CD
-description: Learn how to install, configure, and set up the Fabric CLI CI/CD framework from scratch. This guide covers prerequisites, environment setup, and your first successful verification.
+description: |
+  Complete step-by-step setup guide for the Fabric CLI CI/CD framework. Learn to install the conda 
+  environment, configure Service Principal credentials, verify your setup with preflight checks, 
+  and understand all available commands (Make targets, CLI entry points, and Python scripts).
 difficulty: beginner
-estimated_duration_minutes: 20
+estimated_duration_minutes: 30
 category: getting-started
 order: 1
 
 prerequisites: []
 
 learning_outcomes:
-  - Understand the framework's thin wrapper architecture
-  - Install and configure the conda environment
-  - Set up Azure credentials for authentication
-  - Verify the installation with preflight checks
-  - Understand the 12-Factor App secret management
+  - Install and configure the conda environment with `conda env create` and `make install`
+  - Understand all available entry points (Make, CLI, Python scripts)
+  - Configure Azure Service Principal credentials in `.env` file
+  - Run `make diagnose` and `python scripts/preflight_check.py` to verify setup
+  - Use `python scripts/utilities/list_workspaces.py` to confirm API connectivity
+  - Know when to use Make vs CLI vs Python script commands
 
 tags:
   - installation
@@ -26,6 +30,8 @@ tags:
   - environment
   - credentials
   - service-principal
+  - makefile
+  - cli
 
 related_scenarios:
   - project-generation
@@ -36,43 +42,58 @@ steps:
     title: What is Fabric CLI CI/CD?
     type: info
     content: |
-      The **Fabric CLI CI/CD Framework** is an enterprise-grade Microsoft Fabric deployment automation tool 
-      that leverages the official Fabric CLI with only ~270 lines of orchestration code.
+      The **Fabric CLI CI/CD Framework** is an enterprise-grade Microsoft Fabric deployment automation tool.
+      It follows a **thin wrapper architecture** where 90% of work is delegated to the official Microsoft 
+      Fabric CLI, with only ~270 lines of orchestration code.
       
-      **Key Capabilities:**
+      ## Key Capabilities
       
-      - **Automated Deployment**: Idempotent workspace provisioning with intelligent state management
-      - **Secret Management**: 12-Factor App compliant credential handling
-      - **Artifact Templating**: Jinja2 engine for environment-specific transformation
-      - **Git Integration**: REST API-driven repository connections for Azure DevOps and GitHub
-      - **Audit Compliance**: Structured JSONL logging for regulatory requirements
-      - **Branch Isolation**: Feature branch workspaces for parallel development
+      | Feature | Description |
+      |---------|-------------|
+      | **Workspace Deployment** | Create workspaces, lakehouses, notebooks, pipelines, semantic models |
+      | **Blueprint Templates** | 10 production-ready templates (basic_etl, realtime_streaming, compliance_regulated, etc.) |
+      | **Git Integration** | Connect workspaces to Azure DevOps or GitHub repos |
+      | **Feature Branch Isolation** | Create isolated workspaces per feature branch |
+      | **Docker Support** | Containerized deployments for CI/CD pipelines |
+      | **Audit Logging** | JSONL compliance logs in `audit_logs/` directory |
       
-      **Architecture Principle**: The framework follows a **thin wrapper pattern** where 90% of work 
-      is done by the official Fabric CLI, with only ~270 LOC of orchestration vs traditional 
-      enterprise frameworks with 1,800+ LOC.
+      ## Three Ways to Use the Framework
+      
+      | Method | When to Use | Example |
+      |--------|-------------|---------|
+      | **Make Commands** | Recommended - simple, discoverable | `make deploy config=path.yaml env=dev` |
+      | **CLI Entry Point** | Direct CLI access after `pip install -e .` | `fabric-cicd deploy path.yaml --env dev` |
+      | **Python Scripts** | Utilities and advanced operations | `python scripts/generate_project.py "Org" "Proj"` |
+      
+      This guide walks you through setting up all three methods.
     tips:
-      - This guide assumes you're starting fresh with no prior setup
-      - All commands will be run from your terminal
+      - Start with Make commands - run `make help` to see all options
+      - The CLI entry point `fabric-cicd` becomes available after running `make install`
 
   - id: prerequisites-check
-    title: Check Prerequisites
+    title: "Step 1: Check Prerequisites"
     type: checkpoint
     content: |
-      Before proceeding, ensure you have the following installed on your system:
+      Before proceeding, verify you have the required software installed.
       
-      **Required Software:**
-      - Python 3.11 or higher
-      - Conda (Miniconda or Anaconda)
-      - Git
-      - Docker (optional, for containerized deployments)
+      ## Required Software
       
-      **Azure Requirements:**
-      - An Azure Service Principal with Fabric Admin permissions
-      - Access to a Microsoft Fabric Capacity (F2 trial minimum)
-      - Azure DevOps or GitHub for Git integration
+      | Tool | Minimum Version | Check Command |
+      |------|-----------------|---------------|
+      | Python | 3.11+ | `python --version` |
+      | Conda | Any | `conda --version` |
+      | Git | Any | `git --version` |
+      | Docker | 20+ (optional) | `docker --version` |
       
-      Let's verify your prerequisites:
+      ## Azure Requirements
+      
+      | Requirement | How to Get It |
+      |-------------|---------------|
+      | **Service Principal** | Azure Portal → App registrations → New registration |
+      | **Fabric Capacity** | Azure Portal → Create resource → Fabric Capacity (F2 minimum) |
+      | **Tenant Admin Grant** | Admin Portal → Tenant settings → Enable "Service principals can use Fabric APIs" |
+      
+      Run these commands to verify your local prerequisites:
     code:
       language: bash
       content: |
@@ -85,50 +106,77 @@ steps:
         # Check Git is installed
         git --version
         
-        # Check Docker (optional)
+        # Check Docker (optional - for containerized deployments)
         docker --version
     expected_output: |
-      Python 3.11.x
-      conda 24.x.x
-      git version 2.x.x
-      Docker version 24.x.x (optional)
+      Python 3.11.9
+      conda 24.5.0
+      git version 2.43.0
+      Docker version 24.0.7, build afdd53b (optional)
     checkpoint_question: Do you have Python 3.11+, Conda, and Git installed?
     warnings:
-      - If Python version is below 3.11, you'll need to upgrade before continuing
+      - If Python version is below 3.11, install via `conda install python=3.11`
+      - Docker is optional but required for `make docker-*` commands
 
   - id: clone-repository
-    title: Clone the Repository
+    title: "Step 2: Clone the Repository"
     type: command
     content: |
-      First, navigate to your preferred projects directory and clone the repository.
+      Clone the repository to your local machine. Choose a location where you'll work with the project.
       
-      If you already have the repository, skip this step and navigate to the project folder.
+      **If you already have the repository**, skip to the next step.
     code:
       language: bash
       content: |
         # Navigate to your projects directory
         cd ~/projects
         
-        # Clone the repository
-        git clone <your-repo-url> usf_fabric_cli_cicd
+        # Clone the repository (replace with your actual URL)
+        git clone https://github.com/your-org/usf_fabric_cli_cicd.git
+        
+        # Or clone via SSH
+        git clone git@github.com:your-org/usf_fabric_cli_cicd.git
         
         # Navigate into the project
         cd usf_fabric_cli_cicd
+        
+        # Verify you're in the right place
+        ls -la
+    expected_output: |
+      total 88
+      drwxrwxr-x 12 user user  4096 Jan 15 10:00 .
+      drwxrwxr-x  8 user user  4096 Jan 15 09:55 ..
+      -rw-rw-r--  1 user user  1234 Jan 15 10:00 Makefile
+      -rw-rw-r--  1 user user  5678 Jan 15 10:00 README.md
+      -rw-rw-r--  1 user user   890 Jan 15 10:00 environment.yml
+      -rw-rw-r--  1 user user  2345 Jan 15 10:00 pyproject.toml
+      drwxrwxr-x  3 user user  4096 Jan 15 10:00 config
+      drwxrwxr-x  3 user user  4096 Jan 15 10:00 scripts
+      drwxrwxr-x  4 user user  4096 Jan 15 10:00 src
+      drwxrwxr-x  3 user user  4096 Jan 15 10:00 templates
     tips:
-      - Replace `<your-repo-url>` with your actual repository URL
+      - The `Makefile` contains all available Make commands
+      - The `scripts/` directory contains Python utility scripts
+      - The `templates/blueprints/` directory contains the 10 blueprint templates
 
   - id: create-environment
-    title: Create Conda Environment
+    title: "Step 3: Create Conda Environment"
     type: command
     content: |
-      The project uses a conda environment defined in `environment.yml`. This ensures 
-      all team members use the same Python version and dependencies.
+      The project uses a conda environment defined in `environment.yml`. This ensures consistent 
+      Python versions and dependencies across all team members.
+      
+      ## Why Conda?
+      
+      - **Isolation**: Keeps project dependencies separate from system Python
+      - **Reproducibility**: Same package versions for all developers
+      - **Cross-platform**: Works on Windows, macOS, and Linux
       
       Create and activate the environment:
     code:
       language: bash
       content: |
-        # Create the conda environment from the YAML file
+        # Create the conda environment from environment.yml
         conda env create -f environment.yml
         
         # Activate the environment
@@ -137,57 +185,318 @@ steps:
         # Verify you're in the correct environment
         conda env list
     expected_output: |
+      Solving environment: done
+      Preparing transaction: done
+      Verifying transaction: done
+      Executing transaction: done
+      
+      # After activation:
       # conda environments:
       #
       base                     /home/user/miniconda3
       fabric-cli-cicd       *  /home/user/miniconda3/envs/fabric-cli-cicd
     tips:
       - The asterisk (*) indicates the active environment
-      - Always activate this environment before running any commands
+      - **ALWAYS** activate this environment before running any commands
+      - Add `conda activate fabric-cli-cicd` to your shell startup script
     warnings:
-      - Running commands without activating the environment will cause import errors
+      - Running commands without activating the environment causes `ModuleNotFoundError`
+      - If you see import errors, first check `conda env list` to verify the environment
 
   - id: install-package
-    title: Install Package in Editable Mode
+    title: "Step 4: Install Package and CLI Entry Point"
     type: command
     content: |
-      Install the package in editable mode to enable the CLI entry point and allow 
-      live code changes during development.
+      Install the package in editable mode to enable the `fabric-cicd` CLI command 
+      and allow live code changes during development.
+      
+      ## What Gets Installed
+      
+      | Component | Description |
+      |-----------|-------------|
+      | `fabric-cicd` command | Main CLI entry point (defined in `pyproject.toml`) |
+      | `src/core/` modules | Core Python libraries |
+      | Dependencies | typer, rich, pyyaml, jinja2, python-dotenv, azure-identity |
+      
+      ## Installation Methods
+      
+      You have two options:
     code:
       language: bash
       content: |
-        # Install the package using Makefile
+        # Option 1: Use Makefile (RECOMMENDED)
         make install
         
-        # OR install directly with pip
+        # Option 2: Use pip directly
         pip install -e .
         
         # Verify the CLI is available
         fabric-cicd --help
     expected_output: |
+      # After make install:
+      Successfully installed usf-fabric-cli-1.1.0
+      
+      # After fabric-cicd --help:
       Usage: fabric-cicd [OPTIONS] COMMAND [ARGS]...
       
+        Fabric CLI CI/CD - Enterprise Deployment Framework
+      
       Options:
-        --help  Show this message and exit.
+        --version  Show version
+        --help     Show this message and exit.
       
       Commands:
-        deploy    Deploy Fabric workspace from configuration
-        destroy   Destroy Fabric workspace
-        validate  Validate configuration file
+        deploy    Deploy Fabric workspace from configuration file.
+        destroy   Destroy Fabric workspace and all items.
+        diagnose  Run preflight diagnostics.
+        validate  Validate configuration file syntax and structure.
     tips:
-      - The `fabric-cicd` command is the main entry point
-      - You can also use `python -m core.cli` as an alternative
+      - The `-e` flag installs in "editable" mode - code changes take effect immediately
+      - If `fabric-cicd` isn't found, ensure conda environment is active
+      - Alternative: use `python -m core.cli` instead of `fabric-cicd`
+
+  - id: makefile-commands
+    title: "Step 5: Understand Available Make Commands"
+    type: info
+    content: |
+      The `Makefile` provides the simplest way to interact with the framework.
+      Run `make help` to see all available commands.
+      
+      ## Local Operations
+      
+      | Command | Description | Example |
+      |---------|-------------|---------|
+      | `make help` | Show all commands | `make help` |
+      | `make install` | Install package | `make install` |
+      | `make diagnose` | Run preflight check | `make diagnose` |
+      | `make validate` | Validate config | `make validate config=path/to/config.yaml` |
+      | `make deploy` | Deploy workspace | `make deploy config=path/to/config.yaml env=dev` |
+      | `make destroy` | Destroy workspace | `make destroy config=path/to/config.yaml env=dev` |
+      | `make bulk-destroy` | Bulk destroy | `make bulk-destroy file=workspaces.txt` |
+      
+      ## Docker Operations
+      
+      | Command | Description |
+      |---------|-------------|
+      | `make docker-build` | Build Docker image |
+      | `make docker-shell ENVFILE=.env` | Interactive container shell |
+      | `make docker-diagnose ENVFILE=.env` | Preflight check in container |
+      | `make docker-validate config=... ENVFILE=.env` | Validate in container |
+      | `make docker-deploy config=... env=dev ENVFILE=.env` | Deploy from container |
+      | `make docker-destroy config=... ENVFILE=.env` | Destroy from container |
+      | `make docker-generate org="Org" project="Proj" template="basic_etl"` | Generate config |
+      | `make docker-init-repo org="ADOOrg" project="ADOProj" repo="RepoName"` | Init ADO repo |
+      | `make docker-feature-deploy config=... env=dev branch=feature/x` | Feature branch deploy |
+      
+      ## Development Commands
+      
+      | Command | Description |
+      |---------|-------------|
+      | `make test` | Run unit tests |
+      | `make test-integration` | Run integration tests |
+      | `make lint` | Run linters |
+      | `make build` | Build wheel package |
+      | `make clean` | Clean build artifacts |
+    code:
+      language: bash
+      content: |
+        # See all available commands with descriptions
+        make help
+        
+        # Run preflight diagnostics
+        make diagnose
+        
+        # Validate a sample template
+        make validate config=templates/blueprints/basic_etl.yaml
+    expected_output: |
+      # make help output:
+      Available targets:
+        help              Show this help message
+        install           Install dependencies in editable mode
+        test              Run unit tests
+        test-integration  Run integration tests
+        lint              Run code linters
+        build             Build distribution package
+        clean             Clean build artifacts
+        diagnose          Run preflight diagnostic check
+        validate          Validate configuration file
+        deploy            Deploy workspace from configuration
+        destroy           Destroy workspace
+        bulk-destroy      Bulk destroy workspaces from file
+        docker-build      Build Docker image
+        docker-shell      Start interactive shell in container
+        docker-diagnose   Run preflight check in container
+        docker-deploy     Deploy from Docker container
+        docker-destroy    Destroy from Docker container
+        docker-validate   Validate config in container
+        docker-generate   Generate project config in container
+        docker-init-repo  Initialize ADO repository
+        docker-feature-deploy  Deploy feature branch workspace
+    tips:
+      - Make commands are the recommended way to use the framework
+      - They handle environment activation and parameter passing
+      - All Docker commands require `ENVFILE=.env` to pass credentials
+
+  - id: cli-commands
+    title: "Step 6: Understand CLI Entry Points"
+    type: info
+    content: |
+      After `make install`, the `fabric-cicd` CLI command becomes available.
+      This provides a more direct interface than Make commands.
+      
+      ## CLI Commands Reference
+      
+      ### fabric-cicd deploy
+      ```bash
+      fabric-cicd deploy <config_path> --env <environment> [options]
+      ```
+      
+      | Option | Description |
+      |--------|-------------|
+      | `--env`, `-e` | Target environment (dev, staging, prod) |
+      | `--branch`, `-b` | Feature branch name |
+      | `--force-branch-workspace` | Force create branch workspace |
+      | `--diagnose` | Show diagnostic output |
+      | `--dry-run` | Preview without deploying |
+      
+      ### fabric-cicd validate
+      ```bash
+      fabric-cicd validate <config_path> [--env <environment>]
+      ```
+      
+      ### fabric-cicd destroy
+      ```bash
+      fabric-cicd destroy <config_path> [--env <environment>] [--force]
+      ```
+      
+      ### fabric-cicd diagnose
+      ```bash
+      fabric-cicd diagnose
+      ```
+    code:
+      language: bash
+      content: |
+        # Deploy to development environment
+        fabric-cicd deploy config/projects/acme/sales.yaml --env dev
+        
+        # Deploy with feature branch isolation
+        fabric-cicd deploy config/projects/acme/sales.yaml --env dev --branch feature/new-pipeline
+        
+        # Validate configuration
+        fabric-cicd validate config/projects/acme/sales.yaml
+        
+        # Dry run (preview only)
+        fabric-cicd deploy config/projects/acme/sales.yaml --env dev --dry-run
+        
+        # Destroy workspace (with confirmation)
+        fabric-cicd destroy config/projects/acme/sales.yaml --env dev
+        
+        # Force destroy (skip confirmation)
+        fabric-cicd destroy config/projects/acme/sales.yaml --env dev --force
+        
+        # Run diagnostics
+        fabric-cicd diagnose
+        
+        # Alternative: Use Python module syntax
+        python -m core.cli deploy config/projects/acme/sales.yaml --env dev
+    tips:
+      - Use `--dry-run` to preview deployments before executing
+      - Use `--diagnose` for verbose output during troubleshooting
+      - `python -m core.cli` works even if the entry point isn't registered
+
+  - id: python-scripts
+    title: "Step 7: Understand Python Utility Scripts"
+    type: info
+    content: |
+      The `scripts/` directory contains Python utilities for advanced operations
+      not covered by Make commands or CLI.
+      
+      ## Main Scripts
+      
+      | Script | Purpose | Example |
+      |--------|---------|---------|
+      | `generate_project.py` | Create config from template | `python scripts/generate_project.py "Org" "Project" --template basic_etl` |
+      | `preflight_check.py` | Validate environment | `python scripts/preflight_check.py --auto-install` |
+      | `bulk_destroy.py` | Destroy multiple workspaces | `python scripts/bulk_destroy.py workspaces.txt` |
+      
+      ## Utility Scripts (in `scripts/utilities/`)
+      
+      | Script | Purpose |
+      |--------|---------|
+      | `list_workspaces.py` | List all accessible workspaces |
+      | `list_workspace_items.py` | List items in a workspace |
+      | `init_ado_repo.py` | Initialize Azure DevOps repository |
+      | `debug_ado_access.py` | Debug ADO permission issues |
+      | `debug_connection.py` | Debug connectivity issues |
+      | `analyze_migration.py` | Analyze workspace for migration |
+    code:
+      language: bash
+      content: |
+        # Generate a new project configuration
+        python scripts/generate_project.py "Acme Corp" "Sales Analytics" \
+          --template basic_etl \
+          --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
+        # Output: config/projects/acme_corp/sales_analytics.yaml
+        
+        # Run preflight check
+        python scripts/preflight_check.py
+        
+        # Run preflight check with auto-install
+        python scripts/preflight_check.py --auto-install
+        
+        # List your accessible workspaces
+        python scripts/utilities/list_workspaces.py
+        
+        # List items in a specific workspace
+        python scripts/utilities/list_workspace_items.py --workspace "my-workspace-name"
+        
+        # Initialize Azure DevOps repository
+        python scripts/utilities/init_ado_repo.py \
+          --organization "your-ado-org" \
+          --project "FabricProjects" \
+          --repository "new-repo-name"
+        
+        # Debug ADO access issues
+        python scripts/utilities/debug_ado_access.py \
+          --organization "your-ado-org" \
+          --project "FabricProjects"
+    tips:
+      - Always run `conda activate fabric-cli-cicd` before running Python scripts
+      - Use `python scripts/generate_project.py --help` to see all template options
+      - The utility scripts are invaluable for debugging permission issues
 
   - id: configure-credentials
-    title: Configure Credentials
+    title: "Step 8: Configure Credentials (.env File)"
     type: config
     content: |
-      The framework uses the **12-Factor App** pattern for credential management 
-      with a waterfall priority:
+      The framework uses the **12-Factor App** pattern for credential management.
       
-      1. **Environment Variables** (highest priority - for CI/CD)
-      2. **`.env` file** (for local development)
-      3. **Azure Key Vault** (optional - for production)
+      ## Credential Waterfall Priority
+      
+      | Priority | Source | Use Case |
+      |----------|--------|----------|
+      | 1 (Highest) | Environment Variables | CI/CD pipelines |
+      | 2 | `.env` file | Local development |
+      | 3 | Azure Key Vault | Enterprise production |
+      
+      ## Required Environment Variables
+      
+      | Variable | Required | Description |
+      |----------|----------|-------------|
+      | `AZURE_CLIENT_ID` | ✅ Yes | Service Principal Application (Client) ID |
+      | `AZURE_CLIENT_SECRET` | ✅ Yes | Service Principal Secret Value |
+      | `AZURE_TENANT_ID` | ✅ Yes | Azure AD Tenant ID |
+      | `FABRIC_CAPACITY_ID` | ✅ Yes | Fabric Capacity GUID |
+      
+      ## Optional Variables
+      
+      | Variable | Purpose |
+      |----------|---------|
+      | `GIT_REPO_URL` | Default Git repository URL |
+      | `AZURE_DEVOPS_PAT` | Azure DevOps Personal Access Token |
+      | `GITHUB_TOKEN` | GitHub Personal Access Token |
+      | `DEV_ADMIN_OBJECT_ID` | Object ID for workspace admin principal |
+      | `DEV_CONTRIBUTOR_OBJECT_ID` | Object ID for workspace contributor principal |
       
       Create your `.env` file from the template:
     code:
@@ -197,143 +506,249 @@ steps:
         cp .env.template .env
         
         # Edit with your values
-        nano .env  # or vim, code, etc.
+        nano .env
+        # OR: vim .env
+        # OR: code .env  (VS Code)
     tips:
-      - Never commit `.env` files to version control
-      - The `.gitignore` already excludes `.env` files
+      - Never commit `.env` files to version control - they're in `.gitignore`
+      - Use Azure Key Vault for production environments
+      - Rotate secrets regularly
+    warnings:
+      - ⚠️ NEVER hardcode credentials in code or YAML files
+      - ⚠️ NEVER commit `.env` files to Git
 
-  - id: env-variables
-    title: Required Environment Variables
+  - id: env-file-content
+    title: "Step 9: Configure .env File Contents"
     type: config
     content: |
-      Configure these required variables in your `.env` file:
+      Here's a complete example `.env` file with all variables explained.
       
-      | Variable | Description | Example |
-      |----------|-------------|---------|
-      | `AZURE_CLIENT_ID` | Service Principal App ID | `12345678-...` |
-      | `AZURE_CLIENT_SECRET` | Service Principal Secret | `xxx...` |
-      | `AZURE_TENANT_ID` | Azure AD Tenant ID | `87654321-...` |
-      | `FABRIC_CAPACITY_ID` | Fabric Capacity GUID | `abcd1234-...` |
+      ## Getting Your Credentials
       
-      **Optional Git Integration:**
-      
-      | Variable | Description |
-      |----------|-------------|
-      | `AZURE_DEVOPS_PAT` | Azure DevOps Personal Access Token |
-      | `GITHUB_TOKEN` | GitHub Personal Access Token |
-      | `GIT_REPO_URL` | Default repository URL |
+      | Variable | Where to Find It |
+      |----------|-----------------|
+      | `AZURE_CLIENT_ID` | Azure Portal → App registrations → Your SP → Application (client) ID |
+      | `AZURE_CLIENT_SECRET` | Azure Portal → App registrations → Your SP → Certificates & secrets → New client secret |
+      | `AZURE_TENANT_ID` | Azure Portal → Microsoft Entra ID → Overview → Tenant ID |
+      | `FABRIC_CAPACITY_ID` | Fabric Admin Portal → Capacity settings → Select capacity → Copy GUID from URL |
+      | `AZURE_DEVOPS_PAT` | Azure DevOps → User settings → Personal access tokens → New Token |
     code:
       language: dotenv
       filename: .env
       content: |
+        # ============================================
         # Azure Service Principal Credentials
-        AZURE_CLIENT_ID=your-client-id
-        AZURE_CLIENT_SECRET=your-client-secret
-        AZURE_TENANT_ID=your-tenant-id
+        # Get these from Azure Portal → App registrations
+        # ============================================
+        AZURE_CLIENT_ID=12345678-1234-1234-1234-123456789abc
+        AZURE_CLIENT_SECRET=your-client-secret-value-here
+        AZURE_TENANT_ID=87654321-4321-4321-4321-cba987654321
         
-        # Fabric Configuration
-        FABRIC_CAPACITY_ID=your-capacity-id
+        # ============================================
+        # Microsoft Fabric Configuration
+        # Get Capacity ID from Fabric Admin Portal
+        # ============================================
+        FABRIC_CAPACITY_ID=abcd1234-abcd-1234-abcd-1234567890ab
         
-        # Git Integration (choose one)
-        AZURE_DEVOPS_PAT=your-ado-pat
-        # GITHUB_TOKEN=your-github-token
+        # ============================================
+        # Git Integration (Azure DevOps)
+        # Only required if using Git integration
+        # ============================================
+        GIT_REPO_URL=https://dev.azure.com/your-org/your-project/_git/your-repo
+        AZURE_DEVOPS_PAT=your-pat-token-here
         
-        # Optional: Default Git Repository
-        GIT_REPO_URL=https://dev.azure.com/org/project/_git/repo
+        # ============================================
+        # Git Integration (GitHub) - Alternative
+        # Use instead of Azure DevOps variables
+        # ============================================
+        # GITHUB_TOKEN=ghp_your_github_token
+        
+        # ============================================
+        # Workspace Principal Assignments (Optional)
+        # Object IDs for users/groups to assign to workspaces
+        # ============================================
+        DEV_ADMIN_OBJECT_ID=11111111-1111-1111-1111-111111111111
+        DEV_CONTRIBUTOR_OBJECT_ID=22222222-2222-2222-2222-222222222222
     warnings:
-      - NEVER hardcode credentials in code or configuration files
-      - Rotate secrets regularly for security
+      - Replace all placeholder values with your actual credentials
+      - The `AZURE_CLIENT_SECRET` is shown only once in Azure - save it securely
+      - PAT tokens expire - set appropriate expiration dates
 
   - id: preflight-check
-    title: Run Preflight Check
+    title: "Step 10: Run Preflight Check"
     type: command
     content: |
-      The preflight check validates your entire setup: Fabric CLI installation, 
-      credentials, capacity access, and network connectivity.
+      The preflight check validates your entire setup:
+      
+      | Check | What It Validates |
+      |-------|-------------------|
+      | Fabric CLI | Installation and version |
+      | Credentials | `.env` file and required variables |
+      | Token Generation | Can authenticate with Service Principal |
+      | API Access | Can connect to Fabric REST API |
+      | Capacity | Can access the specified Fabric capacity |
+      
+      Run the preflight check to verify everything is configured correctly:
     code:
       language: bash
       content: |
-        # Run the preflight diagnostic
+        # Run preflight check using Make (recommended)
+        make diagnose
+        
+        # OR run the Python script directly
+        python scripts/preflight_check.py
+        
+        # OR with auto-install option (installs Fabric CLI if missing)
         python scripts/preflight_check.py --auto-install
+        
+        # OR using the CLI
+        fabric-cicd diagnose
     expected_output: |
-      ✓ Fabric CLI installed (version x.x.x)
-      ✓ Credentials loaded from .env
+      ╔══════════════════════════════════════════════════════════════╗
+      ║            Fabric CLI CI/CD Preflight Check                  ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+      Checking Fabric CLI...
+      ✓ Fabric CLI installed (version 0.1.5)
+      
+      Checking Credentials...
+      ✓ .env file found
+      ✓ AZURE_CLIENT_ID loaded
+      ✓ AZURE_CLIENT_SECRET loaded
+      ✓ AZURE_TENANT_ID loaded
+      ✓ FABRIC_CAPACITY_ID loaded
+      
+      Checking Authentication...
       ✓ Token generation successful
+      
+      Checking Fabric API...
       ✓ Fabric API accessible
       ✓ Capacity access verified
       
-      All preflight checks passed!
+      ═══════════════════════════════════════════════════════════════
+      ✅ All preflight checks passed!
+      ═══════════════════════════════════════════════════════════════
     tips:
-      - Use `--auto-install` to automatically install Fabric CLI if missing
       - Run this check whenever you change credentials
-
-  - id: service-principal-setup
-    title: Service Principal Permissions
-    type: info
-    content: |
-      Your Service Principal needs specific permissions for full functionality:
-      
-      **Fabric Permissions (in Fabric Admin Portal → Tenant Settings):**
-      - ✅ "Service principals can use Fabric APIs"
-      - ✅ "Service principals can create workspaces"
-      
-      **Azure DevOps Permissions (if using Git integration):**
-      - **Basic** access level in Organization Settings → Users
-      - **Contributor** role in the target ADO project
-      - **Contribute** permission on repositories
-      
-      **Workspace Permissions:**
-      - The Service Principal must be assigned **Admin** role in workspaces
-      - This is automatically configured via the `principals` section in your YAML config
+      - Run this check before your first deployment
+      - Run this check when troubleshooting failures
     warnings:
-      - Most deployment failures are caused by missing SP permissions
-      - Verify permissions before troubleshooting other issues
+      - If any check fails, see the Troubleshooting scenario for solutions
 
-  - id: verify-setup
-    title: Verify Complete Setup
-    type: checkpoint
+  - id: verify-api-access
+    title: "Step 11: Verify API Access"
+    type: command
     content: |
-      Let's verify your complete setup with a validation command:
+      After preflight passes, verify you can actually interact with the Fabric API
+      by listing your accessible workspaces.
+      
+      This confirms:
+      - Service Principal credentials are valid
+      - Service Principal has necessary Fabric permissions
+      - Network connectivity to Fabric API is working
     code:
       language: bash
       content: |
-        # List available workspaces (verifies API access)
+        # List all workspaces accessible to your Service Principal
         python scripts/utilities/list_workspaces.py
         
-        # Validate a sample configuration
-        make validate config=templates/blueprints/minimal_starter.yaml
+        # You should see a list of workspaces (may be empty if none exist yet)
     expected_output: |
-      Found X workspaces:
-      - workspace-1
-      - workspace-2
-      ...
+      Authenticating with Service Principal...
+      ✓ Authenticated successfully
       
-      Configuration valid!
-    checkpoint_question: Does the preflight check pass and can you list workspaces?
+      Fetching workspaces...
+      
+      Found 3 workspaces:
+      ┌──────────────────────────────────────┬───────────────────────┬──────────────┐
+      │ Workspace ID                          │ Workspace Name        │ Type         │
+      ├──────────────────────────────────────┼───────────────────────┼──────────────┤
+      │ 11111111-1111-1111-1111-111111111111 │ Sales-Analytics-Dev   │ Workspace    │
+      │ 22222222-2222-2222-2222-222222222222 │ Sales-Analytics-Prod  │ Workspace    │
+      │ 33333333-3333-3333-3333-333333333333 │ Marketing-Reports     │ Workspace    │
+      └──────────────────────────────────────┴───────────────────────┴──────────────┘
     tips:
-      - If list_workspaces shows 0 workspaces, that's OK for a new tenant
-      - The important thing is that the API call succeeds
+      - If no workspaces appear, that's OK for a new setup
+      - The important thing is that the API call succeeds without errors
+      - If you get an empty list, you can proceed to create your first workspace
 
-  - id: next-steps
-    title: Next Steps
+  - id: service-principal-setup
+    title: "Service Principal Permissions Reference"
     type: info
     content: |
-      🎉 **Congratulations!** Your Fabric CLI CI/CD environment is ready.
+      For the framework to work correctly, your Service Principal needs specific permissions.
       
-      **Recommended Next Steps:**
+      ## Fabric Tenant Settings (Admin Portal)
       
-      1. **Project Generation** → Learn to create configurations from blueprint templates
-      2. **Local Deployment** → Deploy your first workspace using the CLI
-      3. **Docker Deployment** → Run deployments in containerized environments
+      Navigate to: **Fabric Admin Portal** → **Tenant settings**
       
-      **Quick Reference:**
+      | Setting | Status | Location |
+      |---------|--------|----------|
+      | "Service principals can use Fabric APIs" | ✅ Enabled | Developer settings |
+      | "Service principals can create workspaces" | ✅ Enabled | Workspace settings |
+      | "Service principals can use Git integration" | ✅ Enabled | Git integration (if using) |
       
-      | Task | Command |
-      |------|---------|
-      | Generate project | `python scripts/generate_project.py "Org" "Project" --template basic_etl` |
-      | Validate config | `make validate config=path/to/config.yaml` |
-      | Deploy | `make deploy config=path/to/config.yaml env=dev` |
-      | Preflight check | `python scripts/preflight_check.py` |
+      ## Azure DevOps Permissions (for Git Integration)
+      
+      | Permission | Level | How to Set |
+      |------------|-------|------------|
+      | **Basic** access level | Organization | Organization Settings → Users → Add user → Access level: Basic |
+      | **Contributor** role | Project | Project Settings → Teams → Add member → Role: Contributor |
+      | **Contribute** permission | Repository | Project Settings → Repositories → Security → Add user |
+      
+      ## Fabric Workspace Permissions
+      
+      When deploying, the Service Principal needs **Admin** role on target workspaces.
+      This is configured automatically via the `principals` section in your YAML config.
+    warnings:
+      - Most deployment failures are caused by missing SP permissions
+      - "Stakeholder" access in ADO is NOT sufficient - must be "Basic"
+      - Check permissions BEFORE troubleshooting other issues
+
+  - id: next-steps
+    title: "🎉 Setup Complete - Next Steps"
+    type: info
+    content: |
+      **Congratulations!** Your Fabric CLI CI/CD environment is fully configured.
+      
+      ## What You've Accomplished
+      
+      - ✅ Created and activated the conda environment
+      - ✅ Installed the package with `make install`
+      - ✅ Learned all three command methods (Make, CLI, Scripts)
+      - ✅ Configured Service Principal credentials in `.env`
+      - ✅ Verified setup with preflight checks
+      - ✅ Confirmed Fabric API connectivity
+      
+      ## Command Quick Reference Card
+      
+      | Task | Make Command | CLI Command | Script |
+      |------|--------------|-------------|--------|
+      | **Diagnose** | `make diagnose` | `fabric-cicd diagnose` | `python scripts/preflight_check.py` |
+      | **Generate Project** | - | - | `python scripts/generate_project.py "Org" "Proj" --template basic_etl` |
+      | **Validate Config** | `make validate config=...` | `fabric-cicd validate ...` | - |
+      | **Deploy** | `make deploy config=... env=dev` | `fabric-cicd deploy ... --env dev` | - |
+      | **Destroy** | `make destroy config=... env=dev` | `fabric-cicd destroy ... --env dev` | - |
+      | **List Workspaces** | - | - | `python scripts/utilities/list_workspaces.py` |
+      
+      ## Recommended Learning Path
+      
+      1. **Next:** [Project Generation](#project-generation) - Create your first configuration
+      2. **Then:** [Local Deployment](#local-deployment) - Deploy your first workspace
+      3. **Advanced:** [Docker Deployment](#docker-deployment) - CI/CD pipeline integration
+      4. **Advanced:** [Git Integration](#git-integration) - Connect workspaces to repos
+    code:
+      language: bash
+      content: |
+        # Quick test: Validate a sample template
+        make validate config=templates/blueprints/basic_etl.yaml
+        
+        # Generate your first project configuration
+        python scripts/generate_project.py "My Company" "First Project" --template minimal_starter
+        
+        # See what was created
+        cat config/projects/my_company/first_project.yaml
     tips:
       - Bookmark this guide for reference
-      - Check the TROUBLESHOOTING.md if you encounter issues
+      - Keep the conda environment activated during all operations
+      - Run `make diagnose` whenever you encounter issues
