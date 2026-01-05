@@ -15,12 +15,12 @@ prerequisites:
   - getting-started
 
 learning_outcomes:
-  - Use `python scripts/generate_project.py` with all available options
+  - "Use `python scripts/generate_project.py` with all available options"
   - Choose the right template for your use case from all 10 blueprints
   - Understand the generated YAML configuration structure
   - Customize configurations for your organization
   - Use environment variable substitution in configurations
-  - Validate generated configs with `make validate`
+  - "Validate generated configs with `make validate`"
 
 tags:
   - blueprints
@@ -60,14 +60,14 @@ steps:
       
       ## Quick Start Recommendation
       
-      - **New to Fabric?** → Start with `minimal_starter`
-      - **Production ETL?** → Use `basic_etl` (most common choice)
-      - **Real-time data?** → Use `realtime_streaming`
-      - **Regulated industry?** → Use `compliance_regulated`
+      - "**New to Fabric?** → Start with `minimal_starter`"
+      - "**Production ETL?** → Use `basic_etl` (most common choice)"
+      - "**Real-time data?** → Use `realtime_streaming`"
+      - "**Regulated industry?** → Use `compliance_regulated`"
     tips:
       - All templates use environment variable substitution for credentials
       - Templates can be customized after generation
-      - View template source: `cat templates/blueprints/<template_name>.yaml`
+      - "View template source: `cat templates/blueprints/<template_name>.yaml`"
 
   - id: generate-command-syntax
     title: "Step 1: The generate_project.py Command"
@@ -96,9 +96,9 @@ steps:
       
       Generated files go to: `config/projects/{org_slug}/{project_slug}.yaml`
       
-      - "Acme Corp" → `acme_corp`
-      - "Sales Analytics" → `sales_analytics`
-      - Result: `config/projects/acme_corp/sales_analytics.yaml`
+      - "\"Acme Corp\" → `acme_corp`"
+      - "\"Sales Analytics\" → `sales_analytics`"
+      - "Result: `config/projects/acme_corp/sales_analytics.yaml`"
     code:
       language: bash
       content: |
@@ -180,7 +180,7 @@ steps:
         - 1 Notebook
         - 1 Pipeline
     tips:
-      - Graduate to `basic_etl` when you need Git version control
+      - "Graduate to `basic_etl` when you need Git version control"
       - Perfect for weekend learning sessions
 
   - id: basic-etl
@@ -426,7 +426,7 @@ steps:
       
       **Includes:** Every resource type, All features demonstrated, Documentation examples
     tips:
-      - View any template source: `cat templates/blueprints/<name>.yaml`
+      - "View any template source: `cat templates/blueprints/<name>.yaml`"
       - All templates can be customized after generation
 
   - id: generate-command
@@ -480,7 +480,7 @@ steps:
       -rw-rw-r-- 1 user user 3456 Jan 15 10:00 risk_analytics_platform.yaml
     tips:
       - Organization and project names are converted to slug format automatically
-      - Use `--force` to regenerate if you need to start over
+      - "Use `--force` to regenerate if you need to start over"
 
   - id: yaml-structure
     title: "Step 3: Understanding the Generated YAML Structure"
@@ -505,9 +505,9 @@ steps:
       
       ## Key Concepts
       
-      - **`${VAR_NAME}`** - Environment variable substitution (from `.env`)
-      - **`{{ env }}`** - Jinja2 template variable (resolved at deploy time)
-      - **`folder:`** - Places items in a specific folder
+      - "**`${VAR_NAME}`** - Environment variable substitution (from `.env`)"
+      - "**`{{ env }}`** - Jinja2 template variable (resolved at deploy time)"
+      - "**`folder:`** - Places items in a specific folder"
     code:
       language: yaml
       filename: config/projects/acme_corp/sales_analytics.yaml
@@ -568,8 +568,8 @@ steps:
             workspace:
               capacity_id: "F64"
     tips:
-      - Use `{{ env }}` in workspace names to differentiate environments
-      - Keep credentials in `.env` using `${VAR}` syntax - never hardcode
+      - "Use `{{ env }}` in workspace names to differentiate environments"
+      - "Keep credentials in `.env` using `${VAR}` syntax - never hardcode"
 
   - id: customization
     title: "Step 4: Customize for Your Organization"
@@ -646,7 +646,7 @@ steps:
               - id: "${PROD_READONLY_GROUP}"
                 role: "Viewer"
     tips:
-      - The `environments` section lets you override any setting per environment
+      - "The `environments` section lets you override any setting per environment"
       - Object IDs are more reliable than email addresses for automation
 
   - id: generic-resources
@@ -755,7 +755,7 @@ steps:
       ════════════════════════════════════════════════════════════
     tips:
       - Fix ALL validation errors before deploying
-      - Common errors: missing `.env` variables, YAML indentation, duplicate names
+      - "Common errors: missing `.env` variables, YAML indentation, duplicate names"
     warnings:
       - Never deploy without validating first
       - CI/CD pipelines should always include a validation step
@@ -769,10 +769,10 @@ steps:
       ## What You've Accomplished
       
       - ✅ Understand all 10 blueprint templates
-      - ✅ Can use `python scripts/generate_project.py` with all options
+      - "✅ Can use `python scripts/generate_project.py` with all options"
       - ✅ Know the YAML configuration structure
       - ✅ Can customize configurations for your organization
-      - ✅ Can validate configurations with `make validate`
+      - "✅ Can validate configurations with `make validate`"
       
       ## Quick Reference: All Templates
       

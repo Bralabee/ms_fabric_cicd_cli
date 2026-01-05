@@ -18,13 +18,13 @@ prerequisites:
   - local-deployment
 
 learning_outcomes:
-  - Build the Docker image with `make docker-build`
-  - Validate configs with `make docker-validate`
-  - Deploy workspaces with `make docker-deploy`
-  - Use interactive shell with `make docker-shell`
-  - Generate projects with `make docker-generate`
-  - Initialize repos with `make docker-init-repo`
-  - Deploy feature branches with `make docker-feature-deploy`
+  - "Build the Docker image with `make docker-build`"
+  - "Validate configs with `make docker-validate`"
+  - "Deploy workspaces with `make docker-deploy`"
+  - "Use interactive shell with `make docker-shell`"
+  - "Generate projects with `make docker-generate`"
+  - "Initialize repos with `make docker-init-repo`"
+  - "Deploy feature branches with `make docker-feature-deploy`"
   - Manage multi-tenant deployments with different ENVFILE values
   - Debug inside containers
 
@@ -74,7 +74,7 @@ steps:
       | `make docker-feature-deploy config=... env=dev branch=feature/x` | Feature branch deploy |
     tips:
       - Docker deployment is recommended for production CI/CD use
-      - All `docker-*` commands require the image built first
+      - "All `docker-*` commands require the image built first"
 
   - id: prerequisites
     title: "Step 1: Verify Docker Prerequisites"
@@ -114,8 +114,8 @@ steps:
       /dev/sda1       100G   45G   55G  45% /
     checkpoint_question: Is Docker installed and the daemon running?
     warnings:
-      - If `docker ps` fails, start Docker Desktop or the daemon
-      - On Linux, you may need `sudo` or add your user to the `docker` group
+      - "If `docker ps` fails, start Docker Desktop or the daemon"
+      - "On Linux, you may need `sudo` or add your user to the `docker` group"
 
   - id: build-image
     title: "Step 2: Build the Docker Image"
@@ -206,8 +206,8 @@ steps:
       
       All imports OK
     tips:
-      - `fab` is the official Microsoft Fabric CLI
-      - `fabric-cicd` is the framework's orchestration CLI
+      - "`fab` is the official Microsoft Fabric CLI"
+      - "`fabric-cicd` is the framework's orchestration CLI"
 
   - id: docker-diagnose
     title: "Step 4: Run Preflight Diagnostics"
@@ -250,7 +250,7 @@ steps:
       ═══════════════════════════════════════════════════════════════
     tips:
       - Always run diagnose before your first Docker deployment
-      - `ENVFILE=.env` tells Make which credentials file to use
+      - "`ENVFILE=.env` tells Make which credentials file to use"
 
   - id: docker-validate
     title: "Step 5: Validate Configuration"
@@ -261,8 +261,8 @@ steps:
       ## Volume Mounts
       
       The command mounts these directories:
-      - `./config:/app/config` - Your configuration files
-      - `--env-file .env` - Your credentials
+      - "`./config:/app/config` - Your configuration files"
+      - "`--env-file .env` - Your credentials"
     code:
       language: bash
       content: |
@@ -291,7 +291,7 @@ steps:
       ✅ Configuration is valid!
       ════════════════════════════════════════════════════════════════
     tips:
-      - The `:ro` flag mounts config as read-only for security
+      - "The `:ro` flag mounts config as read-only for security"
       - Fix validation errors before deploying
 
   - id: docker-deploy
@@ -337,7 +337,7 @@ steps:
       ✅ Deployment completed successfully!
       ════════════════════════════════════════════════════════════════
     tips:
-      - Mount `audit_logs/` to persist deployment records on your host
+      - "Mount `audit_logs/` to persist deployment records on your host"
       - Container runs as non-root user for security
 
   - id: docker-destroy
@@ -367,7 +367,7 @@ steps:
       ✓ Workspace destroyed
     warnings:
       - This permanently deletes the workspace and all data
-      - Use `-it` flag for interactive confirmation prompt
+      - "Use `-it` flag for interactive confirmation prompt"
 
   - id: docker-shell
     title: "Step 8: Interactive Debugging Shell"
@@ -416,8 +416,8 @@ steps:
       appuser@abc123:/app$ exit
     tips:
       - Use this to debug authentication or path issues
-      - Type `exit` to leave the container
-      - All mounted volumes are accessible at `/app/`
+      - "Type `exit` to leave the container"
+      - "All mounted volumes are accessible at `/app/`"
 
   - id: docker-generate
     title: "Step 9: Generate Projects in Docker"
@@ -484,7 +484,7 @@ steps:
       
       Repository URL: https://dev.azure.com/acme-org/FabricProjects/_git/sales-analytics
     tips:
-      - Requires `AZURE_DEVOPS_PAT` in your .env file
+      - "Requires `AZURE_DEVOPS_PAT` in your .env file"
       - The PAT needs Repository Create permissions
 
   - id: multi-tenant
@@ -529,11 +529,11 @@ steps:
           env=prod \
           ENVFILE=.env.prod
     tips:
-      - Store client `.env` files securely (encrypted, Azure Key Vault, etc.)
-      - Add all `.env.*` files to `.gitignore`
+      - "Store client `.env` files securely (encrypted, Azure Key Vault, etc.)"
+      - "Add all `.env.*` files to `.gitignore`"
       - In CI/CD, inject credentials from secret management systems
     warnings:
-      - Never commit `.env.*` files to version control
+      - "Never commit `.env.*` files to version control"
       - Rotate client credentials regularly
 
   - id: cicd-example
@@ -607,13 +607,13 @@ steps:
       
       ## What You've Accomplished
       
-      - ✅ Built the Docker image with `make docker-build`
-      - ✅ Ran diagnostics with `make docker-diagnose`
-      - ✅ Validated configs with `make docker-validate`
-      - ✅ Deployed workspaces with `make docker-deploy`
-      - ✅ Used interactive shell with `make docker-shell`
-      - ✅ Generated projects with `make docker-generate`
-      - ✅ Initialized repos with `make docker-init-repo`
+      - "✅ Built the Docker image with `make docker-build`"
+      - "✅ Ran diagnostics with `make docker-diagnose`"
+      - "✅ Validated configs with `make docker-validate`"
+      - "✅ Deployed workspaces with `make docker-deploy`"
+      - "✅ Used interactive shell with `make docker-shell`"
+      - "✅ Generated projects with `make docker-generate`"
+      - "✅ Initialized repos with `make docker-init-repo`"
       - ✅ Understand multi-tenant deployments with ENVFILE
       - ✅ Have a CI/CD pipeline template
       

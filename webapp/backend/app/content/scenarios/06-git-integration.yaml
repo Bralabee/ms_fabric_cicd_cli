@@ -18,10 +18,10 @@ prerequisites:
   - local-deployment
 
 learning_outcomes:
-  - Initialize Azure DevOps repositories with `python scripts/utilities/init_ado_repo.py`
-  - Debug ADO connectivity with `python scripts/utilities/debug_ado_access.py`
-  - Use Docker for repo initialization with `make docker-init-repo`
-  - Configure `git_repo` and `git_branch` in workspace YAML
+  - "Initialize Azure DevOps repositories with `python scripts/utilities/init_ado_repo.py`"
+  - "Debug ADO connectivity with `python scripts/utilities/debug_ado_access.py`"
+  - "Use Docker for repo initialization with `make docker-init-repo`"
+  - "Configure `git_repo` and `git_branch` in workspace YAML"
   - Understand Git sync behavior in Fabric workspaces
   - Troubleshoot common Git integration errors
   - Connect to GitHub repositories
@@ -261,8 +261,8 @@ steps:
       
       Repository URL: https://dev.azure.com/acme-corp/FabricProjects/_git/sales-analytics-repo
     tips:
-      - Docker image must be built first (`make docker-build`)
-      - Uses ENVFILE for credentials (default: .env)
+      - "Docker image must be built first (`make docker-build`)"
+      - "Uses ENVFILE for credentials (default: .env)"
 
   - id: configure-yaml
     title: "Step 4: Configure Git in Workspace YAML"
@@ -310,9 +310,9 @@ steps:
             workspace:
               git_branch: "main"
     tips:
-      - Use environment variables for flexibility: `git_repo: "${GIT_REPO_URL}"`
+      - "Use environment variables for flexibility: `git_repo: \"${GIT_REPO_URL}\"`"
       - Use environment overrides for branch-per-environment strategy
-      - The `git_directory` is useful when repo has non-Fabric content too
+      - "The `git_directory` is useful when repo has non-Fabric content too"
 
   - id: deploy-with-git
     title: "Step 5: Deploy with Git Integration"
@@ -478,7 +478,7 @@ steps:
       | "Merge required" | Divergent histories | Pull changes, resolve, push |
     warnings:
       - Most Git integration failures are permission-related
-      - Always verify access with `debug_ado_access.py` before deployment
+      - "Always verify access with `debug_ado_access.py` before deployment"
 
   - id: github-config
     title: "Alternative: GitHub Configuration"
@@ -488,8 +488,8 @@ steps:
       
       ## Prerequisites
       
-      - GitHub Personal Access Token with `repo` scope
-      - Token stored as `GITHUB_TOKEN` in `.env`
+      - "GitHub Personal Access Token with `repo` scope"
+      - "Token stored as `GITHUB_TOKEN` in `.env`"
     code:
       language: yaml
       filename: config/projects/acme_corp/sales_analytics.yaml
@@ -505,8 +505,8 @@ steps:
           git_branch: "main"
           git_directory: "/fabric"
     tips:
-      - Ensure `GITHUB_TOKEN` is set in your `.env` file
-      - Token needs `repo` scope for private repositories
+      - "Ensure `GITHUB_TOKEN` is set in your `.env` file"
+      - "Token needs `repo` scope for private repositories"
       - Public repositories work with read-only tokens
 
   - id: next-steps
@@ -517,10 +517,10 @@ steps:
       
       ## What You've Accomplished
       
-      - ✅ Verified permissions with `debug_ado_access.py`
-      - ✅ Initialized repositories with `init_ado_repo.py`
-      - ✅ Used Docker for repo init with `make docker-init-repo`
-      - ✅ Configured `git_repo` and `git_branch` in YAML
+      - "✅ Verified permissions with `debug_ado_access.py`"
+      - "✅ Initialized repositories with `init_ado_repo.py`"
+      - "✅ Used Docker for repo init with `make docker-init-repo`"
+      - "✅ Configured `git_repo` and `git_branch` in YAML"
       - ✅ Deployed workspaces with automatic Git connection
       - ✅ Verified connections in Fabric portal and via Git clone
       - ✅ Learned to troubleshoot common Git errors

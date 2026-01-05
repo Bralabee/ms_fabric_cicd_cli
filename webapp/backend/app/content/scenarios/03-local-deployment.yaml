@@ -18,11 +18,11 @@ prerequisites:
 
 learning_outcomes:
   - Activate conda environment correctly before any operation
-  - Validate configurations with `make validate` before deployment
-  - Deploy workspaces with `make deploy` and `fabric-cicd deploy`
+  - "Validate configurations with `make validate` before deployment"
+  - "Deploy workspaces with `make deploy` and `fabric-cicd deploy`"
   - Understand idempotent deployment behavior
-  - Verify deployments with `list_workspace_items.py`
-  - Safely destroy workspaces with `make destroy`
+  - "Verify deployments with `list_workspace_items.py`"
+  - "Safely destroy workspaces with `make destroy`"
   - Review audit logs for compliance
 
 tags:
@@ -116,11 +116,11 @@ steps:
       # Test output:
       Environment OK
     warnings:
-      - `ModuleNotFoundError` = wrong environment is active
-      - Always check with `conda env list` if you see import errors
+      - "`ModuleNotFoundError` = wrong environment is active"
+      - "Always check with `conda env list` if you see import errors"
     tips:
-      - Add `conda activate fabric-cli-cicd` to your shell startup script
-      - Create an alias: `alias fcli='conda activate fabric-cli-cicd'`
+      - "Add `conda activate fabric-cli-cicd` to your shell startup script"
+      - "Create an alias: `alias fcli='conda activate fabric-cli-cicd'`"
 
   - id: validate-config
     title: "Step 2: Validate Configuration"
@@ -185,7 +185,7 @@ steps:
       ════════════════════════════════════════════════════════════════
     tips:
       - Fix ALL validation errors before deploying
-      - Common error: missing `.env` variable - check your `.env` file
+      - "Common error: missing `.env` variable - check your `.env` file"
       - Run validation in CI/CD pipelines before deployment steps
 
   - id: deploy-dev
@@ -273,8 +273,8 @@ steps:
       Duration: 45.3 seconds
       ════════════════════════════════════════════════════════════════
     tips:
-      - Use `--dry-run` to preview changes before actual deployment
-      - Use `--diagnose` for verbose output when troubleshooting
+      - "Use `--dry-run` to preview changes before actual deployment"
+      - "Use `--diagnose` for verbose output when troubleshooting"
       - Note the workspace URL in the output for quick access
 
   - id: idempotent-behavior
@@ -414,7 +414,7 @@ steps:
       
       ## How It Works
       
-      - Workspace name includes environment: `acme-sales-analytics-dev`, `-staging`, `-prod`
+      - "Workspace name includes environment: `acme-sales-analytics-dev`, `-staging`, `-prod`"
       - Environment overrides in config apply different capacities, principals
       - Each environment is a separate workspace
     code:
@@ -442,7 +442,7 @@ steps:
       │ 33333333-3333-3333-3333-333333333333 │ acme-sales-analytics-prod   │ F64      │
       └──────────────────────────────────────┴─────────────────────────────┴──────────┘
     tips:
-      - Create environment-specific overrides in `config/environments/` or inline in YAML
+      - "Create environment-specific overrides in `config/environments/` or inline in YAML"
       - Production deployments should go through CI/CD with approval gates
 
   - id: destroy-workspace
@@ -505,7 +505,7 @@ steps:
       - Use with extreme caution in production environments
       - Consider backups before destroying production workspaces
     tips:
-      - Use `--force` only in automated pipelines with proper safeguards
+      - "Use `--force` only in automated pipelines with proper safeguards"
       - Review the workspace in portal before confirming deletion
 
   - id: audit-logs
@@ -576,7 +576,7 @@ steps:
       
       - ✅ Activated the correct conda environment
       - ✅ Validated configuration before deployment
-      - ✅ Deployed workspace with `make deploy`
+      - "✅ Deployed workspace with `make deploy`"
       - ✅ Understand idempotent deployment behavior
       - ✅ Verified deployment with utility scripts
       - ✅ Know how to destroy workspaces safely

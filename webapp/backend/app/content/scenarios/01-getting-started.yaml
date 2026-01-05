@@ -15,11 +15,11 @@ order: 1
 prerequisites: []
 
 learning_outcomes:
-  - Install and configure the conda environment with `conda env create` and `make install`
+  - "Install and configure the conda environment with `conda env create` and `make install`"
   - Understand all available entry points (Make, CLI, Python scripts)
-  - Configure Azure Service Principal credentials in `.env` file
-  - Run `make diagnose` and `python scripts/preflight_check.py` to verify setup
-  - Use `python scripts/utilities/list_workspaces.py` to confirm API connectivity
+  - "Configure Azure Service Principal credentials in `.env` file"
+  - "Run `make diagnose` and `python scripts/preflight_check.py` to verify setup"
+  - "Use `python scripts/utilities/list_workspaces.py` to confirm API connectivity"
   - Know when to use Make vs CLI vs Python script commands
 
 tags:
@@ -67,8 +67,8 @@ steps:
       
       This guide walks you through setting up all three methods.
     tips:
-      - Start with Make commands - run `make help` to see all options
-      - The CLI entry point `fabric-cicd` becomes available after running `make install`
+      - "Start with Make commands - run `make help` to see all options"
+      - "The CLI entry point `fabric-cicd` becomes available after running `make install`"
 
   - id: prerequisites-check
     title: "Step 1: Check Prerequisites"
@@ -115,8 +115,8 @@ steps:
       Docker version 24.0.7, build afdd53b (optional)
     checkpoint_question: Do you have Python 3.11+, Conda, and Git installed?
     warnings:
-      - If Python version is below 3.11, install via `conda install python=3.11`
-      - Docker is optional but required for `make docker-*` commands
+      - "If Python version is below 3.11, install via `conda install python=3.11`"
+      - "Docker is optional but required for `make docker-*` commands"
 
   - id: clone-repository
     title: "Step 2: Clone the Repository"
@@ -155,9 +155,9 @@ steps:
       drwxrwxr-x  4 user user  4096 Jan 15 10:00 src
       drwxrwxr-x  3 user user  4096 Jan 15 10:00 templates
     tips:
-      - The `Makefile` contains all available Make commands
-      - The `scripts/` directory contains Python utility scripts
-      - The `templates/blueprints/` directory contains the 10 blueprint templates
+      - "The `Makefile` contains all available Make commands"
+      - "The `scripts/` directory contains Python utility scripts"
+      - "The `templates/blueprints/` directory contains the 10 blueprint templates"
 
   - id: create-environment
     title: "Step 3: Create Conda Environment"
@@ -168,9 +168,9 @@ steps:
       
       ## Why Conda?
       
-      - **Isolation**: Keeps project dependencies separate from system Python
-      - **Reproducibility**: Same package versions for all developers
-      - **Cross-platform**: Works on Windows, macOS, and Linux
+      - "**Isolation**: Keeps project dependencies separate from system Python"
+      - "**Reproducibility**: Same package versions for all developers"
+      - "**Cross-platform**: Works on Windows, macOS, and Linux"
       
       Create and activate the environment:
     code:
@@ -197,11 +197,11 @@ steps:
       fabric-cli-cicd       *  /home/user/miniconda3/envs/fabric-cli-cicd
     tips:
       - The asterisk (*) indicates the active environment
-      - **ALWAYS** activate this environment before running any commands
-      - Add `conda activate fabric-cli-cicd` to your shell startup script
+      - "**ALWAYS** activate this environment before running any commands"
+      - "Add `conda activate fabric-cli-cicd` to your shell startup script"
     warnings:
-      - Running commands without activating the environment causes `ModuleNotFoundError`
-      - If you see import errors, first check `conda env list` to verify the environment
+      - "Running commands without activating the environment causes `ModuleNotFoundError`"
+      - "If you see import errors, first check `conda env list` to verify the environment"
 
   - id: install-package
     title: "Step 4: Install Package and CLI Entry Point"
@@ -251,9 +251,9 @@ steps:
         diagnose  Run preflight diagnostics.
         validate  Validate configuration file syntax and structure.
     tips:
-      - The `-e` flag installs in "editable" mode - code changes take effect immediately
-      - If `fabric-cicd` isn't found, ensure conda environment is active
-      - Alternative: use `python -m core.cli` instead of `fabric-cicd`
+      - "The `-e` flag installs in \"editable\" mode - code changes take effect immediately"
+      - "If `fabric-cicd` isn't found, ensure conda environment is active"
+      - "Alternative: use `python -m core.cli` instead of `fabric-cicd`"
 
   - id: makefile-commands
     title: "Step 5: Understand Available Make Commands"
@@ -335,7 +335,7 @@ steps:
     tips:
       - Make commands are the recommended way to use the framework
       - They handle environment activation and parameter passing
-      - All Docker commands require `ENVFILE=.env` to pass credentials
+      - "All Docker commands require `ENVFILE=.env` to pass credentials"
 
   - id: cli-commands
     title: "Step 6: Understand CLI Entry Points"
@@ -400,9 +400,9 @@ steps:
         # Alternative: Use Python module syntax
         python -m core.cli deploy config/projects/acme/sales.yaml --env dev
     tips:
-      - Use `--dry-run` to preview deployments before executing
-      - Use `--diagnose` for verbose output during troubleshooting
-      - `python -m core.cli` works even if the entry point isn't registered
+      - "Use `--dry-run` to preview deployments before executing"
+      - "Use `--diagnose` for verbose output during troubleshooting"
+      - "`python -m core.cli` works even if the entry point isn't registered"
 
   - id: python-scripts
     title: "Step 7: Understand Python Utility Scripts"
@@ -461,8 +461,8 @@ steps:
           --organization "your-ado-org" \
           --project "FabricProjects"
     tips:
-      - Always run `conda activate fabric-cli-cicd` before running Python scripts
-      - Use `python scripts/generate_project.py --help` to see all template options
+      - "Always run `conda activate fabric-cli-cicd` before running Python scripts"
+      - "Use `python scripts/generate_project.py --help` to see all template options"
       - The utility scripts are invaluable for debugging permission issues
 
   - id: configure-credentials
@@ -510,12 +510,12 @@ steps:
         # OR: vim .env
         # OR: code .env  (VS Code)
     tips:
-      - Never commit `.env` files to version control - they're in `.gitignore`
+      - "Never commit `.env` files to version control - they're in `.gitignore`"
       - Use Azure Key Vault for production environments
       - Rotate secrets regularly
     warnings:
       - ⚠️ NEVER hardcode credentials in code or YAML files
-      - ⚠️ NEVER commit `.env` files to Git
+      - "⚠️ NEVER commit `.env` files to Git"
 
   - id: env-file-content
     title: "Step 9: Configure .env File Contents"
@@ -571,7 +571,7 @@ steps:
         DEV_CONTRIBUTOR_OBJECT_ID=22222222-2222-2222-2222-222222222222
     warnings:
       - Replace all placeholder values with your actual credentials
-      - The `AZURE_CLIENT_SECRET` is shown only once in Azure - save it securely
+      - "The `AZURE_CLIENT_SECRET` is shown only once in Azure - save it securely"
       - PAT tokens expire - set appropriate expiration dates
 
   - id: preflight-check
@@ -702,7 +702,7 @@ steps:
       This is configured automatically via the `principals` section in your YAML config.
     warnings:
       - Most deployment failures are caused by missing SP permissions
-      - "Stakeholder" access in ADO is NOT sufficient - must be "Basic"
+      - Stakeholder access in ADO is NOT sufficient - must be Basic
       - Check permissions BEFORE troubleshooting other issues
 
   - id: next-steps
@@ -714,9 +714,9 @@ steps:
       ## What You've Accomplished
       
       - ✅ Created and activated the conda environment
-      - ✅ Installed the package with `make install`
+      - "✅ Installed the package with `make install`"
       - ✅ Learned all three command methods (Make, CLI, Scripts)
-      - ✅ Configured Service Principal credentials in `.env`
+      - "✅ Configured Service Principal credentials in `.env`"
       - ✅ Verified setup with preflight checks
       - ✅ Confirmed Fabric API connectivity
       
@@ -751,4 +751,4 @@ steps:
     tips:
       - Bookmark this guide for reference
       - Keep the conda environment activated during all operations
-      - Run `make diagnose` whenever you encounter issues
+      - "Run `make diagnose` whenever you encounter issues"

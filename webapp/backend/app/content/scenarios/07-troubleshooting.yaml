@@ -16,12 +16,12 @@ order: 7
 prerequisites: []
 
 learning_outcomes:
-  - Run preflight diagnostics with `make diagnose`
-  - Use `python scripts/preflight_check.py --auto-install` for comprehensive checks
-  - Examine audit logs in `audit_logs/fabric_operations_*.jsonl`
-  - Debug ADO access with `python scripts/utilities/debug_ado_access.py`
-  - List workspaces with `python scripts/utilities/list_workspaces.py`
-  - List workspace items with `python scripts/utilities/list_workspace_items.py`
+  - "Run preflight diagnostics with `make diagnose`"
+  - "Use `python scripts/preflight_check.py --auto-install` for comprehensive checks"
+  - "Examine audit logs in `audit_logs/fabric_operations_*.jsonl`"
+  - "Debug ADO access with `python scripts/utilities/debug_ado_access.py`"
+  - "List workspaces with `python scripts/utilities/list_workspaces.py`"
+  - "List workspace items with `python scripts/utilities/list_workspace_items.py`"
   - Resolve authentication, permission, and configuration errors
 
 tags:
@@ -79,7 +79,7 @@ steps:
       | **Docker** | Build failures, mount issues, env-file missing |
       | **Git** | Empty repo, wrong branch, PAT expired |
     tips:
-      - ALWAYS start with `make diagnose` or `python scripts/preflight_check.py`
+      - "ALWAYS start with `make diagnose` or `python scripts/preflight_check.py`"
       - Check audit logs for detailed error messages
 
   - id: preflight-check
@@ -140,7 +140,7 @@ steps:
       ════════════════════════════════════════════════════════════════
     tips:
       - If any check fails, fix it before proceeding
-      - `--auto-install` will install missing Fabric CLI automatically
+      - "`--auto-install` will install missing Fabric CLI automatically"
 
   - id: audit-logs
     title: "Step 2: Check Audit Logs"
@@ -161,11 +161,11 @@ steps:
       ## Log Format (JSONL)
       
       Each line is a JSON object with:
-      - `timestamp` - When it happened
-      - `operation` - What was being done
-      - `status` - success/failure
-      - `error` - Error message if failed
-      - `details` - Additional context
+      - "`timestamp` - When it happened"
+      - "`operation` - What was being done"
+      - "`status` - success/failure"
+      - "`error` - Error message if failed"
+      - "`details` - Additional context"
     code:
       language: bash
       content: |
@@ -189,8 +189,8 @@ steps:
       {"timestamp":"2025-01-15T10:30:05Z","operation":"create_workspace","workspace":"acme-sales-dev","status":"success","workspace_id":"abc123"}
       {"timestamp":"2025-01-15T10:30:10Z","operation":"create_item","item_type":"Lakehouse","item_name":"sales_raw","status":"failure","error":"Capacity limit exceeded"}
     tips:
-      - Use `jq` for pretty-printing JSON logs
-      - Look for the `error` field in failed operations
+      - "Use `jq` for pretty-printing JSON logs"
+      - "Look for the `error` field in failed operations"
       - Logs are rotated daily for easy searching
 
   - id: wrong-environment
@@ -240,7 +240,7 @@ steps:
       # import test (correct):
       All imports OK
     tips:
-      - ALWAYS run `conda activate fabric-cli-cicd` before any command
+      - "ALWAYS run `conda activate fabric-cli-cicd` before any command"
       - Add to your shell profile for automatic activation
     warnings:
       - This is the #1 most common issue for new users
@@ -301,8 +301,8 @@ steps:
         diagnose  Run preflight diagnostics.
         validate  Validate configuration file syntax and structure.
     tips:
-      - `pip install -e .` installs in "editable" mode (changes apply immediately)
-      - `python -m core.cli` is equivalent and always works
+      - "`pip install -e .` installs in \"editable\" mode (changes apply immediately)"
+      - "`python -m core.cli` is equivalent and always works"
 
   - id: auth-failure
     title: "Error: Authentication Failures"
@@ -479,8 +479,8 @@ steps:
         echo "FABRIC_CAPACITY_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" >> .env
     tips:
       - Capacity ID is a GUID, not a name
-      - F2 trial: ~3 workspaces max
-      - F4: ~5 workspaces
+      - "F2 trial: ~3 workspaces max"
+      - "F4: ~5 workspaces"
       - Paused capacities cannot be used
 
   - id: yaml-errors
@@ -591,9 +591,9 @@ steps:
         # 7. Run with explicit env file
         make docker-deploy config=... env=dev ENVFILE=.env
     tips:
-      - Build with `--progress=plain` for detailed output
-      - Use `docker system df` to check disk usage
-      - Default ENVFILE is `.env` - override for different clients
+      - "Build with `--progress=plain` for detailed output"
+      - "Use `docker system df` to check disk usage"
+      - "Default ENVFILE is `.env` - override for different clients"
 
   - id: git-errors
     title: "Error: Git Connection Failures"
@@ -713,7 +713,7 @@ steps:
         # Bulk destroy
         python scripts/bulk_destroy.py workspace_list.txt
     tips:
-      - All scripts have `--help` for additional options
+      - "All scripts have `--help` for additional options"
       - Scripts work in both local and Docker environments
 
   - id: getting-help

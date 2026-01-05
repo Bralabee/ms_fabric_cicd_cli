@@ -18,12 +18,12 @@ prerequisites:
   - docker-deployment
 
 learning_outcomes:
-  - Deploy feature branch workspaces with `make docker-feature-deploy`
-  - Use `fabric-cicd deploy --branch` for branch-specific deployments
+  - "Deploy feature branch workspaces with `make docker-feature-deploy`"
+  - "Use `fabric-cicd deploy --branch` for branch-specific deployments"
   - Understand the automatic workspace naming convention
-  - List and verify workspaces with `list_workspaces.py`
-  - Clean up workspaces with `fabric-cicd destroy`
-  - Bulk destroy multiple workspaces with `make bulk-destroy`
+  - "List and verify workspaces with `list_workspaces.py`"
+  - "Clean up workspaces with `fabric-cicd destroy`"
+  - "Bulk destroy multiple workspaces with `make bulk-destroy`"
   - Automate feature workspace lifecycle in CI/CD
 
 tags:
@@ -228,7 +228,7 @@ steps:
       
       ✅ Feature workspace deployment completed!
     tips:
-      - `--force-branch-workspace` is REQUIRED for feature branches
+      - "`--force-branch-workspace` is REQUIRED for feature branches"
       - Without this flag, it would try to deploy to the shared dev workspace
 
   - id: workspace-naming
@@ -246,8 +246,8 @@ steps:
       ## Branch Slug Transformation
       
       Your branch name is transformed:
-      - Slashes (`/`) → Hyphens (`-`)
-      - Underscores (`_`) → Hyphens (`-`)
+      - "Slashes (`/`) → Hyphens (`-`)"
+      - "Underscores (`_`) → Hyphens (`-`)"
       - Converted to lowercase
       
       ## Examples
@@ -266,7 +266,7 @@ steps:
       - Keep branch names SHORT to avoid truncation
       - Recommend: Branch names under 25 characters
     tips:
-      - The naming logic is in `src/core/git_integration.py`
+      - "The naming logic is in `src/core/git_integration.py`"
       - Predictable naming makes it easy to find workspaces
 
   - id: verify-workspace
@@ -627,11 +627,11 @@ steps:
       ## What You've Accomplished
       
       - ✅ Create feature branches with proper naming
-      - ✅ Deploy isolated workspaces with `make docker-feature-deploy`
+      - "✅ Deploy isolated workspaces with `make docker-feature-deploy`"
       - ✅ Understand automatic workspace naming conventions
-      - ✅ Verify workspaces with `list_workspaces.py`
-      - ✅ Destroy individual workspaces with `fabric-cicd destroy`
-      - ✅ Bulk cleanup with `make bulk-destroy`
+      - "✅ Verify workspaces with `list_workspaces.py`"
+      - "✅ Destroy individual workspaces with `fabric-cicd destroy`"
+      - "✅ Bulk cleanup with `make bulk-destroy`"
       - ✅ CI/CD integration for automated lifecycle
       - ✅ Capacity planning considerations
       
