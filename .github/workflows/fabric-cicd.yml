@@ -79,13 +79,9 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
 
-    - name: Run integration tests
-      run: |
-        if [ -d tests/integration ]; then
-          pytest tests/integration -m integration -v
-        else
-          echo "tests/integration directory not found, skipping integration tests"
-        fi
+    # NOTE: Integration tests require Fabric credentials and are only run 
+    # in deployment jobs (deploy-dev, deploy-staging, deploy-prod) that have
+    # proper secrets configured. Skipping here to avoid auth failures.
     
     - name: Test Docker build
       run: |
