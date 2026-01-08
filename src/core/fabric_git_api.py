@@ -172,7 +172,7 @@ class FabricGitAPI:
             if hasattr(e, "response") and e.response is not None:
                 logger.error(f"Response Status: {e.response.status_code}")
                 logger.error(f"Response Body: {e.response.text}")
-            
+
             return {
                 "success": False,
                 "error": str(e),

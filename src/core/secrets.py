@@ -20,6 +20,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 try:
     from azure.identity import DefaultAzureCredential
     from azure.keyvault.secrets import SecretClient
+
     KEYVAULT_AVAILABLE = True
 except ImportError:
     KEYVAULT_AVAILABLE = False
@@ -69,20 +70,24 @@ class FabricSecrets(BaseSettings):
 
         try:
             credential = DefaultAzureCredential()
-            client = SecretClient(vault_url=self.azure_keyvault_url, credential=credential)
+            client = SecretClient(
+                vault_url=self.azure_keyvault_url, credential=credential
+            )
             secret = client.get_secret(secret_name)
             return secret.value
         except Exception:
             # Silently fail and fall back to None
             return None
 
-    def get_secret(self, secret_name: str, keyvault_name: Optional[str] = None) -> Optional[str]:
+    def get_secret(
+        self, secret_name: str, keyvault_name: Optional[str] = None
+    ) -> Optional[str]:
         """Retrieve a secret from environment variables or Key Vault.
-        
+
         Args:
             secret_name: Name of the environment variable or Key Vault secret
             keyvault_name: Optional Key Vault secret name if different from env var name
-            
+
         Returns:
             Secret value or None if not found
         """
@@ -190,22 +195,32 @@ class FabricSecrets(BaseSettings):
             FabricSecrets instance
         """
         instance = cls()
-        
+
         # If Key Vault is configured, attempt to populate missing secrets
         if instance.azure_keyvault_url and KEYVAULT_AVAILABLE:
             if not instance.azure_client_id:
-                instance.azure_client_id = instance.get_secret("AZURE_CLIENT_ID", "azure-client-id")
+                instance.azure_client_id = instance.get_secret(
+                    "AZURE_CLIENT_ID", "azure-client-id"
+                )
             if not instance.azure_client_secret:
-                instance.azure_client_secret = instance.get_secret("AZURE_CLIENT_SECRET", "azure-client-secret")
+                instance.azure_client_secret = instance.get_secret(
+                    "AZURE_CLIENT_SECRET", "azure-client-secret"
+                )
             if not instance.tenant_id:
                 instance.tenant_id = instance.get_secret("TENANT_ID", "tenant-id")
             if not instance.fabric_token:
-                instance.fabric_token = instance.get_secret("FABRIC_TOKEN", "fabric-token")
+                instance.fabric_token = instance.get_secret(
+                    "FABRIC_TOKEN", "fabric-token"
+                )
             if not instance.github_token:
-                instance.github_token = instance.get_secret("GITHUB_TOKEN", "github-token")
+                instance.github_token = instance.get_secret(
+                    "GITHUB_TOKEN", "github-token"
+                )
             if not instance.azure_devops_pat:
-                instance.azure_devops_pat = instance.get_secret("AZURE_DEVOPS_PAT", "azure-devops-pat")
-        
+                instance.azure_devops_pat = instance.get_secret(
+                    "AZURE_DEVOPS_PAT", "azure-devops-pat"
+                )
+
         return instance
 
 
