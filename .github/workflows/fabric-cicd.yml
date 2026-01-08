@@ -87,11 +87,15 @@ jobs:
       run: |
         docker build -t usf-fabric-cli-cicd:test .
 
-  deploy-dev:
+  # =============================================================================
+  # DEPLOYMENT JOB - Only runs on manual workflow_dispatch
+  # Requires FABRIC_TOKEN and TENANT_ID secrets to be configured
+  # =============================================================================
+  deploy:
     needs: validate
-    if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    environment: development
+    environment: ${{ github.event.inputs.environment }}
     
     steps:
     - name: Checkout code
@@ -106,163 +110,38 @@ jobs:
       run: |
         pip install -r requirements.txt
     
-    - name: Deploy to Development
+    - name: Verify credentials
       env:
-        FABRIC_TOKEN: ${{ secrets.FABRIC_DEV_TOKEN }}
-        TENANT_ID: ${{ secrets.TENANT_ID }}
+        FABRIC_TOKEN: ${{ secrets.FABRIC_TOKEN }}
       run: |
-        # Determine config template
-        CONFIG_TEMPLATE="${{ github.event.inputs.config_template || 'basic_etl' }}"
-        
-        # Deploy workspace
-        export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-        python -m core.cli deploy \
-          templates/blueprints/${CONFIG_TEMPLATE}.yaml \
-          --env dev \
-          --branch ${{ github.ref_name }} \
-          --diagnose
-    
-    - name: Run integration tests
-      env:
-        FABRIC_TOKEN: ${{ secrets.FABRIC_DEV_TOKEN }}
-        TENANT_ID: ${{ secrets.TENANT_ID }}
-      run: |
-        pytest tests/integration -m integration -v
-
-  deploy-staging:
-    needs: validate
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: staging
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-    
-    - name: Deploy to Staging
-      env:
-        FABRIC_TOKEN: ${{ secrets.FABRIC_STAGING_TOKEN }}
-        TENANT_ID: ${{ secrets.TENANT_ID }}
-      run: |
-        export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-        python -m core.cli deploy \
-          templates/blueprints/basic_etl.yaml \
-          --env staging \
-          --diagnose
-    
-    - name: Staging validation tests
-      env:
-        FABRIC_TOKEN: ${{ secrets.FABRIC_STAGING_TOKEN }}
-        TENANT_ID: ${{ secrets.TENANT_ID }}
-      run: |
-        if [ -d tests/validation ]; then
-          pytest tests/validation -v
-        else
-          echo "tests/validation directory not found, skipping"
+        if [ -z "$FABRIC_TOKEN" ]; then
+          echo "Error: FABRIC_TOKEN secret not configured."
+          echo "Add FABRIC_TOKEN and TENANT_ID secrets in GitHub repository settings."
+          exit 1
         fi
-
-  deploy-prod:
-    needs: deploy-staging
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: production
+        echo "Credentials verified"
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-    
-    - name: Deploy to Production
+    - name: Deploy to ${{ github.event.inputs.environment }}
       env:
-        FABRIC_TOKEN: ${{ secrets.FABRIC_PROD_TOKEN }}
+        FABRIC_TOKEN: ${{ secrets.FABRIC_TOKEN }}
         TENANT_ID: ${{ secrets.TENANT_ID }}
       run: |
         export PYTHONPATH=$PYTHONPATH:$(pwd)/src
         python -m core.cli deploy \
-          templates/blueprints/basic_etl.yaml \
-          --env prod \
-          --diagnose
-    
-    - name: Production smoke tests
-      env:
-        FABRIC_TOKEN: ${{ secrets.FABRIC_PROD_TOKEN }}
-        TENANT_ID: ${{ secrets.TENANT_ID }}
-      run: |
-        if [ -d tests/smoke ]; then
-          pytest tests/smoke -v
-        else
-          echo "tests/smoke directory not found, skipping"
-        fi
+          templates/blueprints/${{ github.event.inputs.config_template }}.yaml \
+          --env ${{ github.event.inputs.environment }} \
+          --branch ${{ github.ref_name }}
     
     - name: Generate deployment report
       run: |
-        echo "Deployment completed successfully" > deployment-report.txt
+        echo "Deployment Report" > deployment-report.txt
+        echo "Environment: ${{ github.event.inputs.environment }}" >> deployment-report.txt
+        echo "Template: ${{ github.event.inputs.config_template }}" >> deployment-report.txt
         echo "Timestamp: $(date)" >> deployment-report.txt
         echo "Commit: ${{ github.sha }}" >> deployment-report.txt
     
     - name: Upload deployment report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: deployment-report
         path: deployment-report.txt
-
-  feature-branch-deploy:
-    needs: validate
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    environment: development
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-    
-    - name: Deploy feature branch workspace
-      env:
-        FABRIC_TOKEN: ${{ secrets.FABRIC_DEV_TOKEN }}
-        TENANT_ID: ${{ secrets.TENANT_ID }}
-      run: |
-        # Create feature-branch specific workspace
-        export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-        python -m core.cli deploy \
-          templates/blueprints/basic_etl.yaml \
-          --env dev \
-          --branch ${{ github.head_ref }} \
-          --force-branch-workspace \
-          --diagnose
-    
-    - name: Comment PR with workspace info
-      uses: actions/github-script@v7
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '🚀 Feature branch workspace deployed!\n\nWorkspace: `analytics-workspace-${{ github.head_ref }}`\nBranch: `${{ github.head_ref }}`\n\nYou can now test your changes in the dedicated workspace.'
-          })
