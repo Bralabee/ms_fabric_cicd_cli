@@ -40,6 +40,7 @@ related_scenarios:
   - local-deployment
   - feature-branch-workflows
   - git-integration
+  - environment-promotion
 
 steps:
   - id: overview

@@ -1,0 +1,1028 @@
+# Environment Promotion Scenario
+# Comprehensive guide to DEV → TEST → PROD deployment with source repointing
+
+id: environment-promotion
+title: Environment Promotion & Source Repointing
+description: |
+  Master the complete environment promotion workflow from DEV to TEST to PROD.
+  Learn how environment-specific configurations override base settings, how source
+  repointing works through variable substitution, and how Jinja2 templating enables
+  dynamic artifact transformation across environments.
+difficulty: intermediate
+estimated_duration_minutes: 35
+category: deployment
+order: 8
+
+prerequisites:
+  - getting-started
+  - project-generation
+  - local-deployment
+
+learning_outcomes:
+  - Understand the environment promotion pipeline (DEV → TEST → PROD)
+  - Create and configure environment override files (dev.yaml, test.yaml, prod.yaml)
+  - Implement source repointing using `${VAR_NAME}` substitution
+  - Use Jinja2 templating for dynamic artifact configuration
+  - Deploy the same project to multiple environments
+  - Configure environment-specific principals and capacity
+  - Verify environment isolation and correct source connections
+
+tags:
+  - environment
+  - promotion
+  - dev-test-prod
+  - repointing
+  - source-repointing
+  - templating
+  - jinja2
+  - configuration
+  - multi-environment
+
+related_scenarios:
+  - local-deployment
+  - docker-deployment
+  - feature-branch-workflows
+  - git-integration
+
+steps:
+  - id: overview
+    title: Environment Promotion Overview
+    type: info
+    content: |
+      ## The Promotion Pipeline
+      
+      Enterprise deployments follow a structured promotion path:
+      
+      ```
+      ┌─────────────────────────────────────────────────────────────────────┐
+      │                    PROMOTION PIPELINE                               │
+      ├─────────────────────────────────────────────────────────────────────┤
+      │                                                                     │
+      │   ┌─────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐   │
+      │   │  CODE   │ ───▶ │   DEV   │ ───▶ │  TEST   │ ───▶ │  PROD   │   │
+      │   │ (Git)   │      │ (F2/F4) │      │(F8/F16) │      │(F32/F64)│   │
+      │   └─────────┘      └─────────┘      └─────────┘      └─────────┘   │
+      │                         │               │               │          │
+      │                    Development     Integration      Production     │
+      │                    + Unit Tests    + UAT Tests    + Monitoring     │
+      │                                                                     │
+      └─────────────────────────────────────────────────────────────────────┘
+      ```
+      
+      ## What Changes Between Environments?
+      
+      | Setting | DEV | TEST | PROD |
+      |---------|-----|------|------|
+      | **Capacity** | F2 (trial) | F8/F16 | F32/F64 |
+      | **Data Sources** | Dev storage | Test storage | Prod storage |
+      | **Principals** | All developers | QA + limited devs | Ops + read-only |
+      | **Git Branch** | develop/feature | main | main (tagged) |
+      | **Monitoring** | Minimal | Standard | Full alerting |
+      
+      ## Key Concepts
+      
+      | Concept | Description |
+      |---------|-------------|
+      | **Environment Override** | YAML file that merges with base config |
+      | **Source Repointing** | Changing data source connections per environment |
+      | **Variable Substitution** | `${VAR}` replaced with environment-specific values |
+      | **Jinja2 Templating** | `{{ env }}` for dynamic artifact content |
+    tips:
+      - Same code, different configurations = environment isolation
+      - Never hardcode environment-specific values in base config
+      - Store secrets in .env files (local) or CI/CD secrets (pipeline)
+
+  - id: config-architecture
+    title: "Step 1: Understand Configuration Architecture"
+    type: info
+    content: |
+      ## Configuration Layering
+      
+      The CLI merges configurations in a specific order:
+      
+      ```
+      ┌────────────────────────────────────────────────────────────────┐
+      │                    CONFIGURATION MERGE ORDER                   │
+      ├────────────────────────────────────────────────────────────────┤
+      │                                                                │
+      │   1. BASE CONFIG (project YAML)                                │
+      │      └── config/projects/acme_corp/sales_analytics.yaml        │
+      │                           │                                    │
+      │                           ▼                                    │
+      │   2. ENVIRONMENT OVERRIDE                                      │
+      │      └── config/environments/dev.yaml (or test.yaml, prod.yaml)│
+      │                           │                                    │
+      │                           ▼                                    │
+      │   3. ENVIRONMENT VARIABLES                                     │
+      │      └── .env file or CI/CD secrets                            │
+      │                           │                                    │
+      │                           ▼                                    │
+      │   4. MANDATORY PRINCIPALS (auto-injected)                      │
+      │      └── ADDITIONAL_ADMIN_PRINCIPAL_ID                         │
+      │      └── ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID                   │
+      │                                                                │
+      └────────────────────────────────────────────────────────────────┘
+      ```
+      
+      ## File Structure
+      
+      ```
+      config/
+      ├── environments/           # Environment-specific overrides
+      │   ├── dev.yaml           # Development settings
+      │   ├── test.yaml          # Test/UAT settings
+      │   ├── staging.yaml       # Pre-production settings
+      │   └── prod.yaml          # Production settings
+      │
+      └── projects/              # Project definitions
+          └── acme_corp/
+              └── sales_analytics.yaml  # Base configuration
+      ```
+      
+      ## Merge Behavior
+      
+      | Data Type | Merge Strategy |
+      |-----------|----------------|
+      | **Scalars** | Override replaces base |
+      | **Dicts** | Deep merge (recursive) |
+      | **Lists** | Concatenate (deduplicated for principals) |
+    tips:
+      - Environment overrides only need to specify what's different
+      - Base config should use variables, not hardcoded values
+      - Principals are deduplicated by ID during merge
+
+  - id: create-base-config
+    title: "Step 2: Create Base Project Configuration"
+    type: config
+    content: |
+      Create a base configuration that uses variables instead of hardcoded values.
+      This enables the same config to deploy to any environment.
+      
+      ## Variable Substitution Syntax
+      
+      | Syntax | Source | Example |
+      |--------|--------|---------|
+      | `${VAR_NAME}` | Environment variable | `${FABRIC_CAPACITY_ID}` |
+      | `{{ env }}` | Jinja2 template | `workspace-{{ env }}` |
+      
+      ## Example Base Config
+      
+      Notice how ALL environment-specific values use variables:
+    code:
+      language: yaml
+      filename: config/projects/acme_corp/sales_analytics.yaml
+      content: |
+        # Base Project Configuration
+        # All environment-specific values use ${VAR} substitution
+        
+        workspace:
+          # Name includes environment via Jinja2 template
+          name: "acme-sales-analytics-{{ env }}"
+          display_name: "Acme Sales Analytics ({{ env | upper }})"
+          description: "Sales analytics workspace for {{ env }} environment"
+          
+          # Capacity changes per environment
+          capacity_id: "${FABRIC_CAPACITY_ID}"
+          
+          # Git integration
+          git_repo: "${GIT_REPO_URL}"
+          git_branch: "main"
+          git_directory: "/acme-sales"
+        
+        # Medallion folder structure (same for all environments)
+        folders:
+          - "01_Bronze"
+          - "02_Silver"
+          - "03_Gold"
+          - "99_Notebooks"
+        
+        # Lakehouses with environment-specific storage
+        lakehouses:
+          - name: "sales_raw_{{ env }}"
+            folder: "01_Bronze"
+            description: "Raw sales data landing zone"
+          
+          - name: "sales_curated_{{ env }}"
+            folder: "02_Silver"
+            description: "Cleaned and validated sales data"
+          
+          - name: "sales_gold_{{ env }}"
+            folder: "03_Gold"
+            description: "Business-ready sales metrics"
+        
+        # Notebooks
+        notebooks:
+          - name: "ingest_sales_data"
+            folder: "99_Notebooks"
+            description: "Ingests data from ${STORAGE_ACCOUNT_URL}"
+        
+        # Base principals (environment overrides add more)
+        principals:
+          - id: "${PROJECT_OWNER_PRINCIPAL_ID}"
+            role: "Admin"
+            description: "Project owner - all environments"
+    tips:
+      - Use `{{ env }}` for values that appear in Fabric UI (names, descriptions)
+      - Use `${VAR}` for secrets and IDs that shouldn't be in code
+      - Keep folder structure consistent across environments
+
+  - id: create-env-overrides
+    title: "Step 3: Create Environment Override Files"
+    type: config
+    content: |
+      Environment override files specify what's **different** for each environment.
+      They merge with the base config to produce the final configuration.
+      
+      ## Environment Files Location
+      
+      ```
+      config/environments/
+      ├── dev.yaml      # Development
+      ├── test.yaml     # Test/UAT
+      ├── staging.yaml  # Pre-production
+      └── prod.yaml     # Production
+      ```
+      
+      ## Example: dev.yaml
+    code:
+      language: yaml
+      filename: config/environments/dev.yaml
+      content: |
+        # Development Environment Overrides
+        # Lower capacity, all developers have access
+        
+        workspace:
+          capacity_id: "${FABRIC_CAPACITY_ID}"  # F2 trial capacity
+          git_branch: "develop"  # Dev uses develop branch
+        
+        # Development principals - broad access
+        principals:
+          - id: "${DEV_TEAM_GROUP_ID}"
+            role: "Contributor"
+            description: "All developers"
+          
+          # Mandatory principals (auto-injected but can be explicit)
+          - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+            role: "Admin"
+            description: "Mandatory Additional Admin"
+          
+          - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+            role: "Contributor"
+            description: "Mandatory Additional Contributor"
+    expected_output: |
+      # After merge, effective config for dev:
+      workspace:
+        name: "acme-sales-analytics-dev"         # {{ env }} → dev
+        capacity_id: "abc123-dev-capacity-guid"  # From DEV .env
+        git_branch: "develop"                    # Override from dev.yaml
+      principals:
+        - id: "owner-guid"                       # From base
+        - id: "dev-team-guid"                    # From dev.yaml
+        - id: "admin-guid"                       # Auto-injected
+
+  - id: create-test-override
+    title: "Step 4: Create Test Environment Override"
+    type: config
+    content: |
+      The test environment sits between DEV and PROD. It typically has:
+      - Higher capacity than DEV
+      - Restricted access (QA team + selected developers)
+      - Production-like data sources (anonymized)
+      
+      ## Example: test.yaml
+    code:
+      language: yaml
+      filename: config/environments/test.yaml
+      content: |
+        # Test Environment Overrides
+        # UAT/QA environment for integration testing
+        #
+        # Promotion path: DEV → TEST → PROD
+        
+        workspace:
+          capacity_id: "${FABRIC_CAPACITY_ID_TEST}"  # Test capacity
+          git_branch: "main"  # Test uses main branch
+        
+        # Test environment principals - restricted access
+        principals:
+          # QA/Test Admin
+          - id: "${TEST_ADMIN_PRINCIPAL_ID}"
+            role: "Admin"
+            description: "Test environment administrator"
+          
+          # QA Team - needs Contributor to execute tests
+          - id: "${TEST_QA_GROUP_ID}"
+            role: "Contributor"
+            description: "QA team for integration testing"
+          
+          # Read-only access for stakeholders
+          - id: "${TEST_VIEWERS_GROUP_ID}"
+            role: "Viewer"
+            description: "Stakeholders reviewing test environment"
+          
+          # Mandatory principals
+          - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+            role: "Admin"
+          
+          - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+            role: "Contributor"
+    tips:
+      - Test environment should mirror production configuration
+      - Use anonymized/synthetic data that matches production schema
+      - Grant Viewer role to stakeholders who need to verify but not modify
+
+  - id: create-prod-override
+    title: "Step 5: Create Production Environment Override"
+    type: config
+    content: |
+      Production has the strictest access controls and highest capacity.
+      
+      ## Example: prod.yaml
+    code:
+      language: yaml
+      filename: config/environments/prod.yaml
+      content: |
+        # Production Environment Overrides
+        # Strict access control, high capacity
+        
+        workspace:
+          capacity_id: "${FABRIC_CAPACITY_ID_PROD}"  # F64 production capacity
+          git_branch: "main"  # Production tracks main
+        
+        # Production principals - minimal access
+        principals:
+          # Production Admin (ops team only)
+          - id: "${PROD_ADMIN_PRINCIPAL_ID}"
+            role: "Admin"
+            description: "Production administrator"
+          
+          # Production Viewers (business users - read-only)
+          - id: "${PROD_VIEWERS_GROUP_ID}"
+            role: "Viewer"
+            description: "Business users - read-only access"
+          
+          # Automation Service Principal
+          - id: "${PROD_AUTOMATION_SP_ID}"
+            role: "Contributor"
+            description: "CI/CD automation"
+          
+          # Mandatory principals
+          - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+            role: "Admin"
+          
+          - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+            role: "Contributor"
+    warnings:
+      - Production deployments should go through CI/CD with approval gates
+      - Never deploy to production directly from local machine
+      - Ensure audit logging is enabled for compliance
+
+  - id: source-repointing
+    title: "Step 6: Implement Source Repointing"
+    type: config
+    content: |
+      **Source repointing** means changing data source connections based on environment.
+      This is critical for:
+      - Connecting to environment-specific databases
+      - Using correct storage accounts
+      - Pointing to appropriate API endpoints
+      
+      ## How Source Repointing Works
+      
+      ```
+      ┌────────────────────────────────────────────────────────────────┐
+      │                    SOURCE REPOINTING                           │
+      ├────────────────────────────────────────────────────────────────┤
+      │                                                                │
+      │   .env (DEV)                    .env (PROD)                    │
+      │   ────────────                  ────────────                   │
+      │   STORAGE_URL=dev-storage       STORAGE_URL=prod-storage       │
+      │   SQL_SERVER=dev-sql            SQL_SERVER=prod-sql            │
+      │                                                                │
+      │            │                           │                       │
+      │            ▼                           ▼                       │
+      │   ┌─────────────────┐        ┌─────────────────┐               │
+      │   │ Notebook code:  │        │ Notebook code:  │               │
+      │   │ ${STORAGE_URL}  │   ──▶  │ (same template) │               │
+      │   └─────────────────┘        └─────────────────┘               │
+      │            │                           │                       │
+      │            ▼                           ▼                       │
+      │   Connects to:               Connects to:                      │
+      │   dev-storage.blob...        prod-storage.blob...              │
+      │                                                                │
+      └────────────────────────────────────────────────────────────────┘
+      ```
+      
+      ## Environment Variables for Repointing
+      
+      | Variable | DEV Value | TEST Value | PROD Value |
+      |----------|-----------|------------|------------|
+      | `STORAGE_ACCOUNT_URL` | `https://devstore.blob...` | `https://teststore.blob...` | `https://prodstore.blob...` |
+      | `SQL_CONNECTION_STRING` | `Server=dev-sql...` | `Server=test-sql...` | `Server=prod-sql...` |
+      | `API_BASE_URL` | `https://api-dev.acme.com` | `https://api-test.acme.com` | `https://api.acme.com` |
+      
+      ## .env File Structure
+    code:
+      language: bash
+      filename: .env
+      content: |
+        # Common settings (all environments use same values)
+        AZURE_CLIENT_ID=your-service-principal-id
+        AZURE_CLIENT_SECRET=your-service-principal-secret
+        AZURE_TENANT_ID=your-tenant-id
+        
+        # ═══════════════════════════════════════════════════════════════
+        # ENVIRONMENT-SPECIFIC SETTINGS
+        # Uncomment the section for your target environment
+        # ═══════════════════════════════════════════════════════════════
+        
+        # --- DEV ENVIRONMENT ---
+        FABRIC_CAPACITY_ID=dev-capacity-guid
+        STORAGE_ACCOUNT_URL=https://acmedevstore.blob.core.windows.net
+        SQL_CONNECTION_STRING=Server=acme-sql-dev.database.windows.net;Database=SalesDB;
+        
+        # --- TEST ENVIRONMENT ---
+        # FABRIC_CAPACITY_ID=test-capacity-guid
+        # FABRIC_CAPACITY_ID_TEST=test-capacity-guid
+        # STORAGE_ACCOUNT_URL=https://acmeteststore.blob.core.windows.net
+        # SQL_CONNECTION_STRING=Server=acme-sql-test.database.windows.net;Database=SalesDB;
+        
+        # --- PROD ENVIRONMENT ---
+        # FABRIC_CAPACITY_ID=prod-capacity-guid
+        # FABRIC_CAPACITY_ID_PROD=prod-capacity-guid
+        # STORAGE_ACCOUNT_URL=https://acmeprodstore.blob.core.windows.net
+        # SQL_CONNECTION_STRING=Server=acme-sql-prod.database.windows.net;Database=SalesDB;
+    tips:
+      - In CI/CD, use separate secret groups per environment
+      - Never commit .env files with real values to Git
+      - Use Azure Key Vault for production secrets
+
+  - id: jinja2-templating
+    title: "Step 7: Use Jinja2 Templating in Artifacts"
+    type: config
+    content: |
+      For values that need to appear **inside** notebooks or pipelines (not just config),
+      use Jinja2 templates. These are rendered at deployment time.
+      
+      ## Available Template Variables
+      
+      | Variable | Description | Example Value |
+      |----------|-------------|---------------|
+      | `{{ environment }}` | Full environment name | `development` |
+      | `{{ env }}` | Short environment name | `dev` |
+      | `{{ workspace_name }}` | Workspace display name | `Acme Sales (DEV)` |
+      | `{{ capacity_id }}` | Fabric capacity ID | `abc123-guid` |
+      | `{{ secrets.VAR_NAME }}` | Secret from FabricSecrets | (use sparingly) |
+      
+      ## Template Filters
+      
+      | Filter | Usage | Result |
+      |--------|-------|--------|
+      | `upper` | `{{ env \| upper }}` | `DEV` |
+      | `lower` | `{{ env \| lower }}` | `dev` |
+      | `jsonify` | `{{ config \| jsonify }}` | JSON string |
+      
+      ## Example: Notebook with Templated Variables
+    code:
+      language: python
+      filename: templates/notebooks/data_ingestion.py
+      content: |
+        # Data Ingestion Notebook
+        # Environment: {{ environment }}
+        # Workspace: {{ workspace_name }}
+        
+        # ═══════════════════════════════════════════════════════════════
+        # ENVIRONMENT-SPECIFIC CONFIGURATION (rendered at deploy time)
+        # ═══════════════════════════════════════════════════════════════
+        
+        ENVIRONMENT = "{{ env }}"
+        LAKEHOUSE_NAME = "sales_raw_{{ env }}"
+        
+        # These use ${VAR} substitution from .env
+        STORAGE_URL = "${STORAGE_ACCOUNT_URL}"
+        SQL_SERVER = "${SQL_CONNECTION_STRING}"
+        
+        # ═══════════════════════════════════════════════════════════════
+        # NOTEBOOK LOGIC (same across all environments)
+        # ═══════════════════════════════════════════════════════════════
+        
+        print(f"Running in {ENVIRONMENT} environment")
+        print(f"Loading data from: {STORAGE_URL}")
+        
+        # Connect to lakehouse
+        from pyspark.sql import SparkSession
+        spark = SparkSession.builder.getOrCreate()
+        
+        # Read from environment-specific storage
+        df = spark.read.format("delta").load(f"{STORAGE_URL}/sales/raw/")
+        
+        # Write to environment-specific lakehouse
+        df.write.format("delta").mode("overwrite").save(
+            f"Tables/{LAKEHOUSE_NAME}/sales_data"
+        )
+        
+        print(f"✓ Data loaded to {LAKEHOUSE_NAME}")
+    expected_output: |
+      # When deployed to DEV, notebook becomes:
+      ENVIRONMENT = "dev"
+      LAKEHOUSE_NAME = "sales_raw_dev"
+      STORAGE_URL = "https://acmedevstore.blob.core.windows.net"
+      
+      # When deployed to PROD, notebook becomes:
+      ENVIRONMENT = "prod"
+      LAKEHOUSE_NAME = "sales_raw_prod"
+      STORAGE_URL = "https://acmeprodstore.blob.core.windows.net"
+    tips:
+      - Use `{{ env }}` for names visible in Fabric UI
+      - Use `${VAR}` for connection strings and secrets
+      - Test templates with `make validate` before deploying
+
+  - id: deploy-to-dev
+    title: "Step 8: Deploy to Development"
+    type: command
+    content: |
+      Start by deploying to the development environment.
+      
+      ## Pre-deployment Checklist
+      
+      - [ ] Conda environment activated (`fabric-cli-cicd`)
+      - [ ] `.env` file configured with DEV values
+      - [ ] Base config validated
+      - [ ] Environment override file exists (`config/environments/dev.yaml`)
+    code:
+      language: bash
+      content: |
+        # 1. Ensure correct environment
+        conda activate fabric-cli-cicd
+        
+        # 2. Validate configuration (catches errors early)
+        make validate config=config/projects/acme_corp/sales_analytics.yaml
+        
+        # 3. Deploy to development
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+        
+        # 4. Verify deployment
+        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-dev"
+    expected_output: |
+      ╔══════════════════════════════════════════════════════════════╗
+      ║               Fabric Workspace Deployment                    ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+      Configuration: config/projects/acme_corp/sales_analytics.yaml
+      Environment: dev
+      
+      Authenticating...
+      ✓ Authenticated as Service Principal
+      
+      Creating workspace...
+      ✓ Workspace 'acme-sales-analytics-dev' created
+        Capacity: F2 (dev-capacity-guid)
+      
+      Creating folders...
+      ✓ Folder '01_Bronze' created
+      ✓ Folder '02_Silver' created
+      ✓ Folder '03_Gold' created
+      ✓ Folder '99_Notebooks' created
+      
+      Creating lakehouses...
+      ✓ Lakehouse 'sales_raw_dev' created
+      ✓ Lakehouse 'sales_curated_dev' created
+      ✓ Lakehouse 'sales_gold_dev' created
+      
+      Assigning principals...
+      ✓ Principal 'project-owner' assigned role 'Admin'
+      ✓ Principal 'dev-team-group' assigned role 'Contributor'
+      ✓ Principal 'mandatory-admin' assigned role 'Admin'
+      ✓ Principal 'mandatory-contributor' assigned role 'Contributor'
+      
+      ════════════════════════════════════════════════════════════════
+      ✅ Deployment to DEV completed successfully!
+      ════════════════════════════════════════════════════════════════
+
+  - id: promote-to-test
+    title: "Step 9: Promote to Test Environment"
+    type: command
+    content: |
+      After development is complete and unit tests pass, promote to TEST.
+      
+      ## Promotion Prerequisites
+      
+      - [ ] DEV deployment verified and tested
+      - [ ] Unit tests passing
+      - [ ] Code merged to main branch (or test branch)
+      - [ ] TEST environment variables configured
+      
+      ## Update .env for TEST
+      
+      Before deploying to TEST, update your `.env` file with TEST-specific values,
+      or use a separate `.env.test` file in CI/CD.
+    code:
+      language: bash
+      content: |
+        # Option A: Update .env for TEST deployment (local)
+        # Edit .env to uncomment TEST values, comment DEV values
+        
+        # Option B: Use environment-specific .env file (CI/CD)
+        # cp .env.test .env
+        
+        # 1. Validate TEST configuration
+        make validate config=config/projects/acme_corp/sales_analytics.yaml
+        
+        # 2. Deploy to TEST
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=test
+        
+        # 3. Verify TEST deployment
+        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-test"
+        
+        # 4. Compare DEV and TEST workspaces
+        echo "=== DEV Workspace ==="
+        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-dev"
+        echo ""
+        echo "=== TEST Workspace ==="
+        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-test"
+    expected_output: |
+      ╔══════════════════════════════════════════════════════════════╗
+      ║               Fabric Workspace Deployment                    ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+      Configuration: config/projects/acme_corp/sales_analytics.yaml
+      Environment: test
+      
+      Creating workspace...
+      ✓ Workspace 'acme-sales-analytics-test' created
+        Capacity: F8 (test-capacity-guid)
+      
+      Creating lakehouses...
+      ✓ Lakehouse 'sales_raw_test' created
+      ✓ Lakehouse 'sales_curated_test' created
+      ✓ Lakehouse 'sales_gold_test' created
+      
+      Assigning principals...
+      ✓ Principal 'test-admin' assigned role 'Admin'
+      ✓ Principal 'qa-team-group' assigned role 'Contributor'
+      ✓ Principal 'test-viewers-group' assigned role 'Viewer'
+      
+      ════════════════════════════════════════════════════════════════
+      ✅ Deployment to TEST completed successfully!
+      ════════════════════════════════════════════════════════════════
+    tips:
+      - TEST workspace has different capacity (F8 vs F2)
+      - TEST lakehouses end with `-test` suffix
+      - Different principals have access (QA team, not all developers)
+
+  - id: promote-to-prod
+    title: "Step 10: Promote to Production"
+    type: command
+    content: |
+      After UAT approval in TEST, promote to PRODUCTION.
+      
+      ## Production Deployment Best Practices
+      
+      | Practice | Reason |
+      |----------|--------|
+      | **CI/CD only** | No manual deployments to prod |
+      | **Approval gates** | Require sign-off before deployment |
+      | **Audit trail** | Log all production changes |
+      | **Rollback plan** | Know how to revert if needed |
+      
+      ## Production Checklist
+      
+      - [ ] TEST environment verified by QA
+      - [ ] UAT sign-off obtained
+      - [ ] Production credentials configured (separate from DEV/TEST)
+      - [ ] Monitoring and alerting configured
+      - [ ] Rollback plan documented
+    code:
+      language: bash
+      content: |
+        # ⚠️ PRODUCTION DEPLOYMENT - USE CI/CD IN REAL SCENARIOS
+        
+        # For demonstration only - normally this runs in a pipeline
+        # with approval gates
+        
+        # 1. Validate PROD configuration
+        make validate config=config/projects/acme_corp/sales_analytics.yaml
+        
+        # 2. Deploy to production (with --diagnose for extra verification)
+        fabric-cicd deploy config/projects/acme_corp/sales_analytics.yaml \
+          --env prod \
+          --diagnose
+        
+        # 3. Verify PROD deployment
+        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-prod"
+    expected_output: |
+      ╔══════════════════════════════════════════════════════════════╗
+      ║               Fabric Workspace Deployment                    ║
+      ╠══════════════════════════════════════════════════════════════╣
+      ║  ⚠️  PRODUCTION ENVIRONMENT                                  ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+      Configuration: config/projects/acme_corp/sales_analytics.yaml
+      Environment: prod
+      
+      Running pre-flight diagnostics...
+      ✓ Fabric CLI version: 1.2.0
+      ✓ Authentication valid
+      ✓ Capacity accessible: F64 (prod-capacity-guid)
+      
+      Creating workspace...
+      ✓ Workspace 'acme-sales-analytics-prod' created
+        Capacity: F64 (prod-capacity-guid)
+      
+      Creating lakehouses...
+      ✓ Lakehouse 'sales_raw_prod' created
+      ✓ Lakehouse 'sales_curated_prod' created
+      ✓ Lakehouse 'sales_gold_prod' created
+      
+      Assigning principals...
+      ✓ Principal 'prod-admin' assigned role 'Admin'
+      ✓ Principal 'prod-viewers-group' assigned role 'Viewer'
+      ✓ Principal 'automation-sp' assigned role 'Contributor'
+      
+      Writing audit log...
+      ✓ Logged to: audit_logs/fabric_operations_2026-01-09.jsonl
+      
+      ════════════════════════════════════════════════════════════════
+      ✅ Deployment to PROD completed successfully!
+      ════════════════════════════════════════════════════════════════
+    warnings:
+      - Never deploy to production without approval
+      - Always use CI/CD pipelines for production deployments
+      - Ensure audit logging is configured for compliance
+
+  - id: verify-repointing
+    title: "Step 11: Verify Source Repointing"
+    type: checkpoint
+    content: |
+      Confirm that each environment connects to the correct data sources.
+      
+      ## Verification Steps
+      
+      1. Open each workspace in Fabric portal
+      2. Check lakehouse connections
+      3. Verify notebook configurations
+      4. Run a test query against each environment
+      
+      ## Expected State
+      
+      | Environment | Workspace Name | Lakehouse | Storage URL |
+      |-------------|----------------|-----------|-------------|
+      | DEV | acme-sales-analytics-dev | sales_raw_dev | devstore.blob... |
+      | TEST | acme-sales-analytics-test | sales_raw_test | teststore.blob... |
+      | PROD | acme-sales-analytics-prod | sales_raw_prod | prodstore.blob... |
+    code:
+      language: bash
+      content: |
+        # List all deployed workspaces
+        python scripts/utilities/list_workspaces.py | grep "acme-sales"
+        
+        # Check items in each workspace
+        for env in dev test prod; do
+          echo "=== acme-sales-analytics-$env ==="
+          python scripts/utilities/list_workspace_items.py \
+            --workspace "acme-sales-analytics-$env" 2>/dev/null || echo "Not deployed"
+          echo ""
+        done
+    expected_output: |
+      === acme-sales-analytics-dev ===
+      Workspace: acme-sales-analytics-dev
+      Capacity: F2
+      Items:
+        - Lakehouse: sales_raw_dev
+        - Lakehouse: sales_curated_dev
+        - Lakehouse: sales_gold_dev
+        - Notebook: ingest_sales_data
+      
+      === acme-sales-analytics-test ===
+      Workspace: acme-sales-analytics-test
+      Capacity: F8
+      Items:
+        - Lakehouse: sales_raw_test
+        - Lakehouse: sales_curated_test
+        - Lakehouse: sales_gold_test
+        - Notebook: ingest_sales_data
+      
+      === acme-sales-analytics-prod ===
+      Workspace: acme-sales-analytics-prod
+      Capacity: F64
+      Items:
+        - Lakehouse: sales_raw_prod
+        - Lakehouse: sales_curated_prod
+        - Lakehouse: sales_gold_prod
+        - Notebook: ingest_sales_data
+    checkpoint_question: "Do all three workspaces show the correct environment-specific lakehouse names and capacities?"
+    tips:
+      - Each environment should have isolated data
+      - Verify notebook variables point to correct sources
+      - Check that principals differ between environments
+
+  - id: cicd-integration
+    title: "Step 12: CI/CD Pipeline Integration"
+    type: info
+    content: |
+      In production scenarios, use CI/CD pipelines with environment-specific stages.
+      
+      ## GitHub Actions Example
+      
+      ```yaml
+      # .github/workflows/fabric-deploy.yml
+      name: Fabric Deployment
+      
+      on:
+        push:
+          branches: [main]
+        workflow_dispatch:
+          inputs:
+            environment:
+              description: 'Target environment'
+              required: true
+              default: 'dev'
+              type: choice
+              options:
+                - dev
+                - test
+                - prod
+      
+      jobs:
+        deploy-dev:
+          runs-on: ubuntu-latest
+          environment: development
+          steps:
+            - uses: actions/checkout@v4
+            - name: Deploy to DEV
+              env:
+                FABRIC_CAPACITY_ID: ${{ secrets.DEV_CAPACITY_ID }}
+                STORAGE_ACCOUNT_URL: ${{ secrets.DEV_STORAGE_URL }}
+              run: |
+                make deploy config=config/projects/acme_corp/sales.yaml env=dev
+        
+        deploy-test:
+          needs: deploy-dev
+          runs-on: ubuntu-latest
+          environment: test  # Requires approval
+          steps:
+            - uses: actions/checkout@v4
+            - name: Deploy to TEST
+              env:
+                FABRIC_CAPACITY_ID: ${{ secrets.TEST_CAPACITY_ID }}
+                STORAGE_ACCOUNT_URL: ${{ secrets.TEST_STORAGE_URL }}
+              run: |
+                make deploy config=config/projects/acme_corp/sales.yaml env=test
+        
+        deploy-prod:
+          needs: deploy-test
+          runs-on: ubuntu-latest
+          environment: production  # Requires approval
+          steps:
+            - uses: actions/checkout@v4
+            - name: Deploy to PROD
+              env:
+                FABRIC_CAPACITY_ID: ${{ secrets.PROD_CAPACITY_ID }}
+                STORAGE_ACCOUNT_URL: ${{ secrets.PROD_STORAGE_URL }}
+              run: |
+                make deploy config=config/projects/acme_corp/sales.yaml env=prod
+      ```
+      
+      ## Azure DevOps Pipeline Example
+      
+      ```yaml
+      # azure-pipelines.yml
+      trigger:
+        branches:
+          include:
+            - main
+      
+      stages:
+        - stage: DEV
+          jobs:
+            - deployment: DeployDev
+              environment: fabric-dev
+              strategy:
+                runOnce:
+                  deploy:
+                    steps:
+                      - script: make deploy config=... env=dev
+                        env:
+                          FABRIC_CAPACITY_ID: $(DEV_CAPACITY_ID)
+        
+        - stage: TEST
+          dependsOn: DEV
+          jobs:
+            - deployment: DeployTest
+              environment: fabric-test  # Manual approval
+              strategy:
+                runOnce:
+                  deploy:
+                    steps:
+                      - script: make deploy config=... env=test
+        
+        - stage: PROD
+          dependsOn: TEST
+          jobs:
+            - deployment: DeployProd
+              environment: fabric-prod  # Manual approval
+              strategy:
+                runOnce:
+                  deploy:
+                    steps:
+                      - script: make deploy config=... env=prod
+      ```
+    tips:
+      - Use GitHub/Azure DevOps environments for approval gates
+      - Store secrets in CI/CD secret management, not in code
+      - Enable audit logging for compliance tracking
+
+  - id: troubleshooting
+    title: "Troubleshooting Common Issues"
+    type: warning
+    content: |
+      ## Common Environment Promotion Issues
+      
+      | Issue | Cause | Solution |
+      |-------|-------|----------|
+      | `${VAR}` not substituted | Missing .env variable | Check `.env` has the variable defined |
+      | Wrong capacity used | Environment override not loaded | Verify `config/environments/<env>.yaml` exists |
+      | Principals missing | Merge not working | Check YAML indentation in override file |
+      | `{{ env }}` appears literally | Jinja2 not processed | Ensure templates use `.j2` extension or are in templates/ |
+      | Different items in envs | Name includes `{{ env }}` | This is expected - each env has unique names |
+      | Auth failed for env | Wrong credentials | Check SP has access to target capacity |
+      
+      ## Debugging Commands
+    code:
+      language: bash
+      content: |
+        # Debug: Show effective configuration after merge
+        python -c "
+        from core.config import ConfigManager
+        cm = ConfigManager('config/projects/acme_corp/sales_analytics.yaml')
+        config = cm.load_config(environment='test')
+        print(f'Workspace name: {config.name}')
+        print(f'Capacity ID: {config.capacity_id}')
+        print(f'Git branch: {config.git_branch}')
+        print(f'Principals: {len(config.principals)}')
+        for p in config.principals:
+            print(f'  - {p}')
+        "
+        
+        # Debug: Check environment variable substitution
+        python -c "
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        vars = ['FABRIC_CAPACITY_ID', 'STORAGE_ACCOUNT_URL', 'ADDITIONAL_ADMIN_PRINCIPAL_ID']
+        for v in vars:
+            val = os.getenv(v, 'NOT SET')
+            print(f'{v}: {val[:20]}...' if len(val) > 20 else f'{v}: {val}')
+        "
+        
+        # Debug: Validate environment override file
+        python -c "
+        import yaml
+        with open('config/environments/test.yaml') as f:
+            data = yaml.safe_load(f)
+            print('TEST override keys:', list(data.keys()))
+        "
+    warnings:
+      - Always validate before deploying to catch config issues
+      - Check audit logs for deployment errors
+      - "Use `--diagnose` flag for verbose output"
+
+  - id: summary
+    title: Summary & Best Practices
+    type: info
+    content: |
+      ## Environment Promotion Checklist
+      
+      - [ ] Base config uses `${VAR}` and `{{ env }}` - no hardcoded values
+      - [ ] Environment override files exist for each target environment
+      - [ ] `.env` or CI/CD secrets configured per environment
+      - [ ] Validation passes before each deployment
+      - [ ] Each environment verified after deployment
+      - [ ] Audit logs reviewed for compliance
+      
+      ## Key Commands Reference
+      
+      | Operation | Command |
+      |-----------|---------|
+      | Validate | `make validate config=<path>` |
+      | Deploy to DEV | `make deploy config=<path> env=dev` |
+      | Deploy to TEST | `make deploy config=<path> env=test` |
+      | Deploy to PROD | `make deploy config=<path> env=prod` |
+      | List workspaces | `python scripts/utilities/list_workspaces.py` |
+      | Check items | `python scripts/utilities/list_workspace_items.py --workspace "<name>"` |
+      
+      ## Best Practices
+      
+      | Practice | Benefit |
+      |----------|---------|
+      | **Single source of truth** | Base config + overrides, not separate files |
+      | **Variable substitution** | Same code works in all environments |
+      | **Environment isolation** | Separate workspaces prevent cross-contamination |
+      | **Least privilege** | Prod has stricter access than dev |
+      | **CI/CD pipelines** | Automated, auditable, reproducible deployments |
+      | **Audit logging** | Compliance and troubleshooting |
+    tips:
+      - Start with DEV, validate, then promote
+      - Keep environment overrides minimal (only what's different)
+      - Review audit logs after each deployment
+      - Use feature branch workflows for development isolation

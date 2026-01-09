@@ -251,6 +251,43 @@ Scenario YAML files in `webapp/backend/app/content/scenarios/`:
 - `05-feature-branch-workflows.yaml` - Isolation, branch workspaces, cleanup
 - `06-git-integration.yaml` - Azure DevOps, GitHub, debugging
 - `07-troubleshooting.yaml` - Common issues and solutions
+- `08-environment-promotion.yaml` - DEV→TEST→PROD promotion, source repointing, Jinja2 templating
+
+## 🔄 Environment Promotion (DEV → TEST → PROD)
+
+### Promotion Pipeline
+The CLI supports deploying the same configuration to multiple environments with automatic source repointing:
+```bash
+# Deploy to development
+make deploy config=config/projects/acme_corp/sales.yaml env=dev
+
+# Deploy to test (after DEV validation)
+make deploy config=config/projects/acme_corp/sales.yaml env=test
+
+# Deploy to production (after UAT approval)
+make deploy config=config/projects/acme_corp/sales.yaml env=prod
+```
+
+### Environment Override Files
+Located in `config/environments/`:
+- `dev.yaml` - Development settings (F2/F4 capacity, broad access)
+- `test.yaml` - Test/UAT settings (F8/F16 capacity, QA team access)
+- `staging.yaml` - Pre-production settings (production-like)
+- `prod.yaml` - Production settings (F32/F64 capacity, strict access)
+
+### Source Repointing Mechanisms
+1. **Environment Variable Substitution** (`${VAR_NAME}`):
+   - Different `.env` files per environment
+   - CI/CD secrets per environment
+   - Example: `${STORAGE_ACCOUNT_URL}` → different storage per env
+
+2. **Jinja2 Templating** (`{{ env }}`):
+   - Dynamic naming: `lakehouse_{{ env }}` → `lakehouse_dev`
+   - Artifact content: Notebooks/pipelines with env-specific values
+
+3. **Environment Override Merging**:
+   - Base config + `config/environments/<env>.yaml`
+   - Deep merge for dicts, concatenation for lists (principals)
 
 ## �🔗 Related Projects
 

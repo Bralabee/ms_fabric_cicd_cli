@@ -161,7 +161,7 @@ make dev      # Start both servers (backend: 8001, frontend: 5173)
 
 ### Features
 - **Visual Workflow Diagrams**: Interactive flowcharts showing deployment processes step-by-step
-- **7 Comprehensive Scenarios**: Getting Started, Project Generation, Local/Docker Deployment, Feature Branches, Git Integration, Troubleshooting
+- **8 Comprehensive Scenarios**: Getting Started, Project Generation, Local/Docker Deployment, Feature Branches, Git Integration, Environment Promotion, Troubleshooting
 - **Progress Tracking**: Track your learning progress through each guide
 - **Code Snippets with Copy**: Easily copy commands and configurations
 

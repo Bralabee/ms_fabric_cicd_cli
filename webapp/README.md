@@ -25,6 +25,7 @@ Each scenario provides **production-ready commands** you can run immediately:
 | Docker Deployment | `make docker-build`, `make docker-deploy`, `make docker-shell`, `make docker-generate` |
 | Feature Branches | `make docker-feature-deploy`, feature workspace naming |
 | Git Integration | `init_ado_repo.py`, `debug_ado_access.py`, `make docker-init-repo` |
+| Environment Promotion | `--env dev/test/prod`, source repointing, Jinja2 templating |
 | Troubleshooting | `make diagnose`, `preflight_check.py`, audit log analysis |
 
 ## Architecture

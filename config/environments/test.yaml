@@ -1,0 +1,51 @@
+# Test Environment Overrides
+# UAT/QA environment for integration testing before production
+#
+# This environment sits between DEV and PROD in the promotion pipeline:
+#   DEV → TEST → PROD
+#
+# Usage: make deploy config=path/to/config.yaml env=test
+
+workspace:
+  # Workspace name pattern: Use {{ env }} in project YAML for auto-suffix
+  # e.g., "acme-analytics-{{ env }}" becomes "acme-analytics-test"
+  capacity_id: "${FABRIC_CAPACITY_ID_TEST}"  # Test-specific capacity
+  git_branch: "main"  # Test uses main branch (or "test" if using GitFlow)
+
+# Test environment principals
+# Restricted access: QA team + limited developers
+principals:
+  # QA/Test Admin
+  - id: "${TEST_ADMIN_PRINCIPAL_ID}"
+    role: "Admin"
+    description: "Test environment administrator"
+
+  # QA Team - needs Contributor to execute tests
+  - id: "${TEST_QA_GROUP_ID}"
+    role: "Contributor"
+    description: "QA team for integration testing"
+
+  # Read-only access for stakeholders reviewing test results
+  - id: "${TEST_VIEWERS_GROUP_ID}"
+    role: "Viewer"
+    description: "Stakeholders reviewing test environment"
+
+  # Mandatory Security Principals (auto-injected by CLI)
+  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+    role: "Admin"
+    description: "Mandatory Additional Admin"
+
+  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+    role: "Contributor"
+    description: "Mandatory Additional Contributor"
+
+# Environment-specific data source overrides
+# These variables should be defined in .env or CI/CD secrets
+#
+# Example .env variables for test:
+#   FABRIC_CAPACITY_ID_TEST=your-test-capacity-guid
+#   TEST_ADMIN_PRINCIPAL_ID=admin-object-id
+#   TEST_QA_GROUP_ID=qa-group-object-id
+#   TEST_VIEWERS_GROUP_ID=viewers-group-object-id
+#   TEST_STORAGE_ACCOUNT_URL=https://teststorage.blob.core.windows.net
+#   TEST_SQL_CONNECTION_STRING=Server=test-sql.database.windows.net;...

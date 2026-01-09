@@ -37,6 +37,7 @@ related_scenarios:
   - docker-deployment
   - feature-branch-workflows
   - git-integration
+  - environment-promotion
 
 steps:
   - id: overview

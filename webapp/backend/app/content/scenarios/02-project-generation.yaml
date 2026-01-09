@@ -34,6 +34,7 @@ tags:
 related_scenarios:
   - local-deployment
   - git-integration
+  - environment-promotion
 
 steps:
   - id: overview
