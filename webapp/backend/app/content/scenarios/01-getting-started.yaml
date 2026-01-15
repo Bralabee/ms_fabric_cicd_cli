@@ -437,7 +437,7 @@ steps:
       | `--branch`, `-b` | Feature branch name |
       | `--force-branch-workspace` | Force create branch workspace |
       | `--diagnose` | Show diagnostic output |
-      | `--dry-run` | Preview without deploying |
+      | `--validate-only` | Validate config without deploying |
       
       ### fabric-cicd validate
       ```bash
@@ -465,8 +465,8 @@ steps:
         # Validate configuration
         fabric-cicd validate config/projects/acme/sales.yaml
         
-        # Dry run (preview only)
-        fabric-cicd deploy config/projects/acme/sales.yaml --env dev --dry-run
+        # Validate only (no deployment)
+        fabric-cicd deploy config/projects/acme/sales.yaml --env dev --validate-only
         
         # Destroy workspace (with confirmation)
         fabric-cicd destroy config/projects/acme/sales.yaml --env dev
@@ -480,7 +480,7 @@ steps:
         # Alternative: Use Python module syntax
         python -m core.cli deploy config/projects/acme/sales.yaml --env dev
     tips:
-      - "Use `--dry-run` to preview deployments before executing"
+      - "Use `--validate-only` to check config without deploying"
       - "Use `--diagnose` for verbose output during troubleshooting"
       - "`python -m core.cli` works even if the entry point isn't registered"
 

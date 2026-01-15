@@ -220,7 +220,7 @@ steps:
         fabric-cicd deploy config/projects/acme_corp/sales_analytics.yaml --env dev --diagnose
         
         # Dry run (preview only, no changes)
-        fabric-cicd deploy config/projects/acme_corp/sales_analytics.yaml --env dev --dry-run
+        fabric-cicd deploy config/projects/acme_corp/sales_analytics.yaml --env dev --validate-only
     expected_output: |
       ╔══════════════════════════════════════════════════════════════╗
       ║               Fabric Workspace Deployment                    ║
@@ -274,7 +274,7 @@ steps:
       Duration: 45.3 seconds
       ════════════════════════════════════════════════════════════════
     tips:
-      - "Use `--dry-run` to preview changes before actual deployment"
+      - "Use `--validate-only` to verify config before deployment"
       - "Use `--diagnose` for verbose output when troubleshooting"
       - Note the workspace URL in the output for quick access
 
@@ -589,7 +589,7 @@ steps:
       |------|---------|
       | Validate | `make validate config=<path>` |
       | Deploy | `make deploy config=<path> env=<env>` |
-      | Dry Run | `fabric-cicd deploy <path> --env <env> --dry-run` |
+      | Validate Only | `fabric-cicd deploy <path> --env <env> --validate-only` |
       | Verify | `python scripts/utilities/list_workspace_items.py --workspace <name>` |
       | Destroy | `make destroy config=<path> env=<env>` |
       | View Logs | `cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl \| jq` |
