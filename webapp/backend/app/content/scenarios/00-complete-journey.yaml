@@ -182,49 +182,85 @@ steps:
       
       ### Step 1: Choose Your Template
       
-      | Template | Best For |
-      |----------|----------|
-      | `minimal_starter` | Learning, POCs |
-      | `basic_etl` | **Most projects** - standard ETL |
-      | `realtime_streaming` | IoT, event processing |
-      | `compliance_regulated` | Healthcare, Finance, Gov |
+      | Template | Best For | Resources Included |
+      |----------|----------|-------------------|
+      | `minimal_starter` | Learning, POCs | 1 Lakehouse, 1 Notebook |
+      | `basic_etl` | **Most projects** - standard ETL | 3 Lakehouses, Warehouse, Notebooks, Pipelines |
+      | `realtime_streaming` | IoT, event processing | Eventstream, KQL Database, Reflex |
+      | `compliance_regulated` | Healthcare, Finance, Gov | Full audit, RBAC, encryption |
       
       ### Step 2: Generate Configuration
       
       ```bash
-      python scripts/generate_project.py "Your Org" "Your Project" --template basic_etl
+      # Syntax: python scripts/generate_project.py "OrgName" "ProjectName" --template <template>
+      python scripts/generate_project.py "YourOrg" "YourProject" --template basic_etl
       ```
       
-      **Output:** `config/projects/your_org/your_project.yaml`
+      **Output Location:** `config/projects/yourorg/yourproject.yaml`
       
-      ### Step 3: Customize (Optional)
+      > **Note:** Org and Project names are converted to lowercase, spaces become underscores
       
-      Edit the generated YAML to:
-      - Add/remove lakehouses, notebooks, pipelines
-      - Configure Git repository URL
-      - Add team member principals
+      ### Step 3: Key Customization Points
       
-      ### Step 4: Validate
+      After generation, edit these critical fields in your YAML:
+      
+      ```yaml
+      workspace:
+        name: "yourorg-yourproject"           # ← Workspace display name
+        capacity_id: "${FABRIC_CAPACITY_ID}"  # ← From .env or hardcode
+        git_repo: "${GIT_REPO_URL}"           # ← Optional: Azure DevOps/GitHub URL
+        git_branch: "main"                    # ← Default branch
+      
+      principals:                              # ← Who gets workspace access
+        - email: "admin@yourorg.com"
+          role: "Admin"
+        - email: "dev-team@yourorg.com"
+          role: "Contributor"
+      ```
+      
+      **Common Customizations:**
+      - **Add Lakehouses:** Copy existing lakehouse block, change `name` and `folder`
+      - **Add Notebooks:** Reference files from `templates/notebooks/`
+      - **Change Capacity:** Override per environment in `environments:` section
+      
+      ### Step 4: Validate Configuration
       
       ```bash
-      make validate config=config/projects/your_org/your_project.yaml
+      make validate config=config/projects/yourorg/yourproject.yaml
       ```
       
-      📖 **Detailed Guide:** [Project Generation](#project-generation)
+      This checks:
+      - ✅ YAML syntax is valid
+      - ✅ All required fields present
+      - ✅ Environment variables are resolvable
+      - ✅ Referenced files exist
+      
+      📖 **Detailed Guide:** [Project Generation](#project-generation) - Full template catalog and YAML reference
     code:
       language: bash
       content: |
-        # Example: Generate a basic ETL project
+        # Example: Generate a basic ETL project for Acme Corp
         python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
         
-        # Validate the generated config
+        # Output: config/projects/acme_corp/sales_analytics.yaml
+        
+        # View the generated config
+        cat config/projects/acme_corp/sales_analytics.yaml
+        
+        # Validate before deploying
         make validate config=config/projects/acme_corp/sales_analytics.yaml
     expected_output: |
       ✓ Configuration generated: config/projects/acme_corp/sales_analytics.yaml
       
+      # Validation output:
       ✅ Configuration is valid!
       Workspace: acme-corp-sales-analytics
       Resources: 3 Lakehouses, 1 Warehouse, 3 Notebooks, 2 Pipelines
+      Environment Variables: All resolved
+    tips:
+      - "Use `--template minimal_starter` for your first project to learn the basics"
+      - "Capacity ID can be hardcoded or use `${FABRIC_CAPACITY_ID}` from .env"
+      - "Always validate before deploying to catch errors early"
 
   - id: phase4-deployment
     title: "Phase 4: Deploy to Environments"

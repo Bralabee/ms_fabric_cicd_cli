@@ -719,8 +719,76 @@ steps:
       - "🔴 NEVER share `.env` file contents in screenshots or logs"
       - "If you see 'your_' placeholders, you haven't finished editing"
 
+  - id: generate-first-project
+    title: "Step 12: Generate Your First Project Config"
+    type: command
+    content: |
+      Project configurations are generated from **blueprint templates** using the project generator script.
+      This ensures consistent structure and includes all required fields.
+      
+      ## Available Templates
+      
+      | Template | Description | Use Case |
+      |----------|-------------|----------|
+      | `basic_etl` | Standard ETL pipeline | Most common starting point |
+      | `advanced_analytics` | Full analytics stack | BI and reporting projects |
+      | `realtime_streaming` | Event-driven architecture | IoT and streaming data |
+      | `compliance_regulated` | Audit-heavy configuration | Healthcare, finance |
+      | `data_mesh_domain` | Domain-oriented design | Large organizations |
+      | `minimal_starter` | Bare minimum config | Learning and testing |
+      | `migration_hybrid` | Legacy migration support | Migrating from SSAS/AAS |
+      | `specialized_timeseries` | Time-series analytics | Monitoring and metrics |
+      | `extensive_example` | All features demonstrated | Reference implementation |
+      
+      ## Generate Your First Config
+      
+      The generator creates a YAML configuration file customized with your organization
+      and project names. Output location: `config/projects/<org_slug>/<project_slug>.yaml`
+    code:
+      language: bash
+      content: |
+        # Generate a basic ETL project configuration
+        python scripts/generate_project.py "YourOrg" "YourProject" --template basic_etl
+        
+        # Example with real names
+        python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
+        # Output: config/projects/acme_corp/sales_analytics.yaml
+        
+        # Generate with Git repository URL
+        python scripts/generate_project.py "Acme Corp" "Sales Analytics" \
+          --template basic_etl \
+          --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
+        
+        # View all available templates and options
+        python scripts/generate_project.py --help
+    expected_output: |
+      ╔══════════════════════════════════════════════════════════════╗
+      ║              Fabric CLI Project Generator                    ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+      Organization: Acme Corp
+      Project: Sales Analytics
+      Template: basic_etl
+      
+      ✓ Created directory: config/projects/acme_corp
+      ✓ Generated configuration: config/projects/acme_corp/sales_analytics.yaml
+      
+      Next steps:
+        1. Review and customize the generated file
+        2. Update environment-specific values (capacity, principals)
+        3. Run: make validate config=config/projects/acme_corp/sales_analytics.yaml
+        4. Deploy: make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+    tips:
+      - "Start with `minimal_starter` template for learning"
+      - "Use `basic_etl` for most production projects"
+      - "Run `python scripts/generate_project.py --help` to see all options"
+      - Customize the generated YAML file to match your specific requirements
+    warnings:
+      - Remember to update placeholder values in the generated file
+      - Review the `principals` section to set correct access permissions
+
   - id: preflight-check
-    title: "Step 12: Run Preflight Check"
+    title: "Step 13: Run Preflight Check"
     type: command
     content: |
       The preflight check validates your entire setup:
@@ -781,7 +849,7 @@ steps:
       - If any check fails, see the Troubleshooting scenario for solutions
 
   - id: verify-api-access
-    title: "Step 13: Verify API Access"
+    title: "Step 14: Verify API Access"
     type: command
     content: |
       After preflight passes, verify you can actually interact with the Fabric API
