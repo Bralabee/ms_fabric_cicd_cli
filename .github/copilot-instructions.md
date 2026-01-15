@@ -2,6 +2,8 @@
 
 Enterprise Microsoft Fabric deployment automation using a **thin wrapper architecture** around official Fabric CLI (~270 LOC orchestration vs 90% CLI work).
 
+**Current Version**: 1.3.1 (January 2026)
+
 ## 🏗 Architecture Fundamentals
 
 ### Thin Wrapper Design Pattern
@@ -216,7 +218,7 @@ Service Principal must have:
 
 ## 📦 Packaging & Distribution
 
-- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.1.0-py3-none-any.whl`
+- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.3.1-py3-none-any.whl`
 - **Entry Point**: `pyproject.toml` defines `fabric-cicd` command → `core.cli:app`
 - **Docker Image**: `Dockerfile` installs wheel + Fabric CLI, runs as non-root user
 
@@ -244,7 +246,8 @@ make dev        # Start both servers (backend: 8001, frontend: 5173)
 
 ### Content Structure
 Scenario YAML files in `webapp/backend/app/content/scenarios/`:
-- `01-getting-started.yaml` - Environment setup, credentials
+- `00-complete-journey.yaml` - End-to-end walkthrough (7 phases)
+- `01-getting-started.yaml` - Environment setup, credentials (17 steps including project config generation)
 - `02-project-generation.yaml` - Blueprint templates, all 10 templates covered
 - `03-local-deployment.yaml` - Validate, deploy, idempotency, verify
 - `04-docker-deployment.yaml` - Build, deploy, multi-tenant, debugging
@@ -252,6 +255,17 @@ Scenario YAML files in `webapp/backend/app/content/scenarios/`:
 - `06-git-integration.yaml` - Azure DevOps, GitHub, debugging
 - `07-troubleshooting.yaml` - Common issues and solutions
 - `08-environment-promotion.yaml` - DEV→TEST→PROD promotion, source repointing, Jinja2 templating
+
+### Docker Ports
+- **Backend API**: Port 8001 (FastAPI/uvicorn)
+- **Frontend UI**: Port 8080 (nginx)
+
+## 📚 Key Documentation Files
+
+- **README.md**: Quick start, Make Targets Reference (17 targets), CLI Flags Reference
+- **docs/01_User_Guides/03_Project_Configuration.md**: Comprehensive project config generation guide
+- **docs/BLUEPRINT_CATALOG.md**: All 10 blueprint templates with selection guidance
+- **.env.template**: Environment variable template with Azure credential structure
 
 ## 🔄 Environment Promotion (DEV → TEST → PROD)
 

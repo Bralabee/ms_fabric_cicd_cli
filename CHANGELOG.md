@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2026-01-15
+
+### Added
+- **Comprehensive Documentation Audit & Fixes**:
+  - **Project Configuration Guide** (`docs/01_User_Guides/03_Project_Configuration.md`): 500-line comprehensive guide covering:
+    - Two generation methods (generate_project.py script and manual blueprint copying)
+    - All 10 blueprint templates with descriptions and use cases
+    - Configuration file structure and YAML patterns
+    - Environment variable placeholders and Jinja2 templating
+    - Mandatory security principals requirements
+    - Post-generation checklist and common customizations
+  
+- **README.md Enhancements**:
+  - **Make Targets Reference** table (17 targets): Core operations, Docker operations, testing, and webapp targets
+  - **CLI Flags Reference** for `deploy` and `destroy` commands with all available flags
+
+- **Webapp Scenario Improvements** (9 scenarios, 116+ steps total):
+  - **Step 12: Generate Your First Project Config** added to Getting Started (now 17 steps)
+  - **00-complete-journey.yaml**: New comprehensive walkthrough with 7 phases
+  - **Phase 3 enhancements**: Actual `generate_project.py` commands and template selection guidance
+  - **Azure Prerequisites**: Step 2 with Service Principal requirements
+  - Template generation, environment validation, feature workflow, and multi-environment strategy enhancements
+
+### Fixed
+- **Blueprint Templates**: Added mandatory security principals (`ADDITIONAL_ADMIN_PRINCIPAL_ID`, `ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID`) to 7 templates:
+  - compliance_regulated.yaml, data_mesh_domain.yaml, extensive_example.yaml
+  - migration_hybrid.yaml, minimal_starter.yaml, realtime_streaming.yaml, specialized_timeseries.yaml
+  - All 10 blueprints now consistently include principals section
+
+- **CLI Flag Documentation**: Corrected `--dry-run` to `--validate-only` (matches actual implementation)
+- **Version Alignment**: pyproject.toml version synchronized to 1.3.0 (was incorrectly 1.1.0)
+- **Webapp Test Dependencies**: Added pytest>=7.4.0 and httpx>=0.25.0 to webapp/backend/requirements.txt
+
+### Changed
+- **.env.template**: Reorganized to prioritize Azure credentials (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
+- **Webapp Docker ports**: Backend API on port 8001, Frontend on port 8080
+
 ## [1.3.0] - 2026-01-05
 
 ### Added
