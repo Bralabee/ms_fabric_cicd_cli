@@ -383,13 +383,16 @@ steps:
       
       ## Scenario Guide Links
       
-      | Topic | Scenario |
-      |-------|----------|
-      | Initial Setup | [Getting Started](#getting-started) |
-      | Create Configs | [Project Generation](#project-generation) |
-      | Local Deploy | [Local Deployment](#local-deployment) |
-      | CI/CD Deploy | [Docker Deployment](#docker-deployment) |
-      | Branch Isolation | [Feature Branch Workflows](#feature-branch-workflows) |
-      | Version Control | [Git Integration](#git-integration) |
-      | DEV→PROD | [Environment Promotion](#environment-promotion) |
-      | Problems | [Troubleshooting](#troubleshooting) |
+      | Topic | Scenario | Key Steps |
+      |-------|----------|-----------|
+      | Azure Setup | [Getting Started](#getting-started) | **Step 2**: Azure Prerequisites |
+      | Environment | [Getting Started](#getting-started) | **Steps 3-5**: Clone, Conda, Install |
+      | .env Setup | [Getting Started](#getting-started) | **Steps 9-11**: Credentials, Validation |
+      | Create Configs | [Project Generation](#project-generation) | **Steps 1-6**: Templates, Generate, Edit |
+      | Local Deploy | [Local Deployment](#local-deployment) | Full walkthrough |
+      | CI/CD Deploy | [Docker Deployment](#docker-deployment) | Docker-based pipelines |
+      | Branch Isolation | [Feature Branch Workflows](#feature-branch-workflows) | **merge-to-dev-workflow**: Complete lifecycle |
+      | Version Control | [Git Integration](#git-integration) | Azure DevOps & GitHub |
+      | Multi-Env | [Environment Promotion](#environment-promotion) | **Step 8**: Multiple .env files |
+      | DEV→TEST→PROD | [Environment Promotion](#environment-promotion) | **Steps 9-12**: Promotion pipeline |
+      | Problems | [Troubleshooting](#troubleshooting) | Common errors & fixes |

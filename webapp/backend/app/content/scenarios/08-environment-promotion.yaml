@@ -537,8 +537,99 @@ steps:
       - Use `${VAR}` for connection strings and secrets
       - Test templates with `make validate` before deploying
 
+  - id: multi-env-files
+    title: "Step 8: Managing Multiple .env Files"
+    type: config
+    content: |
+      For local development targeting different environments, you can maintain
+      multiple `.env` files and switch between them.
+      
+      ## .env File Strategy
+      
+      ```
+      project/
+      ├── .env              # Active env file (symlink or copy)
+      ├── .env.dev          # DEV environment credentials
+      ├── .env.test         # TEST environment credentials
+      ├── .env.prod         # PROD environment credentials (if local needed)
+      └── .env.template     # Template with placeholders
+      ```
+      
+      ## Switching Environments
+      
+      | Method | Use Case | Command |
+      |--------|----------|---------|
+      | **Edit `.env`** | Simplest approach | Manually edit values |
+      | **Copy env file** | Clear separation | `cp .env.dev .env` |
+      | **Docker ENVFILE** | Cleanest for Docker | `make docker-deploy ... ENVFILE=.env.dev` |
+      
+      ## Docker Commands with ENVFILE
+      
+      The `ENVFILE` parameter lets you specify which `.env` file to use:
+    code:
+      language: bash
+      content: |
+        # Create environment-specific .env files
+        # (NEVER commit these to Git!)
+        
+        # .env.dev - Development credentials
+        cat > .env.dev << 'EOF'
+        AZURE_CLIENT_ID=<your-sp-client-id>
+        AZURE_CLIENT_SECRET=<your-sp-secret>
+        AZURE_TENANT_ID=<your-tenant-id>
+        FABRIC_CAPACITY_ID=<dev-capacity-guid>
+        STORAGE_ACCOUNT_URL=https://devstore.blob.core.windows.net
+        DEV_ADMIN_OBJECT_ID=<admin-object-id>
+        EOF
+        
+        # .env.test - Test credentials (different capacity, storage)
+        cat > .env.test << 'EOF'
+        AZURE_CLIENT_ID=<your-sp-client-id>
+        AZURE_CLIENT_SECRET=<your-sp-secret>
+        AZURE_TENANT_ID=<your-tenant-id>
+        FABRIC_CAPACITY_ID=<test-capacity-guid>
+        STORAGE_ACCOUNT_URL=https://teststore.blob.core.windows.net
+        TEST_ADMIN_PRINCIPAL_ID=<test-admin-object-id>
+        TEST_QA_GROUP_ID=<qa-group-object-id>
+        EOF
+        
+        # Deploy using specific env file with Docker
+        # DEV deployment
+        make docker-deploy \
+          config=config/projects/acme_corp/sales.yaml \
+          env=dev \
+          ENVFILE=.env.dev
+        
+        # TEST deployment (different env file)
+        make docker-deploy \
+          config=config/projects/acme_corp/sales.yaml \
+          env=test \
+          ENVFILE=.env.test
+        
+        # Local deployment (edit .env or copy)
+        cp .env.dev .env
+        make deploy config=config/projects/acme_corp/sales.yaml env=dev
+    expected_output: |
+      # Using .env.dev:
+      Deploying to workspace: acme-sales-analytics-dev
+      Using capacity: F2 (dev-capacity)
+      Storage URL: https://devstore.blob.core.windows.net
+      
+      # Using .env.test:
+      Deploying to workspace: acme-sales-analytics-test
+      Using capacity: F16 (test-capacity)
+      Storage URL: https://teststore.blob.core.windows.net
+    tips:
+      - Same Service Principal can work across environments
+      - "The key differences are: capacity, storage URLs, principal IDs"
+      - "In CI/CD, use GitHub Secrets or Azure DevOps Variable Groups instead"
+    warnings:
+      - "🔴 NEVER commit .env.* files to Git - add to .gitignore"
+      - "🔴 Each .env file contains secrets - protect them"
+      - "Consider Azure Key Vault for production credentials"
+
   - id: deploy-to-dev
-    title: "Step 8: Deploy to Development"
+    title: "Step 9: Deploy to Development"
     type: command
     content: |
       Start by deploying to the development environment.
@@ -600,7 +691,7 @@ steps:
       ════════════════════════════════════════════════════════════════
 
   - id: promote-to-test
-    title: "Step 9: Promote to Test Environment"
+    title: "Step 10: Promote to Test Environment"
     type: command
     content: |
       After development is complete and unit tests pass, promote to TEST.
@@ -671,7 +762,7 @@ steps:
       - Different principals have access (QA team, not all developers)
 
   - id: promote-to-prod
-    title: "Step 10: Promote to Production"
+    title: "Step 11: Promote to Production"
     type: command
     content: |
       After UAT approval in TEST, promote to PRODUCTION.
@@ -751,7 +842,7 @@ steps:
       - Ensure audit logging is configured for compliance
 
   - id: verify-repointing
-    title: "Step 11: Verify Source Repointing"
+    title: "Step 12: Verify Source Repointing"
     type: checkpoint
     content: |
       Confirm that each environment connects to the correct data sources.
@@ -817,7 +908,7 @@ steps:
       - Check that principals differ between environments
 
   - id: cicd-integration
-    title: "Step 12: CI/CD Pipeline Integration"
+    title: "Step 13: CI/CD Pipeline Integration"
     type: info
     content: |
       In production scenarios, use CI/CD pipelines with environment-specific stages.

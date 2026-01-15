@@ -715,8 +715,92 @@ steps:
       - Check Microsoft Fabric documentation for exact type names
       - Generic resources work with all current and future Fabric item types
 
+  - id: edit-after-generate
+    title: "Step 6: Edit Your Generated YAML (The Customization Workflow)"
+    type: command
+    content: |
+      After generating a config, you'll almost always need to customize it.
+      Here's the recommended workflow:
+      
+      ## The Edit-After-Generate Workflow
+      
+      ```
+      ┌────────────────────────────────────────────────────────────────┐
+      │                 CONFIGURATION WORKFLOW                          │
+      ├────────────────────────────────────────────────────────────────┤
+      │                                                                 │
+      │  1. GENERATE            2. REVIEW              3. CUSTOMIZE     │
+      │  ─────────────          ─────────              ────────────     │
+      │  generate_project.py    cat config/...yaml    code config/...  │
+      │       ↓                      ↓                     ↓           │
+      │  Creates starter        See what's there       Edit in VS Code │
+      │  from template                                                  │
+      │                                                                 │
+      │  4. VALIDATE            5. DEPLOY                               │
+      │  ─────────────          ─────────                               │
+      │  make validate          make deploy                             │
+      │       ↓                      ↓                                  │
+      │  Fix any errors         Launch to Fabric                        │
+      │                                                                 │
+      └────────────────────────────────────────────────────────────────┘
+      ```
+      
+      ## Common Edits to Make
+      
+      | What to Edit | Why | Example |
+      |--------------|-----|---------|
+      | **principals** | Add YOUR team's Object IDs | `"${DEV_ADMIN_OBJECT_ID}"` |
+      | **capacity_id** | Match YOUR Fabric capacity | `"${FABRIC_CAPACITY_ID}"` |
+      | **git_repo** | YOUR Azure DevOps/GitHub URL | `"${GIT_REPO_URL}"` |
+      | **folders** | Match YOUR naming conventions | `"01_Raw"` vs `"01_Bronze"` |
+      | **lakehouse names** | Match YOUR domain terms | `"customer_raw"` not `"sales_raw"` |
+      | **notebook content** | YOUR actual logic | Edit file_path or embedded content |
+    code:
+      language: bash
+      content: |
+        # Step 1: Generate the starting config
+        python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
+        
+        # Step 2: Review what was generated
+        cat config/projects/acme_corp/sales_analytics.yaml
+        
+        # Step 3: Open in VS Code for editing
+        code config/projects/acme_corp/sales_analytics.yaml
+        
+        # ─────────────────────────────────────────────────────────
+        # NOW MAKE YOUR EDITS IN VS CODE:
+        # - Update principals with your team's Object IDs
+        # - Verify capacity_id references your .env variable
+        # - Customize folder and lakehouse names
+        # - Add/remove items as needed
+        # ─────────────────────────────────────────────────────────
+        
+        # Step 4: Validate after editing
+        make validate config=config/projects/acme_corp/sales_analytics.yaml
+        
+        # Step 5: Deploy when validation passes
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+    expected_output: |
+      # After editing and validating:
+      Validating configuration: config/projects/acme_corp/sales_analytics.yaml
+      
+      ✓ YAML syntax valid
+      ✓ Required fields present
+      ✓ Environment variables resolved (4 variables)
+      
+      ════════════════════════════════════════════════════════════
+      ✅ Configuration is valid!
+      ════════════════════════════════════════════════════════════
+    tips:
+      - "Use VS Code with YAML extension for syntax highlighting"
+      - "Always validate after editing - YAML indentation errors are common"
+      - "Reference `.env.template` to see all available variables"
+    warnings:
+      - "Don't edit templates directly - edit the generated file in `config/projects/`"
+      - "If you break YAML syntax, `make validate` will tell you the line number"
+
   - id: validation
-    title: "Step 6: Validate Your Configuration"
+    title: "Step 7: Validate Your Configuration"
     type: command
     content: |
       **Always validate your configuration before deploying!**

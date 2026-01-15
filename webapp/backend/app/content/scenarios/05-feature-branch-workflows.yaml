@@ -473,6 +473,94 @@ steps:
       - Double-check the list before confirming
       - No way to recover deleted workspaces
 
+  - id: merge-to-dev-workflow
+    title: "Complete Workflow: Feature → DEV Merge"
+    type: command
+    content: |
+      Here's the complete workflow from developing in a feature branch 
+      to merging into DEV environment.
+      
+      ## The Full Lifecycle
+      
+      ```
+      ┌────────────────────────────────────────────────────────────────┐
+      │                 FEATURE → DEV LIFECYCLE                         │
+      ├────────────────────────────────────────────────────────────────┤
+      │                                                                 │
+      │  1. CREATE BRANCH      2. DEPLOY FEATURE      3. DEVELOP/TEST  │
+      │  ─────────────────     ─────────────────      ───────────────  │
+      │  git checkout -b       make docker-feature-   Edit notebooks,  │
+      │  feature/new-feature   deploy ...             test in Fabric   │
+      │                                                                 │
+      │  4. MERGE PR           5. REDEPLOY DEV        6. CLEANUP       │
+      │  ─────────────         ────────────────       ────────────     │
+      │  Create PR, get        make deploy ... dev    Destroy feature  │
+      │  approval, merge                              workspace        │
+      │                                                                 │
+      └────────────────────────────────────────────────────────────────┘
+      ```
+      
+      ## Important Understanding
+      
+      | Action | What Happens |
+      |--------|--------------|
+      | **Git merge** | Only merges CODE/CONFIG to `main` branch |
+      | **Redeploy DEV** | Applies config changes to the DEV workspace |
+      | **Cleanup** | Removes the isolated feature workspace |
+      
+      **⚠️ Key Insight:** Merging in Git doesn't automatically update Fabric!
+      You must redeploy to apply changes to the target workspace.
+    code:
+      language: bash
+      content: |
+        # STEP 1: You've been working in feature/new-dashboard
+        git checkout feature/new-dashboard
+        
+        # STEP 2: Your feature workspace exists and works
+        # (acme-sales-analytics-feature-new-dashboard-dev)
+        
+        # STEP 3: Create PR, get reviews, merge to main
+        # [Done in GitHub/Azure DevOps]
+        
+        # STEP 4: After merge, switch to main and pull
+        git checkout main
+        git pull origin main
+        
+        # STEP 5: Redeploy DEV workspace with updated config
+        # This applies your changes to the DEV workspace
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+        
+        # STEP 6: Verify DEV workspace has your changes
+        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-dev"
+        
+        # STEP 7: Cleanup - destroy the feature workspace
+        # Option A: If the workspace name follows convention
+        python scripts/utilities/list_workspaces.py | grep "feature-new-dashboard"
+        # Then manually destroy or use bulk-destroy
+        
+        # Option B: Use bulk-destroy
+        echo "acme-sales-analytics-feature-new-dashboard-dev" > to_delete.txt
+        make bulk-destroy file=to_delete.txt
+    expected_output: |
+      # After merge and redeploy:
+      Deploying to workspace: acme-sales-analytics-dev
+      
+      ✓ Workspace 'acme-sales-analytics-dev' already exists (reusing)
+      ✓ Folder '01_Bronze' verified
+      ✓ Dashboard 'new_sales_dashboard' created   # <-- Your new feature!
+      ✓ Pipeline 'refresh_dashboard' created
+      
+      ════════════════════════════════════════════════════════════════
+      ✅ Deployment completed! (2 items created, 0 errors)
+      ════════════════════════════════════════════════════════════════
+    tips:
+      - Always redeploy after merge to propagate config changes
+      - Verify changes in the target workspace before cleanup
+      - Keep your feature workspace until you confirm DEV is updated
+    warnings:
+      - Git merge ≠ Fabric deployment! You must redeploy!
+      - Don't delete the feature workspace before verifying DEV
+
   - id: cicd-integration
     title: "CI/CD Integration: Automated Lifecycle"
     type: info

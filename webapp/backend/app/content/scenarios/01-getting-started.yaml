@@ -654,8 +654,73 @@ steps:
       - "The `AZURE_CLIENT_SECRET` is shown only once in Azure - save it securely"
       - PAT tokens expire - set appropriate expiration dates
 
+  - id: verify-env-file
+    title: "Step 11: Verify Your .env File is Correct"
+    type: command
+    content: |
+      **Before running preflight**, verify your `.env` file is syntactically correct
+      and all required variables are set.
+      
+      ## Quick Validation Commands
+      
+      | Check | Command | What It Does |
+      |-------|---------|--------------|
+      | File exists | `ls -la .env` | Confirms .env was created |
+      | Has content | `wc -l .env` | Shows line count |
+      | Required vars | `grep -E "^AZURE_" .env` | Lists Azure credentials |
+      | Capacity ID | `grep "FABRIC_CAPACITY_ID" .env` | Confirms capacity set |
+      
+      ## .env Checklist
+      
+      ```
+      ✓ AZURE_CLIENT_ID      - Should be a GUID (36 characters)
+      ✓ AZURE_CLIENT_SECRET  - Your SP secret (variable length)
+      ✓ AZURE_TENANT_ID      - Should be a GUID (36 characters)
+      ✓ FABRIC_CAPACITY_ID   - Should be a GUID (36 characters)
+      ```
+    code:
+      language: bash
+      content: |
+        # Check the file exists and has content
+        ls -la .env
+        wc -l .env
+        
+        # Verify required variables are set (shows variable names, NOT values)
+        echo "=== Checking Required Variables ==="
+        grep -q "^AZURE_CLIENT_ID=" .env && echo "✓ AZURE_CLIENT_ID is set" || echo "✗ AZURE_CLIENT_ID is MISSING"
+        grep -q "^AZURE_CLIENT_SECRET=" .env && echo "✓ AZURE_CLIENT_SECRET is set" || echo "✗ AZURE_CLIENT_SECRET is MISSING"
+        grep -q "^AZURE_TENANT_ID=" .env && echo "✓ AZURE_TENANT_ID is set" || echo "✗ AZURE_TENANT_ID is MISSING"
+        grep -q "^FABRIC_CAPACITY_ID=" .env && echo "✓ FABRIC_CAPACITY_ID is set" || echo "✗ FABRIC_CAPACITY_ID is MISSING"
+        
+        # Check for placeholder text that shouldn't be there
+        echo ""
+        echo "=== Checking for Unedited Placeholders ==="
+        grep -q "your_" .env && echo "⚠️  WARNING: Found 'your_' placeholder - edit these values!" || echo "✓ No obvious placeholders found"
+        grep -q "xxxx" .env && echo "⚠️  WARNING: Found 'xxxx' placeholder - edit these values!" || echo "✓ No xxxx placeholders found"
+    expected_output: |
+      -rw-rw-r-- 1 user user 1234 Jan 15 10:00 .env
+      45 .env
+      
+      === Checking Required Variables ===
+      ✓ AZURE_CLIENT_ID is set
+      ✓ AZURE_CLIENT_SECRET is set
+      ✓ AZURE_TENANT_ID is set
+      ✓ FABRIC_CAPACITY_ID is set
+      
+      === Checking for Unedited Placeholders ===
+      ✓ No obvious placeholders found
+      ✓ No xxxx placeholders found
+    tips:
+      - "If any variable is MISSING, edit `.env` and add it"
+      - "Use `code .env` to open in VS Code for editing"
+      - "Never run `cat .env` in shared terminals - it exposes secrets"
+    warnings:
+      - "🔴 NEVER commit `.env` to Git - it contains secrets"
+      - "🔴 NEVER share `.env` file contents in screenshots or logs"
+      - "If you see 'your_' placeholders, you haven't finished editing"
+
   - id: preflight-check
-    title: "Step 11: Run Preflight Check"
+    title: "Step 12: Run Preflight Check"
     type: command
     content: |
       The preflight check validates your entire setup:
@@ -716,7 +781,7 @@ steps:
       - If any check fails, see the Troubleshooting scenario for solutions
 
   - id: verify-api-access
-    title: "Step 12: Verify API Access"
+    title: "Step 13: Verify API Access"
     type: command
     content: |
       After preflight passes, verify you can actually interact with the Fabric API
