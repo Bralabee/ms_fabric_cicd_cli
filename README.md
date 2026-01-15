@@ -142,6 +142,72 @@ make validate config=config/projects/your_org/your_project.yaml
 make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
 
+## Make Targets Reference
+
+### Local Development
+
+| Target | Description | Example |
+|--------|-------------|---------|
+| `install` | Install dependencies in editable mode | `make install` |
+| `build` | Build Python wheel package | `make build` |
+| `test` | Run unit tests (no credentials) | `make test` |
+| `test-integration` | Run integration tests (requires credentials) | `make test-integration` |
+| `lint` | Format and lint code | `make lint` |
+| `clean` | Remove cache files | `make clean` |
+
+### Local Operations
+
+| Target | Description | Example |
+|--------|-------------|---------|
+| `validate` | Validate config file syntax | `make validate config=path/to/config.yaml` |
+| `diagnose` | Run pre-flight system checks | `make diagnose` |
+| `deploy` | Deploy workspace from config | `make deploy config=path/to/config.yaml env=dev` |
+| `destroy` | Destroy workspace from config | `make destroy config=path/to/config.yaml` |
+| `bulk-destroy` | Bulk delete workspaces from list | `make bulk-destroy file=list.txt` |
+
+### Docker Operations
+
+All Docker targets accept `ENVFILE=.env.xxx` to specify which environment file to use (default: `.env`).
+
+| Target | Description | Example |
+|--------|-------------|---------|
+| `docker-build` | Build Docker image | `make docker-build` |
+| `docker-validate` | Validate config in container | `make docker-validate config=... ENVFILE=.env` |
+| `docker-deploy` | Deploy workspace in container | `make docker-deploy config=... env=dev ENVFILE=.env` |
+| `docker-destroy` | Destroy workspace in container | `make docker-destroy config=... ENVFILE=.env` |
+| `docker-generate` | Generate project config in container | `make docker-generate org="Org" project="Proj" template=basic_etl` |
+| `docker-init-repo` | Initialize ADO repo in container | `make docker-init-repo org="..." project="..." repo="..."` |
+| `docker-shell` | Interactive shell in container | `make docker-shell ENVFILE=.env` |
+| `docker-diagnose` | Run diagnostics in container | `make docker-diagnose ENVFILE=.env` |
+| `docker-feature-deploy` | Deploy feature branch workspace | `make docker-feature-deploy config=... env=dev branch=feature/x` |
+
+## CLI Flags Reference
+
+### Deploy Command
+
+```bash
+python -m core.cli deploy CONFIG [OPTIONS]
+```
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--env` | `-e` | Target environment (dev/staging/prod) |
+| `--branch` | `-b` | Git branch to use for deployment |
+| `--force-branch-workspace` | | Create isolated workspace for feature branch |
+| `--validate-only` | | Validate config without deploying |
+| `--diagnose` | | Run diagnostics before deployment |
+
+### Destroy Command
+
+```bash
+python -m core.cli destroy CONFIG [OPTIONS]
+```
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--env` | `-e` | Target environment (dev/staging/prod) |
+| `--force` | `-f` | Skip confirmation prompt |
+
 ## Interactive Learning Guide
 
 The project includes an **interactive web application** to help users understand and learn the CLI workflows:
