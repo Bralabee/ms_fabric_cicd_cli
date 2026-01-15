@@ -117,12 +117,12 @@ make docker-build
 
 **Step 2: Generate Project Configuration (in Docker)**
 ```bash
-make docker-generate ARGS='"Contoso Inc" "Finance Analytics" --template basic_etl'
+make docker-generate org="Contoso Inc" project="Finance Analytics" template=basic_etl
 ```
 
 **Step 3: Initialize Azure DevOps Repository (in Docker)**
 ```bash
-make docker-init-repo ARGS='--organization "your-ado-org" --project "your-ado-project" --repository "contoso-finance-repo" --branch "main"'
+make docker-init-repo org="your-ado-org" project="your-ado-project" repo="contoso-finance-repo"
 ```
 
 **Step 4: Deploy (in Docker)**
@@ -286,7 +286,7 @@ GitHub Actions workflows included for:
 - Feature branch deployments
 - Principal management
 
-**Important:** For CI/CD pipelines to function, you must configure the required secrets (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) in your GitHub repository settings. See [Usage Guide](docs/USAGE_GUIDE.md#troubleshooting) for details.
+**Important:** For CI/CD pipelines to function, you must configure the required secrets (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) in your GitHub repository settings. See [Blueprint Catalog](docs/BLUEPRINT_CATALOG.md) for configuration examples.
 
 ## Features
 

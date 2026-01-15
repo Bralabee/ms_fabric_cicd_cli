@@ -111,9 +111,7 @@ This step fulfills the requirement to **automatically create a DEV workspace** a
 
 **Command:**
 ```bash
-python src/fabric_deploy.py deploy \
-  --config config/projects/sales_analytics/config.yaml \
-  --environment dev
+make deploy config=config/projects/sales_analytics/config.yaml env=dev
 ```
 
 **What Happens Behind the Scenes:**
@@ -141,9 +139,7 @@ Deploy a dedicated workspace linked specifically to this new feature branch.
 
 **Command:**
 ```bash
-python src/fabric_deploy.py deploy \
-  --config config/projects/sales_analytics/config.yaml \
-  --environment feature_123
+make docker-feature-deploy config=config/projects/sales_analytics/config.yaml env=dev branch=feature/123
 ```
 
 **Key Benefits:**
@@ -161,9 +157,7 @@ To ensure that every environment looks the same, we use the **Templating Engine*
 
 **Command:**
 ```bash
-python src/fabric_deploy.py validate \
-  --config config/projects/sales_analytics/config.yaml \
-  --environment feature_123
+make validate config=config/projects/sales_analytics/config.yaml
 ```
 
 *In a full CI/CD pipeline, this step would also deploy standard artifacts (e.g., a "Bronze Lakehouse") using `src/core/templating.py` to ensure the folder structure matches the corporate standard.*

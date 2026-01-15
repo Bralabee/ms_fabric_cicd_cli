@@ -185,13 +185,13 @@ result = git_api.connect_workspace_to_git(
 **Usage:**
 ```bash
 # Standard deployment
-python src/fabric_deploy.py deploy config/project.yaml --env dev
+make deploy config=config/project.yaml env=dev
 
 # Feature branch deployment
-python src/fabric_deploy.py deploy config/project.yaml --env dev --branch feature/analytics
+make docker-feature-deploy config=config/project.yaml env=dev branch=feature/analytics
 
-# With Git connection
-python src/fabric_deploy.py deploy config/project.yaml --env prod --connect-git
+# With Git connection (production)
+make deploy config=config/project.yaml env=prod
 ```
 
 ## Known Limitations
@@ -236,10 +236,10 @@ python src/fabric_deploy.py deploy config/project.yaml --env prod --connect-git
 
 ```bash
 # Verify installation
-python src/fabric_deploy.py diagnose
+make diagnose
 
 # Validate configuration
-python src/fabric_deploy.py validate config/project.yaml
+make validate config=config/project.yaml
 
 # Run test suite
 pytest tests/test_secrets.py tests/test_templating.py -v

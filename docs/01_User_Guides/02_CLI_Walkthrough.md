@@ -69,12 +69,10 @@ Provision the initial environment.
 
 ```bash
 # Validate first
-python src/fabric_deploy.py validate config/projects/acme_corp/supply_chain.yaml
+make validate config=config/projects/acme_corp/supply_chain.yaml
 
 # Deploy to Dev
-python src/fabric_deploy.py deploy \
-  config/projects/acme_corp/supply_chain.yaml \
-  --env dev
+make deploy config=config/projects/acme_corp/supply_chain.yaml env=dev
 ```
 
 **Result:** A new workspace `acme-supply-chain-dev` is created with the specified Lakehouse, folders, and mandatory security principals.
@@ -98,11 +96,9 @@ Use the `--force-branch-workspace` flag to tell the deployer to create a tempora
 > **Note:** You do **not** need a separate YAML configuration file for feature branches. The CLI uses the `dev` environment configuration as a base and dynamically generates a unique workspace name (e.g., `acme-supply-chain-inventory-opt-dev`).
 
 ```bash
-python src/fabric_deploy.py deploy \
-  config/projects/acme_corp/supply_chain.yaml \
-  --env dev \
-  --branch feature/inventory-opt \
-  --force-branch-workspace
+make docker-feature-deploy config=config/projects/acme_corp/supply_chain.yaml env=dev branch=feature/inventory-opt
+# Or using CLI directly:
+python -m core.cli deploy config/projects/acme_corp/supply_chain.yaml --env dev --branch feature/inventory-opt
 ```
 
 **Result:**
@@ -120,10 +116,9 @@ python src/fabric_deploy.py deploy \
 Switch the environment flag to `prod`. The tool automatically picks up production-specific settings (like Capacity IDs or Service Principals) from `config/environments/prod.yaml`.
 
 ```bash
-python src/fabric_deploy.py deploy \
-  config/projects/acme_corp/supply_chain.yaml \
-  --env prod \
-  --diagnose  # Enable extra diagnostics for prod
+make deploy config=config/projects/acme_corp/supply_chain.yaml env=prod
+# Or using CLI directly:
+python -m core.cli deploy config/projects/acme_corp/supply_chain.yaml --env prod
 ```
 
 **Result:**
@@ -162,14 +157,14 @@ python scripts/bulk_destroy.py delete_list.txt
 
 ## Summary of Commands
 
-| Task | Command |
-|------|---------|
-| **Scaffold** | `python scripts/generate_project.py ...` |
-| **Validate** | `python src/fabric_deploy.py validate <config>` |
-| **Deploy (Dev)** | `python src/fabric_deploy.py deploy <config> --env dev` |
-| **Deploy (Feature)** | `python src/fabric_deploy.py deploy <config> --env dev --branch <name> --force-branch-workspace` |
-| **Deploy (Prod)** | `python src/fabric_deploy.py deploy <config> --env prod` |
-| **Cleanup** | `python scripts/bulk_destroy.py <list_file>` |
+| Task | Makefile Command | Direct CLI Command |
+|------|------------------|-------------------|
+| **Scaffold** | `make docker-generate org="Org" project="Proj" template=basic_etl` | `python scripts/generate_project.py "Org" "Proj" --template basic_etl` |
+| **Validate** | `make validate config=<config>` | `python -m core.cli validate <config>` |
+| **Deploy (Dev)** | `make deploy config=<config> env=dev` | `python -m core.cli deploy <config> --env dev` |
+| **Deploy (Feature)** | `make docker-feature-deploy config=<config> env=dev branch=<name>` | `python -m core.cli deploy <config> --env dev --branch <name>` |
+| **Deploy (Prod)** | `make deploy config=<config> env=prod` | `python -m core.cli deploy <config> --env prod` |
+| **Cleanup** | `make bulk-destroy file=<list_file>` | `python scripts/bulk_destroy.py <list_file>` |
 
 ## Makefile Quick Reference (Local & Docker)
 
