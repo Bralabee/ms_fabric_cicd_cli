@@ -118,8 +118,88 @@ steps:
       - "If Python version is below 3.11, install via `conda install python=3.11`"
       - "Docker is optional but required for `make docker-*` commands"
 
+  - id: azure-prerequisites
+    title: "Step 2: Azure Prerequisites (CRITICAL)"
+    type: info
+    content: |
+      **⚠️ STOP HERE if you don't have Azure access!** This step requires Azure Portal access and 
+      potentially Fabric Admin permissions. Work with your Azure/Fabric administrator if needed.
+      
+      ## What You Need (Checklist)
+      
+      | ✓ | Requirement | Who Can Create It |
+      |---|-------------|-------------------|
+      | ☐ | **Azure Service Principal** | Any Azure AD user with App registration permission |
+      | ☐ | **Client Secret for SP** | Owner of the Service Principal |
+      | ☐ | **Fabric Capacity (F2+)** | Azure Subscription Owner or Contributor |
+      | ☐ | **Fabric Tenant Settings** | Fabric Admin only |
+      
+      ## Step 2a: Create Service Principal
+      
+      1. Go to **Azure Portal** → **Microsoft Entra ID** → **App registrations**
+      2. Click **+ New registration**
+      3. Enter name: `fabric-cli-cicd-sp` (or your preferred name)
+      4. Select: **Accounts in this organizational directory only**
+      5. Click **Register**
+      6. **Copy and save** the **Application (client) ID** → This is your `AZURE_CLIENT_ID`
+      7. **Copy and save** the **Directory (tenant) ID** → This is your `AZURE_TENANT_ID`
+      
+      ## Step 2b: Create Client Secret
+      
+      1. In your new App registration, go to **Certificates & secrets**
+      2. Click **+ New client secret**
+      3. Add description: `fabric-cli-cicd-secret`
+      4. Set expiration: **12 months** (or per your security policy)
+      5. Click **Add**
+      6. **IMMEDIATELY copy the Value** → This is your `AZURE_CLIENT_SECRET`
+      
+      ⚠️ **WARNING:** The secret value is only shown ONCE! Copy it immediately.
+      
+      ## Step 2c: Get or Create Fabric Capacity
+      
+      **Option A: Use existing capacity**
+      1. Go to **Fabric Admin Portal** → **Capacity settings**
+      2. Select your capacity
+      3. Copy the **Capacity ID** from the URL (GUID format)
+      
+      **Option B: Create new capacity (if you have Azure Subscription access)**
+      1. Go to **Azure Portal** → **Create a resource**
+      2. Search for **Microsoft Fabric**
+      3. Select **Microsoft Fabric Capacity**
+      4. Choose **F2** (smallest, good for dev/test)
+      5. Complete creation, then get the Capacity ID
+      
+      ## Step 2d: Enable Fabric Tenant Settings (Requires Fabric Admin)
+      
+      1. Go to **Fabric Admin Portal** (admin.powerbi.com)
+      2. Navigate to **Tenant settings**
+      3. Enable these settings for your Service Principal or security group:
+      
+      | Setting | Location | Required |
+      |---------|----------|----------|
+      | Service principals can use Fabric APIs | Developer settings | ✅ Yes |
+      | Service principals can create and use profiles | Developer settings | ✅ Yes |
+      | Users can create Fabric items | Workspace settings | ✅ Yes |
+      
+      ## Summary: What You Should Have Now
+      
+      | Credential | Example Format | Where to Put It |
+      |------------|----------------|-----------------|
+      | `AZURE_CLIENT_ID` | `12345678-1234-1234-1234-123456789abc` | `.env` file |
+      | `AZURE_CLIENT_SECRET` | `abc123~secret~value` | `.env` file |
+      | `AZURE_TENANT_ID` | `87654321-4321-4321-4321-cba987654321` | `.env` file |
+      | `FABRIC_CAPACITY_ID` | `abcd1234-abcd-1234-abcd-1234567890ab` | `.env` file |
+    warnings:
+      - "🔴 DO NOT proceed without these 4 credentials - deployment will fail!"
+      - "Client Secret is shown only ONCE - copy it immediately after creation"
+      - "Fabric tenant settings require Fabric Admin access - contact your admin"
+    tips:
+      - Create a dedicated Service Principal for CI/CD (don't use personal credentials)
+      - "Use a security group to manage tenant settings: add the SP to the group"
+      - F2 capacity is sufficient for development and testing
+
   - id: clone-repository
-    title: "Step 2: Clone the Repository"
+    title: "Step 3: Clone the Repository"
     type: command
     content: |
       Clone the repository to your local machine. Choose a location where you'll work with the project.
@@ -160,7 +240,7 @@ steps:
       - "The `templates/blueprints/` directory contains the 10 blueprint templates"
 
   - id: create-environment
-    title: "Step 3: Create Conda Environment"
+    title: "Step 4: Create Conda Environment"
     type: command
     content: |
       The project uses a conda environment defined in `environment.yml`. This ensures consistent 
@@ -204,7 +284,7 @@ steps:
       - "If you see import errors, first check `conda env list` to verify the environment"
 
   - id: install-package
-    title: "Step 4: Install Package and CLI Entry Point"
+    title: "Step 5: Install Package and CLI Entry Point"
     type: command
     content: |
       Install the package in editable mode to enable the `fabric-cicd` CLI command 
@@ -234,7 +314,7 @@ steps:
         fabric-cicd --help
     expected_output: |
       # After make install:
-      Successfully installed usf-fabric-cli-1.1.0
+      Successfully installed usf-fabric-cli-1.3.0
       
       # After fabric-cicd --help:
       Usage: fabric-cicd [OPTIONS] COMMAND [ARGS]...
@@ -256,7 +336,7 @@ steps:
       - "Alternative: use `python -m core.cli` instead of `fabric-cicd`"
 
   - id: makefile-commands
-    title: "Step 5: Understand Available Make Commands"
+    title: "Step 6: Understand Available Make Commands"
     type: info
     content: |
       The `Makefile` provides the simplest way to interact with the framework.
@@ -338,7 +418,7 @@ steps:
       - "All Docker commands require `ENVFILE=.env` to pass credentials"
 
   - id: cli-commands
-    title: "Step 6: Understand CLI Entry Points"
+    title: "Step 7: Understand CLI Entry Points"
     type: info
     content: |
       After `make install`, the `fabric-cicd` CLI command becomes available.
@@ -405,7 +485,7 @@ steps:
       - "`python -m core.cli` works even if the entry point isn't registered"
 
   - id: python-scripts
-    title: "Step 7: Understand Python Utility Scripts"
+    title: "Step 8: Understand Python Utility Scripts"
     type: info
     content: |
       The `scripts/` directory contains Python utilities for advanced operations
@@ -466,7 +546,7 @@ steps:
       - The utility scripts are invaluable for debugging permission issues
 
   - id: configure-credentials
-    title: "Step 8: Configure Credentials (.env File)"
+    title: "Step 9: Configure Credentials (.env File)"
     type: config
     content: |
       The framework uses the **12-Factor App** pattern for credential management.
@@ -518,7 +598,7 @@ steps:
       - "⚠️ NEVER commit `.env` files to Git"
 
   - id: env-file-content
-    title: "Step 9: Configure .env File Contents"
+    title: "Step 10: Configure .env File Contents"
     type: config
     content: |
       Here's a complete example `.env` file with all variables explained.
@@ -575,7 +655,7 @@ steps:
       - PAT tokens expire - set appropriate expiration dates
 
   - id: preflight-check
-    title: "Step 10: Run Preflight Check"
+    title: "Step 11: Run Preflight Check"
     type: command
     content: |
       The preflight check validates your entire setup:
@@ -636,7 +716,7 @@ steps:
       - If any check fails, see the Troubleshooting scenario for solutions
 
   - id: verify-api-access
-    title: "Step 11: Verify API Access"
+    title: "Step 12: Verify API Access"
     type: command
     content: |
       After preflight passes, verify you can actually interact with the Fabric API

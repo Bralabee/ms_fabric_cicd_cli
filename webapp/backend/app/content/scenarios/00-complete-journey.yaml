@@ -1,0 +1,395 @@
+# Complete User Journey - Quick Reference
+# Overview of the entire flow from zero to production deployment
+
+id: complete-journey
+title: "Complete User Journey: Zero to Production"
+description: |
+  A high-level roadmap of the entire Fabric CLI CI/CD workflow. Use this as a quick reference 
+  to understand where you are in the process and what comes next. Each phase links to detailed 
+  scenario guides for step-by-step instructions.
+difficulty: beginner
+estimated_duration_minutes: 5
+category: overview
+order: 0
+
+prerequisites: []
+
+learning_outcomes:
+  - Understand the complete deployment lifecycle from start to finish
+  - Know which scenario guide to follow for each phase
+  - Identify where you are in the process and what's next
+  - See the big picture before diving into details
+
+tags:
+  - overview
+  - roadmap
+  - quick-start
+  - journey
+  - lifecycle
+
+related_scenarios:
+  - getting-started
+  - project-generation
+  - local-deployment
+  - docker-deployment
+  - git-integration
+  - environment-promotion
+
+steps:
+  - id: journey-overview
+    title: "The Complete Journey at a Glance"
+    type: info
+    content: |
+      ## 🗺️ Your Deployment Journey
+      
+      ```
+      ┌─────────────────────────────────────────────────────────────────┐
+      │                    PHASE 1: PREREQUISITES                       │
+      │  Azure Setup → Service Principal → Fabric Capacity → Tenant     │
+      └─────────────────────────────────────────────────────────────────┘
+                                    ↓
+      ┌─────────────────────────────────────────────────────────────────┐
+      │                    PHASE 2: ENVIRONMENT SETUP                   │
+      │  Clone Repo → Conda Environment → Install Package → .env File   │
+      └─────────────────────────────────────────────────────────────────┘
+                                    ↓
+      ┌─────────────────────────────────────────────────────────────────┐
+      │                    PHASE 3: CONFIGURATION                       │
+      │  Choose Template → Generate Config → Customize YAML → Validate  │
+      └─────────────────────────────────────────────────────────────────┘
+                                    ↓
+      ┌─────────────────────────────────────────────────────────────────┐
+      │                    PHASE 4: DEPLOYMENT                          │
+      │  Deploy DEV → Verify → Deploy STAGING → Deploy PROD             │
+      └─────────────────────────────────────────────────────────────────┘
+                                    ↓
+      ┌─────────────────────────────────────────────────────────────────┐
+      │                    PHASE 5: ONGOING OPERATIONS                  │
+      │  Feature Branches → Git Sync → Monitoring → Cleanup             │
+      └─────────────────────────────────────────────────────────────────┘
+      ```
+      
+      ## ⏱️ Time Estimates
+      
+      | Phase | First Time | Subsequent |
+      |-------|------------|------------|
+      | Phase 1: Prerequisites | 30-60 min | 0 min (done once) |
+      | Phase 2: Environment | 15-20 min | 2 min (activate only) |
+      | Phase 3: Configuration | 10-15 min | 5 min |
+      | Phase 4: Deployment | 5-10 min | 2-5 min |
+      | **Total** | **60-105 min** | **10-15 min** |
+    tips:
+      - First-time setup takes longer but is only done once
+      - After initial setup, deployments take just minutes
+      - Bookmark this page as your quick reference
+
+  - id: phase1-prerequisites
+    title: "Phase 1: Prerequisites (One-Time Setup)"
+    type: info
+    content: |
+      ## 🔐 Azure & Fabric Prerequisites
+      
+      **Before you can deploy anything**, you need these Azure resources:
+      
+      | # | Task | Who | Time | Output |
+      |---|------|-----|------|--------|
+      | 1 | Create Azure Service Principal | Any Azure AD user | 5 min | `AZURE_CLIENT_ID` |
+      | 2 | Create Client Secret | SP owner | 2 min | `AZURE_CLIENT_SECRET` |
+      | 3 | Note Tenant ID | Any Azure AD user | 1 min | `AZURE_TENANT_ID` |
+      | 4 | Get/Create Fabric Capacity | Azure Admin | 10-30 min | `FABRIC_CAPACITY_ID` |
+      | 5 | Enable Fabric Tenant Settings | Fabric Admin | 5 min | API access enabled |
+      
+      ## ✅ Checklist: What You Need Before Proceeding
+      
+      ```
+      ☐ AZURE_CLIENT_ID      = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      ☐ AZURE_CLIENT_SECRET  = (your secret value)
+      ☐ AZURE_TENANT_ID      = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      ☐ FABRIC_CAPACITY_ID   = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      ```
+      
+      ## 🚨 Common Blocker
+      
+      **"I can't create a Service Principal"** → Contact your Azure AD administrator
+      **"I don't have Fabric Capacity"** → Use F2 trial or contact your Azure admin
+      **"Tenant settings not enabled"** → Contact your Fabric administrator
+      
+      📖 **Detailed Guide:** [Getting Started → Step 2: Azure Prerequisites](#getting-started)
+    warnings:
+      - "🔴 STOP: Do not proceed without all 4 credentials"
+      - "These are organization-level resources - you may need admin help"
+
+  - id: phase2-environment
+    title: "Phase 2: Environment Setup"
+    type: command
+    content: |
+      ## 🛠️ Local Development Environment
+      
+      Set up your local machine to run the CLI tools.
+      
+      ### Quick Commands (Copy-Paste Ready)
+      
+      ```bash
+      # 1. Clone repository (if you haven't already)
+      git clone https://github.com/your-org/usf_fabric_cli_cicd.git
+      cd usf_fabric_cli_cicd
+      
+      # 2. Create and activate conda environment
+      conda env create -f environment.yml
+      conda activate fabric-cli-cicd
+      
+      # 3. Install the package
+      make install
+      
+      # 4. Create .env file with your credentials
+      cp .env.template .env
+      # Edit .env with your Azure credentials from Phase 1
+      
+      # 5. Verify everything works
+      make diagnose
+      ```
+      
+      ### Expected Result
+      
+      After `make diagnose`, you should see:
+      ```
+      ✓ Fabric CLI installed
+      ✓ Credentials loaded
+      ✓ Token generation successful
+      ✓ Fabric API accessible
+      ✅ All preflight checks passed!
+      ```
+      
+      📖 **Detailed Guide:** [Getting Started → Steps 3-12](#getting-started)
+    code:
+      language: bash
+      content: |
+        # Quick verification commands
+        conda activate fabric-cli-cicd
+        make diagnose
+        python scripts/utilities/list_workspaces.py
+    tips:
+      - "Always run `conda activate fabric-cli-cicd` before any command"
+      - "If `make diagnose` fails, check your `.env` file first"
+
+  - id: phase3-configuration
+    title: "Phase 3: Generate & Validate Configuration"
+    type: command
+    content: |
+      ## 📝 Create Your Project Configuration
+      
+      Use blueprint templates to generate standardized configurations.
+      
+      ### Step 1: Choose Your Template
+      
+      | Template | Best For |
+      |----------|----------|
+      | `minimal_starter` | Learning, POCs |
+      | `basic_etl` | **Most projects** - standard ETL |
+      | `realtime_streaming` | IoT, event processing |
+      | `compliance_regulated` | Healthcare, Finance, Gov |
+      
+      ### Step 2: Generate Configuration
+      
+      ```bash
+      python scripts/generate_project.py "Your Org" "Your Project" --template basic_etl
+      ```
+      
+      **Output:** `config/projects/your_org/your_project.yaml`
+      
+      ### Step 3: Customize (Optional)
+      
+      Edit the generated YAML to:
+      - Add/remove lakehouses, notebooks, pipelines
+      - Configure Git repository URL
+      - Add team member principals
+      
+      ### Step 4: Validate
+      
+      ```bash
+      make validate config=config/projects/your_org/your_project.yaml
+      ```
+      
+      📖 **Detailed Guide:** [Project Generation](#project-generation)
+    code:
+      language: bash
+      content: |
+        # Example: Generate a basic ETL project
+        python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
+        
+        # Validate the generated config
+        make validate config=config/projects/acme_corp/sales_analytics.yaml
+    expected_output: |
+      ✓ Configuration generated: config/projects/acme_corp/sales_analytics.yaml
+      
+      ✅ Configuration is valid!
+      Workspace: acme-corp-sales-analytics
+      Resources: 3 Lakehouses, 1 Warehouse, 3 Notebooks, 2 Pipelines
+
+  - id: phase4-deployment
+    title: "Phase 4: Deploy to Environments"
+    type: command
+    content: |
+      ## 🚀 Deploy Your Workspace
+      
+      Deploy the same configuration to different environments.
+      
+      ### Development Deployment
+      
+      ```bash
+      make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+      ```
+      
+      ### Verify Deployment
+      
+      ```bash
+      # Check items were created
+      python scripts/utilities/list_workspace_items.py --workspace "acme-corp-sales-analytics-dev"
+      
+      # Or open in browser
+      # URL shown in deployment output
+      ```
+      
+      ### Staging & Production (when ready)
+      
+      ```bash
+      # Staging
+      make deploy config=config/projects/acme_corp/sales_analytics.yaml env=staging
+      
+      # Production (after approval)
+      make deploy config=config/projects/acme_corp/sales_analytics.yaml env=prod
+      ```
+      
+      📖 **Detailed Guides:** 
+      - [Local Deployment](#local-deployment)
+      - [Docker Deployment](#docker-deployment) (for CI/CD)
+      - [Environment Promotion](#environment-promotion)
+    code:
+      language: bash
+      content: |
+        # Deploy to dev
+        make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+        
+        # Verify
+        python scripts/utilities/list_workspace_items.py --workspace "acme-corp-sales-analytics-dev"
+    expected_output: |
+      ✓ Workspace 'acme-corp-sales-analytics-dev' created
+      ✓ Folders created: Bronze, Silver, Gold, Notebooks
+      ✓ Lakehouses created: 3
+      ✓ Notebooks created: 3
+      ✅ Deployment completed successfully!
+      
+      Workspace URL: https://app.fabric.microsoft.com/groups/...
+
+  - id: phase5-operations
+    title: "Phase 5: Ongoing Operations"
+    type: info
+    content: |
+      ## 🔄 Day-to-Day Operations
+      
+      After initial deployment, you'll use these operations regularly:
+      
+      ### Feature Branch Development
+      
+      ```bash
+      # Create isolated workspace for feature work
+      make docker-feature-deploy config=config/projects/acme_corp/sales.yaml env=dev branch=feature/new-report
+      
+      # Clean up when done
+      make destroy config=config/projects/acme_corp/sales.yaml env=dev
+      ```
+      
+      ### Git Integration
+      
+      ```bash
+      # Initialize ADO repo for Fabric Git sync
+      python scripts/utilities/init_ado_repo.py --organization "your-org" --project "your-project" --repository "repo-name"
+      ```
+      
+      ### Monitoring & Troubleshooting
+      
+      ```bash
+      # Check audit logs
+      cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl | jq
+      
+      # Run diagnostics
+      make diagnose
+      
+      # Debug ADO access
+      python scripts/utilities/debug_ado_access.py --organization "your-org" --project "your-project"
+      ```
+      
+      📖 **Detailed Guides:**
+      - [Feature Branch Workflows](#feature-branch-workflows)
+      - [Git Integration](#git-integration)
+      - [Troubleshooting](#troubleshooting)
+    tips:
+      - "Feature branches create temporary workspaces - remember to clean up"
+      - "Audit logs are essential for compliance and debugging"
+      - "Run `make diagnose` first when troubleshooting"
+
+  - id: quick-reference-card
+    title: "📋 Quick Reference Card"
+    type: info
+    content: |
+      ## Essential Commands (Copy-Paste Ready)
+      
+      ### Environment Activation (ALWAYS FIRST!)
+      ```bash
+      conda activate fabric-cli-cicd
+      ```
+      
+      ### Configuration
+      ```bash
+      # Generate new project
+      python scripts/generate_project.py "Org" "Project" --template basic_etl
+      
+      # Validate config
+      make validate config=config/projects/org/project.yaml
+      ```
+      
+      ### Deployment
+      ```bash
+      # Deploy to environment
+      make deploy config=config/projects/org/project.yaml env=dev
+      
+      # Verify deployment
+      python scripts/utilities/list_workspace_items.py --workspace "workspace-name"
+      
+      # Destroy workspace
+      make destroy config=config/projects/org/project.yaml env=dev
+      ```
+      
+      ### Docker (for CI/CD)
+      ```bash
+      # Build image
+      make docker-build
+      
+      # Deploy via Docker
+      make docker-deploy config=config/projects/org/project.yaml env=dev ENVFILE=.env
+      ```
+      
+      ### Troubleshooting
+      ```bash
+      # Preflight check
+      make diagnose
+      
+      # List workspaces
+      python scripts/utilities/list_workspaces.py
+      
+      # View audit logs
+      cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl | jq
+      ```
+      
+      ## Scenario Guide Links
+      
+      | Topic | Scenario |
+      |-------|----------|
+      | Initial Setup | [Getting Started](#getting-started) |
+      | Create Configs | [Project Generation](#project-generation) |
+      | Local Deploy | [Local Deployment](#local-deployment) |
+      | CI/CD Deploy | [Docker Deployment](#docker-deployment) |
+      | Branch Isolation | [Feature Branch Workflows](#feature-branch-workflows) |
+      | Version Control | [Git Integration](#git-integration) |
+      | DEV→PROD | [Environment Promotion](#environment-promotion) |
+      | Problems | [Troubleshooting](#troubleshooting) |

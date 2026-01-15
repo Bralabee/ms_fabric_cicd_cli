@@ -284,7 +284,7 @@ steps:
         pip show usf-fabric-cli | grep Entry
     expected_output: |
       # After make install:
-      Successfully installed usf-fabric-cli-1.1.0
+      Successfully installed usf-fabric-cli-1.3.0
       
       # fabric-cicd --help output:
       Usage: fabric-cicd [OPTIONS] COMMAND [ARGS]...
