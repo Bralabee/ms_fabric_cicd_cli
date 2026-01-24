@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
 from usf_fabric_cli.services.git_integration import GitFabricIntegration
+from usf_fabric_cli.services.deployment_state import DeploymentState, ItemType
 from usf_fabric_cli.utils.audit import AuditLogger
 from usf_fabric_cli.services.fabric_git_api import FabricGitAPI, GitProviderType
 from usf_fabric_cli.utils.secrets import FabricSecrets
@@ -83,6 +84,7 @@ class FabricDeployer:
 
         self.workspace_id = None
         self.items_created = 0
+        self.deployment_state = DeploymentState()
 
     def _wait_for_propagation(self, progress, seconds: int, message: str):
         """Wait with visual feedback"""
@@ -92,10 +94,17 @@ class FabricDeployer:
             progress.update(task, advance=1)
         progress.update(task, visible=False)
 
-    def deploy(self, branch: str = None, force_branch_workspace: bool = False) -> bool:
-        """Deploy workspace based on configuration"""
+    def deploy(self, branch: str = None, force_branch_workspace: bool = False, rollback_on_failure: bool = False) -> bool:
+        """Deploy workspace based on configuration
+        
+        Args:
+            branch: Git branch to use
+            force_branch_workspace: Create separate workspace for feature branch
+            rollback_on_failure: If True, delete all created items on failure
+        """
 
         start_time = time.time()
+        self.deployment_state.start_deployment()
 
         # Determine workspace name (for feature branches)
         workspace_name = self.config.name
@@ -115,73 +124,105 @@ class FabricDeployer:
             branch=branch,
         )
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
+        try:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
 
-            # Step 1: Create workspace
-            task = progress.add_task("Creating workspace...", total=None)
-            result = self._create_workspace(workspace_name)
-            if not result["success"]:
-                console.print(
-                    f"[red]Failed to create workspace: {result['error']}[/red]"
+                # Step 1: Create workspace
+                task = progress.add_task("Creating workspace...", total=None)
+                result = self._create_workspace(workspace_name)
+                if not result["success"]:
+                    console.print(
+                        f"[red]Failed to create workspace: {result['error']}[/red]"
+                    )
+                    raise RuntimeError(f"Workspace creation failed: {result['error']}")
+                
+                # Track workspace for rollback
+                self.deployment_state.record(
+                    ItemType.WORKSPACE, workspace_name, workspace_name,
+                    item_id=self.workspace_id
                 )
-                return False
-            progress.update(task, description="✅ Workspace created")
+                progress.update(task, description="✅ Workspace created")
 
-            # Wait for workspace propagation
-            self._wait_for_propagation(
-                progress, 5, "Waiting for workspace propagation..."
+                # Wait for workspace propagation
+                self._wait_for_propagation(
+                    progress, 5, "Waiting for workspace propagation..."
+                )
+
+                # Step 2: Create folders
+                task = progress.add_task("Creating folder structure...", total=None)
+                self._create_folders()
+                progress.update(task, description="✅ Folders created")
+
+                # Wait for folder propagation
+                self._wait_for_propagation(progress, 5, "Waiting for folder propagation...")
+
+                # Step 3: Create items
+                task = progress.add_task("Creating items...", total=None)
+                self._create_items()
+                progress.update(task, description="✅ Items created")
+
+                # Wait for items propagation
+                self._wait_for_propagation(progress, 5, "Waiting for items propagation...")
+
+                # Step 4: Add principals
+                task = progress.add_task("Adding principals...", total=None)
+                self._add_principals()
+                progress.update(task, description="✅ Principals added")
+
+                # Step 5: Assign Domain (if configured)
+                if self.config.domain:
+                    task = progress.add_task(
+                        f"Assigning to domain: {self.config.domain}...", total=None
+                    )
+                    self._assign_domain()
+                    progress.update(task, description="✅ Domain assigned")
+
+                # Step 6: Connect Git (if configured)
+                if self.config.git_repo:
+                    task = progress.add_task("Connecting Git...", total=None)
+                    git_branch = branch or self.config.git_branch
+                    self._connect_git(git_branch)
+                    progress.update(task, description="✅ Git connected")
+
+            # Log completion
+            duration = time.time() - start_time
+            self.audit.log_deployment_complete(
+                workspace_name, self.workspace_id, self.items_created, duration
             )
 
-            # Step 2: Create folders
-            task = progress.add_task("Creating folder structure...", total=None)
-            self._create_folders()
-            progress.update(task, description="✅ Folders created")
+            # Show summary
+            self._show_deployment_summary(workspace_name, duration)
 
-            # Wait for folder propagation
-            self._wait_for_propagation(progress, 5, "Waiting for folder propagation...")
+            return True
 
-            # Step 3: Create items
-            task = progress.add_task("Creating items...", total=None)
-            self._create_items()
-            progress.update(task, description="✅ Items created")
-
-            # Wait for items propagation
-            self._wait_for_propagation(progress, 5, "Waiting for items propagation...")
-
-            # Step 4: Add principals
-            task = progress.add_task("Adding principals...", total=None)
-            self._add_principals()
-            progress.update(task, description="✅ Principals added")
-
-            # Step 5: Assign Domain (if configured)
-            if self.config.domain:
-                task = progress.add_task(
-                    f"Assigning to domain: {self.config.domain}...", total=None
+        except Exception as e:
+            console.print(f"[red]Deployment failed: {e}[/red]")
+            
+            if rollback_on_failure and self.deployment_state.item_count > 0:
+                console.print(
+                    f"[yellow]Rolling back {self.deployment_state.item_count} created items...[/yellow]"
                 )
-                self._assign_domain()
-                progress.update(task, description="✅ Domain assigned")
-
-            # Step 6: Connect Git (if configured)
-            if self.config.git_repo:
-                task = progress.add_task("Connecting Git...", total=None)
-                git_branch = branch or self.config.git_branch
-                self._connect_git(git_branch)
-                progress.update(task, description="✅ Git connected")
-
-        # Log completion
-        duration = time.time() - start_time
-        self.audit.log_deployment_complete(
-            workspace_name, self.workspace_id, self.items_created, duration
-        )
-
-        # Show summary
-        self._show_deployment_summary(workspace_name, duration)
-
-        return True
+                rollback_result = self.deployment_state.rollback(self.fabric)
+                
+                if rollback_result["success"]:
+                    console.print(
+                        f"[green]✅ Rollback complete: {rollback_result['deleted']} items deleted[/green]"
+                    )
+                else:
+                    console.print(
+                        f"[red]Rollback completed with errors: "
+                        f"{rollback_result['deleted']} deleted, {rollback_result['failed']} failed[/red]"
+                    )
+            elif self.deployment_state.item_count > 0:
+                console.print(
+                    f"[yellow]Tip: Use --rollback-on-failure to auto-clean partial deployments[/yellow]"
+                )
+            
+            return False
 
     def _create_workspace(self, workspace_name: str) -> dict:
         """Create workspace"""
@@ -704,6 +745,11 @@ def deploy(
         "--force-branch-workspace",
         help="Create separate workspace for feature branch",
     ),
+    rollback_on_failure: bool = typer.Option(
+        False,
+        "--rollback-on-failure",
+        help="Automatically delete created items if deployment fails",
+    ),
     validate_only: bool = typer.Option(
         False, "--validate-only", help="Only validate configuration"
     ),
@@ -750,7 +796,7 @@ def deploy(
 
     try:
         deployer = FabricDeployer(config, environment)
-        success = deployer.deploy(branch, force_branch_workspace)
+        success = deployer.deploy(branch, force_branch_workspace, rollback_on_failure)
 
         if not success:
             raise typer.Exit(1)

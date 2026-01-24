@@ -72,10 +72,10 @@ class TestListConnections:
     @pytest.fixture
     def api(self):
         """Create API instance."""
-        return FabricGitAPI(access_token="test-token")
+        return FabricGitAPI(access_token="test-token", max_retries=0)
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
-    def test_list_connections_success(self, mock_get, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_list_connections_success(self, mock_request, api):
         """Test successful listing of connections."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -85,22 +85,22 @@ class TestListConnections:
             ]
         }
         mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.list_connections()
 
         assert result["success"] is True
         assert len(result["connections"]) == 2
         assert result["connections"][0]["id"] == "conn-1"
-        mock_get.assert_called_once()
+        mock_request.assert_called_once()
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
-    def test_list_connections_empty(self, mock_get, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_list_connections_empty(self, mock_request, api):
         """Test listing when no connections exist."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"value": []}
         mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.list_connections()
 
@@ -114,10 +114,10 @@ class TestGetConnectionByName:
     @pytest.fixture
     def api(self):
         """Create API instance."""
-        return FabricGitAPI(access_token="test-token")
+        return FabricGitAPI(access_token="test-token", max_retries=0)
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
-    def test_get_connection_by_name_found(self, mock_get, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_get_connection_by_name_found(self, mock_request, api):
         """Test finding a connection by name."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -127,20 +127,20 @@ class TestGetConnectionByName:
             ]
         }
         mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.get_connection_by_name("My Connection")
 
         assert result is not None
         assert result["id"] == "conn-1"
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
-    def test_get_connection_by_name_not_found(self, mock_get, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_get_connection_by_name_not_found(self, mock_request, api):
         """Test when connection name not found."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"value": []}
         mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.get_connection_by_name("Nonexistent")
 

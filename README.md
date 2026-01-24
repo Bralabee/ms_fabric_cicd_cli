@@ -198,8 +198,10 @@ python -m usf_fabric_cli.cli deploy CONFIG [OPTIONS]
 | `--env` | `-e` | Target environment (dev/staging/prod) |
 | `--branch` | `-b` | Git branch to use for deployment |
 | `--force-branch-workspace` | | Create isolated workspace for feature branch |
+| `--rollback-on-failure` | | Auto-delete created items if deployment fails |
 | `--validate-only` | | Validate config without deploying |
 | `--diagnose` | | Run diagnostics before deployment |
+
 
 ### Destroy Command
 
@@ -295,17 +297,21 @@ src/
 │   ├── exceptions.py        # Exception hierarchy
 │   ├── commands/            # CLI subcommands (future modularization)
 │   ├── services/
-│   │   ├── fabric_wrapper.py   # Fabric CLI wrapper with version validation
-│   │   ├── fabric_git_api.py   # REST API client for Git integration
-│   │   └── git_integration.py  # Git synchronization logic
+│   │   ├── fabric_wrapper.py    # Fabric CLI wrapper with version validation
+│   │   ├── fabric_git_api.py    # REST API client for Git integration
+│   │   ├── git_integration.py   # Git synchronization logic
+│   │   ├── token_manager.py     # Azure AD token refresh for long deployments
+│   │   └── deployment_state.py  # Atomic rollback state management
 │   ├── utils/
 │   │   ├── secrets.py       # 12-Factor App secret management
 │   │   ├── config.py        # YAML configuration management
 │   │   ├── templating.py    # Jinja2 artifact transformation engine
 │   │   ├── audit.py         # Compliance audit logging
-│   │   └── telemetry.py     # Operational telemetry
+│   │   ├── telemetry.py     # Operational telemetry
+│   │   └── retry.py         # Exponential backoff utilities
 │   └── schemas/
 │       └── workspace_config.json  # JSON schema for validation
+
 
 config/
 ├── projects/              # Your organization configs

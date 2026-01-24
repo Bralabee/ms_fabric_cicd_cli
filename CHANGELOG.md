@@ -2,7 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-01-24
+
+### Added
+- **Token Manager** (`services/token_manager.py`): Proactive Azure AD token refresh for long deployments
+  - Automatic refresh 60 seconds before expiry
+  - Fabric CLI re-authentication support
+  - Factory function `create_token_manager_from_env()` for environment-based setup
+  
+- **Deployment State** (`services/deployment_state.py`): Atomic rollback for mid-deployment failures
+  - LIFO (Last-In-First-Out) rollback of created items
+  - Checkpoint persistence for crash recovery
+  - Support for all item types: workspace, lakehouse, warehouse, notebook, pipeline, etc.
+  
+- **Shared Retry Utilities** (`utils/retry.py`): Extracted exponential backoff logic
+  - `retry_with_backoff` decorator
+  - HTTP-specific retry helpers
+  - Jitter to prevent thundering herd
+  
+- **New CLI Flag**: `--rollback-on-failure` for deploy command
+  - Automatically deletes created items if deployment fails
+  - Shows rollback progress and summary
+
+### Changed
+- **FabricGitAPI**: Added `_make_request` helper with automatic retry and token refresh
+- **FabricCLIWrapper**: Now accepts optional `token_manager` for proactive token refresh
+
+### Tests
+- Added 35 new unit tests (14 token manager, 21 deployment state)
+- Total: 140 tests passing
+
+---
+
 ## [1.4.1] - 2026-01-24
+
 
 ### Upgraded
 - **Microsoft Fabric CLI v1.2.0 → v1.3.1**: Upgraded underlying Fabric CLI dependency

@@ -7,6 +7,7 @@ Key Features:
 - Initialize Git connections for newly created workspaces
 - Support for both Service Principal and PAT authentication
 - Long-running operation polling for async Git operations
+- Automatic retry with exponential backoff for transient failures
 - Based on official Microsoft Fabric Git APIs
 
 References:
@@ -16,10 +17,21 @@ References:
 
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 from enum import Enum
 
 import requests
+
+from usf_fabric_cli.utils.retry import (
+    is_retryable_exception,
+    calculate_backoff,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_BASE_DELAY,
+    DEFAULT_MAX_DELAY,
+)
+
+if TYPE_CHECKING:
+    from usf_fabric_cli.services.token_manager import TokenManager
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +56,17 @@ class FabricGitAPI:
 
     This module addresses the requirement to automatically connect
     created workspaces to Git repositories for proper CI/CD workflows.
+    Includes automatic retry with exponential backoff for transient failures.
     """
 
     def __init__(
-        self, access_token: str, base_url: str = "https://api.fabric.microsoft.com/v1"
+        self,
+        access_token: str,
+        base_url: str = "https://api.fabric.microsoft.com/v1",
+        token_manager: Optional["TokenManager"] = None,
+        max_retries: int = DEFAULT_MAX_RETRIES,
+        base_delay: float = DEFAULT_BASE_DELAY,
+        max_delay: float = DEFAULT_MAX_DELAY,
     ):
         """
         Initialize Fabric Git API client.
@@ -55,12 +74,94 @@ class FabricGitAPI:
         Args:
             access_token: Azure AD access token for Fabric API
             base_url: Fabric API base URL
+            token_manager: Optional TokenManager for proactive token refresh
+            max_retries: Maximum retry attempts for transient failures
+            base_delay: Initial backoff delay in seconds
+            max_delay: Maximum backoff delay in seconds
         """
         self.base_url = base_url
+        self._access_token = access_token
+        self._token_manager = token_manager
+        self._max_retries = max_retries
+        self._base_delay = base_delay
+        self._max_delay = max_delay
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {access_token}",
         }
+
+    def _refresh_token_if_needed(self) -> None:
+        """Refresh token and update headers if token_manager is available."""
+        if self._token_manager:
+            try:
+                new_token = self._token_manager.get_token()
+                if new_token != self._access_token:
+                    self._access_token = new_token
+                    self.headers["Authorization"] = f"Bearer {new_token}"
+                    logger.debug("Token refreshed for Git API requests")
+            except Exception as e:
+                logger.warning("Token refresh failed: %s", e)
+
+    def _make_request(
+        self,
+        method: str,
+        url: str,
+        json: Optional[Dict[str, Any]] = None,
+        timeout: int = 30,
+    ) -> requests.Response:
+        """
+        Make HTTP request with retry and token refresh.
+
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            url: Full request URL
+            json: Optional JSON body
+            timeout: Request timeout in seconds
+
+        Returns:
+            Response object
+
+        Raises:
+            requests.RequestException: If all retries fail
+        """
+        last_exception: Optional[Exception] = None
+
+        for attempt in range(self._max_retries + 1):
+            # Refresh token before request if needed
+            self._refresh_token_if_needed()
+
+            try:
+                response = requests.request(
+                    method,
+                    url,
+                    headers=self.headers,
+                    json=json,
+                    timeout=timeout,
+                )
+                response.raise_for_status()
+                return response
+
+            except requests.RequestException as e:
+                last_exception = e
+
+                if not is_retryable_exception(e) or attempt >= self._max_retries:
+                    raise
+
+                delay = calculate_backoff(attempt, self._base_delay, self._max_delay)
+                logger.warning(
+                    "Git API request failed (attempt %d/%d): %s. Retrying in %.2fs...",
+                    attempt + 1,
+                    self._max_retries + 1,
+                    str(e),
+                    delay,
+                )
+                time.sleep(delay)
+
+        if last_exception:
+            raise last_exception
+        raise RuntimeError("Retry loop completed without returning or raising")
+
+
 
     def create_git_connection(
         self,
@@ -186,8 +287,7 @@ class FabricGitAPI:
         url = f"{self.base_url}/connections"
 
         try:
-            response = requests.get(url, headers=self.headers, timeout=30)
-            response.raise_for_status()
+            response = self._make_request("GET", url)
 
             result = response.json()
             connections = result.get("value", [])
