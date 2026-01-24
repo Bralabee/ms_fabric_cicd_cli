@@ -9,10 +9,10 @@ However, a few gaps remain, primarily around explicit teardown automation for no
 
 ### 2.1 Core Components
 *   **Entry Point (`src/fabric_deploy.py`):** A clean CLI interface using `typer`. It orchestrates the deployment flow: Config Load -> Validation -> Workspace Creation -> Git Linking -> Artifact Deployment.
-*   **Wrapper (`src/core/fabric_wrapper.py`):** A solid abstraction over the `fab` CLI. It handles authentication, command execution, and crucially, **idempotency** (checking if items exist before creating).
-*   **Configuration (`src/core/config.py`):** Implements a hierarchical config system (Base Config + Environment Overrides). Uses `pydantic` and `jsonschema` for validation, which is a best practice.
-*   **Git Integration (`src/core/fabric_git_api.py`):** Directly interacts with Fabric's REST API to bind workspaces to Git repositories, a key enabler for the "Data Product Factory".
-*   **Templating (`src/core/templating.py`):** Ensures consistent artifact generation (Lakehouses, Notebooks) across environments.
+*   **Wrapper (`src/usf_fabric_cli/fabric_wrapper.py`):** A solid abstraction over the `fab` CLI. It handles authentication, command execution, and crucially, **idempotency** (checking if items exist before creating).
+*   **Configuration (`src/usf_fabric_cli/config.py`):** Implements a hierarchical config system (Base Config + Environment Overrides). Uses `pydantic` and `jsonschema` for validation, which is a best practice.
+*   **Git Integration (`src/usf_fabric_cli/fabric_git_api.py`):** Directly interacts with Fabric's REST API to bind workspaces to Git repositories, a key enabler for the "Data Product Factory".
+*   **Templating (`src/usf_fabric_cli/templating.py`):** Ensures consistent artifact generation (Lakehouses, Notebooks) across environments.
 
 ### 2.2 Strengths
 *   **Idempotency:** The deployment logic is designed to be re-runnable without errors.

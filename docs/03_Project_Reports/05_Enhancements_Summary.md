@@ -95,7 +95,7 @@ workspace:
 
 **Impact:** Deployment fails if CLI version lacks support for specified item type.
 
-**Mitigation Strategy:** Maintain Fabric CLI currency through regular updates. Execute `python scripts/preflight_check.py` to validate CLI version compatibility before deployment.
+**Mitigation Strategy:** Maintain Fabric CLI currency through regular updates. Execute `python scripts/admin/preflight_check.py` to validate CLI version compatibility before deployment.
 
 ### 3. Folder Depth Limitation
 

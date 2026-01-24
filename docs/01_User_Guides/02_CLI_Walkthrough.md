@@ -26,7 +26,7 @@ Instead of writing YAML from scratch, use the generator script to scaffold your 
 
 ```bash
 # Run the generator
-python scripts/generate_project.py \
+python scripts/dev/generate_project.py \
   "Acme Corp" \
   "Supply Chain" \
   --template basic_etl
@@ -98,7 +98,7 @@ Use the `--force-branch-workspace` flag to tell the deployer to create a tempora
 ```bash
 make docker-feature-deploy config=config/projects/acme_corp/supply_chain.yaml env=dev branch=feature/inventory-opt
 # Or using CLI directly:
-python -m core.cli deploy config/projects/acme_corp/supply_chain.yaml --env dev --branch feature/inventory-opt
+python -m usf_fabric_cli.cli deploy config/projects/acme_corp/supply_chain.yaml --env dev --branch feature/inventory-opt
 ```
 
 **Result:**
@@ -118,7 +118,7 @@ Switch the environment flag to `prod`. The tool automatically picks up productio
 ```bash
 make deploy config=config/projects/acme_corp/supply_chain.yaml env=prod
 # Or using CLI directly:
-python -m core.cli deploy config/projects/acme_corp/supply_chain.yaml --env prod
+python -m usf_fabric_cli.cli deploy config/projects/acme_corp/supply_chain.yaml --env prod
 ```
 
 **Result:**
@@ -136,7 +136,7 @@ python -m core.cli deploy config/projects/acme_corp/supply_chain.yaml --env prod
 List your workspaces to find the one to delete.
 
 ```bash
-python scripts/utilities/list_workspaces.py > workspaces.txt
+python scripts/admin/utilities/list_workspaces.py > workspaces.txt
 grep "feature-inventory-opt" workspaces.txt
 ```
 
@@ -148,7 +148,7 @@ Create a file with the workspaces to delete and run the bulk destroy script.
 echo "acme-supply-chain-feature-inventory-opt" > delete_list.txt
 
 # Run bulk destroy
-python scripts/bulk_destroy.py delete_list.txt
+python scripts/admin/bulk_destroy.py delete_list.txt
 ```
 
 **Result:** The feature workspace is removed, freeing up capacity.
@@ -159,12 +159,12 @@ python scripts/bulk_destroy.py delete_list.txt
 
 | Task | Makefile Command | Direct CLI Command |
 |------|------------------|-------------------|
-| **Scaffold** | `make docker-generate org="Org" project="Proj" template=basic_etl` | `python scripts/generate_project.py "Org" "Proj" --template basic_etl` |
-| **Validate** | `make validate config=<config>` | `python -m core.cli validate <config>` |
-| **Deploy (Dev)** | `make deploy config=<config> env=dev` | `python -m core.cli deploy <config> --env dev` |
-| **Deploy (Feature)** | `make docker-feature-deploy config=<config> env=dev branch=<name>` | `python -m core.cli deploy <config> --env dev --branch <name>` |
-| **Deploy (Prod)** | `make deploy config=<config> env=prod` | `python -m core.cli deploy <config> --env prod` |
-| **Cleanup** | `make bulk-destroy file=<list_file>` | `python scripts/bulk_destroy.py <list_file>` |
+| **Scaffold** | `make docker-generate org="Org" project="Proj" template=basic_etl` | `python scripts/dev/generate_project.py "Org" "Proj" --template basic_etl` |
+| **Validate** | `make validate config=<config>` | `python -m usf_fabric_cli.cli validate <config>` |
+| **Deploy (Dev)** | `make deploy config=<config> env=dev` | `python -m usf_fabric_cli.cli deploy <config> --env dev` |
+| **Deploy (Feature)** | `make docker-feature-deploy config=<config> env=dev branch=<name>` | `python -m usf_fabric_cli.cli deploy <config> --env dev --branch <name>` |
+| **Deploy (Prod)** | `make deploy config=<config> env=prod` | `python -m usf_fabric_cli.cli deploy <config> --env prod` |
+| **Cleanup** | `make bulk-destroy file=<list_file>` | `python scripts/admin/bulk_destroy.py <list_file>` |
 
 ## Makefile Quick Reference (Local & Docker)
 

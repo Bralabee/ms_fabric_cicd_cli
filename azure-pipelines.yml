@@ -25,8 +25,8 @@ steps:
     
     # Validate configuration first
     export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-    python -m core.cli validate config/projects/contoso/finance_analytics.yaml
+    python -m usf_fabric_cli.cli validate config/projects/contoso/finance_analytics.yaml
     
     # Deploy
-    python -m core.cli deploy config/projects/contoso/finance_analytics.yaml --env dev
+    python -m usf_fabric_cli.cli deploy config/projects/contoso/finance_analytics.yaml --env dev
   displayName: 'Deploy to Fabric'

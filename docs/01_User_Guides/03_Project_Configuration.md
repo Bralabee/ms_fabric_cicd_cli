@@ -31,10 +31,10 @@ The `generate_project.py` script creates a customized configuration from a bluep
 conda activate fabric-cli-cicd
 
 # Generate a project configuration
-python scripts/generate_project.py "Organization Name" "Project Name" --template <template_name>
+python scripts/dev/generate_project.py "Organization Name" "Project Name" --template <template_name>
 
 # Example: Create a real-time streaming project for Acme Corp
-python scripts/generate_project.py "Acme Corp" "IoT Analytics" --template realtime_streaming
+python scripts/dev/generate_project.py "Acme Corp" "IoT Analytics" --template realtime_streaming
 ```
 
 **Output location:** `config/projects/<org_slug>/<project_slug>.yaml`
@@ -339,7 +339,7 @@ make validate config=config/projects/acme_corp/iot_analytics.yaml
 
 ```bash
 # Check CLI version, credentials, and capacity access
-python scripts/preflight_check.py --auto-install
+python scripts/admin/preflight_check.py --auto-install
 ```
 
 ### 4. Review Generated Resources

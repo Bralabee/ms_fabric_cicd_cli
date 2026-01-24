@@ -63,9 +63,9 @@ jobs:
     - name: Validate configuration
       run: |
         export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-        python -m core.cli validate templates/blueprints/basic_etl.yaml
-        python -m core.cli validate templates/blueprints/advanced_analytics.yaml
-        python -m core.cli validate templates/blueprints/data_science.yaml
+        python -m usf_fabric_cli.cli validate templates/blueprints/basic_etl.yaml
+        python -m usf_fabric_cli.cli validate templates/blueprints/advanced_analytics.yaml
+        python -m usf_fabric_cli.cli validate templates/blueprints/data_science.yaml
     
     - name: Run unit tests with coverage
       run: |
@@ -127,7 +127,7 @@ jobs:
         TENANT_ID: ${{ secrets.TENANT_ID }}
       run: |
         export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-        python -m core.cli deploy \
+        python -m usf_fabric_cli.cli deploy \
           templates/blueprints/${{ github.event.inputs.config_template }}.yaml \
           --env ${{ github.event.inputs.environment }} \
           --branch ${{ github.ref_name }}

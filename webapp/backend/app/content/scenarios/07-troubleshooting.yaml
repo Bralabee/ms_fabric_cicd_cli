@@ -277,8 +277,8 @@ steps:
         fabric-cicd --help
         
         # Alternative: Use Python module syntax (always works)
-        python -m core.cli --help
-        python -m core.cli deploy config/your/config.yaml --env dev
+        python -m usf_fabric_cli.cli --help
+        python -m usf_fabric_cli.cli deploy config/your/config.yaml --env dev
         
         # Check if entry point is registered
         pip show usf-fabric-cli | grep Entry
@@ -302,7 +302,7 @@ steps:
         validate  Validate configuration file syntax and structure.
     tips:
       - "`pip install -e .` installs in \"editable\" mode (changes apply immediately)"
-      - "`python -m core.cli` is equivalent and always works"
+      - "`python -m usf_fabric_cli.cli` is equivalent and always works"
 
   - id: auth-failure
     title: "Error: Authentication Failures"

@@ -47,7 +47,7 @@ The absolute minimum viable Fabric workspace for quick prototyping and learning.
 
 ### Getting Started
 ```bash
-python scripts/generate_project.py "My Company" "Quick POC" \
+python scripts/dev/generate_project.py "My Company" "Quick POC" \
   --template minimal_starter \
   --capacity-id F2
 
@@ -90,7 +90,7 @@ Standard medallion architecture (Bronze → Silver → Gold) for production ETL 
 
 ### Getting Started
 ```bash
-python scripts/generate_project.py "Acme Corp" "Sales Analytics" \
+python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" \
   --template basic_etl \
   --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
 
@@ -204,7 +204,7 @@ High-throughput streaming platform with real-time analytics and alerting.
 
 ### Getting Started
 ```bash
-python scripts/generate_project.py "TechCorp" "IoT Platform" \
+python scripts/dev/generate_project.py "TechCorp" "IoT Platform" \
   --template realtime_streaming \
   --capacity-id F16
 
@@ -270,7 +270,7 @@ After deployment, manually configure:
 
 ### Getting Started
 ```bash
-python scripts/generate_project.py "HealthCare Inc" "Patient Data Platform" \
+python scripts/dev/generate_project.py "HealthCare Inc" "Patient Data Platform" \
   --template compliance_regulated \
   --capacity-id F16
 
@@ -333,7 +333,7 @@ Clone this template for each domain:
 ### Getting Started
 ```bash
 # Create Sales domain workspace
-python scripts/generate_project.py "Enterprise Corp" "Sales Domain" \
+python scripts/dev/generate_project.py "Enterprise Corp" "Sales Domain" \
   --template data_mesh_domain \
   --capacity-id F16
 
@@ -408,7 +408,7 @@ Facilitates cloud migration with minimal disruption using hybrid architecture.
 
 ### Getting Started
 ```bash
-python scripts/generate_project.py "Legacy Corp" "Cloud Migration" \
+python scripts/dev/generate_project.py "Legacy Corp" "Cloud Migration" \
   --template migration_hybrid \
   --capacity-id F16
 
@@ -490,7 +490,7 @@ High-performance platform for time-series data, IoT at scale, and operational in
 
 ### Getting Started
 ```bash
-python scripts/generate_project.py "Operations Inc" "Monitoring Platform" \
+python scripts/dev/generate_project.py "Operations Inc" "Monitoring Platform" \
   --template specialized_timeseries \
   --capacity-id F16
 
@@ -581,7 +581,7 @@ cp templates/blueprints/basic_etl.yaml templates/blueprints/my_custom_template.y
 vim templates/blueprints/my_custom_template.yaml
 
 # Use custom template
-python scripts/generate_project.py "My Org" "My Project" \
+python scripts/dev/generate_project.py "My Org" "My Project" \
   --template my_custom_template
 ```
 
@@ -636,7 +636,7 @@ environments:
 ls -la templates/blueprints/
 
 # Verify template name matches exactly
-python scripts/generate_project.py "Org" "Project" --template basic_etl
+python scripts/dev/generate_project.py "Org" "Project" --template basic_etl
 ```
 
 **Issue:** Principal permissions errors

@@ -256,7 +256,7 @@ class ConfigManager:
     def _load_schema(self) -> Dict[str, Any]:
         """Load JSON schema for configuration validation"""
         # Schema is in src/schemas/workspace_config.json
-        # __file__ is src/core/config.py -> parent is src/core -> parent.parent is src
+        # __file__ is src/usf_fabric_cli/config.py -> parent is src/core -> parent.parent is src
         base_path = Path(__file__).resolve().parent.parent
         schema_path = base_path / "schemas" / "workspace_config.json"
 

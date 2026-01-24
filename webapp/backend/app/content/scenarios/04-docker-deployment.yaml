@@ -129,7 +129,7 @@ steps:
       | Component | Description |
       |-----------|-------------|
       | Python 3.11 | Runtime environment |
-      | Framework code | All `src/core/` modules and scripts |
+      | Framework code | All `src/usf_fabric_cli/` modules and scripts |
       | Dependencies | typer, rich, pyyaml, jinja2, azure-identity |
       | Fabric CLI | Official Microsoft Fabric CLI (`fab` command) |
       | Non-root user | Security hardening |

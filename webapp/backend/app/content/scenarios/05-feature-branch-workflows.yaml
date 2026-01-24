@@ -208,7 +208,7 @@ steps:
         
         # Option B: Using Python module directly
         export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
-        python -m core.cli deploy \
+        python -m usf_fabric_cli.cli deploy \
           config/projects/acme_corp/sales_analytics.yaml \
           --env dev \
           --branch feature/inventory-optimization \

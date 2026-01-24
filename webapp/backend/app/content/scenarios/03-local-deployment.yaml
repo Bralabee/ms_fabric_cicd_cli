@@ -60,7 +60,7 @@ steps:
       |--------|---------|-------------|
       | **Make** | `make deploy config=... env=dev` | Recommended - simplest |
       | **CLI** | `fabric-cicd deploy ... --env dev` | Direct CLI access |
-      | **Python** | `python -m core.cli deploy ...` | If entry point missing |
+      | **Python** | `python -m usf_fabric_cli.cli deploy ...` | If entry point missing |
       
       ## Key Deployment Commands
       
@@ -152,7 +152,7 @@ steps:
         fabric-cicd validate config/projects/acme_corp/sales_analytics.yaml --env prod
         
         # Using Python module (if CLI not registered)
-        python -m core.cli validate config/projects/acme_corp/sales_analytics.yaml
+        python -m usf_fabric_cli.cli validate config/projects/acme_corp/sales_analytics.yaml
     expected_output: |
       ╔══════════════════════════════════════════════════════════════╗
       ║              Configuration Validation                        ║

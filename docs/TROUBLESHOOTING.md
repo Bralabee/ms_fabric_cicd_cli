@@ -22,7 +22,7 @@ make install
 
 **Alternative**: Use direct Python command:
 ```bash
-python -m core.cli validate config/projects/test/project.yaml
+python -m usf_fabric_cli.cli validate config/projects/test/project.yaml
 ```
 
 ---
@@ -55,7 +55,7 @@ fabric-cicd --help
 
 **Alternative**: Use Python module syntax:
 ```bash
-python -m core.cli --help
+python -m usf_fabric_cli.cli --help
 ```
 
 ---
@@ -149,7 +149,7 @@ nano .env  # Edit with your credentials
 
 **Verify Permissions**:
 ```bash
-python scripts/utilities/debug_ado_access.py --organization your-org --project your-project
+python scripts/admin/utilities/debug_ado_access.py --organization your-org --project your-project
 ```
 
 ---
@@ -264,7 +264,7 @@ echo $GITHUB_TOKEN
 
 3. **Test repository access**:
 ```bash
-python scripts/utilities/debug_ado_access.py \
+python scripts/admin/utilities/debug_ado_access.py \
   --organization your-org \
   --project your-project \
   --repository your-repo
@@ -272,7 +272,7 @@ python scripts/utilities/debug_ado_access.py \
 
 4. **Initialize repository first**:
 ```bash
-python scripts/utilities/init_ado_repo.py \
+python scripts/admin/utilities/init_ado_repo.py \
   --organization your-org \
   --project your-project \
   --repository new-repo
@@ -301,7 +301,7 @@ echo $FABRIC_CAPACITY_ID
 
 2. **List existing workspaces on capacity**:
 ```bash
-python scripts/utilities/list_workspaces.py
+python scripts/admin/utilities/list_workspaces.py
 # Check how many workspaces exist
 ```
 
@@ -371,7 +371,7 @@ conda env list | grep fabric-cli-cicd
 fab --version
 
 # 3. Test credentials
-python -m core.cli diagnose
+python -m usf_fabric_cli.cli diagnose
 
 # 4. Validate configuration
 fabric-cicd validate config/projects/your-org/your-project.yaml
@@ -401,7 +401,7 @@ docker run --rm fabric-cli-cicd --help
 
 3. **Run Diagnostics**:
    ```bash
-   python scripts/preflight_check.py
+   python scripts/admin/preflight_check.py
    ```
 
 4. **Check Related Projects**:

@@ -15,7 +15,7 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
             AuditLogger (JSONL compliance)
 ```
 
-**Core Components** (`src/core/`):
+**Core Components** (`src/usf_fabric_cli/`):
 - `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate commands)
 - `fabric_wrapper.py`: Thin abstraction over `fabric` CLI subprocess calls. **Supports generic item creation** via `create_item` for 54+ Fabric item types.
 - `config.py`: YAML config loader with env-specific overrides + Jinja2 variable substitution
@@ -32,7 +32,7 @@ Template blueprints in `templates/blueprints/*.yaml` are customized via `scripts
 
 ## 🔐 Secret Management (CRITICAL)
 
-**Waterfall Priority** (`src/core/secrets.py:FabricSecrets`):
+**Waterfall Priority** (`src/usf_fabric_cli/utils/secrets.py:FabricSecrets`):
 1. **Environment Variables** (production/CI/CD) - highest priority
 2. **`.env` file** (local development) - `python-dotenv` auto-loaded
 3. **Azure Key Vault** (optional) - via `DefaultAzureCredential` + `AZURE_KEYVAULT_URL`
@@ -84,7 +84,7 @@ python scripts/utilities/init_ado_repo.py \
 
 # 4. Deploy via Makefile (preferred) or direct CLI
 make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
-# OR: python -m core.cli deploy config/projects/.../sales_analytics.yaml --env dev
+# OR: python -m usf_fabric_cli.cli deploy config/projects/.../sales_analytics.yaml --env dev
 ```
 
 ### Testing Strategy
@@ -166,7 +166,7 @@ lakehouse_name = "{{ environment }}_data_lakehouse"  # Rendered: dev_data_lakeho
 connection_string = "{{ secrets.STORAGE_ACCOUNT_URL }}"
 ```
 
-**Rendering context** (`src/core/templating.py`):
+**Rendering context** (`src/usf_fabric_cli/utils/templating.py`):
 - `environment`: Current env (dev/test/prod)
 - `workspace_name`: Workspace display name
 - `capacity_id`: Fabric capacity ID
@@ -176,12 +176,12 @@ connection_string = "{{ secrets.STORAGE_ACCOUNT_URL }}"
 
 ### Fabric CLI Dependency
 - **Installation**: `pip install https://github.com/microsoft/fabric-sdk-cli/archive/refs/heads/main.zip`
-- **Version Check**: `src/core/fabric_wrapper.py:_validate_cli_version()` ensures min version
+- **Version Check**: `src/usf_fabric_cli/services/fabric_wrapper.py:_validate_cli_version()` ensures min version
 - **Command Pattern**: All CLI calls via `_run_command()` with `--output json` for parsing
 
 ### Git Integration (REST API, not CLI)
 - **Why REST?**: Fabric CLI doesn't support Git connections yet (as of v1.0)
-- **Implementation**: `src/core/fabric_git_api.py:FabricGitAPI` uses Fabric REST API
+- **Implementation**: `src/usf_fabric_cli/services/fabric_git_api.py:FabricGitAPI` uses Fabric REST API
 - **Supported Providers**: Azure DevOps, GitHub (via `GitProviderType` enum)
 - **Authentication**: Uses same Service Principal as Fabric operations
 
@@ -194,7 +194,7 @@ Service Principal must have:
 ## 🧪 Code Conventions
 
 ### Error Handling
-- **Custom Exceptions**: `src/core/exceptions.py` (`FabricCLIError`, `FabricCLINotFoundError`)
+- **Custom Exceptions**: `src/usf_fabric_cli/exceptions.py` (`FabricCLIError`, `FabricCLINotFoundError`)
 - **Idempotency**: All operations check existence before creation (avoid "already exists" errors)
 - **Retry Logic**: Not implemented - rely on Fabric CLI's built-in retries
 
@@ -210,7 +210,7 @@ Service Principal must have:
 ## 🚨 Common Pitfalls
 
 1. **Not Using Conda Environment**: ALWAYS run `conda activate fabric-cli-cicd` before any Python operations. Check with `conda env list` to verify.
-2. **Entry Point Not Available**: Run `make install` or `pip install -e .` to enable the `fabric-cicd` command (alternative: use `python -m core.cli`)
+2. **Entry Point Not Available**: Run `make install` or `pip install -e .` to enable the `fabric-cicd` command (alternative: use `python -m usf_fabric_cli.cli`)
 3. **Service Principal Permissions**: Most deployment failures = missing SP permissions (workspace admin, ADO contributor)
 4. **Capacity Exhausted**: F2 (trial) has low limits. Use `scripts/utilities/list_workspaces.py` to audit capacity usage
 5. **Git Branch Workspaces**: Feature branches auto-create workspaces like `main-workspace-feature-123`. Clean up manually if branch deleted.
@@ -219,7 +219,7 @@ Service Principal must have:
 ## 📦 Packaging & Distribution
 
 - **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.3.1-py3-none-any.whl`
-- **Entry Point**: `pyproject.toml` defines `fabric-cicd` command → `core.cli:app`
+- **Entry Point**: `pyproject.toml` defines `fabric-cicd` command → `usf_fabric_cli.cli:app`
 - **Docker Image**: `Dockerfile` installs wheel + Fabric CLI, runs as non-root user
 
 ## � Interactive Learning Guide (`webapp/`)

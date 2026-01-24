@@ -37,7 +37,7 @@ Successfully expanded the `usf_fabric_cli_cicd` framework from **4 to 10 product
 
 ### Updated Framework Components
 
-1. **`scripts/generate_project.py`**: Added all 10 templates to CLI choices
+1. **`scripts/dev/generate_project.py`**: Added all 10 templates to CLI choices
 2. **`README.md`**: Updated quick start to showcase template variety
 3. **`CHANGELOG.md`**: Documented v1.2.0 features with detailed breakdown
 
@@ -131,7 +131,7 @@ Successfully expanded the `usf_fabric_cli_cicd` framework from **4 to 10 product
 
 ```bash
 # Generate project from new template
-python scripts/generate_project.py "TestOrg" "Streaming Demo" \
+python scripts/dev/generate_project.py "TestOrg" "Streaming Demo" \
   --template realtime_streaming
 
 # Validate configuration
@@ -194,7 +194,7 @@ docs/BLUEPRINT_CATALOG.md                             (340KB)
 ### Modified Files (3)
 
 ```
-scripts/generate_project.py    (+7 template choices)
+scripts/dev/generate_project.py    (+7 template choices)
 README.md                      (Updated quick start examples)
 CHANGELOG.md                   (v1.2.0 release notes)
 ```
@@ -243,7 +243,7 @@ CHANGELOG.md                   (v1.2.0 release notes)
 ### Real-Time IoT Platform
 
 ```bash
-python scripts/generate_project.py "TechCorp" "IoT Platform" \
+python scripts/dev/generate_project.py "TechCorp" "IoT Platform" \
   --template realtime_streaming \
   --capacity-id F16
 
@@ -255,7 +255,7 @@ make deploy config=config/projects/techcorp/iot_platform.yaml env=prod
 ### Healthcare Compliance
 
 ```bash
-python scripts/generate_project.py "HealthCo" "Patient Data" \
+python scripts/dev/generate_project.py "HealthCo" "Patient Data" \
   --template compliance_regulated \
   --capacity-id F16
 
@@ -267,7 +267,7 @@ make deploy config=config/projects/healthco/patient_data.yaml env=prod
 ### SQL Server Migration
 
 ```bash
-python scripts/generate_project.py "LegacyCorp" "Cloud Migration" \
+python scripts/dev/generate_project.py "LegacyCorp" "Cloud Migration" \
   --template migration_hybrid \
   --capacity-id F16
 

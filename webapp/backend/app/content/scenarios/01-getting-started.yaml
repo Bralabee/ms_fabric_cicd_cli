@@ -295,7 +295,7 @@ steps:
       | Component | Description |
       |-----------|-------------|
       | `fabric-cicd` command | Main CLI entry point (defined in `pyproject.toml`) |
-      | `src/core/` modules | Core Python libraries |
+      | `src/usf_fabric_cli/` modules | Core Python libraries |
       | Dependencies | typer, rich, pyyaml, jinja2, python-dotenv, azure-identity |
       
       ## Installation Methods
@@ -333,7 +333,7 @@ steps:
     tips:
       - "The `-e` flag installs in \"editable\" mode - code changes take effect immediately"
       - "If `fabric-cicd` isn't found, ensure conda environment is active"
-      - "Alternative: use `python -m core.cli` instead of `fabric-cicd`"
+      - "Alternative: use `python -m usf_fabric_cli.cli` instead of `fabric-cicd`"
 
   - id: makefile-commands
     title: "Step 6: Understand Available Make Commands"
@@ -478,11 +478,11 @@ steps:
         fabric-cicd diagnose
         
         # Alternative: Use Python module syntax
-        python -m core.cli deploy config/projects/acme/sales.yaml --env dev
+        python -m usf_fabric_cli.cli deploy config/projects/acme/sales.yaml --env dev
     tips:
       - "Use `--validate-only` to check config without deploying"
       - "Use `--diagnose` for verbose output during troubleshooting"
-      - "`python -m core.cli` works even if the entry point isn't registered"
+      - "`python -m usf_fabric_cli.cli` works even if the entry point isn't registered"
 
   - id: python-scripts
     title: "Step 8: Understand Python Utility Scripts"

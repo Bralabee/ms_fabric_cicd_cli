@@ -41,7 +41,7 @@ conda activate fabric-cli-cicd
 make install
 
 # Verify Fabric CLI installation and dependencies
-python scripts/preflight_check.py --auto-install
+python scripts/admin/preflight_check.py --auto-install
 
 # Configure authentication credentials
 cp .env.template .env
@@ -73,13 +73,13 @@ Use the template generator to create a standardized configuration file. Choose f
 
 ```bash
 # Standard ETL (Medallion architecture)
-python scripts/generate_project.py "Contoso Inc" "Finance Analytics" --template basic_etl
+python scripts/dev/generate_project.py "Contoso Inc" "Finance Analytics" --template basic_etl
 
 # Real-time streaming (IoT, events, Eventstreams + KQL)
-python scripts/generate_project.py "TechCorp" "IoT Platform" --template realtime_streaming
+python scripts/dev/generate_project.py "TechCorp" "IoT Platform" --template realtime_streaming
 
 # Compliance-heavy (Healthcare, Finance, Government)
-python scripts/generate_project.py "HealthCo" "Patient Platform" --template compliance_regulated
+python scripts/dev/generate_project.py "HealthCo" "Patient Platform" --template compliance_regulated
 
 # See all 10 templates: docs/BLUEPRINT_CATALOG.md
 # Output: config/projects/{org_name}/{project_name}.yaml
@@ -88,7 +88,7 @@ python scripts/generate_project.py "HealthCo" "Patient Platform" --template comp
 **Step 2: Initialize Azure DevOps Repository**
 Create the backing Git repository for your new project.
 ```bash
-python scripts/utilities/init_ado_repo.py \
+python scripts/admin/utilities/init_ado_repo.py \
   --organization "your-ado-org" \
   --project "your-ado-project" \
   --repository "contoso-finance-repo" \
@@ -188,7 +188,7 @@ All Docker targets accept `ENVFILE=.env.xxx` to specify which environment file t
 ### Deploy Command
 
 ```bash
-python -m core.cli deploy CONFIG [OPTIONS]
+python -m usf_fabric_cli.cli deploy CONFIG [OPTIONS]
 ```
 
 | Flag | Short | Description |
@@ -202,7 +202,7 @@ python -m core.cli deploy CONFIG [OPTIONS]
 ### Destroy Command
 
 ```bash
-python -m core.cli destroy CONFIG [OPTIONS]
+python -m usf_fabric_cli.cli destroy CONFIG [OPTIONS]
 ```
 
 | Flag | Short | Description |
@@ -245,13 +245,13 @@ See [webapp/README.md](webapp/README.md) for detailed documentation.
 
 ## Utility Tools
 
-The framework includes several utility scripts in `scripts/utilities/` to assist with setup and troubleshooting. These scripts automatically load credentials from your `.env` file.
+The framework includes several utility scripts in `scripts/admin/utilities/` to assist with setup and troubleshooting. These scripts automatically load credentials from your `.env` file.
 
 ### Initialize Azure DevOps Repository
 Initializes an empty Azure DevOps repository with a `main` branch. This is required because Fabric Git integration fails if the target repository is completely empty (0 branches).
 
 ```bash
-python scripts/utilities/init_ado_repo.py \
+python scripts/admin/utilities/init_ado_repo.py \
   --organization "your-org-name" \
   --project "your-project-name" \
   --repository "your-repo-name"
@@ -261,7 +261,7 @@ python scripts/utilities/init_ado_repo.py \
 Verifies that your Service Principal has the correct permissions to access Azure DevOps.
 
 ```bash
-python scripts/utilities/debug_ado_access.py \
+python scripts/admin/utilities/debug_ado_access.py \
   --organization "your-org-name" \
   --project "your-project-name"
 ```
@@ -270,7 +270,7 @@ python scripts/utilities/debug_ado_access.py \
 Tests the connection to a Git repository using the configured credentials.
 
 ```bash
-python scripts/utilities/debug_connection.py \
+python scripts/admin/utilities/debug_connection.py \
   --organization "your-org-name" \
   --project "your-project-name" \
   --repository "your-repo-name"
@@ -280,25 +280,30 @@ python scripts/utilities/debug_connection.py \
 Lists all items in a specified Fabric workspace to verify deployment.
 
 ```bash
-python scripts/utilities/list_workspace_items.py --workspace "Workspace Name"
+python scripts/admin/utilities/list_workspace_items.py --workspace "Workspace Name"
 ```
 
 ## Project Structure
 
 ```
 src/
-├── core/
-│   ├── secrets.py         # 12-Factor App secret management with waterfall loading
-│   ├── fabric_git_api.py  # REST API client for Git integration  
-│   ├── templating.py      # Jinja2 artifact transformation engine
-│   ├── config.py          # YAML configuration management
-│   ├── fabric_wrapper.py  # Fabric CLI wrapper with version validation
-│   ├── git_integration.py # Git synchronization
-│   ├── audit.py          # Compliance audit logging
-│   ├── telemetry.py      # Operational telemetry
-│   ├── exceptions.py     # Exception hierarchy
-│   └── cli.py            # Main deployment orchestrator (Entry Point)
-
+├── usf_fabric_cli/          # Main package (renamed from core)
+│   ├── __init__.py          # Package exports with lazy loading
+│   ├── cli.py               # Main deployment orchestrator (Entry Point)
+│   ├── exceptions.py        # Exception hierarchy
+│   ├── commands/            # CLI subcommands (future modularization)
+│   ├── services/
+│   │   ├── fabric_wrapper.py   # Fabric CLI wrapper with version validation
+│   │   ├── fabric_git_api.py   # REST API client for Git integration
+│   │   └── git_integration.py  # Git synchronization logic
+│   ├── utils/
+│   │   ├── secrets.py       # 12-Factor App secret management
+│   │   ├── config.py        # YAML configuration management
+│   │   ├── templating.py    # Jinja2 artifact transformation engine
+│   │   ├── audit.py         # Compliance audit logging
+│   │   └── telemetry.py     # Operational telemetry
+│   └── schemas/
+│       └── workspace_config.json  # JSON schema for validation
 
 config/
 ├── projects/              # Your organization configs
@@ -325,16 +330,12 @@ templates/
     └── extensive_example.yaml
 
 scripts/
-├── bulk_destroy.py        # Bulk cleanup utility
-├── generate_project.py    # Project scaffolding
-├── preflight_check.py     # Environment validation
-└── utilities/
-    ├── analyze_migration.py    # Migration analysis tool
-    ├── debug_ado_access.py     # Azure DevOps permissions check
-    ├── debug_connection.py     # Git connection testing
-    ├── init_ado_repo.py        # Initialize ADO repository
-    ├── list_workspaces.py      # Workspace listing tool
-    └── list_workspace_items.py # Item listing tool
+├── admin/                 # Administrative/operational scripts
+│   ├── bulk_destroy.py    # Bulk cleanup utility
+│   ├── preflight_check.py # Environment validation
+│   └── utilities/         # Helper utilities
+├── dev/                   # Developer workflow scripts
+│   └── generate_project.py  # Project scaffolding
 ```
 
 ## Total LOC: ~4,100 (thin wrapper architecture vs original monolithic 1,830)
@@ -402,7 +403,7 @@ This project incorporates key learnings from the original implementation:
 
 If migrating from a custom Fabric API solution:
 
-1. **Assessment** - Use `scripts/utilities/analyze_migration.py` to identify what can be replaced with CLI
+1. **Assessment** - Use `scripts/admin/utilities/analyze_migration.py` to identify what can be replaced with CLI
 2. **Migration** - Incremental replacement of custom components
 3. **Validation** - Side-by-side testing during transition
 4. **Deprecation** - Sunset plan for custom components

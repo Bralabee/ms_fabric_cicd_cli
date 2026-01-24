@@ -821,7 +821,7 @@ steps:
         fabric-cicd validate config/projects/acme_corp/sales_analytics.yaml
         
         # OR using Python module
-        python -m core.cli validate config/projects/acme_corp/sales_analytics.yaml
+        python -m usf_fabric_cli.cli validate config/projects/acme_corp/sales_analytics.yaml
         
         # Validate with specific environment
         fabric-cicd validate config/projects/acme_corp/sales_analytics.yaml --env prod

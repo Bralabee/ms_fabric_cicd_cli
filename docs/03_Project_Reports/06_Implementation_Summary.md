@@ -10,7 +10,7 @@ This document summarizes the comprehensive enhancements made to the `usf_fabric_
 
 ### 1. New Core Modules
 
-#### `src/core/secrets.py`
+#### `src/usf_fabric_cli/secrets.py`
 **Purpose**: 12-Factor App configuration pattern for secrets management
 
 **Features**:
@@ -28,7 +28,7 @@ This document summarizes the comprehensive enhancements made to the `usf_fabric_
 
 ---
 
-#### `src/core/fabric_git_api.py`
+#### `src/usf_fabric_cli/fabric_git_api.py`
 **Purpose**: REST API client for Fabric Git Integration
 
 **Features**:
@@ -50,7 +50,7 @@ This document summarizes the comprehensive enhancements made to the `usf_fabric_
 
 ---
 
-#### `src/core/templating.py`
+#### `src/usf_fabric_cli/templating.py`
 **Purpose**: Dynamic artifact transformation engine
 
 **Features**:
@@ -74,7 +74,7 @@ This document summarizes the comprehensive enhancements made to the `usf_fabric_
 
 ### 2. Enhanced Existing Modules
 
-#### `src/core/fabric_wrapper.py`
+#### `src/usf_fabric_cli/fabric_wrapper.py`
 **Enhancements**:
 - Added CLI version validation on initialization
 - Version compatibility checking with warnings
@@ -96,7 +96,7 @@ FabricCLIWrapper(
 
 ---
 
-#### `src/core/config.py`
+#### `src/usf_fabric_cli/config.py`
 **Enhancements**:
 - Integration with new secrets module
 - Backward compatibility maintained
@@ -339,9 +339,9 @@ packaging>=23.0
 ## Files Modified
 
 ### New Files (9)
-1. `src/core/secrets.py`
-2. `src/core/fabric_git_api.py`
-3. `src/core/templating.py`
+1. `src/usf_fabric_cli/secrets.py`
+2. `src/usf_fabric_cli/fabric_git_api.py`
+3. `src/usf_fabric_cli/templating.py`
 4. `tests/test_secrets.py`
 5. `tests/test_templating.py`
 6. `Dockerfile`
@@ -351,8 +351,8 @@ packaging>=23.0
 
 ### Modified Files (4)
 1. `requirements.txt` - Added dependencies
-2. `src/core/fabric_wrapper.py` - Version validation
-3. `src/core/config.py` - Secrets integration
+2. `src/usf_fabric_cli/fabric_wrapper.py` - Version validation
+3. `src/usf_fabric_cli/config.py` - Secrets integration
 4. `src/fabric_deploy.py` - Git API integration
 5. `.github/workflows/fabric-cicd.yml` - Enhanced validation
 

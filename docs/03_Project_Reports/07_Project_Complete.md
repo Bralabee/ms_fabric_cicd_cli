@@ -25,7 +25,7 @@ usf_fabric_cli_cicd/
 ├── 📄 setup.sh                    # Setup script
 ├── 📄 .env.template               # Environment variables template
 │
-├── 📁 src/core/                   # Core thin wrapper (~270 LOC total)
+├── 📁 src/usf_fabric_cli/                   # Core thin wrapper (~270 LOC total)
 │   ├── config.py                  # Configuration management (50 LOC)
 │   ├── fabric_wrapper.py          # Fabric CLI wrapper (80 LOC)
 │   ├── git_integration.py         # Git + Fabric sync (60 LOC)
@@ -73,7 +73,7 @@ conda activate fabric-cli-cicd
 
 ### 2. Generate Your Project (30 seconds)
 ```bash
-python scripts/generate_project.py \
+python scripts/dev/generate_project.py \
   "Your Company" \
   "Analytics Project" \
   --template basic_etl \
@@ -140,7 +140,7 @@ principals:
 ### ✅ **Migration Tools**
 ```bash
 # Analyze existing custom solution
-python scripts/utilities/analyze_migration.py /path/to/old/solution
+python scripts/admin/utilities/analyze_migration.py /path/to/old/solution
 ```
 
 ### ✅ **Audit Compliance**
@@ -169,7 +169,7 @@ python scripts/utilities/analyze_migration.py /path/to/old/solution
 
 ### Manufacturing Company
 ```bash
-python scripts/generate_project.py \
+python scripts/dev/generate_project.py \
   "Acme Manufacturing" \
   "Production Analytics" \
   --template basic_etl \
@@ -178,7 +178,7 @@ python scripts/generate_project.py \
 
 ### Healthcare Organization
 ```bash
-python scripts/generate_project.py \
+python scripts/dev/generate_project.py \
   "HealthTech Solutions" \
   "Patient Outcomes" \
   --template advanced_analytics \
@@ -187,7 +187,7 @@ python scripts/generate_project.py \
 
 ### Financial Services
 ```bash
-python scripts/generate_project.py \
+python scripts/dev/generate_project.py \
   "Global Bank Corp" \
   "Risk Analytics" \
   --template advanced_analytics \
@@ -244,7 +244,7 @@ python scripts/generate_project.py \
 
 2. **Generate Config** (1 minute)
    ```bash
-   python scripts/generate_project.py "Your Org" "Your Project" --template basic_etl --capacity-id YOUR_CAPACITY
+   python scripts/dev/generate_project.py "Your Org" "Your Project" --template basic_etl --capacity-id YOUR_CAPACITY
    ```
 
 3. **Deploy Dev** (2 minutes)

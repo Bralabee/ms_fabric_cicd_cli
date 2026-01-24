@@ -16,7 +16,7 @@ chmod +x setup.sh
 ./setup.sh
 
 # Optionally rerun the Python preflight if Fabric CLI/secrets change
-python scripts/preflight_check.py --auto-install
+python scripts/admin/preflight_check.py --auto-install
 
 # Activate environment
 conda activate fabric-cli-cicd
@@ -32,7 +32,7 @@ vim .env  # Edit with your values
 
 ```bash
 # Generate configuration for your organization
-python scripts/generate_project.py \
+python scripts/dev/generate_project.py \
   "Contoso Inc" \
   "Customer Analytics" \
   --template basic_etl \
@@ -47,13 +47,13 @@ python scripts/generate_project.py \
 
 ```bash
 # Validate configuration
-python -m core.cli validate config/projects/contoso_inc/customer_analytics.yaml
+python -m usf_fabric_cli.cli validate config/projects/contoso_inc/customer_analytics.yaml
 
 # Deploy to development
-python -m core.cli deploy config/projects/contoso_inc/customer_analytics.yaml --env dev
+python -m usf_fabric_cli.cli deploy config/projects/contoso_inc/customer_analytics.yaml --env dev
 
 # Deploy feature branch (creates separate workspace)
-python -m core.cli deploy config/projects/contoso_inc/customer_analytics.yaml \
+python -m usf_fabric_cli.cli deploy config/projects/contoso_inc/customer_analytics.yaml \
   --env dev --branch feature/new-analytics --force-branch-workspace
 ```
 
@@ -67,8 +67,8 @@ This tool is designed to manage multiple projects and organizations from a singl
 2.  **Define Environments**:
     *   Ensure `config/environments/prod.yaml` contains your production secrets/capacity IDs.
 3.  **Deploy with Specifics**:
-    *   Run: `python -m core.cli deploy config/projects/ProductA/config.yaml --env prod`
-    *   Run: `python -m core.cli deploy config/projects/ProductB/config.yaml --env dev`
+    *   Run: `python -m usf_fabric_cli.cli deploy config/projects/ProductA/config.yaml --env prod`
+    *   Run: `python -m usf_fabric_cli.cli deploy config/projects/ProductB/config.yaml --env dev`
 
 The `ConfigManager` looks at the file you passed (`config/projects/ProductA/config.yaml`), loads it, and then automatically looks for the environment override in `config/environments/{env}.yaml` to merge them. This allows you to maintain one "structure" file per project, while sharing "environment" settings (like Service Principals or Capacities) across them if needed.
 
@@ -78,7 +78,7 @@ The `ConfigManager` looks at the file you passed (`config/projects/ProductA/conf
 
 ```bash
 # Generate configuration
-python scripts/generate_project.py \
+python scripts/dev/generate_project.py \
   "Acme Manufacturing" \
   "Production Analytics" \
   --template basic_etl \
@@ -132,7 +132,7 @@ principals:
 
 ```bash
 # Generate healthcare analytics workspace
-python scripts/generate_project.py \
+python scripts/dev/generate_project.py \
   "HealthTech Solutions" \
   "Patient Outcomes Analytics" \
   --template advanced_analytics \
@@ -140,7 +140,7 @@ python scripts/generate_project.py \
   --git-repo https://github.com/healthtech/patient-outcomes
 
 # Deploy with HIPAA compliance considerations
-python -m core.cli deploy config/projects/healthtech_solutions/patient_outcomes_analytics.yaml --env prod
+python -m usf_fabric_cli.cli deploy config/projects/healthtech_solutions/patient_outcomes_analytics.yaml --env prod
 ```
 
 **Healthcare Customization:**
@@ -167,7 +167,7 @@ principals:
 
 ```bash
 # Generate financial analytics workspace
-python scripts/generate_project.py \
+python scripts/dev/generate_project.py \
   "Global Bank Corp" \
   "Risk Analytics Platform" \
   --template advanced_analytics \
@@ -175,7 +175,7 @@ python scripts/generate_project.py \
   --git-repo https://dev.azure.com/globalbank/risk-analytics
 
 # Deploy with strict access controls
-python -m core.cli deploy config/projects/global_bank_corp/risk_analytics_platform.yaml --env prod
+python -m usf_fabric_cli.cli deploy config/projects/global_bank_corp/risk_analytics_platform.yaml --env prod
 ```
 
 **Financial Services Customization:**
@@ -216,7 +216,7 @@ principals:
 git checkout -b feature/customer-segmentation
 
 # 2. Deploy feature-specific workspace (isolated testing)
-python -m core.cli deploy config/your-project.yaml \
+python -m usf_fabric_cli.cli deploy config/your-project.yaml \
   --env dev \
   --branch feature/customer-segmentation \
   --force-branch-workspace
@@ -304,13 +304,13 @@ Ensure these are defined in your `.env` file (or CI/CD secrets):
 
 ```bash
 # Development (smaller capacity, open access)
-python -m core.cli deploy config/project.yaml --env dev
+python -m usf_fabric_cli.cli deploy config/project.yaml --env dev
 
 # Staging (production-like, limited access)
-python -m core.cli deploy config/project.yaml --env staging
+python -m usf_fabric_cli.cli deploy config/project.yaml --env staging
 
 # Production (high capacity, restricted access)
-python -m core.cli deploy config/project.yaml --env prod
+python -m usf_fabric_cli.cli deploy config/project.yaml --env prod
 ```
 
 ### Environment Overrides
@@ -334,7 +334,7 @@ principals:
 
 ```bash
 # Analyze your current custom Fabric solution
-python scripts/analyze_migration.py /path/to/your/custom/solution --output migration-report.json
+python scripts/admin/utilities/analyze_migration.py /path/to/your/custom/solution --output migration-report.json
 
 # This generates:
 # - LOC analysis
@@ -413,7 +413,7 @@ folders:
 1. **Authentication Errors**
 ```bash
 # Validate setup
-python -m core.cli diagnose
+python -m usf_fabric_cli.cli diagnose
 
 # Check environment variables
 echo $FABRIC_TOKEN
@@ -456,10 +456,10 @@ If you need to delete multiple workspaces (e.g., for cleanup), use the bulk dest
 2. **Run the script**:
    ```bash
    # Dry run (preview)
-   python scripts/bulk_destroy.py workspaces_to_delete.txt --dry-run
+   python scripts/admin/bulk_destroy.py workspaces_to_delete.txt --dry-run
 
    # Execute
-   python scripts/bulk_destroy.py workspaces_to_delete.txt
+   python scripts/admin/bulk_destroy.py workspaces_to_delete.txt
    ```
 
 ### Audit Trail

@@ -160,7 +160,7 @@ To ensure that every environment looks the same, we use the **Templating Engine*
 make validate config=config/projects/sales_analytics/config.yaml
 ```
 
-*In a full CI/CD pipeline, this step would also deploy standard artifacts (e.g., a "Bronze Lakehouse") using `src/core/templating.py` to ensure the folder structure matches the corporate standard.*
+*In a full CI/CD pipeline, this step would also deploy standard artifacts (e.g., a "Bronze Lakehouse") using `src/usf_fabric_cli/templating.py` to ensure the folder structure matches the corporate standard.*
 
 ---
 

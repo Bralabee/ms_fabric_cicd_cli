@@ -108,7 +108,7 @@ Use the provided script to generate a new project configuration. This script pro
 
 **Command Syntax:**
 ```bash
-python scripts/generate_project.py "Client Name" "Project Name" --capacity-id "YOUR_CAPACITY_ID"
+python scripts/dev/generate_project.py "Client Name" "Project Name" --capacity-id "YOUR_CAPACITY_ID"
 ```
 
 **Example:**
@@ -116,7 +116,7 @@ To create a "Sales" project for client "Contoso" using Capacity ID `F64-12345`:
 
 1.  Execute the command:
     ```bash
-    python scripts/generate_project.py "Contoso" "Sales" --capacity-id "F64-12345"
+    python scripts/dev/generate_project.py "Contoso" "Sales" --capacity-id "F64-12345"
     ```
 
 2.  **Outcome:**
@@ -173,7 +173,7 @@ make diagnose
 ### C. Migration Analysis
 Analyze existing manual setups for migration to the automated tool:
 ```bash
-python scripts/analyze_migration.py /path/to/your/code
+python scripts/admin/utilities/analyze_migration.py /path/to/your/code
 ```
 *This provides an assessment of automation potential for current setups.*
 
