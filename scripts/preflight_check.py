@@ -35,7 +35,7 @@ def _validate_auth_vars() -> List[str]:
     # Check 2: Service Principal
     sp_vars = ["AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET"]
     missing_sp = [var for var in sp_vars if not os.getenv(var)]
-    
+
     # Tenant ID can be TENANT_ID or AZURE_TENANT_ID
     if not (os.getenv("TENANT_ID") or os.getenv("AZURE_TENANT_ID")):
         missing_sp.append("TENANT_ID (or AZURE_TENANT_ID)")
@@ -76,7 +76,9 @@ def run_preflight(auto_install: bool, skip_env: bool) -> int:
             print("    You must provide EITHER:")
             print("      1. FABRIC_TOKEN")
             print("    OR")
-            print("      2. AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, and TENANT_ID/AZURE_TENANT_ID")
+            print(
+                "      2. AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, and TENANT_ID/AZURE_TENANT_ID"
+            )
             print(
                 "    Create or update your .env file and rerun. Example entries are available in .env.template."
             )

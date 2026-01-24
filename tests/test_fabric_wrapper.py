@@ -15,7 +15,7 @@ class TestFabricCLIWrapper:
         """Setup test fixtures"""
         telemetry = MagicMock()
         telemetry.emit = MagicMock()
-        
+
         # Patch subprocess.run to avoid actual CLI calls during init
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
@@ -180,21 +180,21 @@ class TestRetryUtilities:
     def test_is_retryable_error_rate_limit(self):
         """Test detection of rate limit errors."""
         from core.fabric_wrapper import is_retryable_error
-        
+
         assert is_retryable_error("Rate limit exceeded") is True
         assert is_retryable_error("Error 429: Too Many Requests") is True
 
     def test_is_retryable_error_service_unavailable(self):
         """Test detection of service unavailable errors."""
         from core.fabric_wrapper import is_retryable_error
-        
+
         assert is_retryable_error("503 Service Unavailable") is True
         assert is_retryable_error("Service temporarily unavailable") is True
 
     def test_is_retryable_error_connection_issues(self):
         """Test detection of connection errors."""
         from core.fabric_wrapper import is_retryable_error
-        
+
         assert is_retryable_error("Connection reset by peer") is True
         assert is_retryable_error("Connection refused") is True
         assert is_retryable_error("Request timed out") is True
@@ -202,7 +202,7 @@ class TestRetryUtilities:
     def test_is_retryable_error_non_retryable(self):
         """Test that non-retryable errors return False."""
         from core.fabric_wrapper import is_retryable_error
-        
+
         assert is_retryable_error("Invalid credentials") is False
         assert is_retryable_error("Permission denied") is False
         assert is_retryable_error("Resource not found") is False
@@ -211,16 +211,17 @@ class TestRetryUtilities:
         """Test exponential backoff calculation."""
         from core.fabric_wrapper import calculate_backoff
         import random
+
         random.seed(42)
-        
+
         # First attempt: ~1s
         delay0 = calculate_backoff(0, 1.0, 30.0)
         assert 0.75 <= delay0 <= 1.25  # 1s ± 25%
-        
+
         # Second attempt: ~2s
         delay1 = calculate_backoff(1, 1.0, 30.0)
         assert 1.5 <= delay1 <= 2.5  # 2s ± 25%
-        
+
         # Third attempt: ~4s
         delay2 = calculate_backoff(2, 1.0, 30.0)
         assert 3.0 <= delay2 <= 5.0  # 4s ± 25%
@@ -228,7 +229,7 @@ class TestRetryUtilities:
     def test_calculate_backoff_max_delay(self):
         """Test that backoff respects max delay."""
         from core.fabric_wrapper import calculate_backoff
-        
+
         # Very high attempt number should still respect max_delay
         delay = calculate_backoff(10, 1.0, 30.0)
         assert delay <= 30.0 * 1.25  # max_delay + jitter
@@ -236,26 +237,26 @@ class TestRetryUtilities:
     def test_retry_decorator_success_first_try(self):
         """Test retry decorator when function succeeds on first try."""
         from core.fabric_wrapper import retry_with_backoff
-        
+
         call_count = 0
-        
+
         @retry_with_backoff(max_retries=3)
         def successful_function():
             nonlocal call_count
             call_count += 1
             return "success"
-        
+
         result = successful_function()
-        
+
         assert result == "success"
         assert call_count == 1
 
     def test_retry_decorator_success_after_retry(self):
         """Test retry decorator when function succeeds after retry."""
         from core.fabric_wrapper import retry_with_backoff
-        
+
         call_count = 0
-        
+
         @retry_with_backoff(max_retries=3, base_delay=0.01)
         def flaky_function():
             nonlocal call_count
@@ -263,44 +264,44 @@ class TestRetryUtilities:
             if call_count < 2:
                 raise Exception("503 Service Unavailable")
             return "success"
-        
+
         result = flaky_function()
-        
+
         assert result == "success"
         assert call_count == 2
 
     def test_retry_decorator_exhausts_retries(self):
         """Test retry decorator when all retries are exhausted."""
         from core.fabric_wrapper import retry_with_backoff
-        
+
         call_count = 0
-        
+
         @retry_with_backoff(max_retries=2, base_delay=0.01)
         def always_fails():
             nonlocal call_count
             call_count += 1
             raise Exception("429 Rate limited")
-        
+
         with pytest.raises(Exception) as exc_info:
             always_fails()
-        
+
         assert "429" in str(exc_info.value)
         assert call_count == 3  # Initial + 2 retries
 
     def test_retry_decorator_non_retryable_error(self):
         """Test that non-retryable errors are not retried."""
         from core.fabric_wrapper import retry_with_backoff
-        
+
         call_count = 0
-        
+
         @retry_with_backoff(max_retries=3, base_delay=0.01)
         def permission_denied():
             nonlocal call_count
             call_count += 1
             raise Exception("Permission denied")
-        
+
         with pytest.raises(Exception) as exc_info:
             permission_denied()
-        
+
         assert "Permission denied" in str(exc_info.value)
         assert call_count == 1  # No retries for non-retryable errors

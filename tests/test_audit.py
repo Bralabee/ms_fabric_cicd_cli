@@ -35,8 +35,9 @@ class TestAuditLogger:
         """Create an AuditLogger instance with test directory."""
         # Create a unique logger name to avoid handler accumulation
         import logging
+
         logger_name = f"fabric_audit_test_{id(self)}"
-        
+
         logger = AuditLogger(log_directory=test_log_dir)
         # Override the logger to use a unique instance
         logger.logger = logging.getLogger(logger_name)
@@ -45,9 +46,9 @@ class TestAuditLogger:
         handler.setFormatter(logging.Formatter("%(message)s"))
         logger.logger.addHandler(handler)
         logger.logger.setLevel(logging.INFO)
-        
+
         yield logger
-        
+
         # Close handlers to release file handles
         for h in logger.logger.handlers[:]:
             h.close()
@@ -66,7 +67,7 @@ class TestAuditLogger:
         """Test that AuditLogger creates the log directory if it already exists."""
         log_dir = tmp_path / "audit_logs"
         logger = AuditLogger(log_directory=str(log_dir))
-        
+
         assert log_dir.exists()
         assert logger.log_directory == log_dir
 
@@ -83,12 +84,12 @@ class TestAuditLogger:
             workspace_id="ws-123",
             workspace_name="test-workspace",
             details={"key": "value"},
-            success=True
+            success=True,
         )
-        
+
         lines = self._read_log(audit_logger)
         assert len(lines) >= 1
-        
+
         record = json.loads(lines[-1])
         assert record["operation"] == "test_operation"
         assert record["workspace_id"] == "ws-123"
@@ -100,28 +101,24 @@ class TestAuditLogger:
     def test_log_operation_with_error(self, audit_logger):
         """Test logging a failed operation with error message."""
         audit_logger.log_operation(
-            operation="failed_operation",
-            success=False,
-            error="Something went wrong"
+            operation="failed_operation", success=False, error="Something went wrong"
         )
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         assert record["success"] is False
         assert record["error"] == "Something went wrong"
 
     def test_log_workspace_creation(self, audit_logger):
         """Test workspace creation logging."""
         audit_logger.log_workspace_creation(
-            workspace_name="my-workspace",
-            workspace_id="ws-456",
-            capacity_id="cap-789"
+            workspace_name="my-workspace", workspace_id="ws-456", capacity_id="cap-789"
         )
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         assert record["operation"] == "workspace_create"
         assert record["workspace_name"] == "my-workspace"
         assert record["details"]["capacity_id"] == "cap-789"
@@ -133,12 +130,12 @@ class TestAuditLogger:
             item_name="raw_data",
             workspace_id="ws-123",
             workspace_name="test-ws",
-            folder_name="Bronze"
+            folder_name="Bronze",
         )
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         assert record["operation"] == "item_create"
         assert record["details"]["item_type"] == "Lakehouse"
         assert record["details"]["item_name"] == "raw_data"
@@ -150,12 +147,12 @@ class TestAuditLogger:
             item_type="Warehouse",
             item_name="analytics_dw",
             workspace_id="ws-123",
-            workspace_name="test-ws"
+            workspace_name="test-ws",
         )
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         assert record["operation"] == "item_create"
         assert "folder_name" not in record["details"]
 
@@ -165,12 +162,12 @@ class TestAuditLogger:
             principal_id="user@example.com",
             role="Admin",
             workspace_id="ws-123",
-            workspace_name="test-ws"
+            workspace_name="test-ws",
         )
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         assert record["operation"] == "principal_assign"
         assert record["details"]["principal_id"] == "user@example.com"
         assert record["details"]["role"] == "Admin"
@@ -181,12 +178,12 @@ class TestAuditLogger:
             git_repo="https://github.com/org/repo",
             branch="main",
             workspace_id="ws-123",
-            workspace_name="test-ws"
+            workspace_name="test-ws",
         )
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         assert record["operation"] == "git_connect"
         assert record["details"]["git_repo"] == "https://github.com/org/repo"
         assert record["details"]["branch"] == "main"
@@ -194,14 +191,12 @@ class TestAuditLogger:
     def test_log_deployment_start(self, audit_logger):
         """Test deployment start logging."""
         audit_logger.log_deployment_start(
-            config_file="config/test.yaml",
-            environment="dev",
-            branch="feature/test"
+            config_file="config/test.yaml", environment="dev", branch="feature/test"
         )
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         assert record["operation"] == "deployment_start"
         assert record["details"]["config_file"] == "config/test.yaml"
         assert record["details"]["environment"] == "dev"
@@ -210,13 +205,12 @@ class TestAuditLogger:
     def test_log_deployment_start_without_branch(self, audit_logger):
         """Test deployment start without branch."""
         audit_logger.log_deployment_start(
-            config_file="config/test.yaml",
-            environment="prod"
+            config_file="config/test.yaml", environment="prod"
         )
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         assert record["operation"] == "deployment_start"
         assert "branch" not in record["details"]
 
@@ -226,12 +220,12 @@ class TestAuditLogger:
             workspace_name="test-ws",
             workspace_id="ws-123",
             items_created=5,
-            duration_seconds=30.567
+            duration_seconds=30.567,
         )
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         assert record["operation"] == "deployment_complete"
         assert record["details"]["items_created"] == 5
         assert record["details"]["duration_seconds"] == 30.57  # Rounded
@@ -241,12 +235,12 @@ class TestAuditLogger:
         audit_logger.log_operation(operation="op1")
         audit_logger.log_operation(operation="op2")
         audit_logger.log_operation(operation="op3")
-        
+
         lines = self._read_log(audit_logger)
-        
+
         # Should have at least 3 lines
         assert len(lines) >= 3
-        
+
         # Last 3 should be our operations
         ops = [json.loads(line)["operation"] for line in lines[-3:]]
         assert ops == ["op1", "op2", "op3"]
@@ -254,20 +248,20 @@ class TestAuditLogger:
     def test_user_field_present(self, audit_logger):
         """Test that user field is present in log record."""
         audit_logger.log_operation(operation="test")
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         # Should have a user field (either from env or 'unknown')
         assert "user" in record
 
     def test_timestamp_format(self, audit_logger):
         """Test that timestamp is in ISO format with Z suffix."""
         audit_logger.log_operation(operation="test")
-        
+
         lines = self._read_log(audit_logger)
         record = json.loads(lines[-1])
-        
+
         assert record["timestamp"].endswith("Z")
         # Should be parseable as ISO format
         datetime.fromisoformat(record["timestamp"].replace("Z", "+00:00"))
@@ -275,7 +269,7 @@ class TestAuditLogger:
     def test_get_audit_summary(self, audit_logger):
         """Test audit summary method."""
         summary = audit_logger.get_audit_summary(days=7)
-        
+
         assert "audit_log_file" in summary
         assert "format" in summary
         assert summary["format"] == "JSONL - one JSON record per line"

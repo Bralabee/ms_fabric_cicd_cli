@@ -52,7 +52,7 @@ def is_retryable_error(error_message: str) -> bool:
 
 def calculate_backoff(attempt: int, base_delay: float, max_delay: float) -> float:
     """Calculate exponential backoff delay with jitter."""
-    delay = min(base_delay * (2 ** attempt), max_delay)
+    delay = min(base_delay * (2**attempt), max_delay)
     # Add jitter (±25%)
     jitter = delay * 0.25 * (2 * random.random() - 1)
     return delay + jitter
@@ -66,50 +66,52 @@ def retry_with_backoff(
 ) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """
     Decorator for retrying functions with exponential backoff.
-    
+
     Args:
         max_retries: Maximum number of retry attempts
         base_delay: Initial delay between retries in seconds
         max_delay: Maximum delay between retries in seconds
         retryable_check: Optional function to check if exception is retryable
-    
+
     Returns:
         Decorated function with retry logic
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args, **kwargs) -> T:
             last_exception = None
-            
+
             for attempt in range(max_retries + 1):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
                     last_exception = e
                     error_str = str(e)
-                    
+
                     # Check if error is retryable
                     should_retry = (
-                        retryable_check(e) if retryable_check 
+                        retryable_check(e)
+                        if retryable_check
                         else is_retryable_error(error_str)
                     )
-                    
+
                     if not should_retry or attempt >= max_retries:
                         raise
-                    
+
                     delay = calculate_backoff(attempt, base_delay, max_delay)
                     logger.warning(
                         f"Retryable error on attempt {attempt + 1}/{max_retries + 1}: {error_str}. "
                         f"Retrying in {delay:.2f}s..."
                     )
                     time.sleep(delay)
-            
+
             # Should not reach here, but just in case
             raise last_exception
-        
-        return wrapper
-    return decorator
 
+        return wrapper
+
+    return decorator
 
 
 class FabricCLIWrapper:

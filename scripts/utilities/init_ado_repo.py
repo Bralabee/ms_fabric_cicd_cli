@@ -31,25 +31,31 @@ console = Console()
 
 app = typer.Typer(help="Initialize Azure DevOps Repository for Fabric Integration")
 
+
 def get_ado_token(secrets: FabricSecrets) -> str:
     """Get Azure DevOps access token using Service Principal."""
     if not secrets.validate_service_principal():
-        raise ValueError("Service Principal credentials (CLIENT_ID, CLIENT_SECRET, TENANT_ID) are required.")
-    
+        raise ValueError(
+            "Service Principal credentials (CLIENT_ID, CLIENT_SECRET, TENANT_ID) are required."
+        )
+
     console.print("[blue]Acquiring Azure DevOps access token...[/blue]")
     credential = ClientSecretCredential(
         tenant_id=secrets.get_tenant_id(),
         client_id=secrets.azure_client_id,
-        client_secret=secrets.azure_client_secret
+        client_secret=secrets.azure_client_secret,
     )
     # Scope for Azure DevOps
     return credential.get_token("499b84ac-1321-427f-aa17-267ca6975798/.default").token
 
-def get_repo_id(organization: str, project: str, repository_name: str, token: str) -> Optional[str]:
+
+def get_repo_id(
+    organization: str, project: str, repository_name: str, token: str
+) -> Optional[str]:
     """Get Repository ID from name. Returns None if not found."""
     url = f"https://dev.azure.com/{organization}/{project}/_apis/git/repositories/{repository_name}?api-version=7.1"
     headers = {"Authorization": f"Bearer {token}"}
-    
+
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         return response.json()["id"]
@@ -58,25 +64,24 @@ def get_repo_id(organization: str, project: str, repository_name: str, token: st
     else:
         raise Exception(f"Failed to get repository details: {response.text}")
 
-def create_repo(organization: str, project: str, repository_name: str, token: str) -> str:
+
+def create_repo(
+    organization: str, project: str, repository_name: str, token: str
+) -> str:
     """Create a new Azure DevOps repository."""
     # Use project-level endpoint, but don't include project in body
     url = f"https://dev.azure.com/{organization}/{project}/_apis/git/repositories?api-version=7.1"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}"
-    }
-    body = {
-        "name": repository_name
-    }
-    
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+    body = {"name": repository_name}
+
     console.print(f"[blue]Creating repository '{repository_name}'...[/blue]")
     response = requests.post(url, headers=headers, json=body)
-    
+
     if response.status_code == 201:
         return response.json()["id"]
     else:
         raise Exception(f"Failed to create repository: {response.text}")
+
 
 @app.command()
 def main(
@@ -92,13 +97,15 @@ def main(
         # Load secrets using standard framework
         secrets = FabricSecrets.load_with_fallback()
         token = get_ado_token(secrets)
-        
+
         # Get Repo ID
         console.print(f"[blue]Resolving repository ID for '{repository}'...[/blue]")
         repo_id = get_repo_id(organization, project, repository, token)
-        
+
         if not repo_id:
-            console.print(f"[yellow]Repository '{repository}' not found. Attempting to create it...[/yellow]")
+            console.print(
+                f"[yellow]Repository '{repository}' not found. Attempting to create it...[/yellow]"
+            )
             repo_id = create_repo(organization, project, repository, token)
             console.print(f"[green]Created Repository ID: {repo_id}[/green]")
         else:
@@ -108,14 +115,14 @@ def main(
         url = f"https://dev.azure.com/{organization}/{project}/_apis/git/repositories/{repo_id}/pushes?api-version=7.1"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}"
+            "Authorization": f"Bearer {token}",
         }
 
         body = {
             "refUpdates": [
                 {
                     "name": f"refs/heads/{branch}",
-                    "oldObjectId": "0000000000000000000000000000000000000000"
+                    "oldObjectId": "0000000000000000000000000000000000000000",
                 }
             ],
             "commits": [
@@ -124,34 +131,39 @@ def main(
                     "changes": [
                         {
                             "changeType": "add",
-                            "item": {
-                                "path": "/README.md"
-                            },
+                            "item": {"path": "/README.md"},
                             "newContent": {
                                 "content": f"# Fabric Integration Repo\n\nInitialized by Fabric CLI CI/CD for branch {branch}",
-                                "contentType": "rawtext"
-                            }
+                                "contentType": "rawtext",
+                            },
                         }
-                    ]
+                    ],
                 }
-            ]
+            ],
         }
 
         console.print(f"[blue]Pushing initial commit to '{branch}'...[/blue]")
         response = requests.post(url, headers=headers, json=body)
 
         if response.status_code == 201:
-            console.print(f"[green]✅ Successfully initialized branch '{branch}' in repository '{repository}'.[/green]")
+            console.print(
+                f"[green]✅ Successfully initialized branch '{branch}' in repository '{repository}'.[/green]"
+            )
         elif response.status_code == 400 and "TF401021" in response.text:
-             console.print(f"[yellow]⚠️  Branch '{branch}' already exists. Skipping initialization.[/yellow]")
+            console.print(
+                f"[yellow]⚠️  Branch '{branch}' already exists. Skipping initialization.[/yellow]"
+            )
         else:
-            console.print(f"[red]❌ Failed to initialize branch: {response.status_code}[/red]")
+            console.print(
+                f"[red]❌ Failed to initialize branch: {response.status_code}[/red]"
+            )
             console.print(response.text)
             raise typer.Exit(1)
 
     except Exception as e:
         console.print(f"[red]Error: {str(e)}[/red]")
         raise typer.Exit(1)
+
 
 if __name__ == "__main__":
     app()

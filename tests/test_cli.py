@@ -57,20 +57,20 @@ workspace:
     def test_validate_valid_config(self, runner, valid_config):
         """Test validating a valid configuration file."""
         result = runner.invoke(app, ["validate", valid_config])
-        
+
         # Should succeed or at least not crash
         assert result.exit_code == 0 or "valid" in result.output.lower()
 
     def test_validate_nonexistent_file(self, runner):
         """Test validating a non-existent file."""
         result = runner.invoke(app, ["validate", "/nonexistent/path/config.yaml"])
-        
+
         assert result.exit_code != 0
 
     def test_validate_with_environment(self, runner, valid_config):
         """Test validating with environment option."""
         result = runner.invoke(app, ["validate", valid_config, "--env", "dev"])
-        
+
         # Should not crash
         assert result.exit_code in [0, 1]
 
@@ -86,17 +86,19 @@ class TestCLIDiagnose:
     def test_diagnose_runs(self, runner):
         """Test that diagnose command runs without crashing."""
         result = runner.invoke(app, ["diagnose"])
-        
+
         # Should complete (may or may not find fab CLI)
         assert result.exit_code in [0, 1]
 
     def test_diagnose_checks_fabric_cli(self, runner):
         """Test that diagnose checks for Fabric CLI."""
         result = runner.invoke(app, ["diagnose"])
-        
+
         # Output should mention CLI or fab
         output_lower = result.output.lower()
-        assert "cli" in output_lower or "fab" in output_lower or "fabric" in output_lower
+        assert (
+            "cli" in output_lower or "fab" in output_lower or "fabric" in output_lower
+        )
 
 
 class TestFabricDeployerInit:
@@ -133,23 +135,27 @@ workspace:
     def test_deployer_init_with_valid_config(self, minimal_config, mock_env_vars):
         """Test FabricDeployer initialization with valid config."""
         deployer = FabricDeployer(config_path=minimal_config)
-        
+
         assert deployer.config is not None
         assert deployer.config.name == "test-workspace"
 
-    def test_deployer_init_with_environment(self, minimal_config, mock_env_vars, tmp_path):
+    def test_deployer_init_with_environment(
+        self, minimal_config, mock_env_vars, tmp_path
+    ):
         """Test FabricDeployer with environment-specific config."""
         # Create environment override
         env_dir = tmp_path / "environments"
         env_dir.mkdir()
         env_config = env_dir / "dev.yaml"
-        env_config.write_text("""
+        env_config.write_text(
+            """
 workspace:
   capacity_id: "dev-capacity-id"
-""")
-        
+"""
+        )
+
         deployer = FabricDeployer(config_path=minimal_config, environment="dev")
-        
+
         # Should load without error
         assert deployer.config is not None
 
@@ -170,7 +176,7 @@ class TestCLIHelp:
     def test_help_shows_commands(self, runner):
         """Test that --help shows available commands."""
         result = runner.invoke(app, ["--help"])
-        
+
         assert result.exit_code == 0
         assert "deploy" in result.output
         assert "validate" in result.output
@@ -180,7 +186,7 @@ class TestCLIHelp:
     def test_deploy_help(self, runner):
         """Test deploy command help."""
         result = runner.invoke(app, ["deploy", "--help"])
-        
+
         assert result.exit_code == 0
         assert "--env" in result.output or "environment" in result.output.lower()
         assert "--branch" in result.output or "branch" in result.output.lower()
@@ -188,7 +194,7 @@ class TestCLIHelp:
     def test_destroy_help(self, runner):
         """Test destroy command help."""
         result = runner.invoke(app, ["destroy", "--help"])
-        
+
         assert result.exit_code == 0
         assert "--force" in result.output or "force" in result.output.lower()
 
@@ -219,12 +225,12 @@ workspace:
         """Test that destroy asks for confirmation without --force."""
         # Without --force, should prompt (which will fail in test runner)
         result = runner.invoke(app, ["destroy", config_file], input="n\n")
-        
+
         # Should either ask for confirmation or fail gracefully
         assert result.exit_code in [0, 1]
 
     def test_destroy_nonexistent_config(self, runner):
         """Test destroy with non-existent config."""
         result = runner.invoke(app, ["destroy", "/nonexistent/config.yaml"])
-        
+
         assert result.exit_code != 0

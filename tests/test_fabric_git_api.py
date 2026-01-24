@@ -21,23 +21,22 @@ class TestFabricGitAPIInit:
     def test_init_with_default_base_url(self):
         """Test initialization with default base URL."""
         api = FabricGitAPI(access_token="test-token")
-        
+
         # Check the base_url (access_token is stored in headers)
         assert "fabric.microsoft.com" in api.base_url
 
     def test_init_with_custom_base_url(self):
         """Test initialization with custom base URL."""
         api = FabricGitAPI(
-            access_token="test-token",
-            base_url="https://custom.api.com/v1"
+            access_token="test-token", base_url="https://custom.api.com/v1"
         )
-        
+
         assert api.base_url == "https://custom.api.com/v1"
 
     def test_headers_include_auth_token(self):
         """Test that headers include authorization token."""
         api = FabricGitAPI(access_token="my-secret-token")
-        
+
         assert "Authorization" in api.headers
         assert "my-secret-token" in api.headers["Authorization"]
         assert "Bearer" in api.headers["Authorization"]
@@ -169,12 +168,12 @@ class TestConnectWorkspaceToGit:
             provider_type=GitProviderType.GITHUB,
             owner_name="owner",
             repository_name="my-repo",
-            branch_name="main"
+            branch_name="main",
         )
 
         assert result["success"] is True
         mock_post.assert_called_once()
-        
+
         # Verify request body structure
         call_args = mock_post.call_args
         assert "json" in call_args.kwargs
@@ -193,7 +192,7 @@ class TestConnectWorkspaceToGit:
             organization_name="my-ado-org",
             project_name="my-project",
             repository_name="my-repo",
-            branch_name="develop"
+            branch_name="develop",
         )
 
         assert result["success"] is True
@@ -204,7 +203,7 @@ class TestConnectWorkspaceToGit:
             api.connect_workspace_to_git(
                 workspace_id="ws-123",
                 provider_type=GitProviderType.GITHUB,
-                repository_name="my-repo"
+                repository_name="my-repo",
             )
 
     def test_connect_azure_devops_missing_params(self, api):
@@ -213,7 +212,7 @@ class TestConnectWorkspaceToGit:
             api.connect_workspace_to_git(
                 workspace_id="ws-123",
                 provider_type=GitProviderType.AZURE_DEVOPS,
-                repository_name="my-repo"
+                repository_name="my-repo",
             )
 
 
@@ -232,7 +231,7 @@ class TestGetGitStatus:
         mock_response.json.return_value = {
             "workspaceHead": "abc123",
             "remoteCommitHash": "def456",
-            "changes": []
+            "changes": [],
         }
         mock_response.raise_for_status = MagicMock()
         mock_get.return_value = mock_response
@@ -260,7 +259,7 @@ class TestGetGitConnection:
             "gitProviderDetails": {
                 "organizationName": "my-org",
                 "repositoryName": "my-repo",
-                "branchName": "main"
+                "branchName": "main",
             }
         }
         mock_response.raise_for_status = MagicMock()
@@ -345,7 +344,10 @@ class TestPollOperation:
     def test_poll_operation_failed(self, mock_sleep, mock_get, api):
         """Test polling when operation fails."""
         mock_response = MagicMock()
-        mock_response.json.return_value = {"status": "Failed", "error": "Something went wrong"}
+        mock_response.json.return_value = {
+            "status": "Failed",
+            "error": "Something went wrong",
+        }
         mock_response.raise_for_status = MagicMock()
         mock_get.return_value = mock_response
 
@@ -370,7 +372,7 @@ class TestInitializeGitConnection:
         mock_response.json.return_value = {
             "RequiredAction": "UpdateFromGit",
             "RemoteCommitHash": "abc123",
-            "WorkspaceHead": "def456"
+            "WorkspaceHead": "def456",
         }
         mock_response.raise_for_status = MagicMock()
         mock_post.return_value = mock_response
