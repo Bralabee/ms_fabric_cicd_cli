@@ -5,7 +5,7 @@ This package provides a lightweight CLI wrapper around the Microsoft Fabric CLI
 for enterprise CI/CD workflows.
 """
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 __author__ = "USF Fabric Team"
 
 # Lazy imports to avoid circular dependency issues when running as module
@@ -15,7 +15,7 @@ def __getattr__(name):
         from usf_fabric_cli.cli import app
         return app
     elif name == "FabricDeployer":
-        from usf_fabric_cli.cli import FabricDeployer
+        from usf_fabric_cli.services.deployer import FabricDeployer
         return FabricDeployer
     elif name == "FabricCLIError":
         from usf_fabric_cli.exceptions import FabricCLIError
