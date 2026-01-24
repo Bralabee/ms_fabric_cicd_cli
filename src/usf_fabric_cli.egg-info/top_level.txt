@@ -1,2 +1,2 @@
 core
-schemas
+usf_fabric_cli

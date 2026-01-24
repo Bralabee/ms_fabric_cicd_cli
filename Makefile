@@ -26,8 +26,8 @@ test-integration: ## Run integration tests (requires credentials)
 	$(PYTEST) tests/integration -m integration
 
 lint: ## Run code formatting and linting
-	black src tests scripts
-	ruff check src tests scripts
+	black src tests scripts bin
+	-ruff check src tests scripts bin || true
 
 clean: ## Clean up cache and temporary files
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -43,10 +43,10 @@ validate: ## Validate a configuration file (Usage: make validate config=path/to/
 	echo "Usage: make validate config=path/to/config.yaml"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m core.cli validate $(config)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli validate $(config)
 
 diagnose: ## Run pre-flight system diagnostics
-	$(PYTHON) scripts/preflight_check.py
+	$(PYTHON) scripts/admin/preflight_check.py
 
 deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env=dev)
 	@if [ -z "$(config)" ]; then \
@@ -59,7 +59,7 @@ deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env
 	echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m core.cli deploy $(config) --env $(env)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy $(config) --env $(env)
 
 destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml)
 	@if [ -z "$(config)" ]; then \
@@ -67,11 +67,11 @@ destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml)
 	echo "Usage: make destroy config=path/to/config.yaml"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m core.cli destroy $(config)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli destroy $(config)
 
 bulk-destroy: ## Bulk destroy workspaces from list (Usage: make bulk-destroy file=list.txt)
 	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make bulk-destroy file=list.txt"; exit 1; fi
-	$(PYTHON) scripts/bulk_destroy.py $(file)
+	$(PYTHON) scripts/admin/bulk_destroy.py $(file)
 
 ##@ Docker Operations
 

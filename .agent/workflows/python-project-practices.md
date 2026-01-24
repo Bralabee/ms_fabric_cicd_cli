@@ -8,23 +8,36 @@ description: Guidelines for working on Python projects with conda environments
 
 **ALWAYS activate the project's dedicated conda environment before ANY command execution.**
 
+This project uses: **`fabric-cli-cicd`**
+
 ```bash
 # Pattern to use for ALL commands
-source ~/miniconda3/etc/profile.d/conda.sh && conda activate {ENV_NAME} && {COMMAND}
+source ~/miniconda3/etc/profile.d/conda.sh && conda activate fabric-cli-cicd && {COMMAND}
 ```
 
 ### Finding the Environment Name
 
 1. Check `environment.yml` for the environment name
 2. Or run: `conda env list | grep -i {project_keyword}`
-3. Common patterns: `{project-name}`, `{project}-env`, `fabric-cli-cicd`
+3. This project: `fabric-cli-cicd`
 
 ### ❌ NEVER Do This
 - Run `pip install` in base environment
 - Run `make` commands without activating env
 - Assume the environment is already active
+- **Provide user instructions WITHOUT conda activation steps**
+
+### ✅ ALWAYS Include in User Instructions
+When providing testing/usage instructions to the user, ALWAYS include:
+```bash
+# First, activate the conda environment
+source ~/miniconda3/etc/profile.d/conda.sh && conda activate fabric-cli-cicd
+
+# Then run commands...
+```
 
 ---
+
 
 ## 🔴 CRITICAL: Prevent Regressions
 

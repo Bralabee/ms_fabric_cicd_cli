@@ -1,0 +1,95 @@
+environments:
+  dev:
+    workspace:
+      capacity_id: F2
+  prod:
+    workspace:
+      capacity_id: F64
+  test:
+    workspace:
+      capacity_id: F8
+folders:
+- Ingestion
+- Processing
+- Analytics
+- Alerts
+- Dashboards
+lakehouses:
+- description: Long-term storage for streamed events (batch queries)
+  folder: Ingestion
+  name: streaming_archive
+notebooks:
+- description: Monitor data quality metrics in real-time streams
+  folder: Processing
+  name: stream_data_quality_monitor
+- description: Batch processing for archived streaming data
+  folder: Processing
+  name: historical_batch_processor
+pipelines:
+- description: Archive streaming data to lakehouse for long-term analysis
+  folder: Processing
+  name: stream_to_lakehouse_archiver
+principals:
+- description: Streaming platform administrators
+  id: ${STREAMING_ADMIN_OID}
+  role: Admin
+- description: Data engineers managing stream pipelines
+  id: ${DATA_ENGINEER_GROUP_OID}
+  role: Contributor
+- description: Analysts running KQL queries
+  id: ${ANALYST_GROUP_OID}
+  role: Viewer
+- description: CI/CD automation service principal
+  id: ${AZURE_CLIENT_ID}
+  role: Contributor
+resources:
+- description: Ingest IoT device telemetry in real-time
+  folder: Ingestion
+  name: iot_sensor_stream
+  type: Eventstream
+- description: Real-time application log ingestion
+  folder: Ingestion
+  name: application_logs_stream
+  type: Eventstream
+- description: Web/mobile user interaction events
+  folder: Ingestion
+  name: user_clickstream
+  type: Eventstream
+- description: High-performance analytics for streaming data
+  folder: Analytics
+  name: realtime_analytics_engine
+  type: Eventhouse
+- description: KQL database for IoT telemetry analysis
+  folder: Analytics
+  name: telemetry_analytics_db
+  type: KQLDatabase
+- description: KQL database for application log analysis
+  folder: Analytics
+  name: logs_analytics_db
+  type: KQLDatabase
+- description: Common KQL queries for real-time dashboards
+  folder: Analytics
+  name: streaming_queries
+  type: KQLQueryset
+- description: Automated anomaly detection and alerting
+  folder: Alerts
+  name: anomaly_detector
+  type: Reflex
+- description: Process and route threshold-based alerts
+  folder: Alerts
+  name: threshold_alert_processor
+  type: Reflex
+- description: Live monitoring dashboard for streaming data
+  folder: Dashboards
+  name: realtime_monitoring_dashboard
+  type: KQLDashboard
+workspace:
+  capacity_id: ${FABRIC_CAPACITY_ID}
+  description: High-throughput streaming data platform with real-time analytics and
+    alerting
+  display_name: TestOrg Streaming Demo
+  domain: ${FABRIC_DOMAIN}
+  git_branch: main
+  git_directory: /streaming
+  git_repo: ${GIT_REPO_URL}
+  name: testorg-streaming-demo
