@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: usf-fabric-cli
-Version: 1.1.0
+Version: 1.3.1
 Summary: CLI tool for Microsoft Fabric CI/CD automation
 Author-email: Sanmi Ibitoye <sanmi.ibitoye@leit.ltd>
 License: MIT
@@ -25,6 +25,8 @@ Requires-Dist: packaging>=23.0
 
 Enterprise-grade Microsoft Fabric deployment automation leveraging the official Fabric CLI with 12-Factor App configuration management, Jinja2 artifact templating, and REST API Git integration. Designed for organization-agnostic operation with 85% code reduction from traditional enterprise frameworks.
 
+> **🔄 Lightweight Successor:** This project is the modern replacement for [usf-fabric-cicd](../usf-fabric-cicd), reducing complexity by 85% while maintaining enterprise capabilities through a thin wrapper architecture around the official Fabric CLI.
+
 ## Core Capabilities
 
 - **Automated Deployment**: Idempotent workspace provisioning with intelligent state management
@@ -45,7 +47,7 @@ Enterprise-grade Microsoft Fabric deployment automation leveraging the official 
     │                     │
 ┌───▼─────────────┐  ┌───▼──────────────────┐
 │  Fabric CLI     │  │ Thin Wrapper         │
-│  (90% of work)  │  │ (~270 LOC)           │
+│  (90% of work)  │  │ (~1,150 LOC wrapper) │
 └─────────────────┘  └──────────────────────┘
 ```
 
@@ -90,10 +92,20 @@ If using Azure DevOps with a Service Principal, ensure the following:
 Follow these steps to deploy a new project from scratch:
 
 **Step 1: Generate Project Configuration**
-Use the template generator to create a standardized configuration file.
+Use the template generator to create a standardized configuration file. Choose from **10 production-ready blueprints**:
+
 ```bash
+# Standard ETL (Medallion architecture)
 python scripts/generate_project.py "Contoso Inc" "Finance Analytics" --template basic_etl
-# Output: config/projects/contoso_inc/finance_analytics.yaml
+
+# Real-time streaming (IoT, events, Eventstreams + KQL)
+python scripts/generate_project.py "TechCorp" "IoT Platform" --template realtime_streaming
+
+# Compliance-heavy (Healthcare, Finance, Government)
+python scripts/generate_project.py "HealthCo" "Patient Platform" --template compliance_regulated
+
+# See all 10 templates: docs/BLUEPRINT_CATALOG.md
+# Output: config/projects/{org_name}/{project_name}.yaml
 ```
 
 **Step 2: Initialize Azure DevOps Repository**
@@ -130,12 +142,12 @@ make docker-build
 
 **Step 2: Generate Project Configuration (in Docker)**
 ```bash
-make docker-generate ARGS='"Contoso Inc" "Finance Analytics" --template basic_etl'
+make docker-generate org="Contoso Inc" project="Finance Analytics" template=basic_etl
 ```
 
 **Step 3: Initialize Azure DevOps Repository (in Docker)**
 ```bash
-make docker-init-repo ARGS='--organization "your-ado-org" --project "your-ado-project" --repository "contoso-finance-repo" --branch "main"'
+make docker-init-repo org="your-ado-org" project="your-ado-project" repo="contoso-finance-repo"
 ```
 
 **Step 4: Deploy (in Docker)**
@@ -154,6 +166,105 @@ make validate config=config/projects/your_org/your_project.yaml
 # Deploy to development environment
 make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
+
+## Make Targets Reference (21 Available)
+
+### Local Development
+
+| Target | Description | Example |
+|--------|-------------|---------|
+| `install` | Install dependencies in editable mode | `make install` |
+| `build` | Build Python wheel package | `make build` |
+| `test` | Run unit tests (no credentials) | `make test` |
+| `test-integration` | Run integration tests (requires credentials) | `make test-integration` |
+| `lint` | Format and lint code | `make lint` |
+| `clean` | Remove cache files | `make clean` |
+
+### Local Operations
+
+| Target | Description | Example |
+|--------|-------------|---------|
+| `validate` | Validate config file syntax | `make validate config=path/to/config.yaml` |
+| `diagnose` | Run pre-flight system checks | `make diagnose` |
+| `deploy` | Deploy workspace from config | `make deploy config=path/to/config.yaml env=dev` |
+| `destroy` | Destroy workspace from config | `make destroy config=path/to/config.yaml` |
+| `bulk-destroy` | Bulk delete workspaces from list | `make bulk-destroy file=list.txt` |
+
+### Docker Operations
+
+All Docker targets accept `ENVFILE=.env.xxx` to specify which environment file to use (default: `.env`).
+
+| Target | Description | Example |
+|--------|-------------|---------|
+| `docker-build` | Build Docker image | `make docker-build` |
+| `docker-validate` | Validate config in container | `make docker-validate config=... ENVFILE=.env` |
+| `docker-deploy` | Deploy workspace in container | `make docker-deploy config=... env=dev ENVFILE=.env` |
+| `docker-destroy` | Destroy workspace in container | `make docker-destroy config=... ENVFILE=.env` |
+| `docker-generate` | Generate project config in container | `make docker-generate org="Org" project="Proj" template=basic_etl` |
+| `docker-init-repo` | Initialize ADO repo in container | `make docker-init-repo org="..." project="..." repo="..."` |
+| `docker-shell` | Interactive shell in container | `make docker-shell ENVFILE=.env` |
+| `docker-diagnose` | Run diagnostics in container | `make docker-diagnose ENVFILE=.env` |
+| `docker-feature-deploy` | Deploy feature branch workspace | `make docker-feature-deploy config=... env=dev branch=feature/x` |
+
+## CLI Flags Reference
+
+### Deploy Command
+
+```bash
+python -m core.cli deploy CONFIG [OPTIONS]
+```
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--env` | `-e` | Target environment (dev/staging/prod) |
+| `--branch` | `-b` | Git branch to use for deployment |
+| `--force-branch-workspace` | | Create isolated workspace for feature branch |
+| `--validate-only` | | Validate config without deploying |
+| `--diagnose` | | Run diagnostics before deployment |
+
+### Destroy Command
+
+```bash
+python -m core.cli destroy CONFIG [OPTIONS]
+```
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--env` | `-e` | Target environment (dev/staging/prod) |
+| `--force` | `-f` | Skip confirmation prompt |
+
+## Interactive Learning Guide
+
+The project includes an **interactive web application** to help users understand and learn the CLI workflows:
+
+```bash
+cd webapp
+
+# Option 1: Docker (Recommended)
+./docker-quickstart.sh
+# → Open http://localhost:8080
+
+# Option 2: Development mode (requires Python 3.11+ and Node.js 18+)
+make install  # Install backend + frontend dependencies
+make dev      # Start both servers (backend: 8001, frontend: 5173)
+# → Open http://localhost:5173
+```
+
+### Features
+- **Visual Workflow Diagrams**: Interactive flowcharts showing deployment processes step-by-step
+- **8 Comprehensive Scenarios**: Getting Started, Project Generation, Local/Docker Deployment, Feature Branches, Git Integration, Environment Promotion, Troubleshooting
+- **Progress Tracking**: Track your learning progress through each guide
+- **Code Snippets with Copy**: Easily copy commands and configurations
+
+### Azure Deployment
+Deploy the webapp to Azure Container Apps:
+```bash
+cd webapp
+make deploy-azure        # Full deployment
+make deploy-azure-dryrun # Preview what will be deployed
+```
+
+See [webapp/README.md](webapp/README.md) for detailed documentation.
 
 ## Utility Tools
 
@@ -213,33 +324,43 @@ src/
 
 
 config/
-├── projects/
-│   ├── ProductA/
-│   │   └── sales_project.yaml
-│   └── ProductB/
-│       └── finance_project.yaml
+├── projects/              # Your organization configs
+│   ├── {org_name}/
+│   │   └── {project_name}.yaml
+│   └── ...                # 7+ example orgs included
 └── environments/
     ├── dev.yaml
     ├── staging.yaml
+    ├── test.yaml
     └── prod.yaml
 
 templates/
-└── blueprints/
+└── blueprints/            # 10 production-ready templates
     ├── basic_etl.yaml
     ├── advanced_analytics.yaml
-    └── data_science.yaml
+    ├── data_science.yaml
+    ├── realtime_streaming.yaml
+    ├── compliance_regulated.yaml
+    ├── data_mesh_domain.yaml
+    ├── migration_hybrid.yaml
+    ├── minimal_starter.yaml
+    ├── specialized_timeseries.yaml
+    └── extensive_example.yaml
 
 scripts/
 ├── bulk_destroy.py        # Bulk cleanup utility
 ├── generate_project.py    # Project scaffolding
 ├── preflight_check.py     # Environment validation
 └── utilities/
-    ├── analyze_migration.py   # Migration analysis tool
-    ├── list_workspaces.py     # Workspace listing tool
+    ├── analyze_migration.py    # Migration analysis tool
+    ├── debug_ado_access.py     # Azure DevOps permissions check
+    ├── debug_connection.py     # Git connection testing
+    ├── init_ado_repo.py        # Initialize ADO repository
+    ├── list_workspaces.py      # Workspace listing tool
     └── list_workspace_items.py # Item listing tool
 ```
 
-## Total LOC: ~270 (vs original 1,830)
+## Total LOC: ~4,100 (thin wrapper architecture vs original monolithic 1,830)
 
 ## Configuration Examples
 
@@ -266,7 +387,7 @@ GitHub Actions workflows included for:
 - Feature branch deployments
 - Principal management
 
-**Important:** For CI/CD pipelines to function, you must configure the required secrets (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) in your GitHub repository settings. See [Usage Guide](docs/USAGE_GUIDE.md#troubleshooting) for details.
+**Important:** For CI/CD pipelines to function, you must configure the required secrets (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) in your GitHub repository settings. See [Blueprint Catalog](docs/BLUEPRINT_CATALOG.md) for configuration examples.
 
 ## Features
 
@@ -311,11 +432,10 @@ If migrating from a custom Fabric API solution:
 
 ## Contributing
 
-1. Follow the 270 LOC budget - justify any additions
-2. Fabric CLI first - only add custom logic for genuine gaps
-3. Configuration over code - make it reusable
-4. Test thoroughly - both unit and integration tests
-5. Document decisions - explain why custom code exists
+1. Fabric CLI first - only add custom logic for genuine gaps
+2. Configuration over code - make it reusable
+3. Test thoroughly - both unit and integration tests
+4. Document decisions - explain why custom code exists
 
 ## License
 

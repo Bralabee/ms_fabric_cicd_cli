@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
+import random
 import subprocess
 import time
 import re
-from typing import Any, Dict, List, Optional
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, TypeVar
+
 import os
 
 from packaging import version
@@ -20,6 +23,93 @@ logger = logging.getLogger(__name__)
 # Expected CLI version range (can be configured)
 MINIMUM_CLI_VERSION = "1.0.0"
 RECOMMENDED_CLI_VERSION = "1.0.0"
+
+# Retry configuration
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_BASE_DELAY = 1.0  # seconds
+DEFAULT_MAX_DELAY = 30.0  # seconds
+RETRYABLE_ERROR_PATTERNS = [
+    "rate limit",
+    "429",
+    "503",
+    "service unavailable",
+    "temporarily unavailable",
+    "connection reset",
+    "connection refused",
+    "timeout",
+    "timed out",
+    "throttl",
+]
+
+T = TypeVar("T")
+
+
+def is_retryable_error(error_message: str) -> bool:
+    """Check if an error is transient and can be retried."""
+    error_lower = error_message.lower()
+    return any(pattern in error_lower for pattern in RETRYABLE_ERROR_PATTERNS)
+
+
+def calculate_backoff(attempt: int, base_delay: float, max_delay: float) -> float:
+    """Calculate exponential backoff delay with jitter."""
+    delay = min(base_delay * (2 ** attempt), max_delay)
+    # Add jitter (±25%)
+    jitter = delay * 0.25 * (2 * random.random() - 1)
+    return delay + jitter
+
+
+def retry_with_backoff(
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    base_delay: float = DEFAULT_BASE_DELAY,
+    max_delay: float = DEFAULT_MAX_DELAY,
+    retryable_check: Callable[[Exception], bool] = None,
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
+    """
+    Decorator for retrying functions with exponential backoff.
+    
+    Args:
+        max_retries: Maximum number of retry attempts
+        base_delay: Initial delay between retries in seconds
+        max_delay: Maximum delay between retries in seconds
+        retryable_check: Optional function to check if exception is retryable
+    
+    Returns:
+        Decorated function with retry logic
+    """
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> T:
+            last_exception = None
+            
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    error_str = str(e)
+                    
+                    # Check if error is retryable
+                    should_retry = (
+                        retryable_check(e) if retryable_check 
+                        else is_retryable_error(error_str)
+                    )
+                    
+                    if not should_retry or attempt >= max_retries:
+                        raise
+                    
+                    delay = calculate_backoff(attempt, base_delay, max_delay)
+                    logger.warning(
+                        f"Retryable error on attempt {attempt + 1}/{max_retries + 1}: {error_str}. "
+                        f"Retrying in {delay:.2f}s..."
+                    )
+                    time.sleep(delay)
+            
+            # Should not reach here, but just in case
+            raise last_exception
+        
+        return wrapper
+    return decorator
+
 
 
 class FabricCLIWrapper:
