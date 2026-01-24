@@ -2,6 +2,8 @@
 
 Enterprise-grade Microsoft Fabric deployment automation leveraging the official Fabric CLI with 12-Factor App configuration management, Jinja2 artifact templating, and REST API Git integration. Designed for organization-agnostic operation with 85% code reduction from traditional enterprise frameworks.
 
+> **🔄 Lightweight Successor:** This project is the modern replacement for [usf-fabric-cicd](../usf-fabric-cicd), reducing complexity by 85% while maintaining enterprise capabilities through a thin wrapper architecture around the official Fabric CLI.
+
 ## Core Capabilities
 
 - **Automated Deployment**: Idempotent workspace provisioning with intelligent state management
@@ -22,7 +24,7 @@ Enterprise-grade Microsoft Fabric deployment automation leveraging the official 
     │                     │
 ┌───▼─────────────┐  ┌───▼──────────────────┐
 │  Fabric CLI     │  │ Thin Wrapper         │
-│  (90% of work)  │  │ (~270 LOC)           │
+│  (90% of work)  │  │ (~1,150 LOC wrapper) │
 └─────────────────┘  └──────────────────────┘
 ```
 
@@ -142,7 +144,7 @@ make validate config=config/projects/your_org/your_project.yaml
 make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
 
-## Make Targets Reference
+## Make Targets Reference (21 Available)
 
 ### Local Development
 

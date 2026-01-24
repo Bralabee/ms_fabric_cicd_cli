@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions for USF Fabric CLI CI/CD
 
-Enterprise Microsoft Fabric deployment automation using a **thin wrapper architecture** around official Fabric CLI (~270 LOC orchestration vs 90% CLI work).
+Enterprise Microsoft Fabric deployment automation using a **thin wrapper architecture** around official Fabric CLI (~1,150 LOC wrapper with 90% CLI delegation).
 
 **Current Version**: 1.3.1 (January 2026)
 
