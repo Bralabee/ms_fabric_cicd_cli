@@ -4,6 +4,7 @@ from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagn
 from usf_fabric_cli.services.fabric_git_api import FabricGitAPI, GitProviderType, GitConnectionSource
 from usf_fabric_cli.services.token_manager import TokenManager, create_token_manager_from_env
 from usf_fabric_cli.services.deployment_state import DeploymentState, ItemType, CreatedItem
+from usf_fabric_cli.services.deployer import FabricDeployer
 
 __all__ = [
     "FabricCLIWrapper",
@@ -16,5 +17,5 @@ __all__ = [
     "DeploymentState",
     "ItemType",
     "CreatedItem",
+    "FabricDeployer",
 ]
-

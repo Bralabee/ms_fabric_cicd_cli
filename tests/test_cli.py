@@ -14,7 +14,8 @@ from unittest.mock import patch, MagicMock
 import pytest
 from typer.testing import CliRunner
 
-from usf_fabric_cli.cli import app, FabricDeployer
+from usf_fabric_cli.cli import app
+from usf_fabric_cli.services.deployer import FabricDeployer
 
 
 class TestCLIValidate:
@@ -292,10 +293,10 @@ principals:
 
     def test_deployer_deploy_creates_workspace(self, full_config, mock_env_vars_full):
         """Test that deploy creates workspace and items."""
-        with patch("usf_fabric_cli.cli.FabricCLIWrapper") as MockWrapper, \
-             patch("usf_fabric_cli.cli.GitFabricIntegration") as MockGit, \
-             patch("usf_fabric_cli.cli.FabricGitAPI") as MockGitAPI, \
-             patch("usf_fabric_cli.cli.AuditLogger") as MockAudit:
+        with patch("usf_fabric_cli.services.deployer.FabricCLIWrapper") as MockWrapper, \
+             patch("usf_fabric_cli.services.deployer.GitFabricIntegration") as MockGit, \
+             patch("usf_fabric_cli.services.deployer.FabricGitAPI") as MockGitAPI, \
+             patch("usf_fabric_cli.services.deployer.AuditLogger") as MockAudit:
             
             # Setup mock wrapper
             mock_fabric = MagicMock()
@@ -324,10 +325,10 @@ principals:
 
     def test_deployer_config_with_principals(self, full_config, mock_env_vars_full):
         """Test deployer correctly parses principals from config."""
-        with patch("usf_fabric_cli.cli.FabricCLIWrapper") as MockWrapper, \
-             patch("usf_fabric_cli.cli.GitFabricIntegration"), \
-             patch("usf_fabric_cli.cli.FabricGitAPI"), \
-             patch("usf_fabric_cli.cli.AuditLogger"):
+        with patch("usf_fabric_cli.services.deployer.FabricCLIWrapper") as MockWrapper, \
+             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"), \
+             patch("usf_fabric_cli.services.deployer.FabricGitAPI"), \
+             patch("usf_fabric_cli.services.deployer.AuditLogger"):
             
             MockWrapper.return_value = MagicMock()
             deployer = FabricDeployer(config_path=full_config)
@@ -417,10 +418,10 @@ workspace:
 
     def test_parse_github_url(self, minimal_config, mock_env_vars):
         """Test parsing GitHub repository URLs."""
-        with patch("usf_fabric_cli.cli.FabricCLIWrapper"), \
-             patch("usf_fabric_cli.cli.GitFabricIntegration"), \
-             patch("usf_fabric_cli.cli.FabricGitAPI"), \
-             patch("usf_fabric_cli.cli.AuditLogger"):
+        with patch("usf_fabric_cli.services.deployer.FabricCLIWrapper"), \
+             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"), \
+             patch("usf_fabric_cli.services.deployer.FabricGitAPI"), \
+             patch("usf_fabric_cli.services.deployer.AuditLogger"):
             
             deployer = FabricDeployer(config_path=minimal_config)
             
@@ -433,10 +434,10 @@ workspace:
 
     def test_parse_azure_devops_url(self, minimal_config, mock_env_vars):
         """Test parsing Azure DevOps repository URLs."""
-        with patch("usf_fabric_cli.cli.FabricCLIWrapper"), \
-             patch("usf_fabric_cli.cli.GitFabricIntegration"), \
-             patch("usf_fabric_cli.cli.FabricGitAPI"), \
-             patch("usf_fabric_cli.cli.AuditLogger"):
+        with patch("usf_fabric_cli.services.deployer.FabricCLIWrapper"), \
+             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"), \
+             patch("usf_fabric_cli.services.deployer.FabricGitAPI"), \
+             patch("usf_fabric_cli.services.deployer.AuditLogger"):
             
             deployer = FabricDeployer(config_path=minimal_config)
             
@@ -452,10 +453,10 @@ workspace:
 
     def test_parse_invalid_url(self, minimal_config, mock_env_vars):
         """Test parsing invalid Git URLs returns None."""
-        with patch("usf_fabric_cli.cli.FabricCLIWrapper"), \
-             patch("usf_fabric_cli.cli.GitFabricIntegration"), \
-             patch("usf_fabric_cli.cli.FabricGitAPI"), \
-             patch("usf_fabric_cli.cli.AuditLogger"):
+        with patch("usf_fabric_cli.services.deployer.FabricCLIWrapper"), \
+             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"), \
+             patch("usf_fabric_cli.services.deployer.FabricGitAPI"), \
+             patch("usf_fabric_cli.services.deployer.AuditLogger"):
             
             deployer = FabricDeployer(config_path=minimal_config)
             
