@@ -1,3 +1,12 @@
+> [!WARNING]
+> **📜 HISTORICAL ARCHIVE - DO NOT USE FOR CURRENT DEVELOPMENT**
+>
+> This document is preserved for historical reference only. Code examples and import paths shown here reflect the **legacy `core.*` module structure** which was replaced with `usf_fabric_cli.*` in v1.4.0 (January 2026).
+>
+> **For current documentation, see:** [User Guides](../01_User_Guides/)
+
+---
+
 # Enhancement Summary: Fabric CLI CI/CD Framework
 
 **Implementation Date:** 27 November 2025  
