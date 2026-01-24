@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-01-24
+
+### Added
+- **Comprehensive Test Coverage Improvements**:
+  - 7 new tests for `FabricDeployer`, deploy command, and Git URL parsing
+  - Test coverage improved: 50% → 51% overall, cli.py: 25% → 31%
+
+### Changed
+- **Package Restructure Complete**: Full migration from `core` to `usf_fabric_cli` package
+  - All module paths updated to `usf_fabric_cli.{services,utils,commands}`
+  - CLI entry points: `fabric-cicd`, `usf-fabric` point to `usf_fabric_cli.cli:app`
+  
+- **Script Reorganization**:
+  - `scripts/preflight_check.py` → `scripts/admin/preflight_check.py`
+  - `scripts/generate_project.py` → `scripts/dev/generate_project.py`
+  - `scripts/utilities/` → `scripts/admin/utilities/`
+  - `scripts/bulk_destroy.py` → `scripts/admin/bulk_destroy.py`
+
+### Fixed
+- **Documentation Refresh** (39+ fixes across 20+ files):
+  - All `python -m core.cli` → `python -m usf_fabric_cli.cli`
+  - All `src/core/` → `src/usf_fabric_cli/` with correct subfolders
+  - All script paths updated to new locations
+  - README project structure updated to reflect new layout
+  - CI/CD pipelines (GitHub Actions, Azure Pipelines) updated
+  - Webapp scenarios updated with correct paths
+  - copilot-instructions.md updated with accurate module paths
+
+### Verified
+- 105 tests passing
+- Local CLI functionality confirmed
+- Docker build and run verified
+- Zero remaining outdated references
+
 ## [1.3.1] - 2026-01-15
 
 ### Added
