@@ -498,7 +498,7 @@ class FabricCLIWrapper:
                 if isinstance(data, str):
                     try:
                         data = json.loads(data)
-                    except:
+                    except json.JSONDecodeError:
                         pass
 
                 # Handle fab api error response format
@@ -613,7 +613,7 @@ class FabricCLIWrapper:
                 if isinstance(data, str):
                     try:
                         data = json.loads(data)
-                    except:
+                    except json.JSONDecodeError:
                         pass
 
                 # Handle nested "text" field from fab api wrapper if present

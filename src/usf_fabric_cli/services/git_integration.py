@@ -11,7 +11,6 @@ Key Learning Applied: Feature Branch Workflows
 import logging
 from typing import Dict, Any, Optional
 
-import git
 from git import InvalidGitRepositoryError, Repo
 
 from usf_fabric_cli.exceptions import FabricCLIError
@@ -201,8 +200,30 @@ class GitFabricIntegration:
                 "remediation": "Use GitHub or Azure DevOps repository URL",
             }
 
-        # TODO: Add actual repository accessibility check
-        # This would require authentication and is optional for basic validation
+        # Attempt repository accessibility check using git ls-remote
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["git", "ls-remote", "--exit-code", repo_url],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            if result.returncode != 0:
+                error_detail = result.stderr.strip() if result.stderr else "Unknown error"
+                return {
+                    "success": False,
+                    "error": f"Repository not accessible: {error_detail}",
+                    "remediation": "Check repository URL and authentication credentials",
+                }
+        except subprocess.TimeoutExpired:
+            logger.warning(f"Repository accessibility check timed out for: {repo_url}")
+            # Continue anyway - let Fabric API handle final validation
+        except FileNotFoundError:
+            logger.warning("git command not found - skipping accessibility check")
+        except Exception as e:
+            logger.debug(f"Repository accessibility check failed: {e}")
+            # Continue anyway - non-critical for basic validation
 
         return {"success": True, "repository_url": repo_url}
 

@@ -14,15 +14,12 @@ References:
 - https://learn.microsoft.com/en-us/rest/api/fabric/core/git
 """
 
-import json
 import logging
 import time
 from typing import Any, Dict, List, Optional
 from enum import Enum
 
 import requests
-
-from usf_fabric_cli.exceptions import FabricCLIError
 
 logger = logging.getLogger(__name__)
 

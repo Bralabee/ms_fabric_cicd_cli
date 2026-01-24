@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import jsonschema
 import yaml
 from dotenv import load_dotenv
 from jsonschema import validate

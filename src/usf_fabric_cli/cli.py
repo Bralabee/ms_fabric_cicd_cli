@@ -10,11 +10,9 @@ import typer
 import time
 import logging
 import os
-from pathlib import Path
 from typing import Optional, Dict
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.panel import Panel
 from rich.table import Table
 
 logger = logging.getLogger(__name__)

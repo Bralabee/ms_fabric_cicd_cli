@@ -12,9 +12,8 @@ across development, staging, and production environments.
 """
 
 import os
-from pathlib import Path
 from typing import Optional
-from pydantic import Field, field_validator, ValidationError
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 try:
