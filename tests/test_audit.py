@@ -16,7 +16,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from core.audit import AuditLogger
+from usf_fabric_cli.utils.audit import AuditLogger
 
 
 class TestAuditLogger:

@@ -14,7 +14,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 from typer.testing import CliRunner
 
-from core.cli import app, FabricDeployer
+from usf_fabric_cli.cli import app, FabricDeployer
 
 
 class TestCLIValidate:

@@ -12,7 +12,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 import requests
 
-from core.fabric_git_api import FabricGitAPI, GitProviderType, GitConnectionSource
+from usf_fabric_cli.services.fabric_git_api import FabricGitAPI, GitProviderType, GitConnectionSource
 
 
 class TestFabricGitAPIInit:
@@ -74,7 +74,7 @@ class TestListConnections:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("core.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
     def test_list_connections_success(self, mock_get, api):
         """Test successful listing of connections."""
         mock_response = MagicMock()
@@ -94,7 +94,7 @@ class TestListConnections:
         assert result["connections"][0]["id"] == "conn-1"
         mock_get.assert_called_once()
 
-    @patch("core.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
     def test_list_connections_empty(self, mock_get, api):
         """Test listing when no connections exist."""
         mock_response = MagicMock()
@@ -116,7 +116,7 @@ class TestGetConnectionByName:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("core.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
     def test_get_connection_by_name_found(self, mock_get, api):
         """Test finding a connection by name."""
         mock_response = MagicMock()
@@ -134,7 +134,7 @@ class TestGetConnectionByName:
         assert result is not None
         assert result["id"] == "conn-1"
 
-    @patch("core.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
     def test_get_connection_by_name_not_found(self, mock_get, api):
         """Test when connection name not found."""
         mock_response = MagicMock()
@@ -155,7 +155,7 @@ class TestConnectWorkspaceToGit:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("core.fabric_git_api.requests.post")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
     def test_connect_github_repository(self, mock_post, api):
         """Test connecting workspace to GitHub repository."""
         mock_response = MagicMock()
@@ -178,7 +178,7 @@ class TestConnectWorkspaceToGit:
         call_args = mock_post.call_args
         assert "json" in call_args.kwargs
 
-    @patch("core.fabric_git_api.requests.post")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
     def test_connect_azure_devops_repository(self, mock_post, api):
         """Test connecting workspace to Azure DevOps repository."""
         mock_response = MagicMock()
@@ -224,7 +224,7 @@ class TestGetGitStatus:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("core.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
     def test_get_git_status_success(self, mock_get, api):
         """Test getting Git status for workspace."""
         mock_response = MagicMock()
@@ -251,7 +251,7 @@ class TestGetGitConnection:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("core.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
     def test_get_git_connection_success(self, mock_get, api):
         """Test getting Git connection details."""
         mock_response = MagicMock()
@@ -280,7 +280,7 @@ class TestDisconnectFromGit:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("core.fabric_git_api.requests.post")  # disconnect uses POST, not DELETE
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")  # disconnect uses POST, not DELETE
     def test_disconnect_success(self, mock_post, api):
         """Test disconnecting workspace from Git."""
         mock_response = MagicMock()
@@ -302,8 +302,8 @@ class TestPollOperation:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("core.fabric_git_api.requests.get")
-    @patch("core.fabric_git_api.time.sleep")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.time.sleep")
     def test_poll_operation_succeeds(self, mock_sleep, mock_get, api):
         """Test polling an operation until success."""
         # First call returns "Running", second returns "Succeeded"
@@ -323,8 +323,8 @@ class TestPollOperation:
         assert result["status"] == "Succeeded"
         assert mock_get.call_count == 2
 
-    @patch("core.fabric_git_api.requests.get")
-    @patch("core.fabric_git_api.time.sleep")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.time.sleep")
     def test_poll_operation_immediate_success(self, mock_sleep, mock_get, api):
         """Test polling when operation immediately succeeds."""
         mock_response = MagicMock()
@@ -339,8 +339,8 @@ class TestPollOperation:
         # Should only poll once
         assert mock_get.call_count == 1
 
-    @patch("core.fabric_git_api.requests.get")
-    @patch("core.fabric_git_api.time.sleep")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.time.sleep")
     def test_poll_operation_failed(self, mock_sleep, mock_get, api):
         """Test polling when operation fails."""
         mock_response = MagicMock()
@@ -365,7 +365,7 @@ class TestInitializeGitConnection:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("core.fabric_git_api.requests.post")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
     def test_initialize_success(self, mock_post, api):
         """Test initializing Git connection."""
         mock_response = MagicMock()

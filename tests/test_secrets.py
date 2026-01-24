@@ -7,7 +7,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from src.core.secrets import FabricSecrets, get_secrets, get_environment_variables
+from usf_fabric_cli.utils.secrets import FabricSecrets, get_secrets, get_environment_variables
 
 
 class TestFabricSecrets:
@@ -127,7 +127,7 @@ class TestFabricSecrets:
             monkeypatch.delenv(var, raising=False)
 
         # Patch FabricSecrets to ignore .env file
-        with patch("src.core.secrets.FabricSecrets") as MockSecrets:
+        with patch("usf_fabric_cli.utils.secrets.FabricSecrets") as MockSecrets:
             # We want to use the real logic but with empty config
             # So we can't just mock the class entirely easily without side effects.
             # Instead, let's patch the model_config on the class temporarily?

@@ -12,7 +12,7 @@ import shutil
 
 import pytest
 
-from src.core.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
+from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
 
 
 pytestmark = pytest.mark.integration

@@ -6,7 +6,7 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 import json
 
-from src.core.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
+from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
 
 
 class TestFabricCLIWrapper:
@@ -179,21 +179,21 @@ class TestRetryUtilities:
 
     def test_is_retryable_error_rate_limit(self):
         """Test detection of rate limit errors."""
-        from core.fabric_wrapper import is_retryable_error
+        from usf_fabric_cli.services.fabric_wrapper import is_retryable_error
 
         assert is_retryable_error("Rate limit exceeded") is True
         assert is_retryable_error("Error 429: Too Many Requests") is True
 
     def test_is_retryable_error_service_unavailable(self):
         """Test detection of service unavailable errors."""
-        from core.fabric_wrapper import is_retryable_error
+        from usf_fabric_cli.services.fabric_wrapper import is_retryable_error
 
         assert is_retryable_error("503 Service Unavailable") is True
         assert is_retryable_error("Service temporarily unavailable") is True
 
     def test_is_retryable_error_connection_issues(self):
         """Test detection of connection errors."""
-        from core.fabric_wrapper import is_retryable_error
+        from usf_fabric_cli.services.fabric_wrapper import is_retryable_error
 
         assert is_retryable_error("Connection reset by peer") is True
         assert is_retryable_error("Connection refused") is True
@@ -201,7 +201,7 @@ class TestRetryUtilities:
 
     def test_is_retryable_error_non_retryable(self):
         """Test that non-retryable errors return False."""
-        from core.fabric_wrapper import is_retryable_error
+        from usf_fabric_cli.services.fabric_wrapper import is_retryable_error
 
         assert is_retryable_error("Invalid credentials") is False
         assert is_retryable_error("Permission denied") is False
@@ -209,7 +209,7 @@ class TestRetryUtilities:
 
     def test_calculate_backoff_exponential(self):
         """Test exponential backoff calculation."""
-        from core.fabric_wrapper import calculate_backoff
+        from usf_fabric_cli.services.fabric_wrapper import calculate_backoff
         import random
 
         random.seed(42)
@@ -228,7 +228,7 @@ class TestRetryUtilities:
 
     def test_calculate_backoff_max_delay(self):
         """Test that backoff respects max delay."""
-        from core.fabric_wrapper import calculate_backoff
+        from usf_fabric_cli.services.fabric_wrapper import calculate_backoff
 
         # Very high attempt number should still respect max_delay
         delay = calculate_backoff(10, 1.0, 30.0)
@@ -236,7 +236,7 @@ class TestRetryUtilities:
 
     def test_retry_decorator_success_first_try(self):
         """Test retry decorator when function succeeds on first try."""
-        from core.fabric_wrapper import retry_with_backoff
+        from usf_fabric_cli.services.fabric_wrapper import retry_with_backoff
 
         call_count = 0
 
@@ -253,7 +253,7 @@ class TestRetryUtilities:
 
     def test_retry_decorator_success_after_retry(self):
         """Test retry decorator when function succeeds after retry."""
-        from core.fabric_wrapper import retry_with_backoff
+        from usf_fabric_cli.services.fabric_wrapper import retry_with_backoff
 
         call_count = 0
 
@@ -272,7 +272,7 @@ class TestRetryUtilities:
 
     def test_retry_decorator_exhausts_retries(self):
         """Test retry decorator when all retries are exhausted."""
-        from core.fabric_wrapper import retry_with_backoff
+        from usf_fabric_cli.services.fabric_wrapper import retry_with_backoff
 
         call_count = 0
 
@@ -290,7 +290,7 @@ class TestRetryUtilities:
 
     def test_retry_decorator_non_retryable_error(self):
         """Test that non-retryable errors are not retried."""
-        from core.fabric_wrapper import retry_with_backoff
+        from usf_fabric_cli.services.fabric_wrapper import retry_with_backoff
 
         call_count = 0
 
