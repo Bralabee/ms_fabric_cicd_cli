@@ -1,0 +1,72 @@
+# Minimal Starter Blueprint
+# Optimized for: Quick prototyping, learning, POC projects, individual contributors
+# Use Cases: Data exploration, single-person projects, training environments
+
+workspace:
+  name: "Starter_Project"
+  display_name: "Starter Project"
+  description: "Minimal workspace for quick data exploration and prototyping"
+  capacity_id: "${FABRIC_CAPACITY_ID}"
+  
+  # No Git integration by default (can be added later)
+  # git_repo: "${GIT_REPO_URL}"
+  # git_branch: "main"
+
+# Minimal Folder Structure
+folders:
+  - "Data"
+  - "Notebooks"
+
+# Single Lakehouse (All-in-one data storage)
+lakehouses:
+  - name: "main_lakehouse"
+    folder: "Data"
+    description: "Primary data storage for all datasets"
+
+# Single Notebook (Entry point)
+notebooks:
+  - name: "getting_started"
+    folder: "Notebooks"
+    description: "Start here: Load data, explore, and analyze"
+
+# Optional: Add a pipeline for basic ETL
+pipelines:
+  - name: "simple_data_refresh"
+    folder: "Notebooks"
+    description: "Basic data refresh pipeline (optional)"
+
+# Principals (Minimal - just the deploying user/SP)
+principals:
+  - id: "${AZURE_CLIENT_ID}"  # Service Principal deploying this
+    role: "Admin"
+    description: "Deployment automation principal"
+
+  # Mandatory Security Principals (Enterprise-Wide)
+  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+    role: "Admin"
+    description: "MANDATORY: Enterprise security admin principal"
+  
+  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+    role: "Contributor"
+    description: "MANDATORY: Enterprise contributor principal"
+
+# Environment-Specific Overrides
+environments:
+  dev:
+    workspace:
+      capacity_id: "F2"  # Free trial capacity
+      name: "Starter_Project_Dev"
+  
+  prod:
+    workspace:
+      capacity_id: "F8"  # Upgrade for production
+      name: "Starter_Project_Prod"
+
+# Configuration Notes:
+# 1. This is the absolute minimum viable Fabric workspace
+# 2. Single lakehouse reduces complexity for beginners
+# 3. Single notebook provides clear entry point
+# 4. No warehouse/semantic model to keep it simple
+# 5. Ideal for F2 (trial) capacity - very low resource usage
+# 6. Can be extended by copying sections from other blueprints
+# 7. Cost: ~$0/month on trial capacity, <$100/month on F8

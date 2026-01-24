@@ -1,2 +1,3 @@
 [console_scripts]
-fabric-cicd = core.cli:app
+fabric-cicd = usf_fabric_cli.cli:app
+usf-fabric = usf_fabric_cli.cli:app

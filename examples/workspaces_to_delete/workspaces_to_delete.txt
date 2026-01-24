@@ -1,0 +1,5 @@
+test-workspace-creation
+usf2-fabric-comprehensive-demo-demo-dev
+usf2-fabric-customer-analytics-workspace-dev
+usf2-fabric-sales-analytics-dev
+your-org-prefix-sales-analytics-dev

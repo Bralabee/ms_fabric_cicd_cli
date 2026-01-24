@@ -1,0 +1,196 @@
+# Data Mesh Domain-Oriented Blueprint
+# Optimized for: Domain-driven data ownership, federated governance, data products
+# Use Cases: Large enterprises, multi-team organizations, domain-bounded contexts
+# Architecture: Decentralized data ownership with centralized governance
+
+workspace:
+  name: "Sales_Domain_Data_Product"
+  display_name: "Sales Domain - Data Product"
+  description: "Domain-owned data product: Sales analytics and customer insights"
+  capacity_id: "${FABRIC_CAPACITY_ID}"
+  domain: "Sales"  # CRITICAL: Assign to Fabric Domain for governance
+  
+  # Git Integration (Per-domain repository)
+  git_repo: "${SALES_DOMAIN_REPO_URL}"
+  git_branch: "main"
+  git_directory: "/sales-data-product"
+
+# Folder Structure (Data Product Layers)
+folders:
+  - "Source"  # Source-aligned datasets
+  - "Aggregate"  # Aggregate datasets (for consumers)
+  - "Consumer"  # Consumer-aligned datasets (published data products)
+  - "Internal"  # Internal domain logic (not published)
+  - "Contracts"  # Data contracts and SLAs
+
+# Lakehouses (Domain Data Storage)
+lakehouses:
+  - name: "sales_source_data"
+    folder: "Source"
+    description: "Raw sales data from operational systems (domain-owned)"
+  
+  - name: "sales_aggregate_data"
+    folder: "Aggregate"
+    description: "Aggregated sales metrics (pre-joined for consumers)"
+  
+  - name: "customer_insights_product"
+    folder: "Consumer"
+    description: "Published data product: Customer purchase patterns"
+
+# Warehouses (Analytical Data Products)
+warehouses:
+  - name: "sales_analytics_product"
+    folder: "Consumer"
+    description: "Published data product: Sales performance analytics"
+
+# Semantic Models (Self-Service Analytics)
+semantic_models:
+  - name: "sales_kpis_certified"
+    folder: "Consumer"
+    description: "Certified semantic model for sales KPIs (published)"
+
+# Notebooks (Domain Logic)
+notebooks:
+  - name: "sales_data_transformation"
+    folder: "Internal"
+    description: "Domain-specific transformation logic (not exposed)"
+  
+  - name: "customer_segmentation"
+    folder: "Internal"
+    description: "ML-based customer segmentation (internal)"
+  
+  - name: "data_product_quality_check"
+    folder: "Contracts"
+    description: "Validate data contracts before publishing"
+
+# Pipelines (Data Product Publishing)
+pipelines:
+  - name: "publish_sales_data_product"
+    folder: "Consumer"
+    description: "Orchestrate data product creation and validation"
+  
+  - name: "domain_data_refresh"
+    folder: "Internal"
+    description: "Refresh domain-owned datasets from source systems"
+
+# Data Mesh-Specific Resources
+resources:
+  # GraphQL API (Data Product Access)
+  - type: "GraphQLApi"
+    name: "sales_data_product_api"
+    description: "GraphQL API for consuming Sales domain data products"
+    folder: "Consumer"
+  
+  # Data Sharing (Cross-Domain Collaboration)
+  - type: "ExternalDataShare"
+    name: "share_customer_insights"
+    description: "Share customer insights with Marketing domain"
+    folder: "Consumer"
+  
+  # Mirrored Databases (Cross-Domain Data Integration)
+  - type: "MirroredDatabase"
+    name: "mirrored_customer_master"
+    description: "Mirror Customer Master from Customer domain"
+    folder: "Source"
+
+# Principals (Domain Team Ownership)
+principals:
+  # Domain Owner (Product Manager)
+  - id: "${SALES_DOMAIN_OWNER_OID}"
+    role: "Admin"
+    description: "MANDATORY: Sales Domain Owner - accountable for data product"
+  
+  # Domain Data Engineers
+  - id: "${SALES_DATA_TEAM_GROUP_OID}"
+    role: "Contributor"
+    description: "Sales domain data engineering team"
+  
+  # Domain Analysts (Internal Consumers)
+  - id: "${SALES_ANALYST_GROUP_OID}"
+    role: "Viewer"
+    description: "Sales analysts - internal consumers"
+  
+  # Cross-Domain Consumer Groups (External)
+  - id: "${MARKETING_CONSUMER_GROUP_OID}"
+    role: "Viewer"
+    description: "Marketing domain - consumer of Sales data products"
+  
+  - id: "${FINANCE_CONSUMER_GROUP_OID}"
+    role: "Viewer"
+    description: "Finance domain - consumer of Sales data products"
+  
+  # Central Governance (Read-Only Audit)
+  - id: "${CENTRAL_GOVERNANCE_GROUP_OID}"
+    role: "Viewer"
+    description: "Central data governance - audit and compliance oversight"
+  
+  # Automation Service Principal
+  - id: "${AZURE_CLIENT_ID}"
+    role: "Contributor"
+    description: "Domain-specific CI/CD automation"
+
+  # Mandatory Security Principals (Enterprise-Wide)
+  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+    role: "Admin"
+    description: "MANDATORY: Enterprise security admin principal"
+  
+  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+    role: "Contributor"
+    description: "MANDATORY: Enterprise contributor principal"
+
+# Environment-Specific Overrides
+environments:
+  dev:
+    workspace:
+      capacity_id: "F8"
+      name: "Sales_Domain_Dev"
+      domain: "Sales_Dev"
+  
+  test:
+    workspace:
+      capacity_id: "F16"
+      name: "Sales_Domain_Test"
+      domain: "Sales_Test"
+  
+  prod:
+    workspace:
+      capacity_id: "F64"
+      name: "Sales_Domain_Prod"
+      domain: "Sales"
+
+# DATA MESH PRINCIPLES IMPLEMENTATION:
+# 1. Domain Ownership: Sales team owns this workspace and all data products
+# 2. Data as a Product: customer_insights_product and sales_analytics_product are discoverable
+# 3. Self-Serve Platform: GraphQL API enables self-service consumption
+# 4. Federated Governance: Central governance has Viewer access for audit
+# 5. Computational Governance: Data contracts enforced via data_product_quality_check notebook
+
+# DATA PRODUCT CATALOG (Register in Purview/Data Catalog):
+# Product Name: Customer Purchase Insights
+#   - Owner: Sales Domain Team
+#   - SLA: Daily refresh by 6 AM UTC
+#   - Contract: JSON schema in /Contracts folder
+#   - Consumers: Marketing, Finance
+#   - Quality: 99.5% completeness, <1% error rate
+#
+# Product Name: Sales Performance Analytics
+#   - Owner: Sales Domain Team
+#   - SLA: Hourly refresh during business hours
+#   - Contract: Star schema documented
+#   - Consumers: Executive Dashboards, Finance
+#   - Quality: Certified by Finance team
+
+# CROSS-DOMAIN DEPENDENCIES:
+# - Consumes: Customer Master (from Customer domain)
+# - Publishes: Sales metrics, Customer insights
+# - Consumers: Marketing domain, Finance domain
+
+# Configuration Notes:
+# 1. Each domain should have its own workspace (clone this template per domain)
+# 2. Use Fabric Domains feature to group related workspaces
+# 3. GraphQL API enables decoupled consumption (REST-like)
+# 4. MirroredDatabase avoids direct cross-domain dependencies
+# 5. ExternalDataShare enables secure cross-domain data sharing
+# 6. Central governance team has read-only access (audit, not control)
+# 7. Domain owner is accountable for data product SLA and quality
+# 8. Replace "Sales" with your domain name (e.g., Customer, Product, Finance)

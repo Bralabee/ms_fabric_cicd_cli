@@ -1,0 +1,57 @@
+folders:
+- Bronze
+- Silver
+- Gold
+- Notebooks
+- Pipelines
+lakehouses:
+- description: Raw data from source systems
+  folder: Bronze
+  name: raw_data_lakehouse
+- description: Cleaned and validated data
+  folder: Silver
+  name: processed_data_lakehouse
+- description: Business-ready analytics data
+  folder: Gold
+  name: analytics_lakehouse
+notebooks:
+- description: Data ingestion from source systems
+  folder: Notebooks
+  name: data_ingestion
+- name: data_transformation
+pipelines:
+- description: Daily ETL orchestration pipeline
+  folder: Pipelines
+  name: daily_etl_pipeline
+principals:
+- id: ${DEV_ADMIN_OBJECT_ID}
+  role: Admin
+- id: ${DEV_CONTRIBUTOR_OBJECT_ID}
+  role: Contributor
+- id: ${AZURE_CLIENT_ID}
+  role: Admin
+- description: Mandatory Additional Admin
+  id: ${ADDITIONAL_ADMIN_PRINCIPAL_ID}
+  role: Admin
+- description: Mandatory Additional Contributor
+  id: ${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}
+  role: Contributor
+resources:
+- description: Ingestion stream for IoT data
+  name: iot_events
+  type: Eventstream
+- description: Real-time logs database
+  name: logs_db
+  type: KQLDatabase
+warehouses:
+- description: Primary analytics warehouse
+  folder: Gold
+  name: analytics_warehouse
+workspace:
+  capacity_id: ${FABRIC_CAPACITY_ID}
+  description: ETL workspace for data analytics
+  display_name: Acme Corp Supply Chain
+  git_branch: main
+  git_directory: /
+  git_repo: ${GIT_REPO_URL}
+  name: acme-corp-supply-chain

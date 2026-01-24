@@ -1,0 +1,92 @@
+# Fabric Monitoring Analytics - Data Engineering Workspace
+# Architecture: Medallion (Bronze/Silver/Gold)
+# Methodology: Feature Branching Ready
+
+workspace:
+  name: "fabric-monitoring-analytics"
+  display_name: "Fabric Monitoring Analytics"
+  description: "Data Engineering workspace for monitoring Fabric usage and metrics"
+  # Ensure FABRIC_CAPACITY_ID is set in your .env file, or replace this with a specific ID (e.g., "F64")
+  capacity_id: "${FABRIC_CAPACITY_ID}" 
+
+  # Optional Field
+  #domain: "01 Strategy, Governance & Compliance" 
+  
+  # Git Integration (Replace with your actual repo)
+  git_repo: "${GIT_REPO_URL}"
+  git_branch: "main"
+  git_directory: "/"
+
+# Numbered Folder Structure for intuitive sorting
+folders:
+  - "01_Bronze_Raw"
+  - "02_Silver_Enriched"
+  - "03_Gold_Curated"
+  - "04_Notebooks"
+  - "05_Pipelines"
+  - "99_Admin"
+
+# Lakehouses (Medallion Layers)
+lakehouses:
+  - name: "lh_01_bronze"
+    folder: "01_Bronze_Raw"
+    description: "Raw monitoring logs and telemetry data landing zone"
+
+  - name: "lh_02_silver"
+    folder: "02_Silver_Enriched"
+    description: "Cleaned, standardized, and deduplicated metrics"
+
+  - name: "lh_03_gold"
+    folder: "03_Gold_Curated"
+    description: "Aggregated statistics and dimensional models for reporting"
+
+# Notebooks (Numbered by execution order)
+notebooks:
+  - name: "nb_01_ingest_telemetry"
+    folder: "04_Notebooks"
+    description: "Ingest raw logs from Fabric APIs into Bronze"
+
+  - name: "nb_02_transform_metrics"
+    folder: "04_Notebooks"
+    description: "Process raw logs into standardized Silver tables"
+
+  - name: "nb_03_build_aggregates"
+    folder: "04_Notebooks"
+    description: "Create reporting aggregates for Gold layer"
+    
+  - name: "nb_99_maintenance"
+    folder: "99_Admin"
+    description: "Vacuum and optimize tables"
+
+# Pipelines (Orchestration)
+pipelines:
+  - name: "pl_01_master_orchestrator"
+    folder: "05_Pipelines"
+    description: "Master pipeline to run the end-to-end monitoring flow"
+
+# Generic Resources (Future-Proofing)
+resources:
+  - type: "Eventstream"
+    name: "es_01_realtime_logs"
+    folder: "01_Bronze_Raw"
+    description: "Real-time stream of monitoring events"
+
+# Access Control
+principals:
+  # Define these variables in your .env file for security
+  - id: "${DEV_ADMIN_OBJECT_ID}"
+    role: "Admin"
+  
+  - id: "${AUTOMATION_SP_ID}"
+    role: "Contributor"
+
+  # Mandatory Security Principals
+  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+    role: "Admin"
+  
+  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+    role: "Contributor"
+
+  # Dev Team Members
+  - id: "${DEV_MEMBERS_OBJECT_ID}"
+    role: "Member"

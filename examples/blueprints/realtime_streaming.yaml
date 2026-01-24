@@ -1,0 +1,152 @@
+# Real-Time Streaming Architecture Blueprint
+# Optimized for: IoT telemetry, event-driven architectures, real-time analytics
+# Use Cases: Sensor data, log aggregation, clickstream analysis, monitoring systems
+
+workspace:
+  name: "Realtime_Streaming_Hub"
+  display_name: "Real-Time Streaming Hub"
+  description: "High-throughput streaming data platform with real-time analytics and alerting"
+  capacity_id: "${FABRIC_CAPACITY_ID}"
+  domain: "${FABRIC_DOMAIN}"  # Optional: Assign to specific domain
+  
+  # Git Integration (Optional)
+  git_repo: "${GIT_REPO_URL}"
+  git_branch: "main"
+  git_directory: "/streaming"
+
+# Folder Structure (Streaming-Optimized)
+folders:
+  - "Ingestion"
+  - "Processing"
+  - "Analytics"
+  - "Alerts"
+  - "Dashboards"
+
+# Lakehouses (Landing zones for batch/historical data)
+lakehouses:
+  - name: "streaming_archive"
+    folder: "Ingestion"
+    description: "Long-term storage for streamed events (batch queries)"
+
+# Real-Time Streaming Resources
+resources:
+  # Eventstreams - Data ingestion
+  - type: "Eventstream"
+    name: "iot_sensor_stream"
+    description: "Ingest IoT device telemetry in real-time"
+    folder: "Ingestion"
+  
+  - type: "Eventstream"
+    name: "application_logs_stream"
+    description: "Real-time application log ingestion"
+    folder: "Ingestion"
+  
+  - type: "Eventstream"
+    name: "user_clickstream"
+    description: "Web/mobile user interaction events"
+    folder: "Ingestion"
+
+  # Eventhouse - Unified real-time analytics engine
+  - type: "Eventhouse"
+    name: "realtime_analytics_engine"
+    description: "High-performance analytics for streaming data"
+    folder: "Analytics"
+
+  # KQL Databases - Low-latency query engines
+  - type: "KQLDatabase"
+    name: "telemetry_analytics_db"
+    description: "KQL database for IoT telemetry analysis"
+    folder: "Analytics"
+  
+  - type: "KQLDatabase"
+    name: "logs_analytics_db"
+    description: "KQL database for application log analysis"
+    folder: "Analytics"
+
+  # KQL Querysets - Reusable queries
+  - type: "KQLQueryset"
+    name: "streaming_queries"
+    description: "Common KQL queries for real-time dashboards"
+    folder: "Analytics"
+
+  # Reflex - Event-driven automation
+  - type: "Reflex"
+    name: "anomaly_detector"
+    description: "Automated anomaly detection and alerting"
+    folder: "Alerts"
+  
+  - type: "Reflex"
+    name: "threshold_alert_processor"
+    description: "Process and route threshold-based alerts"
+    folder: "Alerts"
+
+  # KQL Dashboards - Real-time visualization
+  - type: "KQLDashboard"
+    name: "realtime_monitoring_dashboard"
+    description: "Live monitoring dashboard for streaming data"
+    folder: "Dashboards"
+
+# Notebooks (Stream processing logic)
+notebooks:
+  - name: "stream_data_quality_monitor"
+    folder: "Processing"
+    description: "Monitor data quality metrics in real-time streams"
+
+  - name: "historical_batch_processor"
+    folder: "Processing"
+    description: "Batch processing for archived streaming data"
+
+# Pipelines (Orchestration for hybrid batch/stream)
+pipelines:
+  - name: "stream_to_lakehouse_archiver"
+    folder: "Processing"
+    description: "Archive streaming data to lakehouse for long-term analysis"
+
+# Principals (Security & Access)
+principals:
+  - id: "${STREAMING_ADMIN_OID}"
+    role: "Admin"
+    description: "Streaming platform administrators"
+  
+  - id: "${DATA_ENGINEER_GROUP_OID}"
+    role: "Contributor"
+    description: "Data engineers managing stream pipelines"
+  
+  - id: "${ANALYST_GROUP_OID}"
+    role: "Viewer"
+    description: "Analysts running KQL queries"
+  
+  - id: "${AZURE_CLIENT_ID}"  # Service Principal for automation
+    role: "Contributor"
+    description: "CI/CD automation service principal"
+
+  # Mandatory Security Principals (Enterprise-Wide)
+  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+    role: "Admin"
+    description: "MANDATORY: Enterprise security admin principal"
+  
+  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+    role: "Contributor"
+    description: "MANDATORY: Enterprise contributor principal"
+
+# Environment-Specific Overrides
+environments:
+  dev:
+    workspace:
+      capacity_id: "F2"  # Trial capacity for development
+  
+  test:
+    workspace:
+      capacity_id: "F8"
+  
+  prod:
+    workspace:
+      capacity_id: "F64"  # Production capacity
+
+# Configuration Notes:
+# 1. Eventstreams support multiple sources: Event Hub, IoT Hub, Kafka, custom endpoints
+# 2. KQL Databases provide sub-second query latency for time-series data
+# 3. Reflex enables serverless event processing without custom code
+# 4. Eventhouse unifies KQL databases under single analytics engine
+# 5. Use streaming_archive lakehouse for cost-effective long-term storage
+# 6. Replace all ${VARIABLE} placeholders with actual values or set in .env
