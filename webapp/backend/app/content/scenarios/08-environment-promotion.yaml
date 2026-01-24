@@ -1044,7 +1044,7 @@ steps:
       content: |
         # Debug: Show effective configuration after merge
         python -c "
-        from core.config import ConfigManager
+        from usf_fabric_cli.utils.config import ConfigManager
         cm = ConfigManager('config/projects/acme_corp/sales_analytics.yaml')
         config = cm.load_config(environment='test')
         print(f'Workspace name: {config.name}')

@@ -12,8 +12,8 @@ from pathlib import Path
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from core.fabric_wrapper import FabricCLIWrapper
-from core.config import get_environment_variables
+from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
+from usf_fabric_cli.utils.config import get_environment_variables
 
 
 def parse_workspace_list(file_path):

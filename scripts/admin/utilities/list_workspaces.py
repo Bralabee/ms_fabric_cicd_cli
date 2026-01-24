@@ -5,8 +5,8 @@ import json
 # Add src to path
 sys.path.append(os.path.join(os.getcwd(), "src"))
 
-from core.fabric_wrapper import FabricCLIWrapper
-from core.config import get_environment_variables
+from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
+from usf_fabric_cli.utils.config import get_environment_variables
 
 
 def list_workspaces():
