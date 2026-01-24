@@ -4,28 +4,40 @@ PYTHON := python3
 PIP := pip
 PYTEST := pytest
 
-.PHONY: help install test lint clean validate deploy destroy bulk-destroy
+# Conda environment activation (use with shell commands)
+CONDA_ENV := fabric-cli-cicd
+CONDA_ACTIVATE := source ~/miniconda3/etc/profile.d/conda.sh && conda activate $(CONDA_ENV)
+
+.PHONY: help install test lint clean validate deploy destroy bulk-destroy check-env
+
+# Check if conda environment is active
+check-env:
+	@if [ "$$CONDA_DEFAULT_ENV" != "$(CONDA_ENV)" ]; then \
+		echo "\033[33m⚠️  Warning: Conda environment '$(CONDA_ENV)' is not active.\033[0m"; \
+		echo "\033[33m   Run: source ~/miniconda3/etc/profile.d/conda.sh && conda activate $(CONDA_ENV)\033[0m"; \
+	fi
 
 help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
+
 ##@ Local Development
 
-install: ## Install dependencies and package in editable mode
+install: check-env ## Install dependencies and package in editable mode
 	$(PIP) install -r requirements.txt
 	$(PIP) install -e .
 
-build: ## Build Python package (wheel)
+build: check-env ## Build Python package (wheel)
 	$(PIP) install build
 	$(PYTHON) -m build
 
-test: ## Run unit tests
+test: check-env ## Run unit tests
 	$(PYTEST) -m "not integration"
 
-test-integration: ## Run integration tests (requires credentials)
+test-integration: check-env ## Run integration tests (requires credentials)
 	$(PYTEST) tests/integration -m integration
 
-lint: ## Run code formatting and linting
+lint: check-env ## Run code formatting and linting
 	black src tests scripts bin
 	-ruff check src tests scripts bin || true
 
@@ -36,6 +48,7 @@ clean: ## Clean up cache and temporary files
 	rm -f *.log
 
 ##@ Local Operations
+
 
 validate: ## Validate a configuration file (Usage: make validate config=path/to/config.yaml)
 	@if [ -z "$(config)" ]; then \
