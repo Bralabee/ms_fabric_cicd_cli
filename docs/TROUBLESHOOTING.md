@@ -105,7 +105,7 @@ ls -la .env
 
 2. **Verify required variables**:
 ```bash
-python -c "from core.secrets import FabricSecrets; secrets = FabricSecrets.load_with_fallback(); print(secrets.validate_fabric_auth())"
+python -c "from usf_fabric_cli.utils.secrets import FabricSecrets; secrets = FabricSecrets.load_with_fallback(); print(secrets.validate_fabric_auth())"
 # Should return (True, 'OK')
 ```
 
@@ -339,7 +339,7 @@ Error: undefined variable 'environment'
 
 2. **Use strict mode validation**:
 ```python
-from core.templating import ArtifactTemplateEngine
+from usf_fabric_cli.utils.templating import ArtifactTemplateEngine
 
 engine = ArtifactTemplateEngine(strict_mode=True)
 result = engine.render_string(
@@ -350,7 +350,7 @@ result = engine.render_string(
 
 3. **Extract required variables**:
 ```python
-from core.templating import ArtifactTemplateEngine
+from usf_fabric_cli.utils.templating import ArtifactTemplateEngine
 
 engine = ArtifactTemplateEngine()
 variables = engine.extract_template_variables("{{ env }}_{{ name }}")

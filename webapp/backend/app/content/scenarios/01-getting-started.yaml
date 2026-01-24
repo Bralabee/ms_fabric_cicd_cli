@@ -18,8 +18,8 @@ learning_outcomes:
   - "Install and configure the conda environment with `conda env create` and `make install`"
   - Understand all available entry points (Make, CLI, Python scripts)
   - "Configure Azure Service Principal credentials in `.env` file"
-  - "Run `make diagnose` and `python scripts/preflight_check.py` to verify setup"
-  - "Use `python scripts/utilities/list_workspaces.py` to confirm API connectivity"
+  - "Run `make diagnose` and `python scripts/admin/preflight_check.py` to verify setup"
+  - "Use `python scripts/admin/utilities/list_workspaces.py` to confirm API connectivity"
   - Know when to use Make vs CLI vs Python script commands
 
 tags:
@@ -63,7 +63,7 @@ steps:
       |--------|-------------|---------|
       | **Make Commands** | Recommended - simple, discoverable | `make deploy config=path.yaml env=dev` |
       | **CLI Entry Point** | Direct CLI access after `pip install -e .` | `fabric-cicd deploy path.yaml --env dev` |
-      | **Python Scripts** | Utilities and advanced operations | `python scripts/generate_project.py "Org" "Proj"` |
+      | **Python Scripts** | Utilities and advanced operations | `python scripts/dev/generate_project.py "Org" "Proj"` |
       
       This guide walks you through setting up all three methods.
     tips:
@@ -495,11 +495,11 @@ steps:
       
       | Script | Purpose | Example |
       |--------|---------|---------|
-      | `generate_project.py` | Create config from template | `python scripts/generate_project.py "Org" "Project" --template basic_etl` |
-      | `preflight_check.py` | Validate environment | `python scripts/preflight_check.py --auto-install` |
-      | `bulk_destroy.py` | Destroy multiple workspaces | `python scripts/bulk_destroy.py workspaces.txt` |
+      | `generate_project.py` | Create config from template | `python scripts/dev/generate_project.py "Org" "Project" --template basic_etl` |
+      | `preflight_check.py` | Validate environment | `python scripts/admin/preflight_check.py --auto-install` |
+      | `bulk_destroy.py` | Destroy multiple workspaces | `python scripts/admin/bulk_destroy.py workspaces.txt` |
       
-      ## Utility Scripts (in `scripts/utilities/`)
+      ## Utility Scripts (in `scripts/admin/utilities/`)
       
       | Script | Purpose |
       |--------|---------|
@@ -513,36 +513,36 @@ steps:
       language: bash
       content: |
         # Generate a new project configuration
-        python scripts/generate_project.py "Acme Corp" "Sales Analytics" \
+        python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" \
           --template basic_etl \
           --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
         # Output: config/projects/acme_corp/sales_analytics.yaml
         
         # Run preflight check
-        python scripts/preflight_check.py
+        python scripts/admin/preflight_check.py
         
         # Run preflight check with auto-install
-        python scripts/preflight_check.py --auto-install
+        python scripts/admin/preflight_check.py --auto-install
         
         # List your accessible workspaces
-        python scripts/utilities/list_workspaces.py
+        python scripts/admin/utilities/list_workspaces.py
         
         # List items in a specific workspace
-        python scripts/utilities/list_workspace_items.py --workspace "my-workspace-name"
+        python scripts/admin/utilities/list_workspace_items.py --workspace "my-workspace-name"
         
         # Initialize Azure DevOps repository
-        python scripts/utilities/init_ado_repo.py \
+        python scripts/admin/utilities/init_ado_repo.py \
           --organization "your-ado-org" \
           --project "FabricProjects" \
           --repository "new-repo-name"
         
         # Debug ADO access issues
-        python scripts/utilities/debug_ado_access.py \
+        python scripts/admin/utilities/debug_ado_access.py \
           --organization "your-ado-org" \
           --project "FabricProjects"
     tips:
       - "Always run `conda activate fabric-cli-cicd` before running Python scripts"
-      - "Use `python scripts/generate_project.py --help` to see all template options"
+      - "Use `python scripts/dev/generate_project.py --help` to see all template options"
       - The utility scripts are invaluable for debugging permission issues
 
   - id: configure-credentials
@@ -748,19 +748,19 @@ steps:
       language: bash
       content: |
         # Generate a basic ETL project configuration
-        python scripts/generate_project.py "YourOrg" "YourProject" --template basic_etl
+        python scripts/dev/generate_project.py "YourOrg" "YourProject" --template basic_etl
         
         # Example with real names
-        python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
+        python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
         # Output: config/projects/acme_corp/sales_analytics.yaml
         
         # Generate with Git repository URL
-        python scripts/generate_project.py "Acme Corp" "Sales Analytics" \
+        python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" \
           --template basic_etl \
           --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
         
         # View all available templates and options
-        python scripts/generate_project.py --help
+        python scripts/dev/generate_project.py --help
     expected_output: |
       ╔══════════════════════════════════════════════════════════════╗
       ║              Fabric CLI Project Generator                    ║
@@ -781,7 +781,7 @@ steps:
     tips:
       - "Start with `minimal_starter` template for learning"
       - "Use `basic_etl` for most production projects"
-      - "Run `python scripts/generate_project.py --help` to see all options"
+      - "Run `python scripts/dev/generate_project.py --help` to see all options"
       - Customize the generated YAML file to match your specific requirements
     warnings:
       - Remember to update placeholder values in the generated file
@@ -809,10 +809,10 @@ steps:
         make diagnose
         
         # OR run the Python script directly
-        python scripts/preflight_check.py
+        python scripts/admin/preflight_check.py
         
         # OR with auto-install option (installs Fabric CLI if missing)
-        python scripts/preflight_check.py --auto-install
+        python scripts/admin/preflight_check.py --auto-install
         
         # OR using the CLI
         fabric-cicd diagnose
@@ -863,7 +863,7 @@ steps:
       language: bash
       content: |
         # List all workspaces accessible to your Service Principal
-        python scripts/utilities/list_workspaces.py
+        python scripts/admin/utilities/list_workspaces.py
         
         # You should see a list of workspaces (may be empty if none exist yet)
     expected_output: |
@@ -937,12 +937,12 @@ steps:
       
       | Task | Make Command | CLI Command | Script |
       |------|--------------|-------------|--------|
-      | **Diagnose** | `make diagnose` | `fabric-cicd diagnose` | `python scripts/preflight_check.py` |
-      | **Generate Project** | - | - | `python scripts/generate_project.py "Org" "Proj" --template basic_etl` |
+      | **Diagnose** | `make diagnose` | `fabric-cicd diagnose` | `python scripts/admin/preflight_check.py` |
+      | **Generate Project** | - | - | `python scripts/dev/generate_project.py "Org" "Proj" --template basic_etl` |
       | **Validate Config** | `make validate config=...` | `fabric-cicd validate ...` | - |
       | **Deploy** | `make deploy config=... env=dev` | `fabric-cicd deploy ... --env dev` | - |
       | **Destroy** | `make destroy config=... env=dev` | `fabric-cicd destroy ... --env dev` | - |
-      | **List Workspaces** | - | - | `python scripts/utilities/list_workspaces.py` |
+      | **List Workspaces** | - | - | `python scripts/admin/utilities/list_workspaces.py` |
       
       ## Recommended Learning Path
       
@@ -957,7 +957,7 @@ steps:
         make validate config=templates/blueprints/basic_etl.yaml
         
         # Generate your first project configuration
-        python scripts/generate_project.py "My Company" "First Project" --template minimal_starter
+        python scripts/dev/generate_project.py "My Company" "First Project" --template minimal_starter
         
         # See what was created
         cat config/projects/my_company/first_project.yaml

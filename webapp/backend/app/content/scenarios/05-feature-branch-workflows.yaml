@@ -278,14 +278,14 @@ steps:
       language: bash
       content: |
         # List all workspaces and find yours
-        python scripts/utilities/list_workspaces.py | grep "feature-inventory"
+        python scripts/admin/utilities/list_workspaces.py | grep "feature-inventory"
         
         # List items in your feature workspace
-        python scripts/utilities/list_workspace_items.py \
+        python scripts/admin/utilities/list_workspace_items.py \
           --workspace "acme-sales-analytics-feature-inventory-optimization-dev"
         
         # Or search by partial name
-        python scripts/utilities/list_workspace_items.py \
+        python scripts/admin/utilities/list_workspace_items.py \
           --workspace "feature-inventory"
     expected_output: |
       # list_workspaces.py output:
@@ -372,7 +372,7 @@ steps:
           --branch feature/inventory-optimization
         
         # Verify it's gone
-        python scripts/utilities/list_workspaces.py | grep "feature-inventory"
+        python scripts/admin/utilities/list_workspaces.py | grep "feature-inventory"
         # Should return empty
     expected_output: |
       ╔══════════════════════════════════════════════════════════════╗
@@ -416,7 +416,7 @@ steps:
       language: bash
       content: |
         # Step 1: List all workspaces to a file
-        python scripts/utilities/list_workspaces.py > all_workspaces.txt
+        python scripts/admin/utilities/list_workspaces.py > all_workspaces.txt
         
         # Step 2: Filter to just feature workspaces
         grep "feature-" all_workspaces.txt > feature_workspaces_to_delete.txt
@@ -428,7 +428,7 @@ steps:
         make bulk-destroy file=feature_workspaces_to_delete.txt
         
         # OR using Python directly
-        python scripts/bulk_destroy.py feature_workspaces_to_delete.txt
+        python scripts/admin/bulk_destroy.py feature_workspaces_to_delete.txt
     expected_output: |
       # all_workspaces.txt content:
       acme-sales-analytics-dev
@@ -531,11 +531,11 @@ steps:
         make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
         
         # STEP 6: Verify DEV workspace has your changes
-        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-dev"
+        python scripts/admin/utilities/list_workspace_items.py --workspace "acme-sales-analytics-dev"
         
         # STEP 7: Cleanup - destroy the feature workspace
         # Option A: If the workspace name follows convention
-        python scripts/utilities/list_workspaces.py | grep "feature-new-dashboard"
+        python scripts/admin/utilities/list_workspaces.py | grep "feature-new-dashboard"
         # Then manually destroy or use bulk-destroy
         
         # Option B: Use bulk-destroy
@@ -694,13 +694,13 @@ steps:
       language: bash
       content: |
         # List all workspaces to see how many exist
-        python scripts/utilities/list_workspaces.py | wc -l
+        python scripts/admin/utilities/list_workspaces.py | wc -l
         
         # Count feature workspaces specifically
-        python scripts/utilities/list_workspaces.py | grep "feature-" | wc -l
+        python scripts/admin/utilities/list_workspaces.py | grep "feature-" | wc -l
         
         # List all with details
-        python scripts/utilities/list_workspaces.py
+        python scripts/admin/utilities/list_workspaces.py
     warnings:
       - Too many feature workspaces can exhaust capacity
       - Set team policies for maximum concurrent feature branches
@@ -730,8 +730,8 @@ steps:
       | Deploy feature (Docker) | `make docker-feature-deploy config=... env=dev branch=feature/x` |
       | Deploy feature (local) | `fabric-cicd deploy <config> --env dev --branch feature/x --force-branch-workspace` |
       | Destroy feature | `fabric-cicd destroy <config> --env dev --branch feature/x` |
-      | List workspaces | `python scripts/utilities/list_workspaces.py` |
-      | Filter features | `python scripts/utilities/list_workspaces.py \| grep "feature-"` |
+      | List workspaces | `python scripts/admin/utilities/list_workspaces.py` |
+      | Filter features | `python scripts/admin/utilities/list_workspaces.py \| grep "feature-"` |
       | Bulk destroy | `make bulk-destroy file=list.txt` |
       
       ## Recommended Next Steps

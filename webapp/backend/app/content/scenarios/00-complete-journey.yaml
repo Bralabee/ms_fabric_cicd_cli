@@ -167,7 +167,7 @@ steps:
         # Quick verification commands
         conda activate fabric-cli-cicd
         make diagnose
-        python scripts/utilities/list_workspaces.py
+        python scripts/admin/utilities/list_workspaces.py
     tips:
       - "Always run `conda activate fabric-cli-cicd` before any command"
       - "If `make diagnose` fails, check your `.env` file first"
@@ -192,8 +192,8 @@ steps:
       ### Step 2: Generate Configuration
       
       ```bash
-      # Syntax: python scripts/generate_project.py "OrgName" "ProjectName" --template <template>
-      python scripts/generate_project.py "YourOrg" "YourProject" --template basic_etl
+      # Syntax: python scripts/dev/generate_project.py "OrgName" "ProjectName" --template <template>
+      python scripts/dev/generate_project.py "YourOrg" "YourProject" --template basic_etl
       ```
       
       **Output Location:** `config/projects/yourorg/yourproject.yaml`
@@ -240,7 +240,7 @@ steps:
       language: bash
       content: |
         # Example: Generate a basic ETL project for Acme Corp
-        python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
+        python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
         
         # Output: config/projects/acme_corp/sales_analytics.yaml
         
@@ -280,7 +280,7 @@ steps:
       
       ```bash
       # Check items were created
-      python scripts/utilities/list_workspace_items.py --workspace "acme-corp-sales-analytics-dev"
+      python scripts/admin/utilities/list_workspace_items.py --workspace "acme-corp-sales-analytics-dev"
       
       # Or open in browser
       # URL shown in deployment output
@@ -307,7 +307,7 @@ steps:
         make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
         
         # Verify
-        python scripts/utilities/list_workspace_items.py --workspace "acme-corp-sales-analytics-dev"
+        python scripts/admin/utilities/list_workspace_items.py --workspace "acme-corp-sales-analytics-dev"
     expected_output: |
       ✓ Workspace 'acme-corp-sales-analytics-dev' created
       ✓ Folders created: Bronze, Silver, Gold, Notebooks
@@ -339,7 +339,7 @@ steps:
       
       ```bash
       # Initialize ADO repo for Fabric Git sync
-      python scripts/utilities/init_ado_repo.py --organization "your-org" --project "your-project" --repository "repo-name"
+      python scripts/admin/utilities/init_ado_repo.py --organization "your-org" --project "your-project" --repository "repo-name"
       ```
       
       ### Monitoring & Troubleshooting
@@ -352,7 +352,7 @@ steps:
       make diagnose
       
       # Debug ADO access
-      python scripts/utilities/debug_ado_access.py --organization "your-org" --project "your-project"
+      python scripts/admin/utilities/debug_ado_access.py --organization "your-org" --project "your-project"
       ```
       
       📖 **Detailed Guides:**
@@ -378,7 +378,7 @@ steps:
       ### Configuration
       ```bash
       # Generate new project
-      python scripts/generate_project.py "Org" "Project" --template basic_etl
+      python scripts/dev/generate_project.py "Org" "Project" --template basic_etl
       
       # Validate config
       make validate config=config/projects/org/project.yaml
@@ -390,7 +390,7 @@ steps:
       make deploy config=config/projects/org/project.yaml env=dev
       
       # Verify deployment
-      python scripts/utilities/list_workspace_items.py --workspace "workspace-name"
+      python scripts/admin/utilities/list_workspace_items.py --workspace "workspace-name"
       
       # Destroy workspace
       make destroy config=config/projects/org/project.yaml env=dev
@@ -411,7 +411,7 @@ steps:
       make diagnose
       
       # List workspaces
-      python scripts/utilities/list_workspaces.py
+      python scripts/admin/utilities/list_workspaces.py
       
       # View audit logs
       cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl | jq

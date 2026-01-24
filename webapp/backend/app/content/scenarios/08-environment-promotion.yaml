@@ -653,7 +653,7 @@ steps:
         make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
         
         # 4. Verify deployment
-        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-dev"
+        python scripts/admin/utilities/list_workspace_items.py --workspace "acme-sales-analytics-dev"
     expected_output: |
       ╔══════════════════════════════════════════════════════════════╗
       ║               Fabric Workspace Deployment                    ║
@@ -723,14 +723,14 @@ steps:
         make deploy config=config/projects/acme_corp/sales_analytics.yaml env=test
         
         # 3. Verify TEST deployment
-        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-test"
+        python scripts/admin/utilities/list_workspace_items.py --workspace "acme-sales-analytics-test"
         
         # 4. Compare DEV and TEST workspaces
         echo "=== DEV Workspace ==="
-        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-dev"
+        python scripts/admin/utilities/list_workspace_items.py --workspace "acme-sales-analytics-dev"
         echo ""
         echo "=== TEST Workspace ==="
-        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-test"
+        python scripts/admin/utilities/list_workspace_items.py --workspace "acme-sales-analytics-test"
     expected_output: |
       ╔══════════════════════════════════════════════════════════════╗
       ║               Fabric Workspace Deployment                    ║
@@ -800,7 +800,7 @@ steps:
           --diagnose
         
         # 3. Verify PROD deployment
-        python scripts/utilities/list_workspace_items.py --workspace "acme-sales-analytics-prod"
+        python scripts/admin/utilities/list_workspace_items.py --workspace "acme-sales-analytics-prod"
     expected_output: |
       ╔══════════════════════════════════════════════════════════════╗
       ║               Fabric Workspace Deployment                    ║
@@ -812,7 +812,7 @@ steps:
       Environment: prod
       
       Running pre-flight diagnostics...
-      ✓ Fabric CLI version: 1.2.0
+      ✓ Fabric CLI version: 1.3.1
       ✓ Authentication valid
       ✓ Capacity accessible: F64 (prod-capacity-guid)
       
@@ -865,12 +865,12 @@ steps:
       language: bash
       content: |
         # List all deployed workspaces
-        python scripts/utilities/list_workspaces.py | grep "acme-sales"
+        python scripts/admin/utilities/list_workspaces.py | grep "acme-sales"
         
         # Check items in each workspace
         for env in dev test prod; do
           echo "=== acme-sales-analytics-$env ==="
-          python scripts/utilities/list_workspace_items.py \
+          python scripts/admin/utilities/list_workspace_items.py \
             --workspace "acme-sales-analytics-$env" 2>/dev/null || echo "Not deployed"
           echo ""
         done
@@ -1099,8 +1099,8 @@ steps:
       | Deploy to DEV | `make deploy config=<path> env=dev` |
       | Deploy to TEST | `make deploy config=<path> env=test` |
       | Deploy to PROD | `make deploy config=<path> env=prod` |
-      | List workspaces | `python scripts/utilities/list_workspaces.py` |
-      | Check items | `python scripts/utilities/list_workspace_items.py --workspace "<name>"` |
+      | List workspaces | `python scripts/admin/utilities/list_workspaces.py` |
+      | Check items | `python scripts/admin/utilities/list_workspace_items.py --workspace "<name>"` |
       
       ## Best Practices
       

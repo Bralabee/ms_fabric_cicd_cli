@@ -19,10 +19,9 @@ COPY requirements.txt .
 # This ensures reproducible builds across environments
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install specific version of Fabric CLI
-# TODO: Update this to pin a specific version once Fabric CLI has releases
-# For now, install from main but document the commit hash
-RUN pip install --no-cache-dir git+https://github.com/microsoft/fabric-cli.git@main#egg=ms-fabric-cli
+# Install specific version of Fabric CLI (v1.3.1 - January 2026)
+# Pinned for reproducible builds and verified compatibility
+RUN pip install --no-cache-dir git+https://github.com/microsoft/fabric-cli.git@v1.3.1#egg=ms-fabric-cli
 
 # Verify Fabric CLI installation
 RUN fab --version

@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 2026-01-24
+
+### Upgraded
+- **Microsoft Fabric CLI v1.2.0 → v1.3.1**: Upgraded underlying Fabric CLI dependency
+  - **New SQLDatabase operations**: `mv`, `cp`, `export`, `import` for SQL Database items
+  - **Job management**: New `job run-rm` command for removing scheduled jobs
+  - **Enhanced `set` command**: Support any settable property path in item definitions
+  - **JMESPath filtering**: `ls -q` flag for advanced workspace queries
+  - **Bug fixes**: `--output_format` in auth status, virtual env context, gateway connections
+
+### Changed
+- **requirements.txt**: Pinned `fabric-cli@v1.3.1` for reproducible builds (was `@main`)
+
+### Verified
+- 107 tests passing (100%)
+- Diagnose command confirms v1.3.1 integration
+- Authentication working with Service Principal
+
+---
+
 ## [1.4.0] - 2026-01-24
 
 ### Added

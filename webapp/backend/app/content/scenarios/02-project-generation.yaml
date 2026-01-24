@@ -4,7 +4,7 @@
 id: project-generation
 title: Generate Project Configurations from Templates
 description: |
-  Master the 10 production-ready blueprint templates. Learn the exact `python scripts/generate_project.py` 
+  Master the 10 production-ready blueprint templates. Learn the exact `python scripts/dev/generate_project.py` 
   command syntax, understand when to use each template, and customize configurations for your organization's needs.
 difficulty: beginner
 estimated_duration_minutes: 30
@@ -15,7 +15,7 @@ prerequisites:
   - getting-started
 
 learning_outcomes:
-  - "Use `python scripts/generate_project.py` with all available options"
+  - "Use `python scripts/dev/generate_project.py` with all available options"
   - Choose the right template for your use case from all 10 blueprints
   - Understand the generated YAML configuration structure
   - Customize configurations for your organization
@@ -79,7 +79,7 @@ steps:
       ## Command Syntax
       
       ```bash
-      python scripts/generate_project.py "Organization Name" "Project Name" [OPTIONS]
+      python scripts/dev/generate_project.py "Organization Name" "Project Name" [OPTIONS]
       ```
       
       ## All Available Options
@@ -104,7 +104,7 @@ steps:
       language: bash
       content: |
         # See all available options
-        python scripts/generate_project.py --help
+        python scripts/dev/generate_project.py --help
         
         # List all available templates
         ls templates/blueprints/
@@ -164,7 +164,7 @@ steps:
       language: bash
       content: |
         # Generate a minimal starter config
-        python scripts/generate_project.py "My Company" "Learning Project" \
+        python scripts/dev/generate_project.py "My Company" "Learning Project" \
           --template minimal_starter
         
         # View the generated file
@@ -209,7 +209,7 @@ steps:
       language: bash
       content: |
         # Generate a basic ETL config with Git integration
-        python scripts/generate_project.py "Acme Corp" "Sales Analytics" \
+        python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" \
           --template basic_etl \
           --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
         
@@ -266,7 +266,7 @@ steps:
       language: bash
       content: |
         # Generate real-time streaming config
-        python scripts/generate_project.py "TechCorp" "IoT Platform" \
+        python scripts/dev/generate_project.py "TechCorp" "IoT Platform" \
           --template realtime_streaming \
           --capacity-id F32
         
@@ -324,7 +324,7 @@ steps:
       language: bash
       content: |
         # Generate compliance-regulated config
-        python scripts/generate_project.py "HealthCo" "Patient Platform" \
+        python scripts/dev/generate_project.py "HealthCo" "Patient Platform" \
           --template compliance_regulated \
           --capacity-id F64
         
@@ -362,7 +362,7 @@ steps:
       For data scientists needing experiment tracking and model development.
       
       ```bash
-      python scripts/generate_project.py "Research Lab" "ML Platform" --template data_science
+      python scripts/dev/generate_project.py "Research Lab" "ML Platform" --template data_science
       ```
       
       **Includes:** 2 Lakehouses, MLflow integration, Experiment notebooks, Model registry setup
@@ -374,7 +374,7 @@ steps:
       For production ML pipelines with model serving and monitoring.
       
       ```bash
-      python scripts/generate_project.py "AI Corp" "Prediction Engine" --template advanced_analytics
+      python scripts/dev/generate_project.py "AI Corp" "Prediction Engine" --template advanced_analytics
       ```
       
       **Includes:** 4 Lakehouses, ML pipelines, Model deployment configs, Feature store setup
@@ -386,7 +386,7 @@ steps:
       For organizations adopting data mesh architecture with federated ownership.
       
       ```bash
-      python scripts/generate_project.py "Enterprise" "Finance Domain" --template data_mesh_domain
+      python scripts/dev/generate_project.py "Enterprise" "Finance Domain" --template data_mesh_domain
       ```
       
       **Includes:** Domain-specific zones, Data products, Self-serve templates, Cross-domain sharing
@@ -398,7 +398,7 @@ steps:
       For migrating existing on-premises data warehouses to Fabric.
       
       ```bash
-      python scripts/generate_project.py "Legacy Corp" "DW Migration" --template migration_hybrid
+      python scripts/dev/generate_project.py "Legacy Corp" "DW Migration" --template migration_hybrid
       ```
       
       **Includes:** Staging zones, Migration notebooks, Data validation, Legacy connectors
@@ -410,7 +410,7 @@ steps:
       For time-series data, application performance monitoring, and metrics.
       
       ```bash
-      python scripts/generate_project.py "Ops Team" "APM Platform" --template specialized_timeseries
+      python scripts/dev/generate_project.py "Ops Team" "APM Platform" --template specialized_timeseries
       ```
       
       **Includes:** KQL databases, Time-series optimized storage, Alerting, Dashboards
@@ -422,7 +422,7 @@ steps:
       Comprehensive example showing all framework capabilities. Use as learning reference.
       
       ```bash
-      python scripts/generate_project.py "Demo" "Reference" --template extensive_example
+      python scripts/dev/generate_project.py "Demo" "Reference" --template extensive_example
       ```
       
       **Includes:** Every resource type, All features demonstrated, Documentation examples
@@ -443,7 +443,7 @@ steps:
       language: bash
       content: |
         # Full command with all options
-        python scripts/generate_project.py \
+        python scripts/dev/generate_project.py \
           "Global Bank Corp" \
           "Risk Analytics Platform" \
           --template advanced_analytics \
@@ -759,7 +759,7 @@ steps:
       language: bash
       content: |
         # Step 1: Generate the starting config
-        python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
+        python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
         
         # Step 2: Review what was generated
         cat config/projects/acme_corp/sales_analytics.yaml
@@ -854,7 +854,7 @@ steps:
       ## What You've Accomplished
       
       - ✅ Understand all 10 blueprint templates
-      - "✅ Can use `python scripts/generate_project.py` with all options"
+      - "✅ Can use `python scripts/dev/generate_project.py` with all options"
       - ✅ Know the YAML configuration structure
       - ✅ Can customize configurations for your organization
       - "✅ Can validate configurations with `make validate`"
@@ -863,16 +863,16 @@ steps:
       
       | Template | Command |
       |----------|---------|
-      | Learning | `python scripts/generate_project.py "Org" "Proj" --template minimal_starter` |
-      | ETL | `python scripts/generate_project.py "Org" "Proj" --template basic_etl` |
-      | Streaming | `python scripts/generate_project.py "Org" "Proj" --template realtime_streaming` |
-      | Compliance | `python scripts/generate_project.py "Org" "Proj" --template compliance_regulated` |
-      | ML/AI | `python scripts/generate_project.py "Org" "Proj" --template advanced_analytics` |
-      | Data Science | `python scripts/generate_project.py "Org" "Proj" --template data_science` |
-      | Data Mesh | `python scripts/generate_project.py "Org" "Proj" --template data_mesh_domain` |
-      | Migration | `python scripts/generate_project.py "Org" "Proj" --template migration_hybrid` |
-      | Time-series | `python scripts/generate_project.py "Org" "Proj" --template specialized_timeseries` |
-      | Reference | `python scripts/generate_project.py "Org" "Proj" --template extensive_example` |
+      | Learning | `python scripts/dev/generate_project.py "Org" "Proj" --template minimal_starter` |
+      | ETL | `python scripts/dev/generate_project.py "Org" "Proj" --template basic_etl` |
+      | Streaming | `python scripts/dev/generate_project.py "Org" "Proj" --template realtime_streaming` |
+      | Compliance | `python scripts/dev/generate_project.py "Org" "Proj" --template compliance_regulated` |
+      | ML/AI | `python scripts/dev/generate_project.py "Org" "Proj" --template advanced_analytics` |
+      | Data Science | `python scripts/dev/generate_project.py "Org" "Proj" --template data_science` |
+      | Data Mesh | `python scripts/dev/generate_project.py "Org" "Proj" --template data_mesh_domain` |
+      | Migration | `python scripts/dev/generate_project.py "Org" "Proj" --template migration_hybrid` |
+      | Time-series | `python scripts/dev/generate_project.py "Org" "Proj" --template specialized_timeseries` |
+      | Reference | `python scripts/dev/generate_project.py "Org" "Proj" --template extensive_example` |
       
       ## Recommended Next Steps
       
@@ -883,7 +883,7 @@ steps:
       language: bash
       content: |
         # Generate your first config
-        python scripts/generate_project.py "My Company" "First Project" --template basic_etl
+        python scripts/dev/generate_project.py "My Company" "First Project" --template basic_etl
         
         # Validate it
         make validate config=config/projects/my_company/first_project.yaml

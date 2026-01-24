@@ -112,20 +112,20 @@ docker-shell: ## Run interactive shell in Docker container (Usage: make docker-s
 	docker run --rm -it --entrypoint /bin/bash --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE)
 
 docker-diagnose: ## Run diagnostics in Docker (Usage: make docker-diagnose ENVFILE=.env)
-	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) scripts/preflight_check.py
+	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) scripts/admin/preflight_check.py
 
 docker-generate: ## Generate project config in Docker (Usage: make docker-generate org="Org" project="Proj" template="basic_etl")
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
 	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
-	scripts/generate_project.py "$(org)" "$(project)" --template $(or $(template),basic_etl)
+	scripts/dev/generate_project.py "$(org)" "$(project)" --template $(or $(template),basic_etl)
 
 docker-init-repo: ## Initialize ADO repo in Docker (Usage: make docker-init-repo org="Org" project="Proj" repo="Repo")
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
 	@if [ -z "$(repo)" ]; then echo "Error: repo argument required"; exit 1; fi
 	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
-	scripts/utilities/init_ado_repo.py --organization "$(org)" --project "$(project)" --repository "$(repo)"
+	scripts/admin/utilities/init_ado_repo.py --organization "$(org)" --project "$(project)" --repository "$(repo)"
 
 docker-feature-deploy: ## Deploy feature workspace using Docker (Usage: make docker-feature-deploy config=... env=dev branch=feature/x)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
