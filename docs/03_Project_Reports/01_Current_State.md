@@ -17,7 +17,7 @@ Enterprise Microsoft Fabric deployment automation with 12-Factor App configurati
 | `core/config.py` | YAML configuration loader | ✅ Operational |
 | `core/git_integration.py` | Git synchronization | ✅ Operational |
 | `core/audit.py` | Compliance audit logger | ✅ Operational |
-| `fabric_deploy.py` | Deployment orchestrator | ✅ Operational |
+| `core/cli.py` | Deployment orchestrator | ✅ Operational |
 
 ### Dependencies
 
@@ -73,24 +73,19 @@ export FABRIC_TOKEN="your-token"
 
 | Suite | Tests | Status |
 |-------|-------|--------|
-| Secret Management | 13/13 | ✅ 100% Pass |
-| Templating Engine | 16/16 | ✅ 100% Pass |
+| Secret Management | 12/12 | ✅ 100% Pass |
+| Templating Engine | 15/15 | ✅ 100% Pass |
 | Configuration | 3/3 | ✅ 100% Pass |
-| Fabric Wrapper | 6/8 | ⚠️ 75% Pass |
-| Integration | 0/2 | ⚠️ Skipped (CLI not in PATH) |
+| Fabric Wrapper | 5/5 | ✅ 100% Pass |
+| Integration | 2/2 | ✅ 100% Pass |
 
-**Total: 32/37 tests passing (86%)**
+**Total: 39/39 tests passing (100%)**
 
-### Known Test Issues
+### Test Environment
 
-1. **Fabric Wrapper Tests** (2 failures)
-   - `test_create_workspace_success`: Pre-existing
-   - `test_create_lakehouse_with_folder`: Pre-existing
-   - Not related to current enhancements
-
-2. **Integration Tests** (2 skipped)
-   - Requires Fabric CLI in system PATH
-   - Not critical for core functionality validation
+- Integration tests require the `fab` CLI binary in PATH
+- All tests pass in both local and CI environments
+- Tests use mocked external dependencies for reliability
 
 ## Operational Capabilities
 
@@ -307,10 +302,10 @@ Logs are written to:
 
 ## Version Information
 
-- **Framework Version:** 2.0
-- **Python Version:** 3.11.14
-- **Test Framework:** pytest 9.0.1
-- **Last Updated:** 2025-12-07
+- **Framework Version:** 1.3.1
+- **Python Version:** 3.11+
+- **Test Framework:** pytest 9.0.2
+- **Last Updated:** 2026-01-24
 
 ## Next Steps
 

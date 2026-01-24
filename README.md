@@ -301,33 +301,43 @@ src/
 
 
 config/
-├── projects/
-│   ├── ProductA/
-│   │   └── sales_project.yaml
-│   └── ProductB/
-│       └── finance_project.yaml
+├── projects/              # Your organization configs
+│   ├── {org_name}/
+│   │   └── {project_name}.yaml
+│   └── ...                # 7+ example orgs included
 └── environments/
     ├── dev.yaml
     ├── staging.yaml
+    ├── test.yaml
     └── prod.yaml
 
 templates/
-└── blueprints/
+└── blueprints/            # 10 production-ready templates
     ├── basic_etl.yaml
     ├── advanced_analytics.yaml
-    └── data_science.yaml
+    ├── data_science.yaml
+    ├── realtime_streaming.yaml
+    ├── compliance_regulated.yaml
+    ├── data_mesh_domain.yaml
+    ├── migration_hybrid.yaml
+    ├── minimal_starter.yaml
+    ├── specialized_timeseries.yaml
+    └── extensive_example.yaml
 
 scripts/
 ├── bulk_destroy.py        # Bulk cleanup utility
 ├── generate_project.py    # Project scaffolding
 ├── preflight_check.py     # Environment validation
 └── utilities/
-    ├── analyze_migration.py   # Migration analysis tool
-    ├── list_workspaces.py     # Workspace listing tool
+    ├── analyze_migration.py    # Migration analysis tool
+    ├── debug_ado_access.py     # Azure DevOps permissions check
+    ├── debug_connection.py     # Git connection testing
+    ├── init_ado_repo.py        # Initialize ADO repository
+    ├── list_workspaces.py      # Workspace listing tool
     └── list_workspace_items.py # Item listing tool
 ```
 
-## Total LOC: ~270 (vs original 1,830)
+## Total LOC: ~4,100 (thin wrapper architecture vs original monolithic 1,830)
 
 ## Configuration Examples
 
@@ -399,11 +409,10 @@ If migrating from a custom Fabric API solution:
 
 ## Contributing
 
-1. Follow the 270 LOC budget - justify any additions
-2. Fabric CLI first - only add custom logic for genuine gaps
-3. Configuration over code - make it reusable
-4. Test thoroughly - both unit and integration tests
-5. Document decisions - explain why custom code exists
+1. Fabric CLI first - only add custom logic for genuine gaps
+2. Configuration over code - make it reusable
+3. Test thoroughly - both unit and integration tests
+4. Document decisions - explain why custom code exists
 
 ## License
 

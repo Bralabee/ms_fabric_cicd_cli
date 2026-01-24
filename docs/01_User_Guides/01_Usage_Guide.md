@@ -1,6 +1,6 @@
 # Usage Guide - Fabric CLI CI/CD Thin Wrapper
 
-This guide demonstrates how to use the Fabric CLI CI/CD solution for any organization and project, incorporating all learnings from the original 1,830 LOC → 270 LOC optimization.
+This guide demonstrates how to use the Fabric CLI CI/CD solution for any organization and project, leveraging the thin wrapper architecture around the official Fabric CLI.
 
 ## Quick Start for Any Organization
 
@@ -26,7 +26,7 @@ cp .env.template .env
 vim .env  # Edit with your values
 ```
 
-> **Note:** `python-dotenv` automatically loads `.env` whenever `fabric_deploy.py` runs, so you do not need to export secrets manually.
+> **Note:** `python-dotenv` automatically loads `.env` whenever the CLI runs, so you do not need to export secrets manually.
 
 ### 2. Generate Your Project Configuration
 
@@ -47,13 +47,13 @@ python scripts/generate_project.py \
 
 ```bash
 # Validate configuration
-python src/fabric_deploy.py validate config/projects/contoso_inc/customer_analytics.yaml
+python -m core.cli validate config/projects/contoso_inc/customer_analytics.yaml
 
 # Deploy to development
-python src/fabric_deploy.py deploy config/projects/contoso_inc/customer_analytics.yaml --env dev
+python -m core.cli deploy config/projects/contoso_inc/customer_analytics.yaml --env dev
 
 # Deploy feature branch (creates separate workspace)
-python src/fabric_deploy.py deploy config/projects/contoso_inc/customer_analytics.yaml \
+python -m core.cli deploy config/projects/contoso_inc/customer_analytics.yaml \
   --env dev --branch feature/new-analytics --force-branch-workspace
 ```
 
@@ -67,8 +67,8 @@ This tool is designed to manage multiple projects and organizations from a singl
 2.  **Define Environments**:
     *   Ensure `config/environments/prod.yaml` contains your production secrets/capacity IDs.
 3.  **Deploy with Specifics**:
-    *   Run: `python src/fabric_deploy.py deploy config/projects/ProductA/config.yaml --env prod`
-    *   Run: `python src/fabric_deploy.py deploy config/projects/ProductB/config.yaml --env dev`
+    *   Run: `python -m core.cli deploy config/projects/ProductA/config.yaml --env prod`
+    *   Run: `python -m core.cli deploy config/projects/ProductB/config.yaml --env dev`
 
 The `ConfigManager` looks at the file you passed (`config/projects/ProductA/config.yaml`), loads it, and then automatically looks for the environment override in `config/environments/{env}.yaml` to merge them. This allows you to maintain one "structure" file per project, while sharing "environment" settings (like Service Principals or Capacities) across them if needed.
 
@@ -140,7 +140,7 @@ python scripts/generate_project.py \
   --git-repo https://github.com/healthtech/patient-outcomes
 
 # Deploy with HIPAA compliance considerations
-python src/fabric_deploy.py deploy config/healthtech-solutions-patient-outcomes-analytics.yaml --env prod
+python -m core.cli deploy config/projects/healthtech_solutions/patient_outcomes_analytics.yaml --env prod
 ```
 
 **Healthcare Customization:**
@@ -175,7 +175,7 @@ python scripts/generate_project.py \
   --git-repo https://dev.azure.com/globalbank/risk-analytics
 
 # Deploy with strict access controls
-python src/fabric_deploy.py deploy config/global-bank-corp-risk-analytics-platform.yaml --env prod
+python -m core.cli deploy config/projects/global_bank_corp/risk_analytics_platform.yaml --env prod
 ```
 
 **Financial Services Customization:**
@@ -216,7 +216,7 @@ principals:
 git checkout -b feature/customer-segmentation
 
 # 2. Deploy feature-specific workspace (isolated testing)
-python src/fabric_deploy.py deploy config/your-project.yaml \
+python -m core.cli deploy config/your-project.yaml \
   --env dev \
   --branch feature/customer-segmentation \
   --force-branch-workspace
@@ -240,7 +240,7 @@ The included GitHub Actions workflow automatically:
 # Customize .github/workflows/fabric-cicd.yml for your organization
 env:
   FABRIC_TOKEN: ${{ secrets.YOUR_ORG_FABRIC_TOKEN }}
-  TENANT_ID: ${{ secrets.YOUR_ORG_TENANT_ID }}
+  AZURE_TENANT_ID: ${{ secrets.YOUR_ORG_TENANT_ID }}
 ```
 
 ## Principal Management
@@ -304,13 +304,13 @@ Ensure these are defined in your `.env` file (or CI/CD secrets):
 
 ```bash
 # Development (smaller capacity, open access)
-python src/fabric_deploy.py deploy config/project.yaml --env dev
+python -m core.cli deploy config/project.yaml --env dev
 
 # Staging (production-like, limited access)
-python src/fabric_deploy.py deploy config/project.yaml --env staging
+python -m core.cli deploy config/project.yaml --env staging
 
 # Production (high capacity, restricted access)
-python src/fabric_deploy.py deploy config/project.yaml --env prod
+python -m core.cli deploy config/project.yaml --env prod
 ```
 
 ### Environment Overrides
@@ -389,10 +389,10 @@ workspace:
 
 ### Custom Templates
 
-Create your own template in `examples/templates/`:
+Create your own template in `templates/blueprints/`:
 
 ```yaml
-# examples/templates/retail_analytics.yaml
+# templates/blueprints/retail_analytics.yaml
 workspace:
   name: "retail-analytics-template"
   description: "Template for retail analytics projects"
@@ -413,11 +413,11 @@ folders:
 1. **Authentication Errors**
 ```bash
 # Validate setup
-python src/fabric_deploy.py diagnose
+python -m core.cli diagnose
 
 # Check environment variables
 echo $FABRIC_TOKEN
-echo $TENANT_ID
+echo $AZURE_TENANT_ID
 ```
 
 2. **Capacity Issues**
@@ -523,7 +523,7 @@ Ensure the following secrets are defined in your GitHub Repository Settings > Se
 
 This thin wrapper approach provides:
 
-✅ **85% code reduction** (vs 1,830 LOC custom solutions)  
+✅ **Fabric CLI-first** architecture (Fabric CLI handles 90% of operations)  
 ✅ **Configuration-driven** deployments  
 ✅ **Organization-agnostic** templates  
 ✅ **Feature branch** support  
