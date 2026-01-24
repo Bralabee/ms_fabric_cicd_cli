@@ -21,7 +21,7 @@ pytestmark = pytest.mark.integration
 @pytest.fixture(scope="module")
 def diagnostics() -> FabricDiagnostics:
     """Provide diagnostics wired to the real Fabric CLI when available."""
-    if shutil.which("fabric") is None:
+    if shutil.which("fab") is None:
         pytest.skip("Fabric CLI binary not available on PATH")
 
     # Token isn't needed for version checks, fall back to placeholder.
