@@ -141,7 +141,7 @@ jobs:
         echo "Commit: ${{ github.sha }}" >> deployment-report.txt
     
     - name: Upload deployment report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: deployment-report
         path: deployment-report.txt
