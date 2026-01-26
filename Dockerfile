@@ -1,7 +1,7 @@
 # Fabric CLI CI/CD - Production Docker Image
 # Addresses Gap A: Dependency on External CLI by pinning specific versions
 
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Set working directory
 WORKDIR /app
