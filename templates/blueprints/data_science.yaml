@@ -48,6 +48,7 @@ notebooks:
     description: "Analysis for research publication"
 
 # Research team access
+# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
 principals:
   - id: "${TEMPLATE_LEAD_DS_EMAIL}"
     role: "Admin"

@@ -91,6 +91,7 @@ pipelines:
     description: "Batch inference for predictions"
 
 # Team access
+# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
 principals:
   - id: "${TEMPLATE_DS_TEAM_EMAIL}"
     role: "Admin"

@@ -94,6 +94,7 @@ resources:
     folder: "Source"
 
 # Principals (Domain Team Ownership)
+# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
 principals:
   # Domain Owner (Product Manager)
   - id: "${SALES_DOMAIN_OWNER_OID}"

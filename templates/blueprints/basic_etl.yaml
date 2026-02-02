@@ -50,40 +50,11 @@ notebooks:
   - name: "data_transformation"
 
 # Security & Access Control
-principals:
-  - id: "admin@yourcompany.com"
-    role: "Admin"
-  - id: "developer@yourcompany.com"
-    role: "Member"
-  - id: "88e55555-5555-5555-5555-555555555555" # Service Principal Object ID
-    role: "Contributor"
-    folder: "Notebooks"
-    description: "Data cleaning and transformation"
-  
-  - name: "data_quality_checks"
-    folder: "Notebooks"
-    description: "Data quality validation and monitoring"
-
-# Pipelines for orchestration
-pipelines:
-  - name: "daily_etl_pipeline"
-    folder: "Pipelines"
-    description: "Daily ETL orchestration pipeline"
-
-# Generic Resources (Future-proof)
-# Use this section for any Fabric item type not explicitly listed above
-# Examples: Eventstream, KQLDatabase, Reflex, etc.
-resources:
-  - type: "Eventstream"
-    name: "iot_events"
-    description: "Ingestion stream for IoT data"
-  
-  - type: "KQLDatabase"
-    name: "logs_db"
-    description: "Real-time logs database"
-
+# Security & Access Control
 # Principals (users/service principals) to add to workspace
 # NOTE: Use Object IDs (GUIDs) for all principals. Email addresses are not supported.
+# PRO TIP: The 'id' field supports comma-separated lists (e.g., "id1,id2,id3") 
+# allowing you to inject a group of users via a single environment variable.
 principals:
   - id: "${DEV_ADMIN_OBJECT_ID}"  # User/Group Object ID
     role: "Admin"
@@ -95,7 +66,7 @@ principals:
   - id: "${AZURE_CLIENT_ID}"  # Service Principal Object ID (Required)
     role: "Contributor"
 
-  # Mandatory Security Principals
+  # Mandatory Security Principals (Injected via Environment Variables)
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "Mandatory Additional Admin"
@@ -103,6 +74,12 @@ principals:
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "Mandatory Additional Contributor"
+
+  # Example of manual entry (Service Principal):
+  # - id: "88e55555-5555-5555-5555-555555555555" 
+  #   role: "Contributor"
+  #   folder: "Notebooks"
+  #   description: "Data cleaning and transformation"
 
 # Configuration notes:
 # 1. Replace all placeholder values with your organization's details

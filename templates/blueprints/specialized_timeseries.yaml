@@ -169,6 +169,7 @@ resources:
     folder: "Aggregates"
 
 # Principals (Operations Team)
+# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
 principals:
   # Platform Engineering (Admin)
   - id: "${PLATFORM_ADMIN_GROUP_OID}"

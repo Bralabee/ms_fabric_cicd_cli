@@ -103,6 +103,7 @@ pipelines:
     description: "Archive streaming data to lakehouse for long-term analysis"
 
 # Principals (Security & Access)
+# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
 principals:
   - id: "${STREAMING_ADMIN_OID}"
     role: "Admin"

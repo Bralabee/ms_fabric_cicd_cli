@@ -245,6 +245,74 @@ steps:
     warnings:
       - This is the #1 most common issue for new users
 
+  - id: windows-path-error
+    title: "Error: specific ModuleNotFoundError (Windows)"
+    type: info
+    content: |
+      ## Symptom
+      
+      ```
+      ModuleNotFoundError: No module named 'usf_fabric_cli'
+      ```
+      
+      ## Cause
+      
+      Running commands from inside the `src/` directory. 
+      Python cannot resolve the package structure when CWD is inside the package itself.
+      
+      ## Solution
+    code:
+      language: powershell
+      content: |
+        # WRONG - Do not run from src/
+        cd src
+        python -m usf_fabric_cli.cli ...
+        
+        # CORRECT - Always run from project root
+        cd ..
+        # Verify you are at root (should see setup.py, pyproject.toml)
+        ls
+        
+        # Run command
+        python -m usf_fabric_cli.cli ...
+    expected_output: |
+      # Command runs successfully
+      Usage: python -m usf_fabric_cli.cli [OPTIONS] COMMAND [ARGS]...
+    tips:
+      - "Always execute commands from the folder containing `pyproject.toml`"
+
+  - id: principals-list
+    title: "Scenario: Managing Large Principal Lists"
+    type: info
+    content: |
+      ## Scenario
+      
+      You need to add 50+ users or groups to a workspace managed by a single environment variable.
+      
+      ## Solution
+      
+      The `id` field in `principals` supports **comma-separated values**.
+      The CLI automatically parses this list and adds each GUID individually.
+    code:
+      language: yaml
+      content: |
+        # 1. In your .env file:
+        DATA_ENGINEERS_GROUP="guid1,guid2,guid3,guid4"
+        
+        # 2. In your config YAML:
+        principals:
+          - id: "${DATA_ENGINEERS_GROUP}"
+            role: "Contributor"
+    expected_output: |
+      # CLI Deployment Output:
+      Adding principal: guid1 (Contributor)
+      Adding principal: guid2 (Contributor)
+      Adding principal: guid3 (Contributor)
+      Adding principal: guid4 (Contributor)
+    tips:
+      - Great for "bulk" assignment from a single AD group variable
+      - Works with mixed IDs too: "guid1,guid2"
+
   - id: cli-not-found
     title: "Error: fabric-cicd Command Not Found"
     type: info

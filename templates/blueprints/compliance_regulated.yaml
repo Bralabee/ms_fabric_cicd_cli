@@ -93,6 +93,7 @@ resources:
     folder: "Governance"
 
 # Principals (STRICT Role-Based Access Control)
+# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
 principals:
   # Security Team (Admin)
   - id: "${SECURITY_ADMIN_GROUP_OID}"

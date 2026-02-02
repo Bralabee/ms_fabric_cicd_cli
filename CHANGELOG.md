@@ -2,9 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.1] - 2026-02-02
+
+### Fixed
+
+- **Configuration Confusion**: Removed redundant `examples/projects` and `examples/workspaces_to_delete` directories. `config/` is now the single source of truth.
+- **Blueprint Templates**:
+  - `basic_etl.yaml`: Consolidated Security/Principals section, restoring accidental deletions of `pipelines` and `resources`.
+  - Added documentation for comma-separated Principal ID injection (e.g. `"${GROUP_1},${GROUP_2}"`).
+- **Path Handling**: Clarified CWD requirements (must run from project root, not `src/`).
+
+### Documentation
+
+- Updated `TROUBLESHOOTING.md` with Windows-specific path resolution and Principal ID best practices.
+
 ## [1.5.0] - 2026-01-24
 
 ### Added
+
 - **Token Manager** (`services/token_manager.py`): Proactive Azure AD token refresh for long deployments
   - Automatic refresh 60 seconds before expiry
   - Fabric CLI re-authentication support
@@ -25,10 +40,12 @@ All notable changes to this project will be documented in this file.
   - Shows rollback progress and summary
 
 ### Changed
+
 - **FabricGitAPI**: Added `_make_request` helper with automatic retry and token refresh
 - **FabricCLIWrapper**: Now accepts optional `token_manager` for proactive token refresh
 
 ### Tests
+
 - Added 35 new unit tests (14 token manager, 21 deployment state)
 - Total: 140 tests passing
 
@@ -36,8 +53,8 @@ All notable changes to this project will be documented in this file.
 
 ## [1.4.1] - 2026-01-24
 
-
 ### Upgraded
+
 - **Microsoft Fabric CLI v1.2.0 → v1.3.1**: Upgraded underlying Fabric CLI dependency
   - **New SQLDatabase operations**: `mv`, `cp`, `export`, `import` for SQL Database items
   - **Job management**: New `job run-rm` command for removing scheduled jobs
@@ -46,9 +63,11 @@ All notable changes to this project will be documented in this file.
   - **Bug fixes**: `--output_format` in auth status, virtual env context, gateway connections
 
 ### Changed
+
 - **requirements.txt**: Pinned `fabric-cli@v1.3.1` for reproducible builds (was `@main`)
 
 ### Verified
+
 - 107 tests passing (100%)
 - Diagnose command confirms v1.3.1 integration
 - Authentication working with Service Principal
@@ -58,11 +77,13 @@ All notable changes to this project will be documented in this file.
 ## [1.4.0] - 2026-01-24
 
 ### Added
+
 - **Comprehensive Test Coverage Improvements**:
   - 7 new tests for `FabricDeployer`, deploy command, and Git URL parsing
   - Test coverage improved: 50% → 51% overall, cli.py: 25% → 31%
 
 ### Changed
+
 - **Package Restructure Complete**: Full migration from `core` to `usf_fabric_cli` package
   - All module paths updated to `usf_fabric_cli.{services,utils,commands}`
   - CLI entry points: `fabric-cicd`, `usf-fabric` point to `usf_fabric_cli.cli:app`
@@ -74,6 +95,7 @@ All notable changes to this project will be documented in this file.
   - `scripts/bulk_destroy.py` → `scripts/admin/bulk_destroy.py`
 
 ### Fixed
+
 - **Documentation Refresh** (39+ fixes across 20+ files):
   - All `python -m core.cli` → `python -m usf_fabric_cli.cli`
   - All `src/core/` → `src/usf_fabric_cli/` with correct subfolders
@@ -84,6 +106,7 @@ All notable changes to this project will be documented in this file.
   - copilot-instructions.md updated with accurate module paths
 
 ### Verified
+
 - 105 tests passing
 - Local CLI functionality confirmed
 - Docker build and run verified
@@ -92,6 +115,7 @@ All notable changes to this project will be documented in this file.
 ## [1.3.1] - 2026-01-15
 
 ### Added
+
 - **Comprehensive Documentation Audit & Fixes**:
   - **Project Configuration Guide** (`docs/01_User_Guides/03_Project_Configuration.md`): 500-line comprehensive guide covering:
     - Two generation methods (generate_project.py script and manual blueprint copying)
@@ -113,6 +137,7 @@ All notable changes to this project will be documented in this file.
   - Template generation, environment validation, feature workflow, and multi-environment strategy enhancements
 
 ### Fixed
+
 - **Blueprint Templates**: Added mandatory security principals (`ADDITIONAL_ADMIN_PRINCIPAL_ID`, `ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID`) to 7 templates:
   - compliance_regulated.yaml, data_mesh_domain.yaml, extensive_example.yaml
   - migration_hybrid.yaml, minimal_starter.yaml, realtime_streaming.yaml, specialized_timeseries.yaml
@@ -123,12 +148,14 @@ All notable changes to this project will be documented in this file.
 - **Webapp Test Dependencies**: Added pytest>=7.4.0 and httpx>=0.25.0 to webapp/backend/requirements.txt
 
 ### Changed
+
 - **.env.template**: Reorganized to prioritize Azure credentials (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
 - **Webapp Docker ports**: Backend API on port 8001, Frontend on port 8080
 
 ## [1.3.0] - 2026-01-05
 
 ### Added
+
 - **Interactive Webapp Enhancements**:
   - **Visual Workflow Diagrams** (`/workflows` page): Interactive flowcharts for 4 tested deployment workflows:
     - Local Python Deployment (6-step flow)
@@ -153,6 +180,7 @@ All notable changes to this project will be documented in this file.
   - `make deploy-azure-dryrun`: Preview Azure deployment
 
 ### Fixed
+
 - **Frontend API Interfaces**: Aligned TypeScript interfaces with backend API field names:
   - `step.type` (was `step_type`)
   - `step.code` object (was `code_blocks` array)
@@ -160,12 +188,14 @@ All notable changes to this project will be documented in this file.
 - **nginx Proxy**: Fixed backend port (8000 → 8001) and API path handling
 
 ### Documentation
+
 - Updated webapp README with Docker and Azure deployment instructions
 - Added comprehensive deployment options section
 
 ## [1.2.0] - 2025-12-10
 
 ### Added
+
 - **Blueprint Template Library**: 6 new production-ready templates for specialized use cases:
   - `realtime_streaming.yaml` - IoT/event-driven architectures with Eventstreams, KQL, Reflex (4.4KB)
   - `minimal_starter.yaml` - Quick POC/learning template (1.9KB)
@@ -187,12 +217,14 @@ All notable changes to this project will be documented in this file.
 - **Template Generator Update**: Added all 10 templates to `scripts/generate_project.py` choices.
 
 ### Changed
+
 - **README.md**: Updated quick start to showcase template variety (basic_etl → 10 templates).
 - **Template Coverage**: Increased from 4 to 10 templates, covering 95%+ of enterprise scenarios.
 
 ## [1.1.0] - 2025-12-10
 
 ### Added
+
 - **Azure Key Vault Integration**: Optional support for enterprise secret management.
   - Added `azure-keyvault-secrets>=4.7.0` dependency to `requirements.txt`.
   - Implemented waterfall priority: Environment Variables → .env file → Azure Key Vault.
@@ -208,12 +240,14 @@ All notable changes to this project will be documented in this file.
 - **Entry Point Installation**: Added `pip install -e .` to `make install` target for CLI entry point registration.
 
 ### Changed
+
 - **Makefile Overhaul**: Restructured `Makefile` with grouped targets (Local Development, Local Operations, Docker Operations) and improved help output.
 - **Makefile Path Handling**: Fixed PYTHONPATH shell escaping issues by properly quoting variables to support paths with special characters.
 - **Testing**: Fixed unit tests (`tests/test_fabric_wrapper.py`, `tests/test_secrets.py`) to mock external CLI calls and pass in the CI environment.
 - **Environment**: Enforced strict usage of `fabric-cli-cicd` Conda environment.
 
 ### Fixed
+
 - **Shell Escaping**: Fixed Makefile commands to properly handle paths with apostrophes and special characters by quoting PYTHONPATH.
 - **Entry Point**: Resolved `fabric-cicd` command not found issue by adding editable install to setup process.
 - **Dependency Management**: Resolved issues with `requests` library in the base environment (though usage is now strictly in `fabric-cli-cicd`).

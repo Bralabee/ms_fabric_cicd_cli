@@ -24,9 +24,11 @@ This document provides a comprehensive guide to all available blueprint template
 **File:** `templates/blueprints/minimal_starter.yaml`
 
 ### Overview
+
 The absolute minimum viable Fabric workspace for quick prototyping and learning.
 
 ### Key Features
+
 - ✅ Single lakehouse (all-in-one data storage)
 - ✅ Single notebook (clear entry point)
 - ✅ Optional pipeline (basic ETL)
@@ -34,6 +36,7 @@ The absolute minimum viable Fabric workspace for quick prototyping and learning.
 - ✅ Minimal principals (just deploying service principal)
 
 ### Use Cases
+
 - Learning Microsoft Fabric
 - Individual contributor projects
 - Proof-of-concept development
@@ -41,11 +44,13 @@ The absolute minimum viable Fabric workspace for quick prototyping and learning.
 - Quick data exploration
 
 ### Resource Footprint
+
 - **Items:** 1 lakehouse, 1 notebook, 1 pipeline
 - **Cost:** $0/month (F2 trial) or $50-100/month (F8)
 - **Capacity:** F2 minimum
 
 ### Getting Started
+
 ```bash
 python scripts/dev/generate_project.py "My Company" "Quick POC" \
   --template minimal_starter \
@@ -56,7 +61,9 @@ make deploy config=config/projects/my_company/quick_poc.yaml env=dev
 ```
 
 ### When to Graduate
+
 Move to `basic_etl` when you need:
+
 - Git version control
 - Multiple data zones (Bronze/Silver/Gold)
 - Team collaboration features
@@ -68,9 +75,11 @@ Move to `basic_etl` when you need:
 **File:** `templates/blueprints/basic_etl.yaml`
 
 ### Overview
+
 Standard medallion architecture (Bronze → Silver → Gold) for production ETL pipelines.
 
 ### Key Features
+
 - ✅ Medallion architecture (Bronze/Silver/Gold)
 - ✅ Lakehouses for each layer
 - ✅ Data warehouse for reporting
@@ -78,17 +87,20 @@ Standard medallion architecture (Bronze → Silver → Gold) for production ETL 
 - ✅ Team collaboration (RBAC)
 
 ### Use Cases
+
 - Standard ETL workflows
 - Batch data processing
 - Data lake modernization
 - Team-based development
 
 ### Resource Footprint
+
 - **Items:** 3 lakehouses, 1 warehouse, 3 notebooks, 2 pipelines, 1 semantic model
 - **Cost:** $100-500/month (F8-F16)
 - **Capacity:** F8 minimum
 
 ### Getting Started
+
 ```bash
 python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" \
   --template basic_etl \
@@ -104,9 +116,11 @@ make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
 **File:** `templates/blueprints/advanced_analytics.yaml`
 
 ### Overview
+
 ML/AI-focused workspace with feature stores, model training, and MLOps.
 
 ### Key Features
+
 - ✅ Feature store integration
 - ✅ ML model training environments
 - ✅ Model serving infrastructure
@@ -114,12 +128,14 @@ ML/AI-focused workspace with feature stores, model training, and MLOps.
 - ✅ A/B testing support
 
 ### Use Cases
+
 - Machine learning projects
 - Predictive analytics
 - Feature engineering
 - Model deployment and serving
 
 ### Resource Footprint
+
 - **Items:** 4 lakehouses, 1 warehouse, 8 notebooks, 3 pipelines
 - **Cost:** $500-1500/month (F16-F32)
 - **Capacity:** F16 minimum
@@ -131,15 +147,18 @@ ML/AI-focused workspace with feature stores, model training, and MLOps.
 **File:** `templates/blueprints/data_science.yaml`
 
 ### Overview
+
 Research-oriented workspace for exploratory analysis and experimentation.
 
 ### Key Features
+
 - ✅ Jupyter-style environments
 - ✅ Research data storage
 - ✅ Experiment notebooks
 - ✅ Minimal ETL overhead
 
 ### Use Cases
+
 - Research projects
 - Ad-hoc analysis
 - Data exploration
@@ -152,9 +171,11 @@ Research-oriented workspace for exploratory analysis and experimentation.
 **File:** `templates/blueprints/extensive_example.yaml`
 
 ### Overview
+
 Comprehensive reference implementation showcasing all framework capabilities.
 
 ### Key Features
+
 - ✅ All artifact types demonstrated
 - ✅ Git integration
 - ✅ Advanced RBAC
@@ -162,6 +183,7 @@ Comprehensive reference implementation showcasing all framework capabilities.
 - ✅ Full documentation
 
 ### Use Cases
+
 - Reference architecture
 - Framework capability demonstration
 - Training material
@@ -174,9 +196,11 @@ Comprehensive reference implementation showcasing all framework capabilities.
 **File:** `templates/blueprints/realtime_streaming.yaml`
 
 ### Overview
+
 High-throughput streaming platform with real-time analytics and alerting.
 
 ### Key Features
+
 - ✅ **Eventstreams** for data ingestion (IoT, logs, clickstreams)
 - ✅ **Eventhouse** for unified real-time analytics
 - ✅ **KQL Databases** for sub-second queries
@@ -186,6 +210,7 @@ High-throughput streaming platform with real-time analytics and alerting.
 - ✅ Archival to lakehouse for long-term storage
 
 ### Use Cases
+
 - IoT device telemetry (1M+ devices)
 - Real-time log aggregation
 - Clickstream analysis
@@ -193,16 +218,19 @@ High-throughput streaming platform with real-time analytics and alerting.
 - Event-driven architectures
 
 ### Resource Footprint
+
 - **Items:** 1 lakehouse, 3 eventstreams, 1 eventhouse, 2 KQL databases, 1 KQL queryset, 2 reflex, 1 KQL dashboard, 2 notebooks, 1 pipeline
 - **Cost:** $800-2500/month (F16-F32)
 - **Capacity:** F16 minimum (streaming workloads)
 
 ### Performance Characteristics
+
 - **Ingestion:** 10k-100k events/second
 - **Query Latency:** <100ms (point queries), <2s (1h range)
 - **Retention:** 24h hot, 30d warm, 7y+ cold (lakehouse)
 
 ### Getting Started
+
 ```bash
 python scripts/dev/generate_project.py "TechCorp" "IoT Platform" \
   --template realtime_streaming \
@@ -212,6 +240,7 @@ make deploy config=config/projects/techcorp/iot_platform.yaml env=dev
 ```
 
 ### Configuration Notes
+
 - Eventstreams support: Event Hub, IoT Hub, Kafka, custom endpoints
 - KQL provides 10-100x better performance than SQL for time-series data
 - Reflex enables serverless event processing (no custom code needed)
@@ -224,9 +253,11 @@ make deploy config=config/projects/techcorp/iot_platform.yaml env=dev
 **File:** `templates/blueprints/compliance_regulated.yaml`
 
 ### Overview
+
 Enterprise-grade platform with strict security controls for regulated industries.
 
 ### Key Features
+
 - ✅ **Classification-based folders** (Restricted/Confidential/Internal)
 - ✅ **Separate lakehouses** by sensitivity level
 - ✅ **Audit log repository** (immutable logs)
@@ -237,24 +268,29 @@ Enterprise-grade platform with strict security controls for regulated industries
 - ✅ **Compliance dashboard** for KPI reporting
 
 ### Use Cases
+
 - Healthcare (HIPAA compliance)
 - Financial services (SOC 2, PCI-DSS)
 - Government (FedRAMP)
 - Insurance (data privacy regulations)
 
 ### Resource Footprint
+
 - **Items:** 3 lakehouses, 1 warehouse, 4 notebooks, 2 pipelines, 1 semantic model, 2 environments
 - **Cost:** $1500-5000/month (F16-F64)
 - **Capacity:** F16 minimum (enterprise security features)
 
 ### Security Principals
+
 - **Mandatory:** Security admin group (Admin)
 - **Mandatory:** Compliance officer group (Admin - audit rights)
 - **Mandatory:** Audit service principal (automated logging)
 - **Optional:** Data governance, engineers, analysts (graduated access)
 
 ### Compliance Checklist
+
 After deployment, manually configure:
+
 - ☐ Microsoft Purview integration
 - ☐ Sensitivity labels on all items
 - ☐ Audit logging (workspace + item level)
@@ -269,6 +305,7 @@ After deployment, manually configure:
 - ☐ Unauthorized access alerts
 
 ### Getting Started
+
 ```bash
 python scripts/dev/generate_project.py "HealthCare Inc" "Patient Data Platform" \
   --template compliance_regulated \
@@ -281,6 +318,7 @@ make deploy config=config/projects/healthcare_inc/patient_data_platform.yaml env
 ```
 
 ### Legal Note
+
 ⚠️ **Legal review recommended** before production deployment in regulated industries.
 
 ---
@@ -290,9 +328,11 @@ make deploy config=config/projects/healthcare_inc/patient_data_platform.yaml env
 **File:** `templates/blueprints/data_mesh_domain.yaml`
 
 ### Overview
+
 Domain-driven data ownership with federated governance architecture.
 
 ### Key Features
+
 - ✅ **Domain ownership** (decentralized data management)
 - ✅ **Data products** (published datasets with SLAs)
 - ✅ **GraphQL API** for self-service consumption
@@ -302,35 +342,42 @@ Domain-driven data ownership with federated governance architecture.
 - ✅ **Central governance** (viewer access for audit only)
 
 ### Use Cases
+
 - Large enterprises with multiple business domains
 - Organizations adopting data mesh principles
 - Teams with decentralized data ownership
 - Cross-functional data collaboration
 
 ### Data Mesh Principles
+
 1. **Domain Ownership:** Each domain owns its workspace and data products
 2. **Data as a Product:** Discoverable, addressable, self-describing datasets
 3. **Self-Serve Platform:** GraphQL API enables autonomous consumption
 4. **Federated Governance:** Central governance has audit access, not control
 
 ### Resource Footprint
+
 - **Items:** 3 lakehouses, 1 warehouse, 1 semantic model, 3 notebooks, 2 pipelines, 1 GraphQL API, 1 external share, 1 mirrored database
 - **Cost:** $500-2000/month per domain (F16-F32)
 - **Capacity:** F16 minimum
 
 ### Domain Examples
+
 Clone this template for each domain:
+
 - **Sales Domain:** Sales metrics, customer insights
 - **Customer Domain:** Customer master data, profiles
 - **Product Domain:** Product catalog, inventory
 - **Finance Domain:** Financial transactions, GL
 
 ### Cross-Domain Integration
+
 - **Consumes:** Mirrored databases from other domains
 - **Publishes:** Data products via GraphQL API
 - **Governance:** Central team has viewer access for compliance
 
 ### Getting Started
+
 ```bash
 # Create Sales domain workspace
 python scripts/dev/generate_project.py "Enterprise Corp" "Sales Domain" \
@@ -353,9 +400,11 @@ make deploy config=config/projects/enterprise_corp/sales_domain.yaml env=prod
 **File:** `templates/blueprints/migration_hybrid.yaml`
 
 ### Overview
+
 Facilitates cloud migration with minimal disruption using hybrid architecture.
 
 ### Key Features
+
 - ✅ **Mirrored databases** (real-time sync with on-prem SQL Server, Snowflake, Azure SQL)
 - ✅ **On-premises gateway** integration
 - ✅ **Dual environments** (legacy + modern side-by-side)
@@ -365,6 +414,7 @@ Facilitates cloud migration with minimal disruption using hybrid architecture.
 - ✅ **Multi-cloud support** (AWS S3, Snowflake connectors)
 
 ### Use Cases
+
 - Legacy system modernization
 - SQL Server → Fabric migration
 - Snowflake → Fabric migration
@@ -372,41 +422,49 @@ Facilitates cloud migration with minimal disruption using hybrid architecture.
 - Multi-cloud consolidation
 
 ### Migration Phases
+
 **Phase 1: Lift & Shift (Weeks 1-4)**
+
 - Mirror on-prem databases to Fabric
 - Replicate legacy warehouse structure
 - Parallel run: Legacy + Cloud
 - Validate 100% data consistency
 
 **Phase 2: Schema Modernization (Weeks 5-8)**
+
 - Transform to medallion architecture
 - Optimize for cloud performance
 - Maintain backward compatibility
 - Validate functional equivalence
 
 **Phase 3: Cutover (Weeks 9-12)**
+
 - Blue/Green deployment
 - Redirect users to modern platform
 - Keep legacy as fallback (2 weeks)
 - Decommission legacy systems
 
 **Phase 4: Optimization (Weeks 13-16)**
+
 - Remove compatibility layers
 - Optimize cloud-native performance
 - Complete migration
 
 ### Resource Footprint
+
 - **Items:** 3 lakehouses, 2 warehouses, 5 notebooks, 4 pipelines, 1 semantic model, 4 mirrored databases, 1 gateway, 3 connections
 - **Cost:** $1000-5000/month during migration (dual environments), $500-2000/month post-migration
 - **Capacity:** F16 minimum
 
 ### Rollback Plan
+
 - MirroredDatabases enable instant rollback
 - Dual-write during transition
 - Data drift detection (every 15 min)
 - Rollback SLA: <1 hour
 
 ### Getting Started
+
 ```bash
 python scripts/dev/generate_project.py "Legacy Corp" "Cloud Migration" \
   --template migration_hybrid \
@@ -423,6 +481,7 @@ make deploy config=config/projects/legacy_corp/cloud_migration.yaml env=test
 ```
 
 ### Migration Checklist
+
 - ☐ Install on-premises data gateway
 - ☐ Configure VPN/ExpressRoute
 - ☐ Set up mirrored database connections
@@ -441,9 +500,11 @@ make deploy config=config/projects/legacy_corp/cloud_migration.yaml env=test
 **File:** `templates/blueprints/specialized_timeseries.yaml`
 
 ### Overview
+
 High-performance platform for time-series data, IoT at scale, and operational intelligence.
 
 ### Key Features
+
 - ✅ **KQL Databases** (optimized for time-series queries)
 - ✅ **Eventhouse** (unified analytics engine)
 - ✅ **Hot/Warm/Cold storage** (tiered retention)
@@ -454,6 +515,7 @@ High-performance platform for time-series data, IoT at scale, and operational in
 - ✅ **MetricSets** (unified metrics catalog)
 
 ### Use Cases
+
 - IoT fleet management (1M+ devices)
 - Financial tick data (100k ticks/sec)
 - Application Performance Monitoring (APM)
@@ -463,11 +525,13 @@ High-performance platform for time-series data, IoT at scale, and operational in
 - Capacity planning
 
 ### Resource Footprint
+
 - **Items:** 1 lakehouse, 4 KQL databases, 1 eventhouse, 3 KQL querysets, 3 eventstreams, 3 KQL dashboards, 2 reflex, 4 notebooks, 3 pipelines, 2 metric sets
 - **Cost:** $1000-5000/month (F16-F64)
 - **Capacity:** F16 minimum (high-throughput workloads)
 
 ### Performance Targets
+
 - **Point queries:** <100ms (single device/metric)
 - **Range queries (1h):** <500ms
 - **Range queries (24h):** <2 seconds
@@ -475,12 +539,14 @@ High-performance platform for time-series data, IoT at scale, and operational in
 - **Historical queries (1y):** <60 seconds
 
 ### Data Retention Policy
+
 - **Hot (RealTime KQL):** 24 hours (sub-second queries)
 - **Warm (Recent KQL):** 30 days (1-2 second queries)
 - **Cold (Lakehouse):** 7 years (batch queries)
 - **Aggregates:** Indefinite (pre-computed rollups)
 
 ### Performance Optimizations
+
 1. **Time-based partitioning** (hourly/daily)
 2. **Materialized views** (common query patterns)
 3. **Extent merging policies** (optimal file sizes)
@@ -489,6 +555,7 @@ High-performance platform for time-series data, IoT at scale, and operational in
 6. **Sharding** (by device_id/metric_name)
 
 ### Getting Started
+
 ```bash
 python scripts/dev/generate_project.py "Operations Inc" "Monitoring Platform" \
   --template specialized_timeseries \
@@ -498,6 +565,7 @@ make deploy config=config/projects/operations_inc/monitoring_platform.yaml env=p
 ```
 
 ### KQL Query Examples
+
 ```kql
 // Real-time anomaly detection
 MetricsTable
@@ -573,6 +641,7 @@ Start Here
 ## Customization Guide
 
 ### 1. Clone and Modify
+
 ```bash
 # Copy existing template
 cp templates/blueprints/basic_etl.yaml templates/blueprints/my_custom_template.yaml
@@ -586,6 +655,7 @@ python scripts/dev/generate_project.py "My Org" "My Project" \
 ```
 
 ### 2. Combine Templates
+
 ```yaml
 # Take workspace config from basic_etl
 workspace:
@@ -606,6 +676,7 @@ principals:
 ```
 
 ### 3. Environment-Specific Customization
+
 ```yaml
 # Base configuration (shared)
 workspace:
@@ -631,6 +702,7 @@ environments:
 ### Common Issues
 
 **Issue:** Template not found
+
 ```bash
 # Solution: List available templates
 ls -la templates/blueprints/
@@ -640,13 +712,19 @@ python scripts/dev/generate_project.py "Org" "Project" --template basic_etl
 ```
 
 **Issue:** Principal permissions errors
+
 ```bash
 # Solution: Use Object IDs (GUIDs), not email addresses
 # Wrong: "user@company.com"
 # Correct: "12345678-1234-1234-1234-123456789abc"
+
+# Pro Tip: In v1.5.1+, you can pass a list of GUIDs in a single environment variable:
+# In .env: MY_GROUP="guid1,guid2,guid3"
+# In YAML: - id: "${MY_GROUP}"
 ```
 
 **Issue:** Capacity not found
+
 ```bash
 # Solution: Verify capacity ID exists and you have access
 fabric-cicd diagnose --check-capacity "${FABRIC_CAPACITY_ID}"
@@ -684,6 +762,7 @@ To contribute a new template:
 7. Submit pull request
 
 **Template Quality Checklist:**
+
 - ☐ All resources use `${VARIABLE}` placeholders
 - ☐ Environment-specific overrides provided
 - ☐ Principals use Object IDs (not emails)

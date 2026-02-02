@@ -149,6 +149,7 @@ resources:
     folder: "Transition"
 
 # Principals (Migration Team + Legacy System Access)
+# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
 principals:
   # Migration Program Manager
   - id: "${MIGRATION_PM_OID}"

@@ -66,6 +66,7 @@ semantic_models:
 
 # Principals (Security & Access Control)
 # IMPORTANT: Use Object IDs (GUIDs), not email addresses.
+# Supports comma-separated lists for bulk assignment (e.g. "${GROUP_IDS}").
 principals:
   - id: "${ADMIN_GROUP_OID}" # e.g., "d0555555-5555-5555-5555-555555555555"
     role: "Admin"

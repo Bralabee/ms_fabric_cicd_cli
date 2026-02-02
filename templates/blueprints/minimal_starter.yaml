@@ -36,6 +36,7 @@ pipelines:
     description: "Basic data refresh pipeline (optional)"
 
 # Principals (Minimal - just the deploying user/SP)
+# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
 principals:
   - id: "${AZURE_CLIENT_ID}"  # Service Principal deploying this
     role: "Admin"
