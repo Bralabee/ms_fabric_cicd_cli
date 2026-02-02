@@ -77,3 +77,4 @@ webapp/frontend/dist/
 webapp/frontend/.vite/
 webapp/backend/__pycache__/
 webapp/backend/.pytest_cache/
+!webapp/frontend/src/lib/
