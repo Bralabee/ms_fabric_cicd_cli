@@ -106,7 +106,7 @@ export async function fetchStep(scenarioId: string, stepId: string): Promise<Ste
 export async function searchContent(query: string, category?: string): Promise<SearchResult[]> {
   const params = new URLSearchParams({ q: query })
   if (category) params.append('category', category)
-  const response = await fetch(`${API_BASE}/search?${params}`)
+  const response = await fetch(`${API_BASE}/search/?${params}`)
   if (!response.ok) throw new Error('Search failed')
   return response.json()
 }
