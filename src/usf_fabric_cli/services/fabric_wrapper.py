@@ -20,7 +20,12 @@ from usf_fabric_cli.exceptions import (
 )
 from usf_fabric_cli.utils.telemetry import TelemetryClient
 
-# Imports removed as they were unused
+# Re-export retry utilities for backwards compatibility
+from usf_fabric_cli.utils.retry import (  # noqa: F401
+    is_retryable_error,
+    calculate_backoff,
+    retry_with_backoff,
+)
 
 if TYPE_CHECKING:
     from usf_fabric_cli.services.token_manager import TokenManager

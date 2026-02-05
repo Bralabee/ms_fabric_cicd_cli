@@ -36,20 +36,20 @@ class WorkspaceConfig:
     git_directory: str = "/"
 
     # Folder structure
-    folders: List[str] = None
+    folders: Optional[List[str]] = None
 
     # Items to create
-    lakehouses: List[Dict[str, Any]] = None
-    warehouses: List[Dict[str, Any]] = None
-    notebooks: List[Dict[str, Any]] = None
-    pipelines: List[Dict[str, Any]] = None
-    semantic_models: List[Dict[str, Any]] = None
+    lakehouses: Optional[List[Dict[str, Any]]] = None
+    warehouses: Optional[List[Dict[str, Any]]] = None
+    notebooks: Optional[List[Dict[str, Any]]] = None
+    pipelines: Optional[List[Dict[str, Any]]] = None
+    semantic_models: Optional[List[Dict[str, Any]]] = None
 
     # Generic resources (Future-proof)
-    resources: List[Dict[str, Any]] = None
+    resources: Optional[List[Dict[str, Any]]] = None
 
     # Principals (users/service principals to add)
-    principals: List[Dict[str, str]] = None
+    principals: Optional[List[Dict[str, str]]] = None
 
 
 class ConfigManager:
@@ -338,10 +338,15 @@ def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
             from azure.identity import ClientSecretCredential
 
             print("Generating Fabric token from Service Principal credentials...")
+            tenant = os.getenv("TENANT_ID") or os.getenv("AZURE_TENANT_ID")
+            client = os.getenv("AZURE_CLIENT_ID")
+            secret = os.getenv("AZURE_CLIENT_SECRET")
+            if not tenant or not client or not secret:
+                raise ValueError("Missing required credentials")
             credential = ClientSecretCredential(
-                tenant_id=os.getenv("TENANT_ID") or os.getenv("AZURE_TENANT_ID"),
-                client_id=os.getenv("AZURE_CLIENT_ID"),
-                client_secret=os.getenv("AZURE_CLIENT_SECRET"),
+                tenant_id=tenant,
+                client_id=client,
+                client_secret=secret,
             )
             token = credential.get_token("https://api.fabric.microsoft.com/.default")
             os.environ["FABRIC_TOKEN"] = token.token
