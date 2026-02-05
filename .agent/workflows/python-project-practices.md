@@ -73,7 +73,18 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate fabric-cli-cicd
 
    *Runs `black .` (format) and `flake8 src` (check)*
 
-3. **Commit incrementally** with descriptive messages
+3. **Run type checking**:
+
+   ```bash
+   source ~/miniconda3/etc/profile.d/conda.sh && conda activate {ENV} && mypy src
+   ```
+
+   **Key Type Safety Rules (v1.6.2+)**:
+   - Use `Optional[str]` instead of `str = None` for optional parameters
+   - Add explicit type narrowing (`if not var:`) before passing `str | None` to functions expecting `str`
+   - Ensure `types-requests` is installed for Mypy stub support
+
+4. **Commit incrementally** with descriptive messages
 
 ---
 
