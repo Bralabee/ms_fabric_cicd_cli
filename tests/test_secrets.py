@@ -7,7 +7,11 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from usf_fabric_cli.utils.secrets import FabricSecrets, get_secrets, get_environment_variables
+from usf_fabric_cli.utils.secrets import (
+    FabricSecrets,
+    get_secrets,
+    get_environment_variables,
+)
 
 
 class TestFabricSecrets:

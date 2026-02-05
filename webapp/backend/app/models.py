@@ -9,6 +9,7 @@ from enum import Enum
 
 class DifficultyLevel(str, Enum):
     """Difficulty level for a scenario or step."""
+
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
     ADVANCED = "advanced"
@@ -16,6 +17,7 @@ class DifficultyLevel(str, Enum):
 
 class StepType(str, Enum):
     """Type of step in a scenario."""
+
     INFO = "info"
     COMMAND = "command"
     CODE = "code"
@@ -27,6 +29,7 @@ class StepType(str, Enum):
 
 class CodeBlock(BaseModel):
     """A code block with language and content."""
+
     language: str = "bash"
     content: str
     filename: Optional[str] = None
@@ -35,6 +38,7 @@ class CodeBlock(BaseModel):
 
 class Step(BaseModel):
     """A single step in a scenario."""
+
     id: str
     title: str
     type: StepType = StepType.INFO
@@ -49,6 +53,7 @@ class Step(BaseModel):
 
 class Scenario(BaseModel):
     """A complete scenario with metadata and steps."""
+
     id: str
     title: str
     description: str
@@ -65,6 +70,7 @@ class Scenario(BaseModel):
 
 class ScenarioSummary(BaseModel):
     """Summary of a scenario for listing."""
+
     id: str
     title: str
     description: str
@@ -78,6 +84,7 @@ class ScenarioSummary(BaseModel):
 
 class Category(BaseModel):
     """A category grouping scenarios."""
+
     id: str
     title: str
     description: str
@@ -88,6 +95,7 @@ class Category(BaseModel):
 
 class SearchResult(BaseModel):
     """A search result item."""
+
     scenario_id: str
     scenario_title: str
     step_id: Optional[str] = None
@@ -99,6 +107,7 @@ class SearchResult(BaseModel):
 
 class UserProgress(BaseModel):
     """User progress for a scenario."""
+
     scenario_id: str
     completed_steps: List[str] = Field(default_factory=list)
     started_at: Optional[str] = None
@@ -107,5 +116,6 @@ class UserProgress(BaseModel):
 
 class ProgressUpdate(BaseModel):
     """Request to update progress."""
+
     step_id: str
     completed: bool = True

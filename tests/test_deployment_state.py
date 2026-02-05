@@ -31,7 +31,7 @@ class TestCreatedItem:
             name="Bronze",
             workspace_name="DataPlatform",
         )
-        
+
         assert item.item_type == ItemType.LAKEHOUSE
         assert item.name == "Bronze"
         assert item.workspace_name == "DataPlatform"
@@ -47,7 +47,7 @@ class TestCreatedItem:
             folder_name="Pipelines",
             metadata={"source": "deployment"},
         )
-        
+
         assert item.item_id == "abc-123"
         assert item.folder_name == "Pipelines"
         assert item.metadata == {"source": "deployment"}
@@ -59,9 +59,9 @@ class TestCreatedItem:
             name="Gold",
             workspace_name="DataPlatform",
         )
-        
+
         data = item.to_dict()
-        
+
         assert data["item_type"] == "warehouse"
         assert isinstance(data["item_type"], str)
 
@@ -75,9 +75,9 @@ class TestCreatedItem:
             "folder_name": None,
             "metadata": {},
         }
-        
+
         item = CreatedItem.from_dict(data)
-        
+
         assert item.item_type == ItemType.LAKEHOUSE
         assert item.name == "Bronze"
         assert item.item_id == "123"
@@ -89,9 +89,9 @@ class TestDeploymentState:
     def test_record_adds_item(self):
         """Test recording an item adds it to state."""
         state = DeploymentState()
-        
+
         item = state.record(ItemType.WORKSPACE, "MyWorkspace", "MyWorkspace")
-        
+
         assert state.item_count == 1
         assert item.item_type == ItemType.WORKSPACE
         assert item.name == "MyWorkspace"
@@ -99,18 +99,18 @@ class TestDeploymentState:
     def test_record_multiple_items(self):
         """Test recording multiple items maintains order."""
         state = DeploymentState()
-        
+
         state.record(ItemType.WORKSPACE, "WS", "WS")
         state.record(ItemType.FOLDER, "Folder1", "WS")
         state.record(ItemType.LAKEHOUSE, "Bronze", "WS")
-        
+
         assert state.item_count == 3
         assert [i.name for i in state.items] == ["WS", "Folder1", "Bronze"]
 
     def test_record_with_metadata(self):
         """Test recording with extra metadata."""
         state = DeploymentState()
-        
+
         item = state.record(
             ItemType.NOTEBOOK,
             "Process",
@@ -119,26 +119,26 @@ class TestDeploymentState:
             environment="dev",
             version="1.0",
         )
-        
+
         assert item.metadata == {"environment": "dev", "version": "1.0"}
 
     def test_start_deployment_clears_previous(self):
         """Test starting deployment clears previous items."""
         state = DeploymentState()
         state.record(ItemType.WORKSPACE, "OldWS", "OldWS")
-        
+
         state.start_deployment("new-deploy")
-        
+
         assert state.item_count == 0
 
     def test_items_returns_copy(self):
         """Test items property returns a copy."""
         state = DeploymentState()
         state.record(ItemType.WORKSPACE, "WS", "WS")
-        
+
         items = state.items
         items.append(CreatedItem(ItemType.LAKEHOUSE, "X", "WS"))
-        
+
         # Original should be unchanged
         assert state.item_count == 1
 
@@ -153,9 +153,9 @@ class TestDeploymentStateCheckpoint:
         state.start_deployment("test-deploy")
         state.record(ItemType.WORKSPACE, "WS", "WS")
         state.record(ItemType.LAKEHOUSE, "LH", "WS")
-        
+
         state.save_checkpoint()
-        
+
         assert checkpoint_file.exists()
         data = json.loads(checkpoint_file.read_text())
         assert data["deployment_id"] == "test-deploy"
@@ -173,10 +173,10 @@ class TestDeploymentStateCheckpoint:
             ],
         }
         checkpoint_file.write_text(json.dumps(checkpoint_data))
-        
+
         state = DeploymentState(checkpoint_path=checkpoint_file)
         loaded = state.load_checkpoint()
-        
+
         assert loaded is True
         assert state.item_count == 2
         assert state._deployment_id == "saved-deploy"
@@ -184,9 +184,9 @@ class TestDeploymentStateCheckpoint:
     def test_load_checkpoint_returns_false_if_missing(self, tmp_path):
         """Test loading missing checkpoint returns False."""
         state = DeploymentState(checkpoint_path=tmp_path / "nonexistent.json")
-        
+
         loaded = state.load_checkpoint()
-        
+
         assert loaded is False
 
     def test_auto_checkpoint_on_record(self, tmp_path):
@@ -194,9 +194,9 @@ class TestDeploymentStateCheckpoint:
         checkpoint_file = tmp_path / "auto_checkpoint.json"
         state = DeploymentState(checkpoint_path=checkpoint_file)
         state.start_deployment()
-        
+
         state.record(ItemType.WORKSPACE, "WS", "WS")
-        
+
         assert checkpoint_file.exists()
 
 
@@ -214,9 +214,9 @@ class TestDeploymentStateRollback:
     def test_rollback_empty_state(self, mock_wrapper):
         """Test rollback with no items."""
         state = DeploymentState()
-        
+
         result = state.rollback(mock_wrapper)
-        
+
         assert result["success"] is True
         assert result["deleted"] == 0
 
@@ -226,15 +226,17 @@ class TestDeploymentStateRollback:
         state.record(ItemType.WORKSPACE, "WS", "WS")
         state.record(ItemType.LAKEHOUSE, "Bronze", "WS")
         state.record(ItemType.LAKEHOUSE, "Silver", "WS")
-        
+
         deleted_items = []
+
         def track_delete(cmd):
             deleted_items.append(cmd[1])  # The path
             return {"success": True}
+
         mock_wrapper._execute_command.side_effect = track_delete
-        
+
         result = state.rollback(mock_wrapper)
-        
+
         assert result["deleted"] == 3
         # Should delete in reverse: Silver, Bronze, then Workspace
         assert "Silver" in deleted_items[0]
@@ -246,16 +248,16 @@ class TestDeploymentStateRollback:
         state.record(ItemType.LAKEHOUSE, "LH1", "WS")
         state.record(ItemType.LAKEHOUSE, "LH2", "WS")
         state.record(ItemType.LAKEHOUSE, "LH3", "WS")
-        
+
         # Second deletion fails
         mock_wrapper._execute_command.side_effect = [
             {"success": True},
             {"success": False},
             {"success": True},
         ]
-        
+
         result = state.rollback(mock_wrapper)
-        
+
         assert result["deleted"] == 2
         assert result["failed"] == 1
 
@@ -265,12 +267,12 @@ class TestDeploymentStateRollback:
         state.record(ItemType.LAKEHOUSE, "LH1", "WS")
         state.record(ItemType.LAKEHOUSE, "LH2", "WS")
         state.record(ItemType.LAKEHOUSE, "LH3", "WS")
-        
+
         # First deletion fails
         mock_wrapper._execute_command.side_effect = Exception("API Error")
-        
+
         result = state.rollback(mock_wrapper, stop_on_error=True)
-        
+
         assert result["failed"] == 1
         assert mock_wrapper._execute_command.call_count == 1
 
@@ -278,21 +280,21 @@ class TestDeploymentStateRollback:
         """Test rollback calls delete_workspace for workspace items."""
         state = DeploymentState()
         state.record(ItemType.WORKSPACE, "MyWorkspace", "MyWorkspace")
-        
+
         state.rollback(mock_wrapper)
-        
+
         mock_wrapper.delete_workspace.assert_called_once_with("MyWorkspace")
 
     def test_rollback_removes_checkpoint_file(self, mock_wrapper, tmp_path):
         """Test rollback removes checkpoint file after completion."""
         checkpoint_file = tmp_path / "checkpoint.json"
         checkpoint_file.write_text("{}")
-        
+
         state = DeploymentState(checkpoint_path=checkpoint_file)
         state.record(ItemType.LAKEHOUSE, "LH", "WS")
-        
+
         state.rollback(mock_wrapper)
-        
+
         assert not checkpoint_file.exists()
 
 
@@ -302,10 +304,16 @@ class TestItemType:
     def test_all_item_types_exist(self):
         """Test all expected item types are defined."""
         expected_types = [
-            "WORKSPACE", "FOLDER", "LAKEHOUSE", "WAREHOUSE",
-            "NOTEBOOK", "PIPELINE", "SEMANTIC_MODEL", "REPORT",
+            "WORKSPACE",
+            "FOLDER",
+            "LAKEHOUSE",
+            "WAREHOUSE",
+            "NOTEBOOK",
+            "PIPELINE",
+            "SEMANTIC_MODEL",
+            "REPORT",
         ]
-        
+
         for type_name in expected_types:
             assert hasattr(ItemType, type_name)
 

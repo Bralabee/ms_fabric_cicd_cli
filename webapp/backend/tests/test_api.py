@@ -120,7 +120,7 @@ class TestProgressAPI:
                 # Update progress
                 response = client.post(
                     f"/api/progress/{scenario_id}",
-                    json={"step_id": step_id, "completed": True}
+                    json={"step_id": step_id, "completed": True},
                 )
                 assert response.status_code == 200
                 data = response.json()

@@ -1,12 +1,34 @@
 # AI Agent Context & Project Architecture
 
-# Reference for AI Assistants working on this codebase
+> Reference for AI Assistants working on this codebase
 
 ## Project Identity
 
 **Name**: USF Fabric CLI CI/CD
 **Purpose**: Enterprise wrapper for Microsoft Fabric CLI to enable standardized CI/CD, Monorepo support, and "One-Click" onboarding.
 **Stack**: Python 3.11+, Fabric CLI (MS), Typer, Jinja2, YAML.
+
+## Development Standards
+
+### 1. Code Quality & Formatting
+
+The project enforces strict coding standards to ensure maintainability and consistency.
+
+* **Linting**: `flake8` is authoritative.
+  * **Max Line Length**: 88 characters (matching Black).
+  * **Configuration**: `.flake8` at project root.
+  * **Command**: `flake8 src`
+* **Formatting**: `black` is authoritative.
+  * **Profile**: black (default).
+  * **Command**: `black .`
+* **Static Analysis**: `mypy` for type checking.
+  * **Command**: `mypy src`
+* **Pre-Commit (Recommended)**: Run `make test` or `make lint` before pushing.
+
+### 2. Documentation
+
+* **Docstrings**: Google-style docstrings for all functions and classes.
+* **Type Hints**: Mandatory for all function arguments and return values.
 
 ## Critical Architectural Decisions
 

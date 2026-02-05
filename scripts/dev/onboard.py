@@ -76,29 +76,31 @@ def onboard_project(
     # 2. Create Feature Branch
     logger.info("\n[2/3] Initializing Git Feature Branch...")
     branch_name = f"feature/{project_name.lower().replace(' ', '-')}"
-    
+
     if dry_run:
-         logger.info(f"  (Dry Run) Would execute: git checkout -b {branch_name}")
+        logger.info(f"  (Dry Run) Would execute: git checkout -b {branch_name}")
     else:
         try:
             # Check if branch exists
             result = run_command(["git", "branch", "--list", branch_name], check=False)
             if branch_name in result.stdout:
-                logger.warning(f"  Branch {branch_name} already exists. Checking out...")
+                logger.warning(
+                    f"  Branch {branch_name} already exists. Checking out..."
+                )
                 run_command(["git", "checkout", branch_name])
             else:
-                 run_command(["git", "checkout", "-b", branch_name])
-            
+                run_command(["git", "checkout", "-b", branch_name])
+
             logger.info(f"  ✅ On branch: {branch_name}")
 
             # Push branch to remote (Required for Fabric to see it)
             logger.info("  ☁️  Pushing branch to remote...")
             run_command(["git", "push", "-u", "origin", branch_name])
             logger.info("  ✅ Branch pushed to origin")
-            
+
         except Exception as e:
-             logger.error(f"Failed to manage git branch: {e}")
-             return False
+            logger.error(f"Failed to manage git branch: {e}")
+            return False
 
     # 3. Deploy Workspace
     logger.info("\n[3/3] Deploying Fabric Workspace...")
@@ -124,11 +126,12 @@ def onboard_project(
         env = {"PYTHONPATH": str(Path(__file__).resolve().parent.parent.parent / "src")}
         # Also include current env vars
         import os
+
         env.update(os.environ)
 
         # Run deploy interactively to show progress
         subprocess.run(deploy_cmd, env=env, check=True)
-        
+
         logger.info("\n✨ Onboarding Complete! ✨")
         logger.info(f"Resource: {config_path}")
         logger.info(f"Branch:   {branch_name}")
@@ -144,12 +147,16 @@ def main():
     parser.add_argument("--org", required=True, help="Organization Name")
     parser.add_argument("--project", required=True, help="Project Name")
     parser.add_argument(
-        "--template", default="medallion", help="Blueprint template (default: medallion)"
+        "--template",
+        default="medallion",
+        help="Blueprint template (default: medallion)",
     )
     parser.add_argument(
         "--capacity-id", default="${FABRIC_CAPACITY_ID}", help="Capacity ID placeholder"
     )
-    parser.add_argument("--repo", default="${GIT_REPO_URL}", help="Git Repo URL placeholder")
+    parser.add_argument(
+        "--repo", default="${GIT_REPO_URL}", help="Git Repo URL placeholder"
+    )
     parser.add_argument("--dry-run", action="store_true", help="Simulate actions")
 
     args = parser.parse_args()

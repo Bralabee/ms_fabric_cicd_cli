@@ -111,8 +111,10 @@ class ConfigManager:
 
     def _load_environment_config(self, environment: str) -> Dict[str, Any]:
         """Load environment-specific overrides"""
-        # Strategy 1: Look for 'environments' folder at the project root (config/environments)
-        # We assume the config file is somewhere inside config/ (e.g. config/projects/Org/proj.yaml)
+        # Strategy 1: Look for 'environments' folder at the project root
+        # (config/environments)
+        # We assume the config file is somewhere inside config/
+        # (e.g. config/projects/Org/proj.yaml)
 
         # Walk up the tree until we find 'config' directory
         current_path = self.config_path.parent
@@ -193,7 +195,8 @@ class ConfigManager:
 
         final_principals = list(raw_principals)
 
-        # Inject mandatory principals from environment variables (if not already present)
+        # Inject mandatory principals from environment variables
+        # (if not already present)
 
         # Add Additional Admin
         additional_admin = os.getenv("ADDITIONAL_ADMIN_PRINCIPAL_ID")
@@ -228,7 +231,8 @@ class ConfigManager:
                 unique_principals.append(p)
                 seen_ids.add(pid)
             elif not pid:
-                # Keep entries without ID (though invalid, we let schema validation handle it)
+                # Keep entries without ID (though invalid, we let schema validation
+                # handle it)
                 unique_principals.append(p)
 
         return WorkspaceConfig(
@@ -255,7 +259,8 @@ class ConfigManager:
     def _load_schema(self) -> Dict[str, Any]:
         """Load JSON schema for configuration validation"""
         # Schema is in src/schemas/workspace_config.json
-        # __file__ is src/usf_fabric_cli/config.py -> parent is src/core -> parent.parent is src
+        # __file__ is src/usf_fabric_cli/config.py -> parent is src/core ->
+        # parent.parent is src
         base_path = Path(__file__).resolve().parent.parent
         schema_path = base_path / "schemas" / "workspace_config.json"
 

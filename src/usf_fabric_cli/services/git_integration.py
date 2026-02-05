@@ -155,7 +155,8 @@ class GitFabricIntegration:
 
         if result["success"]:
             logger.info(
-                f"Successfully connected workspace {workspace_id} to {git_repo_url}:{branch}"
+                f"Successfully connected workspace {workspace_id} to "
+                f"{git_repo_url}:{branch}"
             )
 
         return result
@@ -225,6 +226,7 @@ class GitFabricIntegration:
         # Attempt repository accessibility check using git ls-remote
         try:
             import subprocess
+
             result = subprocess.run(
                 ["git", "ls-remote", "--exit-code", repo_url],
                 capture_output=True,
@@ -232,11 +234,15 @@ class GitFabricIntegration:
                 timeout=15,
             )
             if result.returncode != 0:
-                error_detail = result.stderr.strip() if result.stderr else "Unknown error"
+                error_detail = (
+                    result.stderr.strip() if result.stderr else "Unknown error"
+                )
                 return {
                     "success": False,
                     "error": f"Repository not accessible: {error_detail}",
-                    "remediation": "Check repository URL and authentication credentials",
+                    "remediation": (
+                        "Check repository URL and authentication credentials"
+                    ),
                 }
         except subprocess.TimeoutExpired:
             logger.warning(f"Repository accessibility check timed out for: {repo_url}")

@@ -15,7 +15,7 @@ def load_scenario_from_yaml(file_path: Path) -> Scenario:
     """Load a single scenario from a YAML file."""
     with open(file_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
-    
+
     # Parse steps
     steps = []
     for step_data in data.get("steps", []):
@@ -28,7 +28,7 @@ def load_scenario_from_yaml(file_path: Path) -> Scenario:
                 filename=code_data.get("filename"),
                 highlight_lines=code_data.get("highlight_lines"),
             )
-        
+
         step = Step(
             id=step_data["id"],
             title=step_data["title"],
@@ -42,7 +42,7 @@ def load_scenario_from_yaml(file_path: Path) -> Scenario:
             checkpoint_question=step_data.get("checkpoint_question"),
         )
         steps.append(step)
-    
+
     return Scenario(
         id=data["id"],
         title=data["title"],
@@ -63,11 +63,11 @@ def load_all_scenarios() -> Dict[str, Scenario]:
     """Load all scenarios from the content/scenarios directory."""
     scenarios = {}
     content_dir = Path(__file__).parent / "scenarios"
-    
+
     if not content_dir.exists():
         print(f"Warning: Scenarios directory not found at {content_dir}")
         return scenarios
-    
+
     for yaml_file in sorted(content_dir.glob("*.yaml")):
         try:
             scenario = load_scenario_from_yaml(yaml_file)
@@ -75,6 +75,6 @@ def load_all_scenarios() -> Dict[str, Scenario]:
             print(f"Loaded scenario: {scenario.id} ({len(scenario.steps)} steps)")
         except Exception as e:
             print(f"Error loading {yaml_file}: {e}")
-    
+
     print(f"Loaded {len(scenarios)} scenarios total")
     return scenarios

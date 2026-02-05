@@ -293,16 +293,18 @@ principals:
 
     def test_deployer_deploy_creates_workspace(self, full_config, mock_env_vars_full):
         """Test that deploy creates workspace and items."""
-        with patch("usf_fabric_cli.services.deployer.FabricCLIWrapper") as MockWrapper, \
-             patch("usf_fabric_cli.services.deployer.GitFabricIntegration") as MockGit, \
-             patch("usf_fabric_cli.services.deployer.FabricGitAPI") as MockGitAPI, \
-             patch("usf_fabric_cli.services.deployer.AuditLogger") as MockAudit:
-            
+        with (
+            patch("usf_fabric_cli.services.deployer.FabricCLIWrapper") as MockWrapper,
+            patch("usf_fabric_cli.services.deployer.GitFabricIntegration") as MockGit,
+            patch("usf_fabric_cli.services.deployer.FabricGitAPI") as MockGitAPI,
+            patch("usf_fabric_cli.services.deployer.AuditLogger") as MockAudit,
+        ):
+
             # Setup mock wrapper
             mock_fabric = MagicMock()
             mock_fabric.create_workspace.return_value = {
                 "success": True,
-                "workspace_id": "ws-12345"
+                "workspace_id": "ws-12345",
             }
             mock_fabric.create_folder.return_value = {"success": True}
             mock_fabric.create_lakehouse.return_value = {"success": True}
@@ -310,14 +312,14 @@ principals:
             mock_fabric.create_notebook.return_value = {"success": True}
             mock_fabric.create_pipeline.return_value = {"success": True}
             mock_fabric.add_workspace_principal.return_value = {"success": True}
-            
+
             MockWrapper.return_value = mock_fabric
             MockGit.return_value = MagicMock()
             MockGitAPI.return_value = MagicMock()
             MockAudit.return_value = MagicMock()
-            
+
             deployer = FabricDeployer(config_path=full_config)
-            
+
             # Verify config was loaded correctly
             assert deployer.config.name == "test-full-workspace"
             assert len(deployer.config.lakehouses) == 1
@@ -325,14 +327,16 @@ principals:
 
     def test_deployer_config_with_principals(self, full_config, mock_env_vars_full):
         """Test deployer correctly parses principals from config."""
-        with patch("usf_fabric_cli.services.deployer.FabricCLIWrapper") as MockWrapper, \
-             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"), \
-             patch("usf_fabric_cli.services.deployer.FabricGitAPI"), \
-             patch("usf_fabric_cli.services.deployer.AuditLogger"):
-            
+        with (
+            patch("usf_fabric_cli.services.deployer.FabricCLIWrapper") as MockWrapper,
+            patch("usf_fabric_cli.services.deployer.GitFabricIntegration"),
+            patch("usf_fabric_cli.services.deployer.FabricGitAPI"),
+            patch("usf_fabric_cli.services.deployer.AuditLogger"),
+        ):
+
             MockWrapper.return_value = MagicMock()
             deployer = FabricDeployer(config_path=full_config)
-            
+
             # Should have at least the configured principal
             assert len(deployer.config.principals) >= 1
             principal_ids = [p.get("id") for p in deployer.config.principals]
@@ -368,22 +372,16 @@ workspace:
             "AZURE_TENANT_ID": "tenant-id",
         }
         with patch.dict(os.environ, env_vars, clear=False):
-            result = runner.invoke(
-                app, 
-                ["deploy", mock_config, "--validate-only"]
-            )
-            
+            result = runner.invoke(app, ["deploy", mock_config, "--validate-only"])
+
             # Should validate and return successfully
             assert result.exit_code == 0
             assert "valid" in result.output.lower()
 
     def test_deploy_validates_nonexistent_config(self, runner):
         """Test deploy with nonexistent config fails gracefully."""
-        result = runner.invoke(
-            app, 
-            ["deploy", "/nonexistent/config.yaml"]
-        )
-        
+        result = runner.invoke(app, ["deploy", "/nonexistent/config.yaml"])
+
         assert result.exit_code != 0
 
 
@@ -404,7 +402,7 @@ workspace:
         config_file.write_text(config_content)
         return str(config_file)
 
-    @pytest.fixture  
+    @pytest.fixture
     def mock_env_vars(self):
         """Mock required environment variables."""
         env_vars = {
@@ -418,34 +416,38 @@ workspace:
 
     def test_parse_github_url(self, minimal_config, mock_env_vars):
         """Test parsing GitHub repository URLs."""
-        with patch("usf_fabric_cli.services.deployer.FabricCLIWrapper"), \
-             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"), \
-             patch("usf_fabric_cli.services.deployer.FabricGitAPI"), \
-             patch("usf_fabric_cli.services.deployer.AuditLogger"):
-            
+        with (
+            patch("usf_fabric_cli.services.deployer.FabricCLIWrapper"),
+            patch("usf_fabric_cli.services.deployer.GitFabricIntegration"),
+            patch("usf_fabric_cli.services.deployer.FabricGitAPI"),
+            patch("usf_fabric_cli.services.deployer.AuditLogger"),
+        ):
+
             deployer = FabricDeployer(config_path=minimal_config)
-            
+
             # Test GitHub URL
             result = deployer._parse_git_repo_url("https://github.com/owner/repo")
-            
+
             assert result is not None
             assert result["owner"] == "owner"
             assert result["repo"] == "repo"
 
     def test_parse_azure_devops_url(self, minimal_config, mock_env_vars):
         """Test parsing Azure DevOps repository URLs."""
-        with patch("usf_fabric_cli.services.deployer.FabricCLIWrapper"), \
-             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"), \
-             patch("usf_fabric_cli.services.deployer.FabricGitAPI"), \
-             patch("usf_fabric_cli.services.deployer.AuditLogger"):
-            
+        with (
+            patch("usf_fabric_cli.services.deployer.FabricCLIWrapper"),
+            patch("usf_fabric_cli.services.deployer.GitFabricIntegration"),
+            patch("usf_fabric_cli.services.deployer.FabricGitAPI"),
+            patch("usf_fabric_cli.services.deployer.AuditLogger"),
+        ):
+
             deployer = FabricDeployer(config_path=minimal_config)
-            
+
             # Test Azure DevOps URL
             result = deployer._parse_git_repo_url(
                 "https://dev.azure.com/myorg/myproject/_git/myrepo"
             )
-            
+
             assert result is not None
             assert result["organization"] == "myorg"
             assert result["project"] == "myproject"
@@ -453,14 +455,16 @@ workspace:
 
     def test_parse_invalid_url(self, minimal_config, mock_env_vars):
         """Test parsing invalid Git URLs returns None."""
-        with patch("usf_fabric_cli.services.deployer.FabricCLIWrapper"), \
-             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"), \
-             patch("usf_fabric_cli.services.deployer.FabricGitAPI"), \
-             patch("usf_fabric_cli.services.deployer.AuditLogger"):
-            
+        with (
+            patch("usf_fabric_cli.services.deployer.FabricCLIWrapper"),
+            patch("usf_fabric_cli.services.deployer.GitFabricIntegration"),
+            patch("usf_fabric_cli.services.deployer.FabricGitAPI"),
+            patch("usf_fabric_cli.services.deployer.AuditLogger"),
+        ):
+
             deployer = FabricDeployer(config_path=minimal_config)
-            
+
             # Test invalid URL
             result = deployer._parse_git_repo_url("https://invalid.com/repo")
-            
+
             assert result is None

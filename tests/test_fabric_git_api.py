@@ -12,7 +12,11 @@ from unittest.mock import patch, MagicMock
 import pytest
 import requests
 
-from usf_fabric_cli.services.fabric_git_api import FabricGitAPI, GitProviderType, GitConnectionSource
+from usf_fabric_cli.services.fabric_git_api import (
+    FabricGitAPI,
+    GitProviderType,
+    GitConnectionSource,
+)
 
 
 class TestFabricGitAPIInit:
@@ -280,7 +284,9 @@ class TestDisconnectFromGit:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")  # disconnect uses POST, not DELETE
+    @patch(
+        "usf_fabric_cli.services.fabric_git_api.requests.post"
+    )  # disconnect uses POST, not DELETE
     def test_disconnect_success(self, mock_post, api):
         """Test disconnecting workspace from Git."""
         mock_response = MagicMock()

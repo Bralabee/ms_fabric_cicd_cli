@@ -11,7 +11,6 @@ from typing import Any, Dict
 from usf_fabric_cli.exceptions import FabricTelemetryError
 
 
-
 class TelemetryClient:
     """Writes Fabric CLI command telemetry to JSONL for later analysis."""
 

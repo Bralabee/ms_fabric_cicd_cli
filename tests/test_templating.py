@@ -6,7 +6,10 @@ import json
 import pytest
 from pathlib import Path
 
-from usf_fabric_cli.utils.templating import ArtifactTemplateEngine, FabricArtifactTemplater
+from usf_fabric_cli.utils.templating import (
+    ArtifactTemplateEngine,
+    FabricArtifactTemplater,
+)
 
 
 class TestArtifactTemplateEngine:

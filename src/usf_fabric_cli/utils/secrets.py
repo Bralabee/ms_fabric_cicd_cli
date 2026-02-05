@@ -187,7 +187,8 @@ class FabricSecrets(BaseSettings):
     @classmethod
     def load_with_fallback(cls) -> "FabricSecrets":
         """
-        Instantiates secrets configuration, loading available credentials without validation.
+        Instantiates secrets configuration, loading available credentials without
+        validation.
         Supports Key Vault fallback if AZURE_KEYVAULT_URL is configured.
 
         Returns:

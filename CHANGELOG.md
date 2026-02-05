@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.1] - 2026-02-05
+
+### Maintenance (Clean Code Initiative)
+
+- **Codebase Standardization**:
+  - Enforced 100% `flake8` compliance across `src/usf_fabric_cli` (0 errors).
+  - Enforced `black` formatting across the entire repository.
+  - Resolved `E501` (Line Length), `E402` (Import Order), `F841` (Unused Variables), and `F541` (Empty F-Strings).
+  - Fixed complex line-wrapping issues in `deployer.py` and `fabric_wrapper.py`.
+
+### Fixed
+
+- **Type Safety**: Addressed mypy type hints in `token_manager.py` and `retry.py`.
+
 ## [1.6.0] - 2026-02-05
 
 ### Added

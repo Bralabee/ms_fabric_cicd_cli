@@ -2,7 +2,14 @@
 
 Enterprise Microsoft Fabric deployment automation using a **thin wrapper architecture** around official Fabric CLI (~1,150 LOC wrapper with 90% CLI delegation).
 
-**Current Version**: 1.3.1 (January 2026)
+**Current Version**: 1.6.1 (February 2026)
+
+## 📏 Development Standards
+
+### Code Quality & Formatting
+*   **Linting**: `flake8` (Max line length: 88). Command: `flake8 src`
+*   **Formatting**: `black` (Profile: black). Command: `black .`
+*   **Type Safety**: `mypy`. Command: `mypy src`
 
 ## 🏗 Architecture Fundamentals
 

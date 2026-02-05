@@ -24,10 +24,12 @@ async def get_progress(request: Request, scenario_id: str):
     Get user progress for a specific scenario.
     """
     scenarios = request.app.state.scenarios
-    
+
     if scenario_id not in scenarios:
-        raise HTTPException(status_code=404, detail=f"Scenario '{scenario_id}' not found")
-    
+        raise HTTPException(
+            status_code=404, detail=f"Scenario '{scenario_id}' not found"
+        )
+
     if scenario_id not in _progress_store:
         _progress_store[scenario_id] = UserProgress(
             scenario_id=scenario_id,
@@ -35,7 +37,7 @@ async def get_progress(request: Request, scenario_id: str):
             started_at=None,
             last_updated=None,
         )
-    
+
     return _progress_store[scenario_id]
 
 
@@ -49,20 +51,22 @@ async def update_progress(
     Update progress for a scenario.
     """
     scenarios = request.app.state.scenarios
-    
+
     if scenario_id not in scenarios:
-        raise HTTPException(status_code=404, detail=f"Scenario '{scenario_id}' not found")
-    
+        raise HTTPException(
+            status_code=404, detail=f"Scenario '{scenario_id}' not found"
+        )
+
     scenario = scenarios[scenario_id]
-    
+
     # Verify step exists
     step_ids = [step.id for step in scenario.steps]
     if update.step_id not in step_ids:
         raise HTTPException(
             status_code=404,
-            detail=f"Step '{update.step_id}' not found in scenario '{scenario_id}'"
+            detail=f"Step '{update.step_id}' not found in scenario '{scenario_id}'",
         )
-    
+
     # Get or create progress
     if scenario_id not in _progress_store:
         _progress_store[scenario_id] = UserProgress(
@@ -71,9 +75,9 @@ async def update_progress(
             started_at=datetime.utcnow().isoformat(),
             last_updated=None,
         )
-    
+
     progress = _progress_store[scenario_id]
-    
+
     # Update progress
     if update.completed:
         if update.step_id not in progress.completed_steps:
@@ -81,9 +85,9 @@ async def update_progress(
     else:
         if update.step_id in progress.completed_steps:
             progress.completed_steps.remove(update.step_id)
-    
+
     progress.last_updated = datetime.utcnow().isoformat()
-    
+
     return progress
 
 
@@ -94,7 +98,7 @@ async def reset_progress(request: Request, scenario_id: str):
     """
     if scenario_id in _progress_store:
         del _progress_store[scenario_id]
-    
+
     return {"message": f"Progress reset for scenario '{scenario_id}'"}
 
 

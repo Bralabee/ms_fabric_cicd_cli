@@ -11,11 +11,11 @@ from typing import Optional
 
 from rich.console import Console
 
-logger = logging.getLogger(__name__)
-
 from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
 from usf_fabric_cli.services.deployer import FabricDeployer
+
+logger = logging.getLogger(__name__)
 
 
 app = typer.Typer(help="Fabric CLI CI/CD - Thin Wrapper Solution")
@@ -78,7 +78,7 @@ def deploy(
         console.print("[blue]Validating configuration...[/blue]")
         try:
             config_manager = ConfigManager(config)
-            workspace_config = config_manager.load_config(environment)
+            config_manager.load_config(environment)
             console.print("[green]✅ Configuration is valid[/green]")
             return
         except Exception as e:
@@ -152,7 +152,8 @@ def diagnose():
         api_check = diagnostics.validate_api_connectivity()
         if api_check["success"]:
             console.print(
-                f"[green]✅ API Connectivity: {api_check['workspaces_count']} workspaces accessible[/green]"
+                f"[green]✅ API Connectivity: {api_check['workspaces_count']} "
+                "workspaces accessible[/green]"
             )
         else:
             console.print(f"[red]❌ API Connectivity: {api_check['error']}[/red]")

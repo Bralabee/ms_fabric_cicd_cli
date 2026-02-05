@@ -22,13 +22,16 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate fabric-cli-cicd && 
 3. This project: `fabric-cli-cicd`
 
 ### ❌ NEVER Do This
+
 - Run `pip install` in base environment
 - Run `make` commands without activating env
 - Assume the environment is already active
 - **Provide user instructions WITHOUT conda activation steps**
 
 ### ✅ ALWAYS Include in User Instructions
+
 When providing testing/usage instructions to the user, ALWAYS include:
+
 ```bash
 # First, activate the conda environment
 source ~/miniconda3/etc/profile.d/conda.sh && conda activate fabric-cli-cicd
@@ -38,17 +41,18 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate fabric-cli-cicd
 
 ---
 
-
 ## 🔴 CRITICAL: Prevent Regressions
 
 ### Before Making Changes
 
 1. **Run tests first** to establish baseline:
+
    ```bash
    source ~/miniconda3/etc/profile.d/conda.sh && conda activate {ENV} && make test
    ```
 
 2. **Check git status** for clean working directory:
+
    ```bash
    git status
    ```
@@ -56,14 +60,18 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate fabric-cli-cicd
 ### After Making Changes
 
 1. **Run tests again** to verify no regressions:
+
    ```bash
    source ~/miniconda3/etc/profile.d/conda.sh && conda activate {ENV} && make test
    ```
 
-2. **Run linting** if available:
+2. **Run linting & formatting**:
+
    ```bash
    source ~/miniconda3/etc/profile.d/conda.sh && conda activate {ENV} && make lint
    ```
+
+   *Runs `black .` (format) and `flake8 src` (check)*
 
 3. **Commit incrementally** with descriptive messages
 
@@ -98,6 +106,7 @@ When implementing multiple changes:
 ## Git Workflow
 
 // turbo
+
 ```bash
 # Check status
 git status

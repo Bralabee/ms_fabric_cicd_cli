@@ -17,7 +17,7 @@ References:
 
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from enum import Enum
 
 import requests
@@ -160,8 +160,6 @@ class FabricGitAPI:
         if last_exception:
             raise last_exception
         raise RuntimeError("Retry loop completed without returning or raising")
-
-
 
     def create_git_connection(
         self,
@@ -343,7 +341,8 @@ class FabricGitAPI:
         if provider_type == GitProviderType.AZURE_DEVOPS:
             if not all([organization_name, project_name, repository_name]):
                 raise ValueError(
-                    "Azure DevOps requires organization_name, project_name, and repository_name"
+                    "Azure DevOps requires organization_name, project_name, and "
+                    "repository_name"
                 )
 
             git_provider_details = {
@@ -418,7 +417,8 @@ class FabricGitAPI:
             required_action = result.get("RequiredAction", "None")
 
             logger.info(
-                f"Initialized Git connection for workspace {workspace_id}. Required action: {required_action}"
+                f"Initialized Git connection for workspace {workspace_id}. "
+                f"Required action: {required_action}"
             )
             return {
                 "success": True,
@@ -617,7 +617,8 @@ class FabricGitAPI:
                 status = result.get("status", "Unknown")
 
                 logger.debug(
-                    f"Operation {operation_id} status: {status} (attempt {attempt + 1}/{max_attempts})"
+                    f"Operation {operation_id} status: {status} (attempt "
+                    f"{attempt + 1}/{max_attempts})"
                 )
 
                 if status in ["Succeeded", "Failed", "Cancelled"]:
@@ -636,6 +637,7 @@ class FabricGitAPI:
 
         # Timeout
         logger.error(
-            f"Operation {operation_id} timed out after {max_attempts * retry_after} seconds"
+            f"Operation {operation_id} timed out after "
+            f"{max_attempts * retry_after} seconds"
         )
         return {"success": False, "error": "Operation timed out", "status": "Timeout"}

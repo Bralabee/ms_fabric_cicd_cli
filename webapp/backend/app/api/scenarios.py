@@ -21,13 +21,13 @@ async def list_scenarios(
 ):
     """
     List all available scenarios with optional filtering.
-    
+
     - **category**: Filter by category (e.g., "getting-started", "deployment")
     - **difficulty**: Filter by difficulty level
     - **tag**: Filter by tag
     """
     scenarios = request.app.state.scenarios
-    
+
     summaries = []
     for scenario in scenarios.values():
         # Apply filters
@@ -37,19 +37,21 @@ async def list_scenarios(
             continue
         if tag and tag not in scenario.tags:
             continue
-            
-        summaries.append(ScenarioSummary(
-            id=scenario.id,
-            title=scenario.title,
-            description=scenario.description,
-            difficulty=scenario.difficulty,
-            estimated_duration_minutes=scenario.estimated_duration_minutes,
-            tags=scenario.tags,
-            category=scenario.category,
-            order=scenario.order,
-            step_count=len(scenario.steps),
-        ))
-    
+
+        summaries.append(
+            ScenarioSummary(
+                id=scenario.id,
+                title=scenario.title,
+                description=scenario.description,
+                difficulty=scenario.difficulty,
+                estimated_duration_minutes=scenario.estimated_duration_minutes,
+                tags=scenario.tags,
+                category=scenario.category,
+                order=scenario.order,
+                step_count=len(scenario.steps),
+            )
+        )
+
     # Sort by order, then by title
     summaries.sort(key=lambda x: (x.order, x.title))
     return summaries
@@ -61,7 +63,7 @@ async def list_categories(request: Request):
     List all scenario categories with their scenarios.
     """
     scenarios = request.app.state.scenarios
-    
+
     # Define category metadata
     category_meta = {
         "getting-started": {
@@ -101,18 +103,21 @@ async def list_categories(request: Request):
             "order": 6,
         },
     }
-    
+
     # Group scenarios by category
     categories_dict = {}
     for scenario in scenarios.values():
         cat_id = scenario.category
         if cat_id not in categories_dict:
-            meta = category_meta.get(cat_id, {
-                "title": cat_id.replace("-", " ").title(),
-                "description": f"Scenarios for {cat_id}",
-                "icon": "folder",
-                "order": 99,
-            })
+            meta = category_meta.get(
+                cat_id,
+                {
+                    "title": cat_id.replace("-", " ").title(),
+                    "description": f"Scenarios for {cat_id}",
+                    "icon": "folder",
+                    "order": 99,
+                },
+            )
             categories_dict[cat_id] = Category(
                 id=cat_id,
                 title=meta["title"],
@@ -121,23 +126,25 @@ async def list_categories(request: Request):
                 order=meta["order"],
                 scenarios=[],
             )
-        
-        categories_dict[cat_id].scenarios.append(ScenarioSummary(
-            id=scenario.id,
-            title=scenario.title,
-            description=scenario.description,
-            difficulty=scenario.difficulty,
-            estimated_duration_minutes=scenario.estimated_duration_minutes,
-            tags=scenario.tags,
-            category=scenario.category,
-            order=scenario.order,
-            step_count=len(scenario.steps),
-        ))
-    
+
+        categories_dict[cat_id].scenarios.append(
+            ScenarioSummary(
+                id=scenario.id,
+                title=scenario.title,
+                description=scenario.description,
+                difficulty=scenario.difficulty,
+                estimated_duration_minutes=scenario.estimated_duration_minutes,
+                tags=scenario.tags,
+                category=scenario.category,
+                order=scenario.order,
+                step_count=len(scenario.steps),
+            )
+        )
+
     # Sort scenarios within each category
     for category in categories_dict.values():
         category.scenarios.sort(key=lambda x: (x.order, x.title))
-    
+
     # Sort categories by order
     result = sorted(categories_dict.values(), key=lambda x: x.order)
     return result
@@ -149,10 +156,12 @@ async def get_scenario(request: Request, scenario_id: str):
     Get detailed information about a specific scenario.
     """
     scenarios = request.app.state.scenarios
-    
+
     if scenario_id not in scenarios:
-        raise HTTPException(status_code=404, detail=f"Scenario '{scenario_id}' not found")
-    
+        raise HTTPException(
+            status_code=404, detail=f"Scenario '{scenario_id}' not found"
+        )
+
     return scenarios[scenario_id]
 
 
@@ -162,13 +171,18 @@ async def get_step(request: Request, scenario_id: str, step_id: str):
     Get a specific step from a scenario.
     """
     scenarios = request.app.state.scenarios
-    
+
     if scenario_id not in scenarios:
-        raise HTTPException(status_code=404, detail=f"Scenario '{scenario_id}' not found")
-    
+        raise HTTPException(
+            status_code=404, detail=f"Scenario '{scenario_id}' not found"
+        )
+
     scenario = scenarios[scenario_id]
     for step in scenario.steps:
         if step.id == step_id:
             return step
-    
-    raise HTTPException(status_code=404, detail=f"Step '{step_id}' not found in scenario '{scenario_id}'")
+
+    raise HTTPException(
+        status_code=404,
+        detail=f"Step '{step_id}' not found in scenario '{scenario_id}'",
+    )

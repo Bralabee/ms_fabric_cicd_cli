@@ -38,8 +38,8 @@ test-integration: check-env ## Run integration tests (requires credentials)
 	$(PYTEST) tests/integration -m integration
 
 lint: check-env ## Run code formatting and linting
-	black src tests scripts bin
-	-ruff check src tests scripts bin || true
+	black .
+	flake8 src
 
 clean: ## Clean up cache and temporary files
 	find . -type d -name "__pycache__" -exec rm -rf {} +

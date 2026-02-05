@@ -92,9 +92,14 @@ class FabricDeployer:
             progress.update(task, advance=1)
         progress.update(task, visible=False)
 
-    def deploy(self, branch: str = None, force_branch_workspace: bool = False, rollback_on_failure: bool = False) -> bool:
+    def deploy(
+        self,
+        branch: str = None,
+        force_branch_workspace: bool = False,
+        rollback_on_failure: bool = False,
+    ) -> bool:
         """Deploy workspace based on configuration
-        
+
         Args:
             branch: Git branch to use
             force_branch_workspace: Create separate workspace for feature branch
@@ -112,7 +117,8 @@ class FabricDeployer:
                     self.config.name, branch
                 )
                 console.print(
-                    f"[yellow]Creating branch-specific workspace: {workspace_name}[/yellow]"
+                    f"[yellow]Creating branch-specific workspace: "
+                    f"{workspace_name}[/yellow]"
                 )
 
         # Log deployment start
@@ -137,11 +143,13 @@ class FabricDeployer:
                         f"[red]Failed to create workspace: {result['error']}[/red]"
                     )
                     raise RuntimeError(f"Workspace creation failed: {result['error']}")
-                
+
                 # Track workspace for rollback
                 self.deployment_state.record(
-                    ItemType.WORKSPACE, workspace_name, workspace_name,
-                    item_id=self.workspace_id
+                    ItemType.WORKSPACE,
+                    workspace_name,
+                    workspace_name,
+                    item_id=self.workspace_id,
                 )
                 progress.update(task, description="✅ Workspace created")
 
@@ -156,7 +164,9 @@ class FabricDeployer:
                 progress.update(task, description="✅ Folders created")
 
                 # Wait for folder propagation
-                self._wait_for_propagation(progress, 5, "Waiting for folder propagation...")
+                self._wait_for_propagation(
+                    progress, 5, "Waiting for folder propagation..."
+                )
 
                 # Step 3: Create items
                 task = progress.add_task("Creating items...", total=None)
@@ -164,7 +174,9 @@ class FabricDeployer:
                 progress.update(task, description="✅ Items created")
 
                 # Wait for items propagation
-                self._wait_for_propagation(progress, 5, "Waiting for items propagation...")
+                self._wait_for_propagation(
+                    progress, 5, "Waiting for items propagation..."
+                )
 
                 # Step 4: Add principals
                 task = progress.add_task("Adding principals...", total=None)
@@ -199,37 +211,43 @@ class FabricDeployer:
 
         except Exception as e:
             console.print(f"[red]Deployment failed: {e}[/red]")
-            
+
             if rollback_on_failure and self.deployment_state.item_count > 0:
                 console.print(
-                    f"[yellow]Rolling back {self.deployment_state.item_count} created items...[/yellow]"
+                    f"[yellow]Rolling back {self.deployment_state.item_count} "
+                    f"created items...[/yellow]"
                 )
                 rollback_result = self.deployment_state.rollback(self.fabric)
-                
+
                 if rollback_result["success"]:
                     console.print(
-                        f"[green]✅ Rollback complete: {rollback_result['deleted']} items deleted[/green]"
+                        f"[green]✅ Rollback complete: {rollback_result['deleted']} "
+                        f"items deleted[/green]"
                     )
                 else:
                     console.print(
                         f"[red]Rollback completed with errors: "
-                        f"{rollback_result['deleted']} deleted, {rollback_result['failed']} failed[/red]"
+                        f"{rollback_result['deleted']} deleted, "
+                        f"{rollback_result['failed']} failed[/red]"
                     )
             elif self.deployment_state.item_count > 0:
                 console.print(
-                    f"[yellow]Tip: Use --rollback-on-failure to auto-clean partial deployments[/yellow]"
+                    "[yellow]Tip: Use --rollback-on-failure to auto-clean partial "
+                    "deployments[/yellow]"
                 )
-            
+
             return False
 
     def _create_workspace(self, workspace_name: str) -> dict:
         """Create workspace"""
         # Note: CLI wrapper now expects capacity_name, but config has capacity_id
-        # We will use capacity_id as capacity_name for now, assuming user configured it correctly
+        # We will use capacity_id as capacity_name for now, assuming user configured
+        # it correctly
         # or we need to update config schema to support capacity_name
         capacity_name = self.config.capacity_id
 
-        # If capacity_id is a GUID, we might need to use capacityId parameter instead of capacityName
+        # If capacity_id is a GUID, we might need to use capacityId parameter instead
+        # of capacityName
         # But CLI wrapper uses -P capacityName=...
         # Let's try to pass it as is, but if it fails, we might need to adjust wrapper
 
@@ -259,7 +277,8 @@ class FabricDeployer:
             and "insufficientpermissionsovercapacity" not in error_msg
         ):
             console.print(
-                "[yellow]Warning: Capacity assignment failed. Retrying without capacity...[/yellow]"
+                "[yellow]Warning: Capacity assignment failed. Retrying without "
+                "capacity...[/yellow]"
             )
             result = self.fabric.create_workspace(
                 name=workspace_name,
@@ -452,7 +471,8 @@ class FabricDeployer:
                     f"[red]❌ Failed to assign domain: {result.get('error')}[/red]"
                 )
                 console.print(
-                    f"[yellow]   Note: Ensure the Service Principal is a Domain Contributor or Fabric Admin.[/yellow]"
+                    "[yellow]   Note: Ensure the Service Principal is a Domain "
+                    "Contributor or Fabric Admin.[/yellow]"
                 )
 
     def _connect_git(self, branch: str):
@@ -479,7 +499,8 @@ class FabricDeployer:
         git_details = self._parse_git_repo_url(git_repo)
         if not git_details:
             console.print(
-                f"[yellow]Warning: Could not parse Git URL. Skipping Git connection.[/yellow]"
+                "[yellow]Warning: Could not parse Git URL. Skipping Git "
+                "connection.[/yellow]"
             )
             return
 
@@ -507,14 +528,17 @@ class FabricDeployer:
                         if conn_result["success"]:
                             connection_id = conn_result["connection"]["id"]
                             console.print(
-                                f"[green]✓ Created GitHub connection: {connection_id}[/green]"
+                                f"[green]✓ Created GitHub connection: "
+                                f"{connection_id}[/green]"
                             )
                         else:
                             console.print(
-                                f"[yellow]Warning: Could not create connection: {conn_result.get('error')}[/yellow]"
+                                f"[yellow]Warning: Could not create connection: "
+                                f"{conn_result.get('error')}[/yellow]"
                             )
                             console.print(
-                                "[yellow]Attempting connection without explicit credentials...[/yellow]"
+                                "[yellow]Attempting connection without explicit "
+                                "credentials...[/yellow]"
                             )
 
                 elif provider_type == GitProviderType.AZURE_DEVOPS:
@@ -528,7 +552,10 @@ class FabricDeployer:
                             "[blue]Creating Azure DevOps connection...[/blue]"
                         )
                         # Reconstruct clean URL without credentials
-                        clean_repo_url = f"https://dev.azure.com/{git_details['organization']}/{git_details['project']}/_git/{git_details['repo']}"
+                        clean_repo_url = (
+                            f"https://dev.azure.com/{git_details['organization']}/"
+                            f"{git_details['project']}/_git/{git_details['repo']}"
+                        )
 
                         conn_result = self.git_api.create_git_connection(
                             display_name=f"AzureDevOps-{workspace_name}",
@@ -543,7 +570,8 @@ class FabricDeployer:
                         if conn_result["success"]:
                             connection_id = conn_result["connection"]["id"]
                             console.print(
-                                f"[green]✓ Created Azure DevOps connection: {connection_id}[/green]"
+                                f"[green]✓ Created Azure DevOps connection: "
+                                f"{connection_id}[/green]"
                             )
                         else:
                             # Check if it's a duplicate connection
@@ -555,7 +583,8 @@ class FabricDeployer:
                                 or "Conflict" in error_msg
                             ):
                                 console.print(
-                                    "[yellow]Connection name already exists. Trying to find existing connection...[/yellow]"
+                                    "[yellow]Connection name already exists. "
+                                    "Trying to find existing connection...[/yellow]"
                                 )
                                 existing_conn = self.git_api.get_connection_by_name(
                                     f"AzureDevOps-{workspace_name}"
@@ -563,18 +592,22 @@ class FabricDeployer:
                                 if existing_conn:
                                     connection_id = existing_conn["id"]
                                     console.print(
-                                        f"[green]✓ Found existing connection: {connection_id}[/green]"
+                                        f"[green]✓ Found existing connection: "
+                                        f"{connection_id}[/green]"
                                     )
                                 else:
                                     console.print(
-                                        "[red]Could not find existing connection despite conflict error.[/red]"
+                                        "[red]Could not find existing connection "
+                                        "despite conflict error.[/red]"
                                     )
                             else:
                                 console.print(
-                                    f"[yellow]Warning: Could not create connection: {conn_result.get('error')}[/yellow]"
+                                    f"[yellow]Warning: Could not create connection: "
+                                    f"{conn_result.get('error')}[/yellow]"
                                 )
                                 console.print(
-                                    "[yellow]Attempting connection without explicit credentials...[/yellow]"
+                                    "[yellow]Attempting connection without "
+                                    "explicit credentials...[/yellow]"
                                 )
 
             # Step 2: Connect workspace to Git
@@ -604,7 +637,8 @@ class FabricDeployer:
 
             if not result["success"]:
                 console.print(
-                    f"[red]Failed to connect workspace to Git: {result.get('error')}[/red]"
+                    f"[red]Failed to connect workspace to Git: "
+                    f"{result.get('error')}[/red]"
                 )
                 console.print(
                     f"[yellow]Details: {result.get('details', 'N/A')}[/yellow]"
@@ -619,7 +653,8 @@ class FabricDeployer:
 
             if not init_result["success"]:
                 console.print(
-                    f"[yellow]Warning: Could not initialize Git connection: {init_result.get('error')}[/yellow]"
+                    f"[yellow]Warning: Could not initialize Git connection: "
+                    f"{init_result.get('error')}[/yellow]"
                 )
                 return
 
@@ -651,11 +686,13 @@ class FabricDeployer:
                         )
                     else:
                         console.print(
-                            f"[yellow]Warning: Git update operation status: {poll_result.get('status')}[/yellow]"
+                            f"[yellow]Warning: Git update operation status: "
+                            f"{poll_result.get('status')}[/yellow]"
                         )
                 else:
                     console.print(
-                        f"[yellow]Warning: Could not update from Git: {update_result.get('error')}[/yellow]"
+                        f"[yellow]Warning: Could not update from Git: "
+                        f"{update_result.get('error')}[/yellow]"
                     )
 
             # Log successful connection
@@ -678,11 +715,12 @@ class FabricDeployer:
         - Azure DevOps: https://dev.azure.com/org/project/_git/repo
 
         Returns:
-            Dictionary with provider_type and extracted details, or None if parsing fails
+            Dictionary with provider_type and extracted details, or None if parsing
+            fails
         """
         # GitHub pattern
         github_pattern = (
-            r"(?:https?://)?(?:www\.)?github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$"
+            r"(?:https?://)?(?:www\.)?github\.com/([^/]+)/([^/]+?)" r"(?:\.git)?/?$"
         )
         github_match = re.match(github_pattern, git_url)
 
@@ -724,4 +762,4 @@ class FabricDeployer:
         summary_table.add_row("Environment", self.environment or "default")
 
         console.print(summary_table)
-        console.print(f"\n[green]✅ Deployment completed successfully![/green]")
+        console.print("\n[green]✅ Deployment completed successfully![/green]")

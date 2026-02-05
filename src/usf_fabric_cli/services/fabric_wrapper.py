@@ -13,19 +13,14 @@ import os
 
 from packaging import version
 
-from usf_fabric_cli.exceptions import FabricCLIError, FabricCLINotFoundError, FabricTelemetryError
+from usf_fabric_cli.exceptions import (
+    FabricCLIError,
+    FabricCLINotFoundError,
+    FabricTelemetryError,
+)
 from usf_fabric_cli.utils.telemetry import TelemetryClient
 
-# Import shared retry utilities
-from usf_fabric_cli.utils.retry import (
-    is_retryable_error,
-    calculate_backoff,
-    retry_with_backoff,
-    DEFAULT_MAX_RETRIES,
-    DEFAULT_BASE_DELAY,
-    DEFAULT_MAX_DELAY,
-    RETRYABLE_ERROR_PATTERNS,
-)
+# Imports removed as they were unused
 
 if TYPE_CHECKING:
     from usf_fabric_cli.services.token_manager import TokenManager
@@ -35,6 +30,7 @@ logger = logging.getLogger(__name__)
 # Expected CLI version range (can be configured)
 MINIMUM_CLI_VERSION = "1.0.0"
 RECOMMENDED_CLI_VERSION = "1.0.0"
+
 
 class FabricCLIWrapper:
     """Thin wrapper around Fabric CLI with idempotency and error handling."""
@@ -64,7 +60,8 @@ class FabricCLIWrapper:
         """
         Validate that the installed Fabric CLI version meets minimum requirements.
 
-        This addresses Gap A: Dependency on External CLI by ensuring version compatibility.
+        This addresses Gap A: Dependency on External CLI by ensuring version
+        compatibility.
         """
         try:
             result = subprocess.run(
@@ -90,7 +87,8 @@ class FabricCLIWrapper:
                     ):
                         logger.warning(
                             f"Fabric CLI version {self.cli_version} is below minimum "
-                            f"required version {self.min_version}. This may cause compatibility issues."
+                            f"required version {self.min_version}. This may cause "
+                            "compatibility issues."
                         )
                         logger.warning(
                             f"Recommended version: {RECOMMENDED_CLI_VERSION}"
@@ -150,7 +148,8 @@ class FabricCLIWrapper:
                 except Exception:
                     pass
 
-                # We use subprocess directly here to avoid infinite recursion if we used _run_fabric_command
+                # We use subprocess directly here to avoid infinite recursion if we
+                # used _run_fabric_command
                 # Using short flags -u and -p as per some CLI versions preference
                 cmd = [
                     "fab",
@@ -168,7 +167,8 @@ class FabricCLIWrapper:
                 logger.info("Successfully logged in to Fabric CLI")
             except subprocess.CalledProcessError as e:
                 logger.error(f"Failed to login to Fabric CLI: {e.stderr}")
-                # We don't raise here, as we might still be able to run if there's an existing token,
+                # We don't raise here, as we might still be able to run if there's an
+                # existing token,
                 # although unlikely if explicit login failed.
 
     def _emit_telemetry(
@@ -229,7 +229,9 @@ class FabricCLIWrapper:
             try:
                 self._token_manager.ensure_fresh_auth(max_age_seconds=300)
             except Exception as e:
-                logger.warning("Token refresh failed, continuing with existing auth: %s", e)
+                logger.warning(
+                    "Token refresh failed, continuing with existing auth: %s", e
+                )
 
         # The Microsoft Fabric CLI command is 'fab', not 'fabric'
         full_command = ["fab"] + command
@@ -272,7 +274,7 @@ class FabricCLIWrapper:
             )
             return payload
 
-        except subprocess.TimeoutExpired as exc:
+        except subprocess.TimeoutExpired:
             error_msg = f"Command timed out after {timeout} seconds"
             self._emit_telemetry(
                 "fabric_cli.timeout",
@@ -342,7 +344,8 @@ class FabricCLIWrapper:
     ) -> Dict[str, Any]:
         """Create workspace with idempotency"""
         print(
-            f"DEBUG: create_workspace called with name='{name}', capacity_name='{capacity_name}'"
+            f"DEBUG: create_workspace called with name='{name}', "
+            f"capacity_name='{capacity_name}'"
         )
 
         # Check existence first
@@ -407,19 +410,25 @@ class FabricCLIWrapper:
                     )
 
                     print(
-                        f"Error creating workspace with capacity: {error_code} - {error_message}"
+                        f"Error creating workspace with capacity: {error_code} - "
+                        f"{error_message}"
                     )
                     if error_code == "InsufficientPermissionsOverCapacity":
                         print(
-                            "ACTION REQUIRED: The Service Principal needs 'Capacity Admin' or 'Contributor' permissions on the Fabric Capacity."
+                            "ACTION REQUIRED: The Service Principal needs 'Capacity "
+                            "Admin' or 'Contributor' permissions on the Fabric "
+                            "Capacity."
                         )
 
                     return {"success": False, "error": f"{error_code}: {error_message}"}
 
             if result.get("success"):
-                # If status_code is missing or 2xx, assume success (though _execute_command usually returns success=True even for 4xx if the command ran)
+                # If status_code is missing or 2xx, assume success (though
+                # _execute_command usually returns success=True even for 4xx if the
+                # command ran)
                 # We need to verify if the workspace was actually created.
-                # However, for now, let's assume if we didn't catch a 4xx above, it might be okay or we fall through.
+                # However, for now, let's assume if we didn't catch a 4xx above, it
+                # might be okay or we fall through.
                 # Actually, if it failed, we should probably return False.
                 pass
 
@@ -466,15 +475,16 @@ class FabricCLIWrapper:
                             result["workspace_id"] = data.get("id")
             return result
         else:
-            print(f"DEBUG: Not a GUID capacity. Using mkdir.")
+            print("DEBUG: Not a GUID capacity. Using mkdir.")
             # Use 'mkdir' with -P capacityName=... (Legacy/Name-based)
             command = ["mkdir", f"{name}.Workspace"]
 
             if capacity_name:
                 command.extend(["-P", f"capacityName={capacity_name}"])
 
-            # Description is not directly supported by mkdir -P for workspace in CLI help,
-            # but we can try to set it later if needed. For now, we skip it to avoid errors.
+            # Description is not directly supported by mkdir -P for workspace in CLI
+            # help, but we can try to set it later if needed. For now, we skip it
+            # to avoid errors.
 
             result = self._execute_command(command, check_existence=True)
 
@@ -892,9 +902,11 @@ class FabricCLIWrapper:
             principal_id.lower(),
         ):
             logger.warning(
-                f"Principal ID '{principal_id}' looks like an email. Fabric CLI/API requires an Object ID (GUID)."
+                f"Principal ID '{principal_id}' looks like an email. Fabric CLI/API "
+                f"requires an Object ID (GUID)."
             )
-            # We continue anyway, as the CLI might support it in future or if it's a UPN that works in some contexts
+            # We continue anyway, as the CLI might support it in future or if it's a
+            # UPN that works in some contexts
             # But we log a warning.
 
         # Use 'acl set'
@@ -914,9 +926,11 @@ class FabricCLIWrapper:
             error_msg = result.get("error", "")
             if "NotFound" in error_msg or "identity not found" in error_msg:
                 logger.error(
-                    f"Principal ID {principal_id} not found. Please verify the Object ID and ensure it exists in the tenant."
+                    f"Principal ID {principal_id} not found. Please verify the Object "
+                    f"ID and ensure it exists in the tenant."
                 )
-                # Return success=True to avoid failing the entire deployment for one missing user
+                # Return success=True to avoid failing the entire deployment for one
+                # missing user
                 return {
                     "success": True,
                     "message": f"Principal {principal_id} not found (skipped)",
@@ -1002,7 +1016,10 @@ class FabricCLIWrapper:
         if not git_details:
             return {
                 "success": False,
-                "error": f"Could not parse Git URL: {git_repo}. Expected Azure DevOps or GitHub URL.",
+                "error": (
+                    f"Could not parse Git URL: {git_repo}. Expected Azure DevOps or "
+                    "GitHub URL."
+                ),
             }
 
         # 3. Construct Payload
@@ -1032,7 +1049,8 @@ class FabricCLIWrapper:
             }
 
         # 4. Call Fabric API
-        # Endpoint: POST https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/git/connect
+        # Endpoint: POST
+        # https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/git/connect
         endpoint = f"v1/workspaces/{workspace_id}/git/connect"
 
         # Use 'fab api' command
@@ -1047,10 +1065,12 @@ class FabricCLIWrapper:
         # Command: fab assign <domain_path> -W <workspace_path>
         # Example: fab assign .domains/Sales.Domain -W SalesWorkspace.Workspace
 
-        # Ensure domain name has .Domain suffix if not present (though CLI might handle it, best to be explicit based on ls output)
+        # Ensure domain name has .Domain suffix if not present (though CLI might
+        # handle it, best to be explicit based on ls output)
         # But wait, 'fab ls .domains' output shows names like "01 Strategy... .Domain"
         # The user might provide just "Sales" or the full name.
-        # Let's assume the user provides the name and we might need to find the full path or just try to use it.
+        # Let's assume the user provides the name and we might need to find the full
+        # path or just try to use it.
         # Based on 'fab assign --help', example is '.domains/domain1.Domain'
 
         # We'll try to construct the path if it doesn't look like a path
@@ -1149,7 +1169,9 @@ class FabricDiagnostics:
             return {
                 "success": False,
                 "error": "Fabric CLI not found or not properly installed",
-                "remediation": "Install Fabric CLI: https://github.com/microsoft/fabric-cli",
+                "remediation": (
+                    "Install Fabric CLI: https://github.com/microsoft/fabric-cli"
+                ),
                 "install_command": "pip install ms-fabric-cli",
             }
 

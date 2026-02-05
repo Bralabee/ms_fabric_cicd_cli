@@ -49,9 +49,10 @@ jobs:
       run: |
         pip install flake8 black mypy
         echo "Running flake8..."
-        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Uses .flake8 config at root
+        flake8 src/ --count --show-source --statistics
         echo "Running black (check only)..."
-        black --check src/
+        black --check .
         echo "Running mypy..."
         mypy src/ --ignore-missing-imports || true
     
