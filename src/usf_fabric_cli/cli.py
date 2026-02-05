@@ -55,7 +55,7 @@ def deploy(
         try:
             # We can't use the diagnose command directly as it's a separate command
             # So we'll instantiate the diagnostics class here
-            env_vars = get_environment_variables()
+            env_vars = get_environment_variables(validate_vars=True)
             fabric = FabricCLIWrapper(env_vars["FABRIC_TOKEN"])
             diagnostics = FabricDiagnostics(fabric)
 
@@ -77,7 +77,7 @@ def deploy(
     if validate_only:
         console.print("[blue]Validating configuration...[/blue]")
         try:
-            config_manager = ConfigManager(config)
+            config_manager = ConfigManager(config, validate_env=False)
             config_manager.load_config(environment)
             console.print("[green]✅ Configuration is valid[/green]")
             return
@@ -105,7 +105,7 @@ def validate(
     """Validate configuration file"""
 
     try:
-        config_manager = ConfigManager(config)
+        config_manager = ConfigManager(config, validate_env=False)
         workspace_config = config_manager.load_config(environment)
 
         console.print("[green]✅ Configuration is valid[/green]")
@@ -128,7 +128,7 @@ def diagnose():
     console.print("[blue]Running diagnostic checks...[/blue]")
 
     try:
-        env_vars = get_environment_variables()
+        env_vars = get_environment_variables(validate_vars=True)
         fabric = FabricCLIWrapper(env_vars["FABRIC_TOKEN"])
         diagnostics = FabricDiagnostics(fabric)
 
@@ -193,7 +193,7 @@ def destroy(
 
         console.print(f"[red]Destroying workspace: {workspace_name}[/red]")
 
-        env_vars = get_environment_variables()
+        env_vars = get_environment_variables(validate_vars=True)
         fabric = FabricCLIWrapper(env_vars["FABRIC_TOKEN"])
 
         result = fabric.delete_workspace(workspace_name)

@@ -55,11 +55,11 @@ class WorkspaceConfig:
 class ConfigManager:
     """Manages configuration loading and validation"""
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, validate_env: bool = True):
         self.config_path = Path(config_path)
         self.schema = self._load_schema()
         # Ensure env vars are loaded
-        get_environment_variables()
+        get_environment_variables(validate_vars=validate_env)
 
     def load_config(self, environment: str = None) -> WorkspaceConfig:
         """Load and validate configuration"""
@@ -285,9 +285,12 @@ class ConfigManager:
         }
 
 
-def get_environment_variables() -> Dict[str, str]:
+def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
     """
     Get required environment variables with validation.
+
+    Args:
+        validate_vars: If True, raises ValueError if required variables are missing.
 
     DEPRECATED: Use core.secrets.get_secrets() instead for new code.
     This function is maintained for backward compatibility.
@@ -345,6 +348,13 @@ def get_environment_variables() -> Dict[str, str]:
             print("✅ Fabric token generated successfully")
         except Exception as e:
             print(f"⚠️ Failed to generate token from Service Principal: {e}")
+
+    # If validation is disabled, return current env immediately
+    if not validate_vars:
+        return {
+            "FABRIC_TOKEN": os.getenv("FABRIC_TOKEN", ""),
+            "TENANT_ID": os.getenv("TENANT_ID", ""),
+        }
 
     required_vars = [
         "FABRIC_TOKEN",
