@@ -24,7 +24,7 @@ def test_load_basic_config():
         config_path = f.name
 
     try:
-        config_manager = ConfigManager(config_path)
+        config_manager = ConfigManager(config_path, validate_env=False)
         workspace_config = config_manager.load_config()
 
         assert workspace_config.name == "test-workspace"
@@ -60,7 +60,7 @@ def test_environment_override():
             yaml.dump(env_config, f)
 
         # Test override
-        config_manager = ConfigManager(str(base_config_path))
+        config_manager = ConfigManager(str(base_config_path), validate_env=False)
         workspace_config = config_manager.load_config("prod")
 
         assert workspace_config.name == "base-workspace"  # From base
@@ -83,7 +83,7 @@ def test_config_validation():
         config_path = f.name
 
     try:
-        config_manager = ConfigManager(config_path)
+        config_manager = ConfigManager(config_path, validate_env=False)
         with pytest.raises(Exception):  # Should raise validation error
             config_manager.load_config()
     finally:
