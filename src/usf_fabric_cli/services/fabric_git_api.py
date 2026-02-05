@@ -191,7 +191,7 @@ class FabricGitAPI:
         # Build connection details based on provider type
         if provider_type == GitProviderType.GITHUB:
             connection_type = "GitHubSourceControl"
-            connection_details = {
+            connection_details: Dict[str, Any] = {
                 "type": connection_type,
                 "creationMethod": f"{connection_type}.Contents",
             }
@@ -225,7 +225,7 @@ class FabricGitAPI:
 
             # Build credential details
             if credential_type == "ServicePrincipal":
-                if not all([tenant_id, client_id]):
+                if not tenant_id or not client_id:
                     raise ValueError(
                         "ServicePrincipal requires tenant_id and client_id"
                     )
@@ -497,7 +497,7 @@ class FabricGitAPI:
         """
         url = f"{self.base_url}/workspaces/{workspace_id}/git/commitToGit"
 
-        request_body = {"mode": "Selective" if items else "All", "message": message}
+        request_body: Dict[str, Any] = {"mode": "Selective" if items else "All", "message": message}
 
         if items:
             request_body["items"] = items

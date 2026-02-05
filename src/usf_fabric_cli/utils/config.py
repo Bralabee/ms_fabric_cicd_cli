@@ -61,7 +61,7 @@ class ConfigManager:
         # Ensure env vars are loaded
         get_environment_variables(validate_vars=validate_env)
 
-    def load_config(self, environment: str = None) -> WorkspaceConfig:
+    def load_config(self, environment: Optional[str] = None) -> WorkspaceConfig:
         """Load and validate configuration"""
         # Load base config
         if not self.config_path.exists():
@@ -109,7 +109,7 @@ class ConfigManager:
 
         return pattern.sub(replace, content)
 
-    def _load_environment_config(self, environment: str) -> Dict[str, Any]:
+    def _load_environment_config(self, environment: Optional[str]) -> Dict[str, Any]:
         """Load environment-specific overrides"""
         # Strategy 1: Look for 'environments' folder at the project root
         # (config/environments)

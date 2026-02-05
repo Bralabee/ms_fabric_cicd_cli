@@ -317,17 +317,17 @@ class FabricCLIWrapper:
                 )
                 return payload
 
-            error = FabricCLIError(
+            cli_error = FabricCLIError(
                 full_command, e.returncode, full_msg or str(e), e.stdout
             )
             self._emit_telemetry(
                 "fabric_cli.failure",
                 full_command,
                 time.time() - start_time,
-                error=str(error),
+                error=str(cli_error),
             )
             logger.error("Fabric CLI error: %s", full_msg)
-            raise error
+            raise cli_error
 
     def _item_exists(self, path: str) -> bool:
         """Check if an item exists using 'fab exists'"""
@@ -340,7 +340,7 @@ class FabricCLIWrapper:
             return False
 
     def create_workspace(
-        self, name: str, capacity_name: str = None, description: str = ""
+        self, name: str, capacity_name: Optional[str] = None, description: str = ""
     ) -> Dict[str, Any]:
         """Create workspace with idempotency"""
         print(
@@ -606,7 +606,7 @@ class FabricCLIWrapper:
         return self._execute_command(command)
 
     def create_lakehouse(
-        self, workspace_name: str, name: str, description: str = "", folder: str = None
+        self, workspace_name: str, name: str, description: str = "", folder: Optional[str] = None
     ) -> Dict[str, Any]:
         """Create lakehouse"""
         if folder:
@@ -651,7 +651,7 @@ class FabricCLIWrapper:
             return self._execute_command(command, check_existence=True)
 
     def create_warehouse(
-        self, workspace_name: str, name: str, description: str = "", folder: str = None
+        self, workspace_name: str, name: str, description: str = "", folder: Optional[str] = None
     ) -> Dict[str, Any]:
         """Create warehouse"""
         if folder:
@@ -696,7 +696,7 @@ class FabricCLIWrapper:
             return self._execute_command(command, check_existence=True)
 
     def create_notebook(
-        self, workspace_name: str, name: str, file_path: str = None, folder: str = None
+        self, workspace_name: str, name: str, file_path: Optional[str] = None, folder: Optional[str] = None
     ) -> Dict[str, Any]:
         """Create notebook"""
         if folder:
@@ -736,7 +736,7 @@ class FabricCLIWrapper:
             return self._execute_command(command, check_existence=True)
 
     def create_pipeline(
-        self, workspace_name: str, name: str, description: str = "", folder: str = None
+        self, workspace_name: str, name: str, description: str = "", folder: Optional[str] = None
     ) -> Dict[str, Any]:
         """Create data pipeline"""
         if folder:
@@ -781,7 +781,7 @@ class FabricCLIWrapper:
             return self._execute_command(command, check_existence=True)
 
     def create_semantic_model(
-        self, workspace_name: str, name: str, description: str = "", folder: str = None
+        self, workspace_name: str, name: str, description: str = "", folder: Optional[str] = None
     ) -> Dict[str, Any]:
         """Create semantic model"""
         if folder:
@@ -831,7 +831,7 @@ class FabricCLIWrapper:
         name: str,
         item_type: str,
         description: str = "",
-        folder: str = None,
+        folder: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create any generic Fabric item (Future-proof)"""
         if folder:

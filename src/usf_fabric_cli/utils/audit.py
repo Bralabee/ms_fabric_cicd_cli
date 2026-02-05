@@ -39,11 +39,11 @@ class AuditLogger:
     def log_operation(
         self,
         operation: str,
-        workspace_id: str = None,
-        workspace_name: str = None,
-        details: Dict[str, Any] = None,
+        workspace_id: Optional[str] = None,
+        workspace_name: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
         success: bool = True,
-        error: str = None,
+        error: Optional[str] = None,
     ) -> None:
         """Log a Fabric operation for audit trail"""
 
@@ -66,10 +66,10 @@ class AuditLogger:
     def log_workspace_creation(
         self,
         workspace_name: str,
-        workspace_id: str,
+        workspace_id: Optional[str],
         capacity_id: str,
         success: bool = True,
-        error: str = None,
+        error: Optional[str] = None,
     ) -> None:
         """Log workspace creation"""
         self.log_operation(
@@ -87,9 +87,9 @@ class AuditLogger:
         item_name: str,
         workspace_id: str,
         workspace_name: str,
-        folder_name: str = None,
+        folder_name: Optional[str] = None,
         success: bool = True,
-        error: str = None,
+        error: Optional[str] = None,
     ) -> None:
         """Log item creation (lakehouse, warehouse, notebook, etc.)"""
         details = {"item_type": item_type, "item_name": item_name}
@@ -112,7 +112,7 @@ class AuditLogger:
         workspace_id: str,
         workspace_name: str,
         success: bool = True,
-        error: str = None,
+        error: Optional[str] = None,
     ) -> None:
         """Log principal assignment to workspace"""
         self.log_operation(
@@ -131,7 +131,7 @@ class AuditLogger:
         workspace_id: str,
         workspace_name: str,
         success: bool = True,
-        error: str = None,
+        error: Optional[str] = None,
     ) -> None:
         """Log Git repository connection"""
         self.log_operation(
@@ -144,7 +144,7 @@ class AuditLogger:
         )
 
     def log_deployment_start(
-        self, config_file: str, environment: str, branch: str = None
+        self, config_file: str, environment: Optional[str], branch: Optional[str] = None
     ) -> None:
         """Log start of deployment"""
         details = {"config_file": config_file, "environment": environment}
@@ -156,7 +156,7 @@ class AuditLogger:
     def log_deployment_complete(
         self,
         workspace_name: str,
-        workspace_id: str,
+        workspace_id: Optional[str],
         items_created: int,
         duration_seconds: float,
     ) -> None:

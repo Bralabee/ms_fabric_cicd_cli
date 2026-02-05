@@ -34,7 +34,7 @@ class FabricDeployer:
     secret management, Git connectivity, and audit logging.
     """
 
-    def __init__(self, config_path: str, environment: str = None):
+    def __init__(self, config_path: str, environment: Optional[str] = None):
         # Ensure .env is loaded
         from dotenv import load_dotenv
 
@@ -44,6 +44,7 @@ class FabricDeployer:
         self.config = self.config_manager.load_config(environment)
         self.environment = environment
 
+        self.secrets: Optional[FabricSecrets] = None
         try:
             self.secrets = FabricSecrets.load_with_fallback()
             is_valid, error_msg = self.secrets.validate_fabric_auth()
@@ -54,7 +55,11 @@ class FabricDeployer:
             if self.secrets and not os.getenv("FABRIC_TOKEN"):
                 if self.secrets.fabric_token:
                     os.environ["FABRIC_TOKEN"] = self.secrets.fabric_token
-                elif self.secrets.azure_client_id and self.secrets.azure_client_secret:
+                elif (
+                    self.secrets.azure_client_id
+                    and self.secrets.azure_client_secret
+                    and self.secrets.tenant_id
+                ):
                     console.print(
                         "[blue]Generating Fabric token from secrets...[/blue]"
                     )
@@ -94,7 +99,7 @@ class FabricDeployer:
 
     def deploy(
         self,
-        branch: str = None,
+        branch: Optional[str] = None,
         force_branch_workspace: bool = False,
         rollback_on_failure: bool = False,
     ) -> bool:

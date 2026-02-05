@@ -316,7 +316,7 @@ def create_token_manager_from_env() -> Optional[TokenManager]:
     if tenant_id:
         tenant_id = tenant_id.split(" #")[0].strip()
 
-    if not all([client_id, client_secret, tenant_id]):
+    if not client_id or not client_secret or not tenant_id:
         logger.debug("Service Principal credentials not fully configured")
         return None
 
