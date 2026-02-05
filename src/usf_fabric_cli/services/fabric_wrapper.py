@@ -606,7 +606,11 @@ class FabricCLIWrapper:
         return self._execute_command(command)
 
     def create_lakehouse(
-        self, workspace_name: str, name: str, description: str = "", folder: Optional[str] = None
+        self,
+        workspace_name: str,
+        name: str,
+        description: str = "",
+        folder: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create lakehouse"""
         if folder:
@@ -651,7 +655,11 @@ class FabricCLIWrapper:
             return self._execute_command(command, check_existence=True)
 
     def create_warehouse(
-        self, workspace_name: str, name: str, description: str = "", folder: Optional[str] = None
+        self,
+        workspace_name: str,
+        name: str,
+        description: str = "",
+        folder: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create warehouse"""
         if folder:
@@ -696,7 +704,11 @@ class FabricCLIWrapper:
             return self._execute_command(command, check_existence=True)
 
     def create_notebook(
-        self, workspace_name: str, name: str, file_path: Optional[str] = None, folder: Optional[str] = None
+        self,
+        workspace_name: str,
+        name: str,
+        file_path: Optional[str] = None,
+        folder: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create notebook"""
         if folder:
@@ -736,7 +748,11 @@ class FabricCLIWrapper:
             return self._execute_command(command, check_existence=True)
 
     def create_pipeline(
-        self, workspace_name: str, name: str, description: str = "", folder: Optional[str] = None
+        self,
+        workspace_name: str,
+        name: str,
+        description: str = "",
+        folder: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create data pipeline"""
         if folder:
@@ -781,7 +797,11 @@ class FabricCLIWrapper:
             return self._execute_command(command, check_existence=True)
 
     def create_semantic_model(
-        self, workspace_name: str, name: str, description: str = "", folder: Optional[str] = None
+        self,
+        workspace_name: str,
+        name: str,
+        description: str = "",
+        folder: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create semantic model"""
         if folder:

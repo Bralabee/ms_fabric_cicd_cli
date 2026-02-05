@@ -497,7 +497,10 @@ class FabricGitAPI:
         """
         url = f"{self.base_url}/workspaces/{workspace_id}/git/commitToGit"
 
-        request_body: Dict[str, Any] = {"mode": "Selective" if items else "All", "message": message}
+        request_body: Dict[str, Any] = {
+            "mode": "Selective" if items else "All",
+            "message": message,
+        }
 
         if items:
             request_body["items"] = items
