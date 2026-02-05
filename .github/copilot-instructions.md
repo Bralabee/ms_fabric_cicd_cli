@@ -2,7 +2,7 @@
 
 Enterprise Microsoft Fabric deployment automation using a **thin wrapper architecture** around official Fabric CLI (~1,150 LOC wrapper with 90% CLI delegation).
 
-**Current Version**: 1.6.2 (February 2026)
+**Current Version**: 1.6.3 (February 2026)
 
 ## 📏 Development Standards
 

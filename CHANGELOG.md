@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.3] - 2026-02-05
+
+### Added
+
+- **Interactive Architecture Page** (`/architecture`): New technical deep-dive page in the webapp showcasing:
+  - **Onboarding Flow Diagram**: Interactive 5-step visualization of the `make onboard` workflow with hover-to-expand details for each stage (Config Generation → Git Branch → Workspace Provisioning → Git Connection → Initial Sync).
+  - **GitHub Gap Comparison Table**: Side-by-side comparison of Fabric CLI (Native) vs. REST API capabilities, highlighting the project's middleware solution for GitHub integration.
+  - **Git-Centric CI/CD vs. Deployment Pipelines**: Tabbed comparison explaining both lifecycle management approaches.
+  - **Key Components Grid**: Visual cards documenting `onboard.py`, `FabricGitAPI`, `GitFabricIntegration`, and `FabricDeployer` orchestration roles.
+- **Navigation Update**: Added "Architecture" link to the webapp header navigation.
+
+### Documentation
+
+- Updated Knowledge Item `HS2 Microsoft Fabric Platform Ecosystem` to v1.6.8 referencing the Interactive Architecture Guide.
+
 ## [1.6.2] - 2026-02-05
 
 ### Fixed

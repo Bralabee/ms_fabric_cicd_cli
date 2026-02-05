@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Search, Home, BookOpen, Github, Workflow } from 'lucide-react'
+import { Search, Home, BookOpen, Github, Workflow, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useState } from 'react'
@@ -32,7 +32,7 @@ export default function Layout() {
                 Fabric CLI Guide
               </span>
             </Link>
-            
+
             <nav className="hidden md:flex items-center gap-4">
               <Link to="/">
                 <Button
@@ -50,6 +50,15 @@ export default function Layout() {
                 >
                   <Workflow className="h-4 w-4 mr-2" />
                   Workflows
+                </Button>
+              </Link>
+              <Link to="/architecture">
+                <Button
+                  variant={location.pathname === '/architecture' ? 'secondary' : 'ghost'}
+                  size="sm"
+                >
+                  <Layers className="h-4 w-4 mr-2" />
+                  Architecture
                 </Button>
               </Link>
               <Link to="/search">
@@ -78,7 +87,7 @@ export default function Layout() {
                 />
               </div>
             </form>
-            
+
             <a
               href="https://github.com/your-org/usf_fabric_cli_cicd"
               target="_blank"
