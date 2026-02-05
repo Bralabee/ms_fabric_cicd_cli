@@ -8,7 +8,7 @@ workspace:
   display_name: "Time-Series & Operational Analytics"
   description: "High-performance platform for time-series data and operational intelligence"
   capacity_id: "${FABRIC_CAPACITY_ID}"
-  domain: "${OPERATIONS_DOMAIN}"
+  domain: "${FABRIC_DOMAIN_NAME}"
   
   # Git Integration
   git_repo: "${GIT_REPO_URL}"

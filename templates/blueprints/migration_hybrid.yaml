@@ -8,7 +8,7 @@ workspace:
   display_name: "Hybrid Migration & Integration Platform"
   description: "Bridge between legacy systems and modern cloud analytics"
   capacity_id: "${FABRIC_CAPACITY_ID}"
-  domain: "${MIGRATION_DOMAIN}"
+  domain: "${FABRIC_DOMAIN_NAME}"
   
   # Git Integration
   git_repo: "${GIT_REPO_URL}"

@@ -74,6 +74,11 @@ deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env
 	fi
 	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy $(config) --env $(env)
 
+onboard: ## Onboard a new project (Usage: make onboard org="Org" project="Proj")
+	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
+	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
+	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion)
+
 destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml)
 	@if [ -z "$(config)" ]; then \
 	echo "\033[31mError: 'config' argument is missing.\033[0m"; \

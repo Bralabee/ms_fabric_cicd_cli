@@ -75,30 +75,52 @@ class GitFabricIntegration:
             return {"success": False, "error": f"Error validating branch: {str(e)}"}
 
     def create_feature_branch(
-        self, branch_name: str, base_branch: str = "main"
+        self, branch_name: str, base_branch: str = "main", push_to_remote: bool = False
     ) -> Dict[str, Any]:
-        """Create and checkout a feature branch"""
+        """
+        Create and checkout a feature branch.
+        Handles checking out existing branches gracefully.
+        """
         if not self.repo:
             return {"success": False, "error": "Repository not initialized"}
 
         try:
-            # Ensure we're on the base branch and it's up to date
-            self.repo.git.checkout(base_branch)
+            # Fetch latest
+            try:
+                self.repo.git.fetch("origin")
+            except Exception as fetch_err:
+                logger.warning(f"Git fetch warning: {fetch_err}")
 
-            # Try to pull latest changes
+            # Check if branch exists
+            if branch_name in self.repo.heads:
+                logger.info(f"Branch '{branch_name}' exists. Checking out...")
+                self.repo.heads[branch_name].checkout()
+                return {
+                    "success": True,
+                    "branch_name": branch_name,
+                    "message": f"Checked out existing branch: {branch_name}",
+                }
+
+            # Create new branch from base
+            logger.info(f"Creating new branch '{branch_name}' from '{base_branch}'...")
+            self.repo.git.checkout(base_branch)
             try:
                 self.repo.git.pull("origin", base_branch)
-            except Exception as e:
-                logger.warning(f"Could not pull latest changes: {e}")
+            except Exception:
+                pass  # Ignore pull errors if remote is unreachable
 
-            # Create and checkout new branch
             new_branch = self.repo.create_head(branch_name)
             new_branch.checkout()
+
+            if push_to_remote:
+                logger.info(f"Pushing branch '{branch_name}' to remote...")
+                self.repo.git.push("--set-upstream", "origin", branch_name)
 
             return {
                 "success": True,
                 "branch_name": branch_name,
                 "base_branch": base_branch,
+                "pushed": push_to_remote,
                 "message": f"Created and checked out branch: {branch_name}",
             }
 

@@ -311,7 +311,7 @@ steps:
       Adding principal: guid4 (Contributor)
     tips:
       - Great for "bulk" assignment from a single AD group variable
-      - Works with mixed IDs too: "guid1,guid2"
+      - "Works with mixed IDs too: guid1,guid2"
 
   - id: cli-not-found
     title: "Error: fabric-cicd Command Not Found"

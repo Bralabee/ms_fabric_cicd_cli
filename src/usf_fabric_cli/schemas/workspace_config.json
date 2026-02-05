@@ -6,31 +6,63 @@
     "workspace": {
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "display_name": { "type": "string" },
-        "description": { "type": "string" },
-        "domain": { "type": "string" },
-        "capacity_id": { "type": "string" },
-        "git_repo": { "type": "string" },
-        "git_branch": { "type": "string" },
-        "git_directory": { "type": "string" }
+        "name": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "domain": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capacity_id": {
+          "type": "string"
+        },
+        "git_repo": {
+          "type": "string"
+        },
+        "git_branch": {
+          "type": "string"
+        },
+        "git_directory": {
+          "type": "string"
+        }
       },
-      "required": ["name", "capacity_id"]
+      "required": [
+        "name",
+        "capacity_id"
+      ]
     },
     "folders": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string"
+      }
     },
     "lakehouses": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "folder": { "type": "string" },
-          "description": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
         },
-        "required": ["name"]
+        "required": [
+          "name"
+        ]
       }
     },
     "warehouses": {
@@ -38,11 +70,19 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "folder": { "type": "string" },
-          "description": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
         },
-        "required": ["name"]
+        "required": [
+          "name"
+        ]
       }
     },
     "notebooks": {
@@ -50,12 +90,22 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "folder": { "type": "string" },
-          "description": { "type": "string" },
-          "file_path": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "file_path": {
+            "type": "string"
+          }
         },
-        "required": ["name"]
+        "required": [
+          "name"
+        ]
       }
     },
     "pipelines": {
@@ -63,11 +113,19 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "folder": { "type": "string" },
-          "description": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
         },
-        "required": ["name"]
+        "required": [
+          "name"
+        ]
       }
     },
     "semantic_models": {
@@ -75,11 +133,19 @@
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "folder": { "type": "string" },
-          "description": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
         },
-        "required": ["name"]
+        "required": [
+          "name"
+        ]
       }
     },
     "principals": {
@@ -87,10 +153,16 @@
       "items": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "role": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
         },
-        "required": ["id"]
+        "required": [
+          "id"
+        ]
       }
     },
     "resources": {
@@ -99,13 +171,25 @@
       "items": {
         "type": "object",
         "properties": {
-          "type": { "type": "string", "description": "The Fabric item type (e.g. Eventstream, KQLDatabase)" },
-          "name": { "type": "string" },
-          "description": { "type": "string" }
+          "type": {
+            "type": "string",
+            "description": "The Fabric item type (e.g. Eventstream, KQLDatabase)"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
         },
-        "required": ["type", "name"]
+        "required": [
+          "type",
+          "name"
+        ]
       }
     }
   },
-  "required": ["workspace"]
+  "required": [
+    "workspace"
+  ]
 }

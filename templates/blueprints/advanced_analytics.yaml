@@ -6,6 +6,7 @@ workspace:
   display_name: "Advanced Analytics & Data Science"
   description: "Workspace for ML, AI, and advanced analytics"
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
+  domain: "${FABRIC_DOMAIN_NAME}"       # Optional: Assign to a Fabric Domain
   
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
@@ -93,13 +94,13 @@ pipelines:
 # Team access
 # IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
 principals:
-  - id: "${TEMPLATE_DS_TEAM_EMAIL}"
+  - id: "${TEMPLATE_DS_TEAM_OID}"
     role: "Admin"
   
-  - id: "${TEMPLATE_ANALYTICS_TEAM_EMAIL}"
+  - id: "${TEMPLATE_ANALYTICS_TEAM_OID}"
     role: "Contributor"
   
-  - id: "${TEMPLATE_BUSINESS_ANALYSTS_EMAIL}"
+  - id: "${TEMPLATE_BUSINESS_ANALYSTS_OID}"
     role: "Viewer"
   
   # ML automation service principal

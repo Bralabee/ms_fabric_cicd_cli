@@ -8,10 +8,10 @@ workspace:
   display_name: "Sales Domain - Data Product"
   description: "Domain-owned data product: Sales analytics and customer insights"
   capacity_id: "${FABRIC_CAPACITY_ID}"
-  domain: "Sales"  # CRITICAL: Assign to Fabric Domain for governance
+  domain: "${FABRIC_DOMAIN_NAME}"  # CRITICAL: Assign to Fabric Domain for governance
   
   # Git Integration (Per-domain repository)
-  git_repo: "${SALES_DOMAIN_REPO_URL}"
+  git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
   git_directory: "/sales-data-product"
 

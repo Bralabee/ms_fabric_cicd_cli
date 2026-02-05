@@ -12,7 +12,7 @@ from app.models import Scenario, ScenarioSummary, Category
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ScenarioSummary])
+@router.get("", response_model=List[ScenarioSummary])
 async def list_scenarios(
     request: Request,
     category: Optional[str] = None,

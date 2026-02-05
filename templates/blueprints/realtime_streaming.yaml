@@ -7,7 +7,7 @@ workspace:
   display_name: "Real-Time Streaming Hub"
   description: "High-throughput streaming data platform with real-time analytics and alerting"
   capacity_id: "${FABRIC_CAPACITY_ID}"
-  domain: "${FABRIC_DOMAIN}"  # Optional: Assign to specific domain
+  domain: "${FABRIC_DOMAIN_NAME}"  # Optional: Assign to specific domain
   
   # Git Integration (Optional)
   git_repo: "${GIT_REPO_URL}"

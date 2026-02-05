@@ -8,7 +8,7 @@ workspace:
   display_name: "Compliance & Regulated Data Platform"
   description: "Enterprise-grade platform with compliance controls and audit trails"
   capacity_id: "${FABRIC_CAPACITY_ID}"
-  domain: "${COMPLIANCE_DOMAIN}"  # Assign to compliance-governed domain
+  domain: "${FABRIC_DOMAIN_NAME}"  # Assign to compliance-governed domain
   
   # Git Integration (REQUIRED for audit trail)
   git_repo: "${GIT_REPO_URL}"

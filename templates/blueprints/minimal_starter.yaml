@@ -7,6 +7,7 @@ workspace:
   display_name: "Starter Project"
   description: "Minimal workspace for quick data exploration and prototyping"
   capacity_id: "${FABRIC_CAPACITY_ID}"
+  # domain: "${FABRIC_DOMAIN_NAME}"  # Optional: Assign to a Fabric Domain
   
   # No Git integration by default (can be added later)
   # git_repo: "${GIT_REPO_URL}"

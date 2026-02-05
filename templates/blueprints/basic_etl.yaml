@@ -6,6 +6,7 @@ workspace:
   display_name: "Analytics Workspace"
   description: "ETL workspace for data analytics"
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
+  domain: "${FABRIC_DOMAIN_NAME}"       # Optional: Assign to a Fabric Domain
   
   # Git integration (optional)
   git_repo: "${GIT_REPO_URL}"  # Environment variable substitution

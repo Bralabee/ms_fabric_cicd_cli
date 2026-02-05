@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2026-02-05
+
+### Added
+
+- **Unified Onboarding Automation**: New `make onboard` command for one-click project setup.
+  - Orchestrates: Config Generation -> Git Feature Branch Creation -> Workspace Deployment.
+  - Usage: `make onboard org="Org" project="Proj" template=medallion`
+- **Medallion Blueprint**: New `medallion.yaml` template implementing industry-standard Bronze/Silver/Gold architecture.
+  - Includes `lh_bronze`, `lh_silver`, `lh_gold` lakehouses and associated notebooks.
+- **Git Integration Improvements**:
+  - `GitFabricIntegration.create_feature_branch` logic activated and refined.
+  - Robust handling for existing branches during onboarding.
+  - Fixed `workspace_config.json` schema to allow `null` values for `domain`, resolving validation errors during automated onboarding.
+  - **Blueprint Standardization**:
+    - Universal `domain` support added to all 10 blueprints (using `${FABRIC_DOMAIN_NAME}`).
+    - Security hardening: Enforced Object ID (`_OID`) placeholders for principals in `advanced_analytics` and `data_science` templates (replacing email placeholders).
+
+### Fixed
+
+- **Webapp Loading**: Resolved infinite 307 Redirect loop on Home Page caused by trailing slash mismatch in FastAPI router (`/api/scenarios` vs `/api/scenarios/`).
+
+### Changed
+
+- **Documentation**: Updated README to feature the accelerated onboarding workflow.
+
 ## [1.5.1] - 2026-02-02
 
 ### Fixed

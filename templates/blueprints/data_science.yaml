@@ -6,6 +6,7 @@ workspace:
   display_name: "Data Science Laboratory"
   description: "Experimental workspace for data science research"
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
+  domain: "${FABRIC_DOMAIN_NAME}"       # Optional: Assign to a Fabric Domain
   
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
@@ -50,10 +51,10 @@ notebooks:
 # Research team access
 # IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
 principals:
-  - id: "${TEMPLATE_LEAD_DS_EMAIL}"
+  - id: "${TEMPLATE_LEAD_DS_OID}"
     role: "Admin"
   
-  - id: "${TEMPLATE_RESEARCH_TEAM_EMAIL}"
+  - id: "${TEMPLATE_RESEARCH_TEAM_OID}"
     role: "Contributor"
 
   # Mandatory Security Principals

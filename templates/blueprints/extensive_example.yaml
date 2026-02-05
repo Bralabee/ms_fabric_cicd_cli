@@ -6,7 +6,7 @@ workspace:
   display_name: "Enterprise Analytics Hub"
   description: "Centralized analytics platform for cross-functional data products."
   capacity_id: "${FABRIC_CAPACITY_ID}" # Use environment variable for portability
-  domain: "Finance" # Assign to a specific Fabric Domain (if configured)
+  domain: "${FABRIC_DOMAIN_NAME}" # Assign to a specific Fabric Domain (if configured)
   
   # Git Integration (Optional)
   # Connects the workspace to a specific Git repository and branch for version control.

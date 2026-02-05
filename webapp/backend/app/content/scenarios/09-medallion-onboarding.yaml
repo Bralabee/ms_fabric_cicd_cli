@@ -1,0 +1,165 @@
+# Medallion Architecture & Unified Onboarding Scenario
+# Comprehensive walkthrough of the 1-click onboarding using Medallion Architecture
+
+id: medallion-onboarding
+title: Unified Onboarding with Medallion Architecture
+description: |
+  Master the "Unified Onboarding" workflow (`make onboard`) to deploy a production-ready Medallion Architecture 
+  (Bronze/Silver/Gold) in minutes. This scenario covers the 1-click automation, Git feature branch integration, 
+  and the critical security prerequisites for a seamless Developer Experience (DX).
+difficulty: intermediate
+estimated_duration_minutes: 20
+category: advanced-workflows
+order: 9
+
+prerequisites:
+  - "Fabric CLI installed and configured"
+  - "GitHub Token (GITHUB_TOKEN) in .env with Write permissions"
+  - "Fabric Capacity ID (F2+)"
+
+learning_outcomes:
+  - "Execute the `make onboard` command for 1-click project setup"
+  - "Understand the Medallion Architecture blueprint (Bronze/Silver/Gold)"
+  - "Configure Git credentials correctly (`GITHUB_TOKEN` vs PAT)"
+  - "Manage Monorepo workflows with automated feature branching"
+  - "Troubleshoot common propagation latency issues"
+
+tags:
+  - onboarding
+  - medallion
+  - automation
+  - git-integration
+  - monorepo
+
+related_scenarios:
+  - project-generation
+  - git-integration
+
+steps:
+  - id: concept-medallion
+    title: "Concept: The Medallion Architecture"
+    type: info
+    content: |
+      The **Medallion Architecture** is the industry standard for data engineering in Fabric.
+      
+      ## The Three Layers
+      
+      | Layer | Name | Purpose | Fabric Item |
+      |-------|------|---------|-------------|
+      | **Bronze** | Raw Zone | Ingest raw data as-is (immutable) | Lakehouse (`lh_bronze`) |
+      | **Silver** | Enriched Zone | Clean, deduplicated, validated data | Lakehouse (`lh_silver`) |
+      | **Gold** | Curated Zone | Star schemas for reporting/BI | Lakehouse (`lh_gold`) |
+      
+      Our `medallion.yaml` blueprint automates the creation of all these layers, plus:
+      *   **Notebooks**: Transformation logic between layers (`ingest_to_bronze`, `bronze_to_silver`).
+      *   **Pipelines**: Orchestration (`marketing_data_refresh`).
+      *   **Security**: Pre-configured admin/contributor access.
+      
+    tips:
+      - "Using standard layers ensures data quality and auditability."
+      - "Each layer is isolated in its own Lakehouse (best practice)."
+
+  - id: prerequisites-check
+    title: "Step 1: Critical Git Prerequisites"
+    type: config
+    content: |
+      Unified Onboarding **requires** a seamless connection to your Git repository.
+      
+      ## 1. Monorepo vs Multi-repo
+      This automation assumes a **Monorepo** or **Shared Repository** model. 
+      *   It creates a **Feature Branch** in your *existing* repo.
+      *   It does **NOT** create a brand new repository for every project.
+      
+      ## 2. Credentials (`GITHUB_TOKEN`)
+      You must provide a Personal Access Token (PAT) with **Repo** and **Workflow** scopes.
+      
+      **Why?** The automation pushes the new branch to GitHub *before* connecting Fabric.
+      
+      ### .env Configuration
+      ```bash
+      # MUST have 'repo' scope
+      GITHUB_TOKEN=ghp_your_token_here_12345
+      
+      # URL of THIS repository (the one you are running from)
+      GIT_REPO_URL=https://github.com/YourOrg/your-repo.git
+      ```
+    code:
+      language: bash
+      content: |
+        # Verify your token is set
+        grep "GITHUB_TOKEN" .env
+        
+        # Verify git remote is correct
+        git remote -v
+    tips:
+      - "If authentication fails, check if your token has expired."
+      - "Ensure the user associated with the token has WRITE access to the repo."
+    warnings:
+      - "Using a read-only token will cause the `git push` step to fail."
+
+  - id: run-onboarding
+    title: "Step 2: Execute Unified Onboarding"
+    type: command
+    content: |
+      Run the `make onboard` command to trigger the automation. 
+      
+      ## Command Structure
+      ```bash
+      make onboard org="<Org>" project="<Project>" template=<Template>
+      ```
+      
+      ## What Happens Automatically?
+      1.  **Config**: Generates `config/projects/org/project.yaml` from the `medallion` blueprint.
+      2.  **Git**: Creates branch `feature/project` and **pushes it to origin**.
+      3.  **Fabric**: Deploys the workspace and **connects it to the specific Git branch**.
+      
+      Let's run a dry-run first to see the plan.
+    code:
+      language: bash
+      content: |
+        # Dry Run (Safe)
+        make onboard org="Acme" project="Sales-Data" template=medallion --dry-run
+        
+        # Live Deployment (Provisions Resources)
+        make onboard org="Acme" project="Sales-Data" template=medallion
+    expected_output: |
+      🚀 Starting onboarding for Acme / Sales-Data
+      📋 Template: medallion
+      
+      [1/3] Generating Configuration...
+      ✅ Generated configuration: config/projects/acme/sales-data.yaml
+      
+      [2/3] Initializing Git Feature Branch...
+      ✅ On branch: feature/sales-data
+      ☁️  Pushing branch to remote...
+      ✅ Branch pushed to origin
+      
+      [3/3] Deploying Fabric Workspace...
+      ✅ Fabric token generated successfully
+      Creating branch-specific workspace: acme-sales-data-feature-sales-data
+      ...
+      ✅ Deployment completed successfully!
+    tips:
+      - "The `--dry-run` flag is your best friend. Use it to validate config before deploying."
+      - "The workspace name includes the feature branch to allow parallel development."
+
+  - id: verify-deployment
+    title: "Step 3: Verify & Troubleshoot"
+    type: info
+    content: |
+      After deployment, verify the resources in Fabric.
+      
+      ## Known Issue: Propagation Latency
+      You might see "NotFound" errors during the initial item creation (e.g., creating Lakehouses).
+      
+      **Cause**: Fabric's ID resolution layer sometimes lags behind the creation API.
+      
+      **Solution**:
+      1.  **Self-Correction**: The script retries automatically.
+      2.  **Git Sync**: Since the workspace is connected to Git, any missing items can be synced directly from the Fabric UI by clicking "Update from Git".
+      
+    content_markdown: |
+      ### Successful State
+      *   Workspace: `Acme-Sales-Data...`
+      *   Git Status: **Synced**
+      *   Items: `lh_bronze`, `lh_silver`, `lh_gold` present.

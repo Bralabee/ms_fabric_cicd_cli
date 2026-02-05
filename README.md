@@ -54,16 +54,24 @@ cp .env.template .env
 #   FABRIC_TOKEN          - Direct token (optional, auto-generated from SP)
 #   AZURE_KEYVAULT_URL    - Azure Key Vault URL (optional, for production)
 
-### 2. Azure DevOps Integration (Prerequisites)
+```
+
+### Prerequisites
+
+- **Fabric Capacity**: An active Microsoft Fabric capacity (F2 or higher).
+- **Service Principal**: An Azure Service Principal with `Contributor` access to your Fabric capacity.
+- **GitHub Token**: A GitHub Personal Access Token (PAT) with `repo` scope, set as `GITHUB_TOKEN` in `.env`.
+- **Python**: Python 3.9+ installed.
 
 If using Azure DevOps with a Service Principal, ensure the following:
 
-1.  **Service Principal Access Level**: The Service Principal must have **Basic** access level in Azure DevOps Organization Settings -> Users.
-2.  **Project Permissions**: The Service Principal must be added to the **Contributors** group of the target Azure DevOps Project.
-3.  **Fabric Tenant Settings**: Enable "Service principals can use Fabric APIs" and "Service principals can create workspaces" in Fabric Admin Portal.
-4.  **Workspace Admin**: The Service Principal must be assigned the **Admin** role in the workspace configuration (`project.yaml`).
+1. **Service Principal Access Level**: The Service Principal must have **Basic** access level in Azure DevOps Organization Settings -> Users.
+2. **Project Permissions**: The Service Principal must be added to the **Contributors** group of the target Azure DevOps Project.
+3. **Fabric Tenant Settings**: Enable "Service principals can use Fabric APIs" and "Service principals can create workspaces" in Fabric Admin Portal.
+4. **Workspace Admin**: The Service Principal must be assigned the **Admin** role in the workspace configuration (`project.yaml`).
 
 ### 3. Configure Your Project
+
 ```
 
 ### 3. End-to-End Workflow (From Scratch)
@@ -89,6 +97,7 @@ python scripts/dev/generate_project.py "HealthCo" "Patient Platform" --template 
 
 **Step 2: Initialize Azure DevOps Repository**
 Create the backing Git repository for your new project.
+
 ```bash
 python scripts/admin/utilities/init_ado_repo.py \
   --organization "your-ado-org" \
@@ -99,6 +108,7 @@ python scripts/admin/utilities/init_ado_repo.py \
 
 **Step 3: Update Configuration**
 Edit the generated YAML file to point to your new repository.
+
 ```yaml
 git:
   repository: "contoso-finance-repo"
@@ -106,30 +116,53 @@ git:
 
 **Step 4: Deploy**
 Run the deployment command.
+
 ```bash
 make deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev
 ```
+
+### 3b. Accelerated "One-Click" Onboarding
+
+For a seamless experience, use the new unified `onboard` command which handles config generation, git branching, and deployment in one step:
+
+```bash
+# Standard Medallion Architecture Onboarding
+make onboard org="Contoso Inc" project="Finance Analytics" template=medallion
+
+# Custom Template Onboarding
+make onboard org="TechCorp" project="IoT Platform" template=realtime_streaming
+```
+
+The `onboard` command will:
+
+1. Generate the project configuration.
+2. Create and checkout a standardized feature branch (e.g., `feature/finance-analytics`).
+3. Deploy the workspace to the development environment.
 
 ### 4. Docker-Based Workflow
 
 You can run the entire workflow inside a Docker container to ensure a consistent environment.
 
 **Step 1: Build the Docker Image**
+
 ```bash
 make docker-build
 ```
 
 **Step 2: Generate Project Configuration (in Docker)**
+
 ```bash
 make docker-generate org="Contoso Inc" project="Finance Analytics" template=basic_etl
 ```
 
 **Step 3: Initialize Azure DevOps Repository (in Docker)**
+
 ```bash
 make docker-init-repo org="your-ado-org" project="your-ado-project" repo="contoso-finance-repo"
 ```
 
 **Step 4: Deploy (in Docker)**
+
 ```bash
 make docker-deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev ENVFILE=.env
 ```
@@ -165,6 +198,7 @@ make deploy config=config/projects/your_org/your_project.yaml env=dev
 |--------|-------------|---------|
 | `validate` | Validate config file syntax | `make validate config=path/to/config.yaml` |
 | `diagnose` | Run pre-flight system checks | `make diagnose` |
+| `onboard` | **NEW** Unified onboarding (Config+Branch+Deploy) | `make onboard org="Org" project="Proj"` |
 | `deploy` | Deploy workspace from config | `make deploy config=path/to/config.yaml env=dev` |
 | `destroy` | Destroy workspace from config | `make destroy config=path/to/config.yaml` |
 | `bulk-destroy` | Bulk delete workspaces from list | `make bulk-destroy file=list.txt` |
@@ -202,7 +236,6 @@ python -m usf_fabric_cli.cli deploy CONFIG [OPTIONS]
 | `--validate-only` | | Validate config without deploying |
 | `--diagnose` | | Run diagnostics before deployment |
 
-
 ### Destroy Command
 
 ```bash
@@ -232,13 +265,16 @@ make dev      # Start both servers (backend: 8001, frontend: 5173)
 ```
 
 ### Features
+
 - **Visual Workflow Diagrams**: Interactive flowcharts showing deployment processes step-by-step
 - **8 Comprehensive Scenarios**: Getting Started, Project Generation, Local/Docker Deployment, Feature Branches, Git Integration, Environment Promotion, Troubleshooting
 - **Progress Tracking**: Track your learning progress through each guide
 - **Code Snippets with Copy**: Easily copy commands and configurations
 
 ### Azure Deployment
+
 Deploy the webapp to Azure Container Apps:
+
 ```bash
 cd webapp
 make deploy-azure        # Full deployment
@@ -252,6 +288,7 @@ See [webapp/README.md](webapp/README.md) for detailed documentation.
 The framework includes several utility scripts in `scripts/admin/utilities/` to assist with setup and troubleshooting. These scripts automatically load credentials from your `.env` file.
 
 ### Initialize Azure DevOps Repository
+
 Initializes an empty Azure DevOps repository with a `main` branch. This is required because Fabric Git integration fails if the target repository is completely empty (0 branches).
 
 ```bash
@@ -262,6 +299,7 @@ python scripts/admin/utilities/init_ado_repo.py \
 ```
 
 ### Debug Azure DevOps Access
+
 Verifies that your Service Principal has the correct permissions to access Azure DevOps.
 
 ```bash
@@ -271,6 +309,7 @@ python scripts/admin/utilities/debug_ado_access.py \
 ```
 
 ### Debug Git Connection
+
 Tests the connection to a Git repository using the configured credentials.
 
 ```bash
@@ -281,6 +320,7 @@ python scripts/admin/utilities/debug_connection.py \
 ```
 
 ### List Workspace Items
+
 Lists all items in a specified Fabric workspace to verify deployment.
 
 ```bash
@@ -368,6 +408,7 @@ pytest --cov=src
 ## CI/CD Integration
 
 GitHub Actions workflows included for:
+
 - Automated testing
 - Environment promotion (dev → staging → prod)
 - Feature branch deployments
@@ -378,6 +419,7 @@ GitHub Actions workflows included for:
 ## Features
 
 ### Core Capabilities
+
 - ✅ Workspace creation and management
 - ✅ Folder structure (Bronze/Silver/Gold medallion) with item placement
 - ✅ Item creation (Lakehouses, Warehouses, Notebooks, Pipelines)
@@ -390,6 +432,7 @@ GitHub Actions workflows included for:
 - ✅ Configuration validation
 
 ### Advanced Features
+
 - ✅ Feature branch workflows
 - ✅ Capacity management
 - ✅ Template-based deployments
