@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.2] - 2026-02-05
+
+### Fixed
+
+- **Type Safety**: Comprehensive Mypy fixes across core services:
+  - Updated `FabricCLIWrapper`, `FabricDeployer`, `AuditLogger` to correctly handle `Optional[str]` types.
+  - Fixed dataclass `WorkspaceConfig` using `Optional[List[...]]` instead of `List[...] = None`.
+  - Added explicit type narrowing for `ClientSecretCredential` arguments.
+  - Re-exported retry utilities (`is_retryable_error`, `calculate_backoff`, `retry_with_backoff`) from `fabric_wrapper.py` for backwards compatibility.
+- **CI Pipeline**:
+  - Added `types-requests` to `requirements.txt` for Mypy stub support.
+  - Fixed `test_config.py` tests to skip env validation (tests config loading, not credentials).
+  - Wrapped long function signatures to comply with 88-char line limit (flake8 E501).
+  - Added missing `Optional` import to `audit.py`.
+
+### Maintenance
+
+- All 140 unit tests now pass in CI without credentials.
+- Flake8, Black, and Mypy checks all pass locally.
+
 ## [1.6.1] - 2026-02-05
 
 ### Maintenance (Clean Code Initiative)
