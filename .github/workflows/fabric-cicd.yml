@@ -47,7 +47,7 @@ jobs:
     
     - name: Run linting
       run: |
-        pip install flake8 black mypy
+        # Dependencies installed via requirements.txt
         echo "Running flake8..."
         # Uses .flake8 config at root
         flake8 src/ --count --show-source --statistics
