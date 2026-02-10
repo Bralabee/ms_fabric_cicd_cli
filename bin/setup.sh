@@ -36,7 +36,7 @@ fi
 mkdir -p audit_logs
 
 echo "🔍 Running Fabric CLI preflight checks..."
-conda run -n fabric-cli-cicd python scripts/preflight_check.py --auto-install --skip-env-check
+conda run -n fabric-cli-cicd python scripts/admin/preflight_check.py --auto-install --skip-env-check
 
 echo ""
 echo "🎉 Setup complete! Next steps:"
