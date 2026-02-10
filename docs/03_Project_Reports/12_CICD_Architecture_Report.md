@@ -185,7 +185,7 @@ All project documentation has been updated to reflect v1.7.0:
 |:---|:---|
 | `CHANGELOG.md` | Added v1.7.0 entry with all 3 phases |
 | `README.md` | Updated version, onboarding section, project structure, CI/CD workflows, CLI flags, features |
-| `docs/AI_AGENT_CONTEXT.md` | Added main-centric workflow, deployment pipeline promotion, updated directory structure |
+| `docs/02_Strategy_and_Architecture/02_AI_Agent_Context.md` | Added main-centric workflow, deployment pipeline promotion, updated directory structure |
 | `.github/copilot-instructions.md` | Updated version, added `deployment_pipeline.py`, updated common pitfalls, added promotion docs |
 
 ---

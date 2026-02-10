@@ -320,7 +320,7 @@ All notable changes to this project will be documented in this file.
   - `data_mesh_domain.yaml` - Domain-driven data ownership (6.4KB)
   - `migration_hybrid.yaml` - Cloud migration with mirrored databases (8.2KB)
   - `specialized_timeseries.yaml` - Time-series/APM/operational intelligence (8.5KB)
-- **Blueprint Documentation**: Comprehensive `docs/BLUEPRINT_CATALOG.md` (11K+ lines) with:
+- **Blueprint Documentation**: Comprehensive `docs/01_User_Guides/07_Blueprint_Catalog.md` (11K+ lines) with:
   - Quick reference table (cost estimates, complexity, min capacity)
   - Detailed feature breakdowns for all 10 templates
   - Decision tree for template selection

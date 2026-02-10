@@ -36,7 +36,7 @@ Successfully expanded the `usf_fabric_cli_cicd` framework from **4 to 11 product
 
 ### Comprehensive Documentation
 
-- **`docs/BLUEPRINT_CATALOG.md`** (11,000+ lines)
+- **`docs/01_User_Guides/07_Blueprint_Catalog.md`** (11,000+ lines)
   - Quick reference table (cost, complexity, capacity)
   - Detailed feature breakdowns
   - Decision tree for template selection
@@ -204,7 +204,7 @@ templates/blueprints/compliance_regulated.yaml        (6.2KB)
 templates/blueprints/data_mesh_domain.yaml            (6.4KB)
 templates/blueprints/migration_hybrid.yaml            (8.2KB)
 templates/blueprints/specialized_timeseries.yaml      (8.5KB)
-docs/BLUEPRINT_CATALOG.md                             (340KB)
+docs/01_User_Guides/07_Blueprint_Catalog.md                  (340KB)
 ```
 
 **Total New Content:** ~380KB
@@ -328,7 +328,7 @@ make deploy config=config/projects/legacycorp/cloud_migration.yaml env=test
 
 ### For Users Starting New Projects
 
-1. **Review `docs/BLUEPRINT_CATALOG.md`** decision tree
+1. **Review `docs/01_User_Guides/07_Blueprint_Catalog.md`** decision tree
 2. **Select closest-matching template**
 3. **Generate project config** with `generate_project.py`
 4. **Customize** environment-specific overrides
@@ -373,7 +373,7 @@ All templates are:
 ## Next Steps
 
 1. ✅ Templates created and committed (commit a4f7464)
-2. ✅ Documentation published (`docs/BLUEPRINT_CATALOG.md`)
+2. ✅ Documentation published (`docs/01_User_Guides/07_Blueprint_Catalog.md`)
 3. ✅ Generator updated with all templates
 4. ✅ Validation testing completed
 5. ⏳ Push to remaining remotes (authentication issues to resolve)

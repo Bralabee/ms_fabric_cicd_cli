@@ -733,7 +733,7 @@ fabric-cicd diagnose --check-capacity "${FABRIC_CAPACITY_ID}"
 ### Getting Help
 
 1. **Documentation:** See `docs/` folder for detailed guides
-2. **Troubleshooting:** See `docs/TROUBLESHOOTING.md`
+2. **Troubleshooting:** See [06_Troubleshooting.md](06_Troubleshooting.md)
 3. **Examples:** See `config/projects/` for working examples
 4. **Issues:** Open GitHub issue with template name and error details
 

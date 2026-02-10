@@ -13,6 +13,7 @@ Project configuration files are YAML documents that define what Fabric resources
 - **Environment overrides** - DEV/TEST/PROD-specific settings
 
 Without a valid configuration file, the CLI cannot deploy resources. Configuration files enable:
+
 - **Reproducible deployments** across environments
 - **Version-controlled infrastructure** via Git
 - **Standardized resource naming** across projects
@@ -80,7 +81,7 @@ The toolkit includes 10 pre-built blueprint templates for common use cases:
 | `hybrid_analytics` | Combined lakehouse and warehouse patterns | Lakehouse + Warehouse, Power BI integration |
 | `minimal` | Lightweight starter template | 1 Lakehouse, 1 Notebook, minimal configuration |
 
-> **Tip:** Review `docs/BLUEPRINT_CATALOG.md` for detailed descriptions of each template's resources and folder structures.
+> **Tip:** Review [07_Blueprint_Catalog.md](07_Blueprint_Catalog.md) for detailed descriptions of each template's resources and folder structures.
 
 ---
 
@@ -323,6 +324,7 @@ code .env
 ```
 
 Ensure these are set:
+
 - [ ] `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`
 - [ ] `FABRIC_CAPACITY_ID`
 - [ ] `ADDITIONAL_ADMIN_PRINCIPAL_ID`
@@ -345,6 +347,7 @@ python scripts/admin/preflight_check.py --auto-install
 ### 4. Review Generated Resources
 
 Open the YAML file and verify:
+
 - [ ] Workspace name follows your naming conventions
 - [ ] Correct number of lakehouses/warehouses
 - [ ] Notebook file paths exist (if using `file_path`)
@@ -496,4 +499,4 @@ environments:
 
 - **[04_Deployment_Guide.md](04_Deployment_Guide.md)** - Learn how to deploy configurations
 - **[05_Environment_Promotion.md](05_Environment_Promotion.md)** - DEV → TEST → PROD workflows
-- **[BLUEPRINT_CATALOG.md](../BLUEPRINT_CATALOG.md)** - Detailed template documentation
+- **[07_Blueprint_Catalog.md](07_Blueprint_Catalog.md)** - Detailed template documentation

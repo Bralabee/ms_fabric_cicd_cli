@@ -92,7 +92,7 @@ python scripts/dev/generate_project.py "TechCorp" "IoT Platform" --template real
 # Compliance-heavy (Healthcare, Finance, Government)
 python scripts/dev/generate_project.py "HealthCo" "Patient Platform" --template compliance_regulated
 
-# See all 10 templates: docs/BLUEPRINT_CATALOG.md
+# See all 11 templates: docs/01_User_Guides/07_Blueprint_Catalog.md
 # Output: config/projects/{org_name}/{project_name}.yaml
 ```
 
@@ -483,7 +483,7 @@ Content promotion follows the Microsoft-recommended **Option 3** pattern:
 | `GITHUB_TOKEN_FABRIC` | GitHub PAT for Git connections |
 | `FABRIC_PIPELINE_NAME` | Deployment pipeline display name |
 
-See [Blueprint Catalog](docs/BLUEPRINT_CATALOG.md) for configuration examples.
+See [Blueprint Catalog](docs/01_User_Guides/07_Blueprint_Catalog.md) for configuration examples.
 
 ## Features
 
