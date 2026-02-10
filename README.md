@@ -2,7 +2,7 @@
 
 Enterprise-grade Microsoft Fabric deployment automation leveraging the official Fabric CLI with 12-Factor App configuration management, Jinja2 artifact templating, and REST API Git integration. Designed for organization-agnostic operation with 85% code reduction from traditional enterprise frameworks.
 
-> **🎉 February 2026 Update:** Version **1.6.3** with unified onboarding automation, interactive architecture page, and full CI pipeline compliance. See [CHANGELOG.md](CHANGELOG.md) for details.
+> **🎉 February 2026 Update:** Version **1.7.0** — CI/CD architecture refactoring: main-centric Dev workspace, automated feature workspace lifecycle, and Fabric Deployment Pipeline integration for Dev→Test→Prod promotion. See [CHANGELOG.md](CHANGELOG.md) for details.
 
 > **🔄 Lightweight Successor:** This project is the modern replacement for [usf-fabric-cicd](../usf-fabric-cicd), reducing complexity by 85% while maintaining enterprise capabilities through a thin wrapper architecture around the official Fabric CLI.
 
@@ -13,7 +13,8 @@ Enterprise-grade Microsoft Fabric deployment automation leveraging the official 
 - **Artifact Templating**: Jinja2 engine for environment-specific artifact transformation
 - **Git Integration**: REST API-driven repository connections for Azure DevOps and GitHub
 - **Audit Compliance**: Structured JSONL logging for regulatory requirements
-- **Branch Isolation**: Feature branch workspaces for parallel development workflows  
+- **Branch Isolation**: CI/CD-managed feature workspaces (auto-create on push, auto-destroy on merge)
+- **Deployment Pipelines**: Fabric Deployment Pipeline integration for stage promotion (Dev→Test→Prod)
 
 ## Architecture
 
@@ -95,27 +96,51 @@ python scripts/dev/generate_project.py "HealthCo" "Patient Platform" --template 
 # Output: config/projects/{org_name}/{project_name}.yaml
 ```
 
-**Step 2: Initialize Azure DevOps Repository**
-Create the backing Git repository for your new project.
+**Step 2: Initialize Git Repository**
+
+Two approaches are available — choose based on your team's needs:
+
+| Mode | Description | Best For |
+|------|-------------|----------|
+| **Shared Repo** (default) | All projects connect to `GIT_REPO_URL` from `.env` | Monorepo / single codebase |
+| **Isolated Repo** | Auto-creates a per-project repo (GitHub or ADO) | Per-project CI/CD isolation |
+
+**Option A: Shared Repo (default)**
+
+Set `GIT_REPO_URL` in `.env` and onboard normally — all workspaces connect to that single repo:
 
 ```bash
+make onboard org="Contoso Inc" project="Finance Analytics"
+```
+
+**Option B: Isolated Repo (auto-created)**
+
+Pass `--create-repo` to auto-create a dedicated project repo:
+
+```bash
+# GitHub (default provider)
+make onboard-isolated org="Contoso" project="Finance" git_owner="MyGitHubOrg"
+
+# Azure DevOps
+make onboard-isolated org="Contoso" project="Finance" \
+  git_owner="my-ado-org" git_provider=ado ado_project="MyAdoProject"
+```
+
+Or use the standalone repo init commands directly:
+
+```bash
+# GitHub
+make init-github-repo git_owner="MyGitHubOrg" repo="contoso-finance"
+
+# Azure DevOps
 python scripts/admin/utilities/init_ado_repo.py \
   --organization "your-ado-org" \
   --project "your-ado-project" \
-  --repository "contoso-finance-repo" \
+  --repository "contoso-finance" \
   --branch "main"
 ```
 
-**Step 3: Update Configuration**
-Edit the generated YAML file to point to your new repository.
-
-```yaml
-git:
-  repository: "contoso-finance-repo"
-```
-
-**Step 4: Deploy**
-Run the deployment command.
+**Step 3: Deploy**
 
 ```bash
 make deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev
@@ -123,21 +148,26 @@ make deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev
 
 ### 3b. Accelerated "One-Click" Onboarding
 
-For a seamless experience, use the new unified `onboard` command which handles config generation, git branching, and deployment in one step:
-
 ```bash
-# Standard Medallion Architecture Onboarding
+# Shared repo (default — uses GIT_REPO_URL from .env)
 make onboard org="Contoso Inc" project="Finance Analytics" template=medallion
 
-# Custom Template Onboarding
-make onboard org="TechCorp" project="IoT Platform" template=realtime_streaming
+# Isolated repo (auto-creates GitHub repo)
+make onboard-isolated org="Contoso" project="Finance" git_owner="MyOrg"
+
+# Feature workspace (isolated dev branch)
+make feature-workspace org="TechCorp" project="IoT Platform"
 ```
 
-The `onboard` command will:
+The **default `onboard`** command will:
 
 1. Generate the project configuration.
-2. Create and checkout a standardized feature branch (e.g., `feature/finance-analytics`).
-3. Deploy the workspace to the development environment.
+2. Deploy the Dev workspace connected to the `main` branch.
+
+The **`feature-workspace`** command additionally:
+
+1. Creates and checks out a standardized feature branch (e.g., `feature/iot-platform`).
+2. Creates an isolated workspace connected to that feature branch.
 
 ### 4. Docker-Based Workflow
 
@@ -179,7 +209,7 @@ make validate config=config/projects/your_org/your_project.yaml
 make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
 
-## Make Targets Reference (21 Available)
+## Make Targets Reference (24 Available)
 
 ### Local Development
 
@@ -191,6 +221,7 @@ make deploy config=config/projects/your_org/your_project.yaml env=dev
 | `test-integration` | Run integration tests (requires credentials) | `make test-integration` |
 | `lint` | Format and lint code | `make lint` |
 | `clean` | Remove cache files | `make clean` |
+| `help` | Show all available targets | `make help` |
 
 ### Local Operations
 
@@ -198,7 +229,8 @@ make deploy config=config/projects/your_org/your_project.yaml env=dev
 |--------|-------------|---------|
 | `validate` | Validate config file syntax | `make validate config=path/to/config.yaml` |
 | `diagnose` | Run pre-flight system checks | `make diagnose` |
-| `onboard` | **NEW** Unified onboarding (Config+Branch+Deploy) | `make onboard org="Org" project="Proj"` |
+| `onboard` | Dev workspace on main (Config+Deploy) | `make onboard org="Org" project="Proj"` |
+| `feature-workspace` | Isolated feature workspace with branch | `make feature-workspace org="Org" project="Proj"` |
 | `deploy` | Deploy workspace from config | `make deploy config=path/to/config.yaml env=dev` |
 | `destroy` | Destroy workspace from config | `make destroy config=path/to/config.yaml` |
 | `bulk-destroy` | Bulk delete workspaces from list | `make bulk-destroy file=list.txt` |
@@ -246,6 +278,20 @@ python -m usf_fabric_cli.cli destroy CONFIG [OPTIONS]
 |------|-------|-------------|
 | `--env` | `-e` | Target environment (dev/staging/prod) |
 | `--force` | `-f` | Skip confirmation prompt |
+| `--workspace-name-override` | | Override workspace name (e.g., for branch-specific cleanup) |
+
+### Promote Command
+
+```bash
+python -m usf_fabric_cli.cli promote [OPTIONS]
+```
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--pipeline-name` | `-p` | Fabric Deployment Pipeline display name |
+| `--source-stage` | `-s` | Source stage name (default: Development) |
+| `--target-stage` | `-t` | Target stage name (auto-inferred if omitted) |
+| `--note` | `-n` | Deployment note / description |
 
 ## Interactive Learning Guide
 
@@ -337,11 +383,12 @@ src/
 │   ├── exceptions.py        # Exception hierarchy
 │   ├── commands/            # CLI subcommands (future modularization)
 │   ├── services/
-│   │   ├── fabric_wrapper.py    # Fabric CLI wrapper with version validation
-│   │   ├── fabric_git_api.py    # REST API client for Git integration
-│   │   ├── git_integration.py   # Git synchronization logic
-│   │   ├── token_manager.py     # Azure AD token refresh for long deployments
-│   │   └── deployment_state.py  # Atomic rollback state management
+│   │   ├── fabric_wrapper.py       # Fabric CLI wrapper with version validation
+│   │   ├── fabric_git_api.py       # REST API client for Git integration
+│   │   ├── git_integration.py      # Git synchronization logic
+│   │   ├── token_manager.py        # Azure AD token refresh for long deployments
+│   │   ├── deployment_state.py     # Atomic rollback state management
+│   │   └── deployment_pipeline.py  # Fabric Deployment Pipelines REST API client
 │   ├── utils/
 │   │   ├── secrets.py       # 12-Factor App secret management
 │   │   ├── config.py        # YAML configuration management
@@ -362,7 +409,8 @@ config/
     ├── dev.yaml
     ├── staging.yaml
     ├── test.yaml
-    └── prod.yaml
+    ├── prod.yaml
+    └── feature_workspace.json  # Feature workspace recipe & lifecycle policies
 
 templates/
 └── blueprints/            # 10 production-ready templates
@@ -383,7 +431,8 @@ scripts/
 │   ├── preflight_check.py # Environment validation
 │   └── utilities/         # Helper utilities
 ├── dev/                   # Developer workflow scripts
-│   └── generate_project.py  # Project scaffolding
+│   ├── generate_project.py  # Project scaffolding
+│   └── onboard.py           # Unified onboarding (main-centric + feature)
 ```
 
 ## Total LOC: ~4,100 (thin wrapper architecture vs original monolithic 1,830)
@@ -409,12 +458,32 @@ pytest --cov=src
 
 GitHub Actions workflows included for:
 
-- Automated testing
-- Environment promotion (dev → staging → prod)
-- Feature branch deployments
-- Principal management
+| Workflow | Trigger | Purpose |
+|:---|:---|:---|
+| `fabric-cicd.yml` | Push/PR to `main` | Validation, linting, and testing |
+| `feature-workspace-create.yml` | Push to `feature/*` | Auto-create Fabric workspace for feature branch |
+| `feature-workspace-cleanup.yml` | PR merge / branch delete | Auto-destroy feature workspace |
+| `deploy-to-fabric.yml` | Push to `main` / manual | Promote content via Deployment Pipeline (Dev→Test→Prod) |
 
-**Important:** For CI/CD pipelines to function, you must configure the required secrets (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) in your GitHub repository settings. See [Blueprint Catalog](docs/BLUEPRINT_CATALOG.md) for configuration examples.
+### Deployment Pipeline Promotion
+
+Content promotion follows the Microsoft-recommended **Option 3** pattern:
+
+1. **Automatic:** Push to `main` → Dev workspace syncs via Git → auto-promote Dev→Test
+2. **Manual:** `workflow_dispatch` with approval gate for Test→Prod promotions
+
+**Required GitHub Secrets:**
+
+| Secret | Purpose |
+|:---|:---|
+| `AZURE_TENANT_ID` | Azure AD tenant |
+| `AZURE_CLIENT_ID` | Service Principal app ID |
+| `AZURE_CLIENT_SECRET` | Service Principal secret |
+| `FABRIC_CAPACITY_ID` | Fabric capacity for workspace creation |
+| `GITHUB_TOKEN_FABRIC` | GitHub PAT for Git connections |
+| `FABRIC_PIPELINE_NAME` | Deployment pipeline display name |
+
+See [Blueprint Catalog](docs/BLUEPRINT_CATALOG.md) for configuration examples.
 
 ## Features
 
@@ -433,7 +502,8 @@ GitHub Actions workflows included for:
 
 ### Advanced Features
 
-- ✅ Feature branch workflows
+- ✅ Feature branch workflows (CI/CD-managed lifecycle)
+- ✅ **Fabric Deployment Pipelines** (Dev→Test→Prod promotion)
 - ✅ Capacity management
 - ✅ Template-based deployments
 - ✅ Error diagnostics and remediation

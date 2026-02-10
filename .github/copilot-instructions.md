@@ -2,7 +2,7 @@
 
 Enterprise Microsoft Fabric deployment automation using a **thin wrapper architecture** around official Fabric CLI (~1,150 LOC wrapper with 90% CLI delegation).
 
-**Current Version**: 1.6.3 (February 2026)
+**Current Version**: 1.7.0 (February 2026)
 
 ## 📏 Development Standards
 
@@ -23,11 +23,12 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
 ```
 
 **Core Components** (`src/usf_fabric_cli/`):
-- `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate commands)
+- `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate/promote commands)
 - `fabric_wrapper.py`: Thin abstraction over `fabric` CLI subprocess calls. **Supports generic item creation** via `create_item` for 54+ Fabric item types.
 - `config.py`: YAML config loader with env-specific overrides + Jinja2 variable substitution
 - `secrets.py`: Waterfall credential management (Env Vars → .env → Azure Key Vault)
 - `git_integration.py`: Git connection automation via REST API (not CLI)
+- `deployment_pipeline.py`: Fabric Deployment Pipelines REST API client (Dev→Test→Prod)
 - `templating.py`: Jinja2 sandboxed engine for artifact transformation
 - `audit.py`: Structured JSONL logging to `audit_logs/` for compliance
 - `telemetry.py`: Lightweight usage tracking (optional)
@@ -35,7 +36,7 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
 
 ### Organization-Agnostic Design
 All configurations use **environment variable substitution** (`${VAR_NAME}`). No hardcoded organization names.  
-Template blueprints in `templates/blueprints/*.yaml` are customized via `scripts/generate_project.py`.
+Template blueprints in `templates/blueprints/*.yaml` are customized via `scripts/dev/generate_project.py`.
 
 ## 🔐 Secret Management (CRITICAL)
 
@@ -78,18 +79,23 @@ conda env list  # Should show * next to fabric-cli-cicd
 # 1. Generate project config from template
 # Available templates: basic_etl, advanced_analytics, realtime_streaming, compliance_regulated, etc.
 # See docs/BLUEPRINT_CATALOG.md for full list.
-python scripts/generate_project.py "Acme Corp" "Sales Analytics" --template realtime_streaming
+python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" --template realtime_streaming
 # Output: config/projects/acme_corp/sales_analytics.yaml
 
-# 2. Initialize Azure DevOps repo (if using Git integration)
-python scripts/utilities/init_ado_repo.py \
+# 2. One-Click Onboard (preferred — generates config + deploys in one step)
+make onboard org="Acme Corp" project="Sales Analytics" template=realtime_streaming
+
+# 2b. Isolated repo mode (auto-creates a per-project GitHub repo)
+make onboard-isolated org="Acme Corp" project="Sales" git_owner="MyGitHubOrg"
+
+# 2c. Standalone repo init (GitHub or ADO)
+make init-github-repo git_owner="MyOrg" repo="acme-sales"
+python scripts/admin/utilities/init_ado_repo.py \
   --organization "your-ado-org" \
   --project "FabricProjects" \
   --repository "acme-sales-repo"
 
-# 3. Update generated YAML with repo URL (edit config manually or via script)
-
-# 4. Deploy via Makefile (preferred) or direct CLI
+# 3. Deploy via Makefile (preferred) or direct CLI
 make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
 # OR: python -m usf_fabric_cli.cli deploy config/projects/.../sales_analytics.yaml --env dev
 ```
@@ -103,7 +109,7 @@ make test  # OR: pytest -m "not integration"
 make test-integration  # OR: pytest tests/integration -m integration
 
 # Pre-flight diagnostics (check CLI version, credentials, capacity access)
-python scripts/preflight_check.py --auto-install
+python scripts/admin/preflight_check.py --auto-install
 ```
 
 ### Docker Workflow
@@ -118,10 +124,10 @@ make docker-deploy config=config/projects/.../project.yaml env=dev ENVFILE=.env
 
 ### Debugging Failed Deployments
 1. **Check audit logs**: `audit_logs/fabric_operations_YYYY-MM-DD.jsonl` (structured JSON)
-2. **Run diagnostics**: `python scripts/preflight_check.py` (validates CLI, credentials, capacity)
+2. **Run diagnostics**: `python scripts/admin/preflight_check.py` (validates CLI, credentials, capacity)
 3. **Validate config**: `make validate config=path/to/config.yaml` (schema + env var check)
-4. **Check Git connectivity**: `python scripts/utilities/debug_ado_access.py --organization X --project Y`
-5. **List workspace items**: `python scripts/utilities/list_workspace_items.py --workspace "workspace-name"`
+4. **Check Git connectivity**: `python scripts/admin/utilities/debug_ado_access.py --organization X --project Y`
+5. **List workspace items**: `python scripts/admin/utilities/list_workspace_items.py --workspace "workspace-name"`
 
 ## 📝 Configuration Patterns
 
@@ -130,7 +136,7 @@ make docker-deploy config=config/projects/.../project.yaml env=dev ENVFILE=.env
 workspace:
   name: "acme-sales-analytics"  # Workspace name (becomes DNS-safe slug)
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Env var substitution
-  git_repo: "${GIT_REPO_URL}"  # Optional: Azure DevOps or GitHub repo
+  git_repo: "${GIT_REPO_URL}"  # Shared repo (from .env), or auto-set by --create-repo
   git_branch: "main"
 
 # Generic Resource Definition (supports all Fabric item types)
@@ -203,7 +209,7 @@ Service Principal must have:
 ### Error Handling
 - **Custom Exceptions**: `src/usf_fabric_cli/exceptions.py` (`FabricCLIError`, `FabricCLINotFoundError`)
 - **Idempotency**: All operations check existence before creation (avoid "already exists" errors)
-- **Retry Logic**: Not implemented - rely on Fabric CLI's built-in retries
+- **Retry Logic**: Implemented in `src/usf_fabric_cli/utils/retry.py` (exponential backoff with jitter, decorator pattern, HTTP retry helper)
 
 ### Logging
 - **Standard Library**: Use `logging` module (not `print()`)
@@ -219,13 +225,13 @@ Service Principal must have:
 1. **Not Using Conda Environment**: ALWAYS run `conda activate fabric-cli-cicd` before any Python operations. Check with `conda env list` to verify.
 2. **Entry Point Not Available**: Run `make install` or `pip install -e .` to enable the `fabric-cicd` command (alternative: use `python -m usf_fabric_cli.cli`)
 3. **Service Principal Permissions**: Most deployment failures = missing SP permissions (workspace admin, ADO contributor)
-4. **Capacity Exhausted**: F2 (trial) has low limits. Use `scripts/utilities/list_workspaces.py` to audit capacity usage
-5. **Git Branch Workspaces**: Feature branches auto-create workspaces like `main-workspace-feature-123`. Clean up manually if branch deleted.
+4. **Capacity Exhausted**: F2 (trial) has low limits. Use `scripts/admin/utilities/list_workspaces.py` to audit capacity usage
+5. **Git Branch Workspaces**: Feature workspaces are now CI/CD-managed (auto-created/destroyed by GitHub Actions). Manual cleanup only needed if workflows fail.
 6. **Template Undefined Variables**: Jinja2 `StrictUndefined` mode raises errors. Check `templating.py` rendering context.
 
 ## 📦 Packaging & Distribution
 
-- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.3.1-py3-none-any.whl`
+- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.7.0-py3-none-any.whl`
 - **Entry Point**: `pyproject.toml` defines `fabric-cicd` command → `usf_fabric_cli.cli:app`
 - **Docker Image**: `Dockerfile` installs wheel + Fabric CLI, runs as non-root user
 
@@ -269,7 +275,7 @@ Scenario YAML files in `webapp/backend/app/content/scenarios/`:
 
 ## 📚 Key Documentation Files
 
-- **README.md**: Quick start, Make Targets Reference (17 targets), CLI Flags Reference
+- **README.md**: Quick start, Make Targets Reference (24 targets), CLI Flags Reference
 - **docs/01_User_Guides/03_Project_Configuration.md**: Comprehensive project config generation guide
 - **docs/BLUEPRINT_CATALOG.md**: All 10 blueprint templates with selection guidance
 - **.env.template**: Environment variable template with Azure credential structure
@@ -295,6 +301,24 @@ Located in `config/environments/`:
 - `test.yaml` - Test/UAT settings (F8/F16 capacity, QA team access)
 - `staging.yaml` - Pre-production settings (production-like)
 - `prod.yaml` - Production settings (F32/F64 capacity, strict access)
+- `feature_workspace.json` - Feature workspace recipe & lifecycle policies
+
+### CI/CD Deployment Pipeline Promotion
+
+Content promotion follows the Microsoft-recommended **Option 3** pattern:
+
+1. **Git Sync** → Dev workspace syncs automatically from `main`
+2. **Auto Dev→Test** → On push to `main`, GitHub Actions promotes via Fabric Deployment Pipeline
+3. **Manual Test→Prod** → `workflow_dispatch` with approval gate
+
+**CLI Promote Command:**
+```bash
+# Promote Dev → Test (auto-infers next stage)
+python -m usf_fabric_cli.cli promote --pipeline-name "MyPipeline" --source-stage Development
+
+# Promote to specific stage
+python -m usf_fabric_cli.cli promote --pipeline-name "MyPipeline" -s Test -t Production
+```
 
 ### Source Repointing Mechanisms
 1. **Environment Variable Substitution** (`${VAR_NAME}`):

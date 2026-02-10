@@ -10,7 +10,6 @@ Tests verify:
 
 from unittest.mock import patch, MagicMock
 import pytest
-import requests
 
 from usf_fabric_cli.services.fabric_git_api import (
     FabricGitAPI,

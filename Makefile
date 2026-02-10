@@ -8,7 +8,7 @@ PYTEST := pytest
 CONDA_ENV := fabric-cli-cicd
 CONDA_ACTIVATE := source ~/miniconda3/etc/profile.d/conda.sh && conda activate $(CONDA_ENV)
 
-.PHONY: help install test lint clean validate deploy destroy bulk-destroy check-env
+.PHONY: help install test lint clean validate deploy destroy bulk-destroy check-env feature-workspace
 
 # Check if conda environment is active
 check-env:
@@ -74,10 +74,28 @@ deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env
 	fi
 	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy $(config) --env $(env)
 
-onboard: ## Onboard a new project (Usage: make onboard org="Org" project="Proj")
+onboard: ## Full bootstrap: Dev+Test+Prod + Pipeline (Usage: make onboard org="Org" project="Proj" [stages="dev,test,prod"])
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
-	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion)
+	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) $(if $(stages),--stages $(stages),)
+
+onboard-isolated: ## Bootstrap with auto-created project repo (Usage: make onboard-isolated org="Org" project="Proj" git_owner="Owner")
+	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
+	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
+	@if [ -z "$(git_owner)" ]; then echo "Error: 'git_owner' argument is missing."; exit 1; fi
+	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
+		--create-repo --git-provider $(or $(git_provider),github) --git-owner "$(git_owner)" \
+		$(if $(ado_project),--ado-project "$(ado_project)",) $(if $(stages),--stages $(stages),)
+
+init-github-repo: ## Create & initialize a GitHub repo (Usage: make init-github-repo git_owner="Owner" repo="Repo")
+	@if [ -z "$(git_owner)" ]; then echo "Error: 'git_owner' argument is missing."; exit 1; fi
+	@if [ -z "$(repo)" ]; then echo "Error: 'repo' argument is missing."; exit 1; fi
+	$(PYTHON) scripts/admin/utilities/init_github_repo.py --owner "$(git_owner)" --repo "$(repo)" $(if $(branch),--branch $(branch),)
+
+feature-workspace: ## Create isolated feature workspace (Usage: make feature-workspace org="Org" project="Proj")
+	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
+	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
+	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
 
 destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml)
 	@if [ -z "$(config)" ]; then \

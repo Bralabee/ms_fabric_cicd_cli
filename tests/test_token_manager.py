@@ -9,7 +9,7 @@ Tests verify:
 """
 
 from datetime import datetime, timezone, timedelta
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock
 import pytest
 
 
@@ -74,7 +74,7 @@ class TestTokenManager:
         """Test TokenManager initializes with ClientSecretCredential."""
         from usf_fabric_cli.services.token_manager import TokenManager
 
-        manager = TokenManager(
+        TokenManager(
             client_id="client-123",
             client_secret="secret-456",
             tenant_id="tenant-789",
@@ -125,7 +125,7 @@ class TestTokenManager:
         )
 
         # Second call - should refresh
-        token = manager.get_token()
+        manager.get_token()
 
         assert mock_credential.get_token.call_count == 2
 

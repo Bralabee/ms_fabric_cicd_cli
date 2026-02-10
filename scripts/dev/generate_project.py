@@ -37,6 +37,24 @@ def generate_project_config(
     if git_repo:
         config["workspace"]["git_repo"] = git_repo
 
+    # Add deployment pipeline configuration (Microsoft convention naming)
+    config["deployment_pipeline"] = {
+        "pipeline_name": f"{org_name}-{project_name} Pipeline",
+        "stages": {
+            "development": {
+                "workspace_name": workspace_name,
+            },
+            "test": {
+                "workspace_name": f"{workspace_name} [Test]",
+                "capacity_id": "${TEST_CAPACITY_ID:-${FABRIC_CAPACITY_ID}}",
+            },
+            "production": {
+                "workspace_name": f"{workspace_name} [Production]",
+                "capacity_id": "${PROD_CAPACITY_ID:-${FABRIC_CAPACITY_ID}}",
+            },
+        },
+    }
+
     # Update principals with organization domain
     if "principals" in config:
         org_domain = f"{org_name.lower().replace(' ', '')}.com"
@@ -56,7 +74,7 @@ def generate_project_config(
         yaml.dump(config, f, default_flow_style=False, indent=2)
 
     print(f"✅ Generated configuration: {output_path}")
-    print(f"📝 Next steps:")
+    print("📝 Next steps:")
     print(f"   1. Review and edit {output_path}")
     print(f"   2. Validate: make validate config={output_path}")
     print(f"   3. Deploy: make deploy config={output_path} env=dev")

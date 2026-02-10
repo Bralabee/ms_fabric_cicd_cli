@@ -174,6 +174,11 @@ def destroy(
     force: bool = typer.Option(
         False, "--force", "-f", help="Force deletion without confirmation"
     ),
+    workspace_name_override: Optional[str] = typer.Option(
+        None,
+        "--workspace-name-override",
+        help="Override workspace name (e.g. for branch-specific feature workspaces)",
+    ),
 ):
     """Destroy Fabric workspace based on configuration"""
 
@@ -181,7 +186,7 @@ def destroy(
         config_manager = ConfigManager(config)
         workspace_config = config_manager.load_config(environment)
 
-        workspace_name = workspace_config.name
+        workspace_name = workspace_name_override or workspace_config.name
 
         if not force:
             confirm = typer.confirm(
@@ -208,6 +213,76 @@ def destroy(
 
     except Exception as e:
         console.print(f"[red]Destroy failed: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def promote(
+    pipeline_name: str = typer.Option(
+        ..., "--pipeline-name", "-p", help="Fabric Deployment Pipeline display name"
+    ),
+    source_stage: str = typer.Option(
+        "Development",
+        "--source-stage",
+        "-s",
+        help="Source stage to promote from (Development/Test)",
+    ),
+    target_stage: Optional[str] = typer.Option(
+        None,
+        "--target-stage",
+        "-t",
+        help="Target stage to promote to (auto-inferred if omitted)",
+    ),
+    note: str = typer.Option(
+        "",
+        "--note",
+        "-n",
+        help="Deployment note",
+    ),
+):
+    """Promote content through Fabric Deployment Pipeline stages (Dev → Test → Prod)"""
+
+    try:
+        from usf_fabric_cli.services.deployment_pipeline import (
+            FabricDeploymentPipelineAPI,
+            DeploymentStage,
+        )
+
+        env_vars = get_environment_variables(validate_vars=True)
+
+        api = FabricDeploymentPipelineAPI(access_token=env_vars["FABRIC_TOKEN"])
+
+        pipeline = api.get_pipeline_by_name(pipeline_name)
+        if not pipeline:
+            console.print(f"[red]❌ Pipeline '{pipeline_name}' not found[/red]")
+            raise typer.Exit(1)
+
+        display_target = target_stage or DeploymentStage.next_stage(source_stage)
+        console.print(
+            f"[blue]🚀 Promoting: {source_stage} → {display_target}[/blue]"
+        )
+
+        result = api.promote(
+            pipeline_id=pipeline["id"],
+            source_stage_name=source_stage,
+            target_stage_name=target_stage,
+            note=note,
+            wait=True,
+        )
+
+        if result["success"]:
+            console.print(
+                f"[green]✅ Promotion succeeded: {source_stage} → "
+                f"{display_target}[/green]"
+            )
+        else:
+            console.print(
+                f"[red]❌ Promotion failed: {result.get('error', 'unknown')}[/red]"
+            )
+            raise typer.Exit(1)
+
+    except Exception as e:
+        console.print(f"[red]Promote failed: {e}[/red]")
         raise typer.Exit(1)
 
 

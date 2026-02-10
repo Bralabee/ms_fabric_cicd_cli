@@ -4,7 +4,6 @@ Unit tests for templating engine
 
 import json
 import pytest
-from pathlib import Path
 
 from usf_fabric_cli.utils.templating import (
     ArtifactTemplateEngine,
@@ -105,7 +104,10 @@ class TestArtifactTemplateEngine:
 
     def test_extract_template_variables(self):
         """Test extracting variable names from templates"""
-        template = "Hello {{ name }}, your env is {{ environment }} with capacity {{ capacity_id }}"
+        template = (
+            "Hello {{ name }}, your env is {{ environment }}"
+            " with capacity {{ capacity_id }}"
+        )
 
         variables = ArtifactTemplateEngine.extract_template_variables(template)
 

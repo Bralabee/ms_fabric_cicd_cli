@@ -4,8 +4,7 @@ Unit tests for secrets management module
 
 import os
 import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from usf_fabric_cli.utils.secrets import (
     FabricSecrets,
@@ -114,7 +113,7 @@ class TestFabricSecrets:
     @patch.dict(os.environ, {"CI": "true"})
     def test_load_with_fallback_ci_environment(self):
         """Test loading in CI environment"""
-        secrets = FabricSecrets.load_with_fallback()
+        FabricSecrets.load_with_fallback()
 
         # Should detect CI environment
         assert os.getenv("CI") == "true"

@@ -7,7 +7,7 @@ import tempfile
 import yaml
 from pathlib import Path
 
-from usf_fabric_cli.utils.config import ConfigManager, WorkspaceConfig
+from usf_fabric_cli.utils.config import ConfigManager
 
 
 def test_load_basic_config():
