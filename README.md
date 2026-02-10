@@ -184,7 +184,7 @@ make validate config=config/projects/your_org/your_project.yaml
 make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
 
-## Make Targets Reference (21 Available)
+## Make Targets Reference (24 Available)
 
 ### Local Development
 
@@ -196,6 +196,7 @@ make deploy config=config/projects/your_org/your_project.yaml env=dev
 | `test-integration` | Run integration tests (requires credentials) | `make test-integration` |
 | `lint` | Format and lint code | `make lint` |
 | `clean` | Remove cache files | `make clean` |
+| `help` | Show all available targets | `make help` |
 
 ### Local Operations
 

@@ -222,7 +222,7 @@ python scripts/admin/utilities/debug_ado_access.py --organization your-org --pro
 
 ---
 
-### 6. Docker Build Failures
+### 8. Docker Build Failures
 
 **Symptom**:
 
@@ -263,7 +263,7 @@ docker run --rm fabric-cli-cicd fab --version
 
 ---
 
-### 7. Configuration Validation Errors
+### 9. Configuration Validation Errors
 
 **Symptom**:
 
@@ -310,7 +310,7 @@ cp templates/blueprints/basic_etl.yaml config/projects/myorg/myproject.yaml
 
 ---
 
-### 8. Git Integration Failures
+### 10. Git Integration Failures
 
 **Symptom**:
 
@@ -363,7 +363,7 @@ python scripts/admin/utilities/init_ado_repo.py \
 
 ---
 
-### 9. Capacity Issues
+### 11. Capacity Issues
 
 **Symptom**:
 
@@ -406,7 +406,7 @@ environments:
 
 ---
 
-### 10. Template Rendering Errors
+### 12. Template Rendering Errors
 
 **Symptom**:
 
