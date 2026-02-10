@@ -7,10 +7,12 @@ This guide outlines the **"Data Product Factory"** workflow using the `usf_fabri
 **Target Audience:** Data Platform Engineers, Analytics Engineers, and DevOps Leads.
 
 **Key Capabilities Demonstrated:**
-*   **Zero-Touch Provisioning:** Creating workspaces via CLI/API without manual portal interaction.
-*   **Git-First Governance:** Automatically binding Fabric workspaces to specific Git repositories and branches.
-*   **Environment Isolation:** Seamlessly spinning up ephemeral "Feature Workspaces" for safe development.
-*   **Standardization:** Enforcing folder structures and naming conventions via configuration templates.
+
+* **Zero-Touch Provisioning:** Creating workspaces via CLI/API without manual portal interaction.
+* **Git-First Governance:** Automatically binding Fabric workspaces to specific Git repositories and branches.
+* **Environment Isolation:** Seamlessly spinning up ephemeral "Feature Workspaces" for safe development.
+* **Dual-Mode Git:** Using a shared repository (default) or auto-creating an isolated per-project repo (`--create-repo`).
+* **Standardization:** Enforcing folder structures and naming conventions via configuration templates.
 
 ---
 
@@ -18,15 +20,15 @@ This guide outlines the **"Data Product Factory"** workflow using the `usf_fabri
 
 Before executing the workflows in this guide, ensure the following requirements are met:
 
-*   **Environment:**
-    *   Access to a Linux/WSL terminal with Python 3.11+.
-    *   The `fabric-cli-cicd` Conda environment is active.
-*   **Credentials:**
-    *   A `.env` file configured with your Service Principal credentials (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`).
-    *   A valid **Fabric Capacity ID** (F-SKU or Trial).
-*   **Version Control:**
-    *   A target Git repository (Azure DevOps or GitHub) initialized and accessible.
-    *   Permissions to create branches and push code.
+* **Environment:**
+  * Access to a Linux/WSL terminal with Python 3.11+.
+  * The `fabric-cli-cicd` Conda environment is active.
+* **Credentials:**
+  * A `.env` file configured with your Service Principal credentials (`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`).
+  * A valid **Fabric Capacity ID** (F-SKU or Trial).
+* **Version Control:**
+  * A target Git repository (Azure DevOps or GitHub) initialized and accessible.
+  * Permissions to create branches and push code.
 
 ---
 
@@ -58,6 +60,7 @@ The foundation of the factory is the **Configuration File**. This YAML file acts
 **Action:** Create a new file at `config/projects/sales_analytics/config.yaml`.
 
 **Content:**
+
 ```yaml
 project_name: "SalesAnalytics"
 
@@ -110,15 +113,17 @@ principals:
 This step fulfills the requirement to **automatically create a DEV workspace** and **link it to the MAIN Git repo**.
 
 **Command:**
+
 ```bash
 make deploy config=config/projects/sales_analytics/config.yaml env=dev
 ```
 
 **What Happens Behind the Scenes:**
-1.  **Authentication:** The CLI authenticates using the Service Principal.
-2.  **Idempotency Check:** It checks if `SalesAnalytics [DEV]` exists. If not, it creates it assigned to the specified Capacity.
-3.  **Git Binding:** It calls the Fabric REST API to connect the workspace to the `main` branch of your repository.
-4.  **Initialization:** It initializes the remote folder structure (`/sales-analytics-dev`) if it doesn't exist.
+
+1. **Authentication:** The CLI authenticates using the Service Principal.
+2. **Idempotency Check:** It checks if `SalesAnalytics [DEV]` exists. If not, it creates it assigned to the specified Capacity.
+3. **Git Binding:** It calls the Fabric REST API to connect the workspace to the `main` branch of your repository.
+4. **Initialization:** It initializes the remote folder structure (`/sales-analytics-dev`) if it doesn't exist.
 
 ---
 
@@ -127,25 +132,34 @@ make deploy config=config/projects/sales_analytics/config.yaml env=dev
 This phase demonstrates **Environment Isolation**. A developer needs to work on a new feature ("Feature 123") without risking the stability of the DEV environment.
 
 ### Step 3.1: Create the Feature Branch
-Use the tool's built-in Git manager to ensure the branch is created correctly locally.
+
+Use the Makefile target or standard Git to create the feature branch.
 
 **Command:**
+
 ```bash
-python -c "from src.core.git_integration import GitManager; GitManager('.').create_branch('feature/123')"
+# Recommended: use make target (creates branch + deploys workspace)
+make feature-workspace org="Acme Corp" project="Supply Chain"
+
+# Alternative: manual Git branch creation
+git checkout -b feature/123
 ```
 
 ### Step 3.2: Provision the Feature Workspace
+
 Deploy a dedicated workspace linked specifically to this new feature branch.
 
 **Command:**
+
 ```bash
 make docker-feature-deploy config=config/projects/sales_analytics/config.yaml env=dev branch=feature/123
 ```
 
 **Key Benefits:**
-*   **Isolation:** Changes in `SalesAnalytics [Feature 123]` do not affect `SalesAnalytics [DEV]`.
-*   **Traceability:** The workspace is explicitly named after the feature ticket.
-*   **Sync:** The workspace is pre-wired to the `feature/123` branch, enabling immediate commit/sync operations from the Fabric UI.
+
+* **Isolation:** Changes in `SalesAnalytics [Feature 123]` do not affect `SalesAnalytics [DEV]`.
+* **Traceability:** The workspace is explicitly named after the feature ticket.
+* **Sync:** The workspace is pre-wired to the `feature/123` branch, enabling immediate commit/sync operations from the Fabric UI.
 
 ---
 
@@ -156,6 +170,7 @@ To ensure that every environment looks the same, we use the **Templating Engine*
 **Action:** Validate that the workspace adheres to the defined template.
 
 **Command:**
+
 ```bash
 make validate config=config/projects/sales_analytics/config.yaml
 ```
@@ -169,18 +184,20 @@ make validate config=config/projects/sales_analytics/config.yaml
 To confirm the process was successful, perform the following checks:
 
 ### 7.1 Fabric Portal Check
-1.  Log in to Microsoft Fabric.
-2.  Navigate to **Workspaces**.
-3.  Verify two workspaces exist:
-    *   `SalesAnalytics [DEV]`
-    *   `SalesAnalytics [Feature 123]`
-4.  Open `SalesAnalytics [Feature 123]` -> **Workspace Settings** -> **Git Integration**.
-5.  Confirm it is **Connected** to branch `feature/123`.
+
+1. Log in to Microsoft Fabric.
+2. Navigate to **Workspaces**.
+3. Verify two workspaces exist:
+    * `SalesAnalytics [DEV]`
+    * `SalesAnalytics [Feature 123]`
+4. Open `SalesAnalytics [Feature 123]` -> **Workspace Settings** -> **Git Integration**.
+5. Confirm it is **Connected** to branch `feature/123`.
 
 ### 7.2 Repository Check
-1.  Navigate to your Git provider (Azure DevOps/GitHub).
-2.  Switch to branch `main`. Verify the folder `sales-analytics-dev` exists.
-3.  Switch to branch `feature/123`. Verify the folder `sales-analytics-feature-123` exists.
+
+1. Navigate to your Git provider (Azure DevOps/GitHub).
+2. Switch to branch `main`. Verify the folder `sales-analytics-dev` exists.
+3. Switch to branch `feature/123`. Verify the folder `sales-analytics-feature-123` exists.
 
 ---
 

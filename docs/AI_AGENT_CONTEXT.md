@@ -33,15 +33,16 @@ The project enforces strict coding standards to ensure maintainability and consi
 
 ## Critical Architectural Decisions
 
-### 1. Monorepo / Shared Repository
+### 1. Dual-Mode Git Repository
 
-* **Context**: The project creates workspaces based on **feature branches** in a shared Git repository (`GIT_REPO_URL`).
-* **Constraint**: It does *not* create new repos. It isolates work via branches (`feature/project-name`).
-* **Agent Rule**: When asked to "create a new project", assume a new *folder configuration* and *feature branch*, not a new Git repo.
+* **Shared Repo (default)**: All projects connect to a single `GIT_REPO_URL` from `.env`. Workspaces are isolated via branches (`feature/project-name`).
+* **Isolated Repo (opt-in)**: `--create-repo` flag auto-creates a per-project GitHub or ADO repo for full CI/CD isolation.
+* **Agent Rule**: When asked to "create a new project", use the default shared mode unless the user specifically requests an isolated repo.
 
 ### 2. Main-Centric Development (v1.7.0)
 
 * **Default**: `make onboard` creates a Dev workspace connected to `main` — no feature branch.
+* **Isolated**: `make onboard-isolated` creates a per-project repo and onboards to it.
 * **Opt-in**: `make feature-workspace` creates an isolated workspace on a new feature branch.
 * **CI/CD Lifecycle**: Feature workspaces are auto-created by GitHub Actions on `feature/*` push and auto-destroyed on PR merge.
 
@@ -78,6 +79,13 @@ Configuration is resolved in this strict order (managed by `ConfigManager`):
 2. Creates `feature/sales` branch locally + pushes to origin.
 3. Deploys isolated Fabric Workspace connected to the feature branch.
 
+**Isolated repo (opt-in)**: `make onboard-isolated org=Acme project=Sales git_owner=MyOrg`
+**Process**:
+
+1. Auto-creates a GitHub repo named `acme-sales`.
+2. Generates YAML config with new repo URL.
+3. Deploys Fabric Workspace connected to the new repo.
+
 ### 2. Deployment Pipeline Promotion (`promote` command)
 
 **Command**: `usf_fabric_cli promote --pipeline-name "MyPipeline" --source-stage Development`
@@ -104,7 +112,7 @@ Configuration is resolved in this strict order (managed by `ConfigManager`):
 * `src/usf_fabric_cli`: Core package.
   * `services/deployment_pipeline.py`: Fabric Deployment Pipelines REST API client.
 * `scripts/dev`: Developer tools (`generate_project.py`, `onboard.py`).
-* `scripts/admin`: Admin tools (`preflight_check.py`).
+* `scripts/admin`: Admin tools (`preflight_check.py`, `init_github_repo.py`, `init_ado_repo.py`).
 * `config/`: Usage configurations (ignored by git except templates).
 * `.github/workflows/`: CI/CD workflows (feature lifecycle, deployment pipeline promotion).
 * `webapp/`: Documentation/Dashboard frontend.

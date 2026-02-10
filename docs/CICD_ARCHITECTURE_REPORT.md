@@ -2,7 +2,7 @@
 
 > **Audience**: Stakeholders, Co-developers, and Contributors
 > **Date**: February 2026
-> **Branch**: `feature/cicd-main-centric`
+> **Branch**: `main` (merged from `feature/cicd-main-centric`)
 
 ---
 
@@ -154,10 +154,11 @@ flowchart LR
 | Check | Result |
 |:---|:---|
 | Existing tests (142) | ✅ All pass |
+| New deployment pipeline tests (23) | ✅ All pass |
 | New onboard tests (20) | ✅ All pass |
-| **Total** | **185 passed in 8.84s** |
+| **Total** | **185+ passed** |
 | Lint compliance (flake8) | ✅ Clean |
-| Branch | `feature/cicd-main-centric` |
+| Git Repo Isolation | ✅ `init_github_repo.py` + `--create-repo` flag verified |
 
 ---
 

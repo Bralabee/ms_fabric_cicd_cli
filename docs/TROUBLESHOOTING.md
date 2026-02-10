@@ -355,6 +355,10 @@ python scripts/admin/utilities/debug_ado_access.py \
 1. **Initialize repository first**:
 
 ```bash
+# GitHub
+make init-github-repo git_owner="your-org" repo="new-repo"
+
+# Azure DevOps
 python scripts/admin/utilities/init_ado_repo.py \
   --organization your-org \
   --project your-project \
