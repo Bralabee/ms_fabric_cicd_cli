@@ -1,0 +1,42 @@
+{
+    "naming_pattern": "{workspace_base_name}-{feature_name}",
+    "capacity_name": "${FABRIC_CAPACITY_NAME}",
+    "description": "Feature development workspace for branch: {branch_name}",
+    "git_settings": {
+        "gitProviderType": "GitHub",
+        "ownerName": "${GITHUB_OWNER}",
+        "repositoryName": "${GITHUB_REPO}"
+    },
+    "permissions": [
+        {
+            "principal_type": "ServicePrincipal",
+            "principal_id": "${AZURE_CLIENT_ID}",
+            "role": "Admin"
+        }
+    ],
+    "spark_settings": {
+        "automaticLog": {
+            "enabled": false
+        },
+        "pool": {
+            "type": "Workspace",
+            "name": "feature-pool",
+            "nodeFamily": "MemoryOptimized",
+            "nodeSize": "Small",
+            "autoScale": {
+                "enabled": true,
+                "minNodeCount": 1,
+                "maxNodeCount": 1
+            },
+            "dynamicExecutorAllocation": {
+                "enabled": false
+            }
+        }
+    },
+    "lifecycle": {
+        "create_on": "branch_push",
+        "destroy_on": "branch_merge",
+        "max_age_days": 30,
+        "notify_on_cleanup": true
+    }
+}

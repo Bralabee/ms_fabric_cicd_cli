@@ -1,0 +1,131 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Feature Workspace Cleanup — GitHub Actions Workflow
+#
+# Triggered when a PR to main is merged (and the feature branch is deleted).
+# Destroys the corresponding isolated Fabric workspace to free capacity.
+#
+# Ref: https://learn.microsoft.com/en-us/fabric/cicd/git-integration/manage-branches
+# Ref: https://peerinsights.emono.dk/automating-feature-workspace-maintainance-in-microsoft-fabric
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Cleanup Feature Workspace
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  delete:
+    # Triggered when a branch is deleted
+
+jobs:
+  cleanup-feature-workspace:
+    # Only run when a feature branch PR is merged or a feature branch is deleted
+    if: >
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true &&
+       startsWith(github.event.pull_request.head.ref, 'feature/')) ||
+      (github.event_name == 'delete' && github.event.ref_type == 'branch' &&
+       startsWith(github.event.ref, 'feature/'))
+    runs-on: ubuntu-latest
+
+    env:
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Extract branch info
+        id: branch
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          else
+            BRANCH_NAME="${{ github.event.ref }}"
+          fi
+          FEATURE_NAME="${BRANCH_NAME#feature/}"
+          WORKSPACE_SUFFIX=$(echo "$FEATURE_NAME" | sed 's/[^a-zA-Z0-9_-]/_/g')
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "feature_name=$FEATURE_NAME" >> $GITHUB_OUTPUT
+          echo "workspace_suffix=$WORKSPACE_SUFFIX" >> $GITHUB_OUTPUT
+
+      - name: Verify credentials
+        run: |
+          for var in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Required secret $var is not configured"
+              exit 1
+            fi
+          done
+          echo "✅ Credentials verified"
+
+      - name: Destroy feature workspace
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+
+          # Find the project config to derive the workspace name
+          CONFIG_FILE=$(find config/projects -name "*.yaml" -type f | head -1)
+
+          if [ -z "$CONFIG_FILE" ]; then
+            echo "::warning::No project config found. Cannot determine workspace name."
+            exit 0
+          fi
+
+          # Derive the workspace name from the branch using the same logic
+          # as GitFabricIntegration.get_workspace_name_from_branch()
+          echo "🧹 Destroying feature workspace for branch: ${{ steps.branch.outputs.branch_name }}"
+
+          python -c "
+          import sys, yaml
+          sys.path.insert(0, 'src')
+          from usf_fabric_cli.services.git_integration import GitFabricIntegration
+          from usf_fabric_cli.services.deployer import FabricDeployer
+
+          # Load config to get workspace base name
+          with open('$CONFIG_FILE', 'r') as f:
+              config = yaml.safe_load(f)
+
+          base_name = config.get('workspace', {}).get('name', '')
+          branch = '${{ steps.branch.outputs.branch_name }}'
+
+          # Get the branch-specific workspace name
+          ws_name = GitFabricIntegration.get_workspace_name_from_branch(base_name, branch)
+          print(f'Workspace to destroy: {ws_name}')
+
+          # Call destroy via CLI
+          import subprocess
+          result = subprocess.run([
+              sys.executable, '-m', 'usf_fabric_cli.cli',
+              'destroy', '$CONFIG_FILE',
+              '--force',
+              '--workspace-name-override', ws_name
+          ], env=dict(__import__('os').environ, PYTHONPATH='src'))
+
+          if result.returncode != 0:
+              print(f'::warning::Workspace destruction returned code {result.returncode}')
+              print('The workspace may have already been deleted or may not exist.')
+          "
+
+      - name: Report cleanup
+        if: success()
+        run: |
+          echo "## 🧹 Feature Workspace Cleaned Up" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|:---|:---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | \`${{ steps.branch.outputs.branch_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Feature** | \`${{ steps.branch.outputs.feature_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered by** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Event** | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
