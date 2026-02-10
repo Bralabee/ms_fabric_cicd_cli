@@ -74,10 +74,10 @@ deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env
 	fi
 	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy $(config) --env $(env)
 
-onboard: ## Onboard a new project - Dev workspace on main (Usage: make onboard org="Org" project="Proj")
+onboard: ## Full bootstrap: Dev+Test+Prod + Pipeline (Usage: make onboard org="Org" project="Proj" [stages="dev,test,prod"])
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
-	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion)
+	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) $(if $(stages),--stages $(stages),)
 
 feature-workspace: ## Create isolated feature workspace (Usage: make feature-workspace org="Org" project="Proj")
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi

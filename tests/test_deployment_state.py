@@ -9,9 +9,7 @@ Tests verify:
 """
 
 import json
-from datetime import datetime, timezone
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import pytest
 
 from usf_fabric_cli.services.deployment_state import (

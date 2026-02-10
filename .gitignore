@@ -68,6 +68,9 @@ config/projects/
 # Jupyter
 .ipynb_checkpoints
 
+# Type checking
+.mypy_cache/
+
 # OS
 Thumbs.db
 .DS_Store

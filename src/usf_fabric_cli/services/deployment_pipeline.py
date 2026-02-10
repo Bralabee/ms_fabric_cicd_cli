@@ -14,7 +14,8 @@ Key Features:
 References:
 - https://learn.microsoft.com/en-us/rest/api/fabric/core/\
   deployment-pipelines
-- https://learn.microsoft.com/en-us/fabric/cicd/deployment-pipelines/intro-to-deployment-pipelines
+- https://learn.microsoft.com/en-us/fabric/cicd/\
+  deployment-pipelines/intro-to-deployment-pipelines
 """
 
 import logging

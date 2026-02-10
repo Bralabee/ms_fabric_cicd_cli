@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2026-02-10
+
+### Added
+
+- **Main-Centric Dev Workspace** (Phase 1):
+  - Refactored `onboard.py` to default to Dev workspace connected to `main` branch
+  - Added opt-in `--with-feature-branch` flag for isolated feature workspaces
+  - New `feature-workspace` Makefile target for explicit feature workspace creation
+- **Automated Feature Workspace Lifecycle** (Phase 2):
+  - `feature-workspace-create.yml`: GitHub Actions workflow to auto-create Fabric workspace on `feature/*` push
+  - `feature-workspace-cleanup.yml`: GitHub Actions workflow to auto-destroy workspace on PR merge or branch delete
+  - `config/environments/feature_workspace.json`: Recipe file for feature workspace naming, capacity, and lifecycle policies
+  - `--workspace-name-override` option added to `destroy` CLI command for targeting branch-specific workspaces
+- **Fabric Deployment Pipeline Integration** (Phase 3):
+  - `deployment_pipeline.py`: New service wrapping the Fabric Deployment Pipelines REST API (CRUD, stage management, deploy/promote, long-running operation polling, token refresh)
+  - `deploy-to-fabric.yml`: GitHub Actions workflow with automatic Dev→Test promotion on push to `main` and manual promotion via `workflow_dispatch` with approval gates
+  - `promote` CLI command: `usf_fabric_cli promote --pipeline-name "Name" --source-stage Development`
+  - `DeploymentStage` helper class for standard Dev→Test→Prod stage sequencing
+
+### Tests
+
+- Added 23 new unit tests for `FabricDeploymentPipelineAPI` service
+- Added 20 new unit tests for onboard redesign (`test_onboard.py`)
+- Total: **185 tests passing** (142 existing + 23 deployment pipeline + 20 onboard)
+
+### Architecture
+
+- Implemented **Microsoft Option 3** CI/CD pattern: Git syncs Dev workspace, Fabric Deployment Pipelines promote through stages
+- Feature workspaces are now ephemeral and CI/CD-managed (create on push, destroy on merge)
+
 ## [1.6.3] - 2026-02-05
 
 ### Added

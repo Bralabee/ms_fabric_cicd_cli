@@ -2,7 +2,7 @@
 
 Enterprise Microsoft Fabric deployment automation using a **thin wrapper architecture** around official Fabric CLI (~1,150 LOC wrapper with 90% CLI delegation).
 
-**Current Version**: 1.6.3 (February 2026)
+**Current Version**: 1.7.0 (February 2026)
 
 ## 📏 Development Standards
 
@@ -23,11 +23,12 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
 ```
 
 **Core Components** (`src/usf_fabric_cli/`):
-- `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate commands)
+- `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate/promote commands)
 - `fabric_wrapper.py`: Thin abstraction over `fabric` CLI subprocess calls. **Supports generic item creation** via `create_item` for 54+ Fabric item types.
 - `config.py`: YAML config loader with env-specific overrides + Jinja2 variable substitution
 - `secrets.py`: Waterfall credential management (Env Vars → .env → Azure Key Vault)
 - `git_integration.py`: Git connection automation via REST API (not CLI)
+- `deployment_pipeline.py`: Fabric Deployment Pipelines REST API client (Dev→Test→Prod)
 - `templating.py`: Jinja2 sandboxed engine for artifact transformation
 - `audit.py`: Structured JSONL logging to `audit_logs/` for compliance
 - `telemetry.py`: Lightweight usage tracking (optional)
@@ -220,7 +221,7 @@ Service Principal must have:
 2. **Entry Point Not Available**: Run `make install` or `pip install -e .` to enable the `fabric-cicd` command (alternative: use `python -m usf_fabric_cli.cli`)
 3. **Service Principal Permissions**: Most deployment failures = missing SP permissions (workspace admin, ADO contributor)
 4. **Capacity Exhausted**: F2 (trial) has low limits. Use `scripts/utilities/list_workspaces.py` to audit capacity usage
-5. **Git Branch Workspaces**: Feature branches auto-create workspaces like `main-workspace-feature-123`. Clean up manually if branch deleted.
+5. **Git Branch Workspaces**: Feature workspaces are now CI/CD-managed (auto-created/destroyed by GitHub Actions). Manual cleanup only needed if workflows fail.
 6. **Template Undefined Variables**: Jinja2 `StrictUndefined` mode raises errors. Check `templating.py` rendering context.
 
 ## 📦 Packaging & Distribution
@@ -295,6 +296,24 @@ Located in `config/environments/`:
 - `test.yaml` - Test/UAT settings (F8/F16 capacity, QA team access)
 - `staging.yaml` - Pre-production settings (production-like)
 - `prod.yaml` - Production settings (F32/F64 capacity, strict access)
+- `feature_workspace.json` - Feature workspace recipe & lifecycle policies
+
+### CI/CD Deployment Pipeline Promotion
+
+Content promotion follows the Microsoft-recommended **Option 3** pattern:
+
+1. **Git Sync** → Dev workspace syncs automatically from `main`
+2. **Auto Dev→Test** → On push to `main`, GitHub Actions promotes via Fabric Deployment Pipeline
+3. **Manual Test→Prod** → `workflow_dispatch` with approval gate
+
+**CLI Promote Command:**
+```bash
+# Promote Dev → Test (auto-infers next stage)
+python -m usf_fabric_cli.cli promote --pipeline-name "MyPipeline" --source-stage Development
+
+# Promote to specific stage
+python -m usf_fabric_cli.cli promote --pipeline-name "MyPipeline" -s Test -t Production
+```
 
 ### Source Repointing Mechanisms
 1. **Environment Variable Substitution** (`${VAR_NAME}`):
