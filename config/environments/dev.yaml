@@ -3,7 +3,7 @@
 
 workspace:
   capacity_id: "${FABRIC_CAPACITY_ID}" # Use configured capacity
-  git_branch: develop # Use develop branch
+  git_branch: main # Use main branch
 
 # Mandatory Principals
 # These are required for all workspaces and are also injected by the CLI

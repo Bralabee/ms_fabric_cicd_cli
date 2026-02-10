@@ -96,27 +96,51 @@ python scripts/dev/generate_project.py "HealthCo" "Patient Platform" --template 
 # Output: config/projects/{org_name}/{project_name}.yaml
 ```
 
-**Step 2: Initialize Azure DevOps Repository**
-Create the backing Git repository for your new project.
+**Step 2: Initialize Git Repository**
+
+Two approaches are available — choose based on your team's needs:
+
+| Mode | Description | Best For |
+|------|-------------|----------|
+| **Shared Repo** (default) | All projects connect to `GIT_REPO_URL` from `.env` | Monorepo / single codebase |
+| **Isolated Repo** | Auto-creates a per-project repo (GitHub or ADO) | Per-project CI/CD isolation |
+
+**Option A: Shared Repo (default)**
+
+Set `GIT_REPO_URL` in `.env` and onboard normally — all workspaces connect to that single repo:
 
 ```bash
+make onboard org="Contoso Inc" project="Finance Analytics"
+```
+
+**Option B: Isolated Repo (auto-created)**
+
+Pass `--create-repo` to auto-create a dedicated project repo:
+
+```bash
+# GitHub (default provider)
+make onboard-isolated org="Contoso" project="Finance" git_owner="MyGitHubOrg"
+
+# Azure DevOps
+make onboard-isolated org="Contoso" project="Finance" \
+  git_owner="my-ado-org" git_provider=ado ado_project="MyAdoProject"
+```
+
+Or use the standalone repo init commands directly:
+
+```bash
+# GitHub
+make init-github-repo git_owner="MyGitHubOrg" repo="contoso-finance"
+
+# Azure DevOps
 python scripts/admin/utilities/init_ado_repo.py \
   --organization "your-ado-org" \
   --project "your-ado-project" \
-  --repository "contoso-finance-repo" \
+  --repository "contoso-finance" \
   --branch "main"
 ```
 
-**Step 3: Update Configuration**
-Edit the generated YAML file to point to your new repository.
-
-```yaml
-git:
-  repository: "contoso-finance-repo"
-```
-
-**Step 4: Deploy**
-Run the deployment command.
+**Step 3: Deploy**
 
 ```bash
 make deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev
@@ -124,14 +148,15 @@ make deploy config=config/projects/contoso_inc/finance_analytics.yaml env=dev
 
 ### 3b. Accelerated "One-Click" Onboarding
 
-For a seamless experience, use the unified `onboard` command which handles config generation and deployment in one step:
-
 ```bash
-# Default: Dev workspace connected to main (recommended)
+# Shared repo (default — uses GIT_REPO_URL from .env)
 make onboard org="Contoso Inc" project="Finance Analytics" template=medallion
 
-# Opt-in: Isolated feature workspace on a new branch
-make feature-workspace org="TechCorp" project="IoT Platform" template=realtime_streaming
+# Isolated repo (auto-creates GitHub repo)
+make onboard-isolated org="Contoso" project="Finance" git_owner="MyOrg"
+
+# Feature workspace (isolated dev branch)
+make feature-workspace org="TechCorp" project="IoT Platform"
 ```
 
 The **default `onboard`** command will:

@@ -211,7 +211,10 @@ class FabricDeploymentPipelineAPI:
         return None
 
     def create_pipeline(
-        self, display_name: str, description: str = ""
+        self,
+        display_name: str,
+        description: str = "",
+        stages: Optional[List[Dict[str, str]]] = None,
     ) -> Dict[str, Any]:
         """
         Create a new deployment pipeline.
@@ -219,12 +222,38 @@ class FabricDeploymentPipelineAPI:
         Args:
             display_name: Pipeline display name.
             description: Optional pipeline description.
+            stages: Optional list of stage definitions. Each stage is a dict
+                with ``displayName`` (required), ``description`` (optional),
+                and ``isPublic`` (optional, bool). Defaults to the standard
+                three-stage pipeline: Development → Test → Production.
 
         Returns:
             ``{"success": True, "pipeline": {...}}``
         """
         url = f"{self.base_url}/deploymentPipelines"
-        body = {"displayName": display_name, "description": description}
+
+        # Default to the standard 3-stage pipeline if no custom stages given
+        if stages is None:
+            stages = [
+                {
+                    "displayName": DeploymentStage.DEV,
+                    "description": "Development stage",
+                },
+                {
+                    "displayName": DeploymentStage.TEST,
+                    "description": "Test / QA stage",
+                },
+                {
+                    "displayName": DeploymentStage.PROD,
+                    "description": "Production stage",
+                },
+            ]
+
+        body: Dict[str, Any] = {
+            "displayName": display_name,
+            "description": description,
+            "stages": stages,
+        }
 
         try:
             response = self._make_request("POST", url, json=body)

@@ -82,15 +82,20 @@ conda env list  # Should show * next to fabric-cli-cicd
 python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" --template realtime_streaming
 # Output: config/projects/acme_corp/sales_analytics.yaml
 
-# 2. Initialize Azure DevOps repo (if using Git integration)
+# 2. One-Click Onboard (preferred — generates config + deploys in one step)
+make onboard org="Acme Corp" project="Sales Analytics" template=realtime_streaming
+
+# 2b. Isolated repo mode (auto-creates a per-project GitHub repo)
+make onboard-isolated org="Acme Corp" project="Sales" git_owner="MyGitHubOrg"
+
+# 2c. Standalone repo init (GitHub or ADO)
+make init-github-repo git_owner="MyOrg" repo="acme-sales"
 python scripts/admin/utilities/init_ado_repo.py \
   --organization "your-ado-org" \
   --project "FabricProjects" \
   --repository "acme-sales-repo"
 
-# 3. Update generated YAML with repo URL (edit config manually or via script)
-
-# 4. Deploy via Makefile (preferred) or direct CLI
+# 3. Deploy via Makefile (preferred) or direct CLI
 make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
 # OR: python -m usf_fabric_cli.cli deploy config/projects/.../sales_analytics.yaml --env dev
 ```
@@ -131,7 +136,7 @@ make docker-deploy config=config/projects/.../project.yaml env=dev ENVFILE=.env
 workspace:
   name: "acme-sales-analytics"  # Workspace name (becomes DNS-safe slug)
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Env var substitution
-  git_repo: "${GIT_REPO_URL}"  # Optional: Azure DevOps or GitHub repo
+  git_repo: "${GIT_REPO_URL}"  # Shared repo (from .env), or auto-set by --create-repo
   git_branch: "main"
 
 # Generic Resource Definition (supports all Fabric item types)

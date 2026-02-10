@@ -27,6 +27,19 @@ All notable changes to this project will be documented in this file.
 - Added 20 new unit tests for onboard redesign (`test_onboard.py`)
 - Total: **185 tests passing** (142 existing + 23 deployment pipeline + 20 onboard)
 
+### Fixed
+
+- **Deployment Pipeline creation**: Added required `stages` array to `create_pipeline()` API body (Fabric API returns 400 without it)
+- **Git branch override**: Changed `config/environments/dev.yaml` `git_branch` from `develop` to `main`
+
+### Git Repo Isolation
+
+- **`init_github_repo.py`**: New GitHub repo init script (mirrors `init_ado_repo.py`)
+- **`--create-repo` flag**: Optional Phase 0 in `onboard.py` auto-creates a per-project repo (GitHub or ADO)
+- **`onboard-isolated`** Makefile target for one-command isolated onboarding
+- **`init-github-repo`** Makefile target for standalone GitHub repo creation
+- **Dual-mode docs**: README documents Shared Repo vs Isolated Repo approaches
+
 ### Architecture
 
 - Implemented **Microsoft Option 3** CI/CD pattern: Git syncs Dev workspace, Fabric Deployment Pipelines promote through stages

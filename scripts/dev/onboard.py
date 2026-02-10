@@ -3,14 +3,22 @@
 Unified Onboarding Automation for Fabric Data Products.
 
 Supports two modes:
-  - Dev Setup (default): Full bootstrap — creates Dev, Test, and Prod workspaces,
-    creates a Fabric Deployment Pipeline, and assigns workspaces to stages.
-  - Feature Workspace (--with-feature-branch): Creates an isolated workspace
-    per feature branch for developer testing (phases 1-2 only).
+  - Dev Setup (default): Full bootstrap — creates Dev, Test,
+    and Prod workspaces, creates a Fabric Deployment Pipeline,
+    and assigns workspaces to stages.
+  - Feature Workspace (--with-feature-branch): Creates an
+    isolated workspace per feature branch (phases 1-2 only).
+
+Git Integration Modes:
+  - Shared Repo (default): All projects connect to the single
+    GIT_REPO_URL from .env.
+  - Isolated Repo (--create-repo): Auto-creates a per-project
+    repo via GitHub or Azure DevOps API before Phase 1.
 
 Orchestrates:
+  Phase 0: [Optional] Git Repo Provisioning (--create-repo)
   Phase 1: Config Generation (via generate_project.py)
-  Phase 2: Deploy Dev workspace (Git-connected to main)
+  Phase 2: Deploy Dev workspace (Git-connected)
   Phase 3: Create Test workspace (empty, no Git)
   Phase 4: Create Prod workspace (empty, no Git)
   Phase 5: Create Deployment Pipeline (via REST API)
@@ -332,6 +340,74 @@ def _create_deployment_pipeline(
         return False
 
 
+def _provision_repo(
+    provider: str,
+    owner: str,
+    repo_name: str,
+    *,
+    ado_project: str = None,
+    branch: str = "main",
+) -> Optional[str]:
+    """Create a Git repo via GitHub or ADO API.
+
+    Returns:
+        Clone URL on success, ``None`` on failure.
+    """
+    import os
+
+    if provider == "github":
+        token = os.environ.get("GITHUB_TOKEN")
+        if not token:
+            logger.error(
+                "GITHUB_TOKEN env var is required "
+                "for --create-repo --git-provider github"
+            )
+            return None
+
+        # Lazy import to avoid hard dep when unused
+        sys.path.append(
+            str(
+                Path(__file__).resolve().parent.parent
+                / "admin" / "utilities"
+            )
+        )
+        from init_github_repo import init_github_repo
+
+        return init_github_repo(
+            owner, repo_name, token, branch=branch,
+        )
+
+    elif provider == "ado":
+        if not ado_project:
+            logger.error(
+                "--ado-project is required when "
+                "--git-provider ado"
+            )
+            return None
+
+        sys.path.append(
+            str(
+                Path(__file__).resolve().parent.parent
+                / "admin" / "utilities"
+            )
+        )
+        from init_ado_repo import (
+            init_ado_repo as _init_ado,
+        )
+
+        return _init_ado(
+            owner, ado_project, repo_name,
+            branch=branch,
+        )
+
+    else:
+        logger.error(
+            f"Unknown git provider: '{provider}'. "
+            f"Use 'github' or 'ado'."
+        )
+        return None
+
+
 def onboard_project(
     org_name: str,
     project_name: str,
@@ -344,6 +420,10 @@ def onboard_project(
     pipeline_name_override: str = None,
     test_workspace_name: str = None,
     prod_workspace_name: str = None,
+    create_repo: bool = False,
+    git_provider: str = "github",
+    git_owner: str = None,
+    ado_project: str = None,
 ):
     """Execute end-to-end onboarding workflow.
 
@@ -354,13 +434,17 @@ def onboard_project(
         capacity_id: Fabric capacity ID.
         git_repo: Git repository URL.
         dry_run: If True, simulate actions without executing.
-        with_feature_branch: If True, creates an isolated feature workspace
-            connected to a new feature branch (developer isolation mode).
-            Default False: creates the full bootstrap (Dev+Test+Prod+Pipeline).
-        stages: Set of stages to provision. Default: {'dev', 'test', 'prod'}.
+        with_feature_branch: If True, creates an isolated
+            feature workspace (phases 1-2 only).
+        stages: Set of stages to provision.
         pipeline_name_override: Custom pipeline display name.
         test_workspace_name: Custom Test workspace name.
         prod_workspace_name: Custom Prod workspace name.
+        create_repo: If True, auto-create a project-specific
+            Git repo before config generation.
+        git_provider: ``github`` (default) or ``ado``.
+        git_owner: GitHub owner/org or ADO org name.
+        ado_project: ADO project (required for ADO provider).
     """
 
     if stages is None:
@@ -372,33 +456,90 @@ def onboard_project(
     else:
         # Count steps dynamically based on requested stages
         total_steps = 1  # Config generation
+        if create_repo:
+            total_steps += 1  # Phase 0: repo provisioning
         if "dev" in stages:
             total_steps += 1  # Dev deploy
         if "test" in stages:
             total_steps += 1  # Test workspace
         if "prod" in stages:
             total_steps += 1  # Prod workspace
-        # Pipeline + stage assignment (only if Test or Prod requested)
+        # Pipeline + stage assignment
         if stages & {"test", "prod"}:
-            total_steps += 2  # Pipeline creation + assignment
-        mode = f"Full Bootstrap ({', '.join(sorted(stages))})"
+            total_steps += 2
+        git_mode = "Isolated" if create_repo else "Shared"
+        mode = (
+            f"Full Bootstrap ({', '.join(sorted(stages))}) "
+            f"[Git: {git_mode}]"
+        )
 
-    logger.info(f"🚀 Starting onboarding for {org_name} / {project_name}")
+    logger.info(
+        f"🚀 Starting onboarding for {org_name} / {project_name}"
+    )
     logger.info(f"📋 Template: {template}")
     logger.info(f"🔀 Mode: {mode}")
 
+    current_step = 0
+
+    # ─── Phase 0: Git Repo Provisioning (optional) ────────────────
+    if create_repo and not with_feature_branch:
+        current_step += 1
+        logger.info(
+            f"\n[{current_step}/{total_steps}] "
+            f"Provisioning Git repository ({git_provider})..."
+        )
+
+        if not git_owner:
+            logger.error(
+                "--git-owner is required when using --create-repo"
+            )
+            return False
+
+        org_slug = org_name.lower().replace(" ", "_")
+        project_slug = project_name.lower().replace(" ", "_")
+        repo_name = (
+            f"{org_slug}-{project_slug}".replace("_", "-")
+        )
+
+        if dry_run:
+            logger.info(
+                f"  (Dry Run) Would create {git_provider} "
+                f"repo: {git_owner}/{repo_name}"
+            )
+            git_repo = f"https://placeholder/{repo_name}"
+        else:
+            git_repo = _provision_repo(
+                git_provider, git_owner, repo_name,
+                ado_project=ado_project,
+            )
+            if not git_repo:
+                logger.error("Repo provisioning failed")
+                return False
+            logger.info(f"  ✅ Repo URL: {git_repo}")
+
     # ─── Phase 1: Generate Configuration ──────────────────────────
-    current_step = 1
-    logger.info(f"\n[{current_step}/{total_steps}] Generating Configuration...")
+    current_step += 1
+    logger.info(
+        f"\n[{current_step}/{total_steps}] "
+        f"Generating Configuration..."
+    )
     try:
         if dry_run:
-            logger.info("  (Dry Run) calling generate_project_config...")
+            logger.info(
+                "  (Dry Run) calling generate_project_config..."
+            )
             org_slug = org_name.lower().replace(" ", "_")
-            project_slug = project_name.lower().replace(" ", "_")
-            config_path = Path(f"config/projects/{org_slug}/{project_slug}.yaml")
+            project_slug = (
+                project_name.lower().replace(" ", "_")
+            )
+            config_path = Path(
+                f"config/projects/{org_slug}"
+                f"/{project_slug}.yaml"
+            )
         else:
             config_path = generate_project_config(
-                org_name, project_name, template, capacity_id, git_repo
+                org_name, project_name,
+                template, capacity_id, git_repo,
             )
     except Exception as e:
         logger.error(f"Failed to generate config: {e}")
@@ -727,7 +868,45 @@ def main():
     parser.add_argument(
         "--prod-workspace-name",
         default=None,
-        help="Custom Prod workspace name (default: '{name} [Production]')",
+        help=(
+            "Custom Prod workspace name "
+            "(default: '{name} [Production]')"
+        ),
+    )
+    # ── Git Repo Isolation ──
+    parser.add_argument(
+        "--create-repo",
+        action="store_true",
+        default=False,
+        help=(
+            "Auto-create a project-specific Git repo "
+            "before config generation (isolated mode)."
+        ),
+    )
+    parser.add_argument(
+        "--git-provider",
+        default="github",
+        choices=["github", "ado"],
+        help=(
+            "Git provider for --create-repo. "
+            "Default: github."
+        ),
+    )
+    parser.add_argument(
+        "--git-owner",
+        default=None,
+        help=(
+            "GitHub owner/org or ADO org name "
+            "(required with --create-repo)."
+        ),
+    )
+    parser.add_argument(
+        "--ado-project",
+        default=None,
+        help=(
+            "Azure DevOps project name "
+            "(required with --git-provider ado)."
+        ),
     )
 
     args = parser.parse_args()
@@ -752,6 +931,10 @@ def main():
         pipeline_name_override=args.pipeline_name,
         test_workspace_name=args.test_workspace_name,
         prod_workspace_name=args.prod_workspace_name,
+        create_repo=args.create_repo,
+        git_provider=args.git_provider,
+        git_owner=args.git_owner,
+        ado_project=args.ado_project,
     )
 
     return 0 if success else 1
