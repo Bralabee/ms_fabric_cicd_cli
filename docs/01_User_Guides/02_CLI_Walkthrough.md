@@ -22,6 +22,7 @@ grep -E "FABRIC_TOKEN|AZURE_CLIENT_ID" .env
 **Goal:** You are starting a new project called "Supply Chain Analytics" for "Acme Corp". You need to set up the infrastructure (Workspace, Lakehouse, etc.) quickly.
 
 ### Step 1: Generate the Configuration
+
 Instead of writing YAML from scratch, use the generator script to scaffold your project based on a standard blueprint.
 
 ```bash
@@ -39,6 +40,7 @@ python scripts/dev/generate_project.py \
 > ✅ Generated configuration: `config/projects/acme_corp/supply_chain.yaml`
 
 ### Step 2: Review and Customize
+
 Open the generated file to verify the structure.
 
 ```bash
@@ -47,6 +49,7 @@ vim config/projects/acme_corp/supply_chain.yaml
 ```
 
 *Example Customization:*
+
 ```yaml
 # config/projects/acme_corp/supply_chain.yaml
 workspace:
@@ -63,6 +66,7 @@ items:
 ```
 
 ### Step 3: Deploy to Development
+
 Provision the initial environment.
 
 > **Note on Security:** The CLI automatically injects mandatory security principals (Additional Admin and Contributor) defined in your environment variables (`ADDITIONAL_ADMIN_PRINCIPAL_ID`, etc.) into every workspace it creates. You do not need to manually add these to your YAML configuration.
@@ -84,6 +88,7 @@ make deploy config=config/projects/acme_corp/supply_chain.yaml env=dev
 **Goal:** You need to add a new "Inventory Optimization" module. You want to test this in isolation without breaking the shared DEV environment.
 
 ### Step 1: Create a Feature Branch
+
 Standard Git workflow.
 
 ```bash
@@ -91,6 +96,7 @@ git checkout -b feature/inventory-opt
 ```
 
 ### Step 2: Deploy an Isolated Workspace
+
 Use the `--force-branch-workspace` flag to tell the deployer to create a temporary workspace for this branch.
 
 > **Note:** You do **not** need a separate YAML configuration file for feature branches. The CLI uses the `dev` environment configuration as a base and dynamically generates a unique workspace name (e.g., `acme-supply-chain-inventory-opt-dev`).
@@ -102,6 +108,7 @@ python -m usf_fabric_cli.cli deploy config/projects/acme_corp/supply_chain.yaml 
 ```
 
 **Result:**
+
 - A new workspace `acme-supply-chain-feature-inventory-opt` is created.
 - It is a clone of the Dev configuration but isolated.
 - You can run your tests here safely.
@@ -113,6 +120,7 @@ python -m usf_fabric_cli.cli deploy config/projects/acme_corp/supply_chain.yaml 
 **Goal:** Your feature is merged to `main`, and you are ready to deploy to the Production capacity.
 
 ### Step 1: Deploy to Prod
+
 Switch the environment flag to `prod`. The tool automatically picks up production-specific settings (like Capacity IDs or Service Principals) from `config/environments/prod.yaml`.
 
 ```bash
@@ -122,6 +130,7 @@ python -m usf_fabric_cli.cli deploy config/projects/acme_corp/supply_chain.yaml 
 ```
 
 **Result:**
+
 - The `acme-supply-chain-prod` workspace is updated.
 - If it doesn't exist, it is created.
 - If it exists, it is updated idempotently (only changes are applied).
@@ -133,6 +142,7 @@ python -m usf_fabric_cli.cli deploy config/projects/acme_corp/supply_chain.yaml 
 **Goal:** The "Inventory Optimization" feature is merged, and you want to delete the temporary workspace to save capacity units.
 
 ### Step 1: Identify Workspaces
+
 List your workspaces to find the one to delete.
 
 ```bash
@@ -141,6 +151,7 @@ grep "feature-inventory-opt" workspaces.txt
 ```
 
 ### Step 2: Bulk Destroy
+
 Create a file with the workspaces to delete and run the bulk destroy script.
 
 ```bash
@@ -155,16 +166,97 @@ python scripts/admin/bulk_destroy.py delete_list.txt
 
 ---
 
+## Scenario 5: Pipeline Promotion (Dev → Test → Prod)
+
+**Goal:** Your Dev workspace has been tested and is ready for promotion through the Deployment Pipeline to Test, then to Production.
+
+### Step 1: Promote from Development to Test
+
+Use the `promote` command with the pipeline name. The pipeline is auto-created during onboarding (Scenario 6).
+
+```bash
+# Using Make
+make promote pipeline="Acme Corp-Supply Chain Pipeline" source=Development target=Test
+
+# Or using CLI directly
+python -m usf_fabric_cli.cli promote \
+  --pipeline-name "Acme Corp-Supply Chain Pipeline" \
+  --source-stage Development \
+  --target-stage Test \
+  --note "Sprint 42 release"
+```
+
+**Result:**
+
+- All artifacts from the Dev stage workspace are promoted to the Test workspace.
+- The `--note` is recorded in the pipeline's deployment history.
+
+### Step 2: Promote from Test to Production
+
+After QA validation, promote to Production.
+
+```bash
+make promote pipeline="Acme Corp-Supply Chain Pipeline" source=Test target=Production
+```
+
+**Result:** Content is live in the Production workspace.
+
+---
+
+## Scenario 6: Full Onboarding (Single Command Bootstrap)
+
+**Goal:** You want to bootstrap an entire environment — Dev workspace, Test workspace, Prod workspace, and a Deployment Pipeline — with a **single command** instead of doing Steps 1-3 of Scenario 1 manually.
+
+### Step 1: Run Onboard
+
+The `onboard` script automates the full 6-phase bootstrap process.
+
+```bash
+# Full bootstrap: Dev + Test + Prod + Pipeline
+make onboard org="Acme Corp" project="Supply Chain" template=basic_etl
+
+# Dry run (preview what would happen)
+make onboard org="Acme Corp" project="Supply Chain" template=basic_etl dry_run=1
+
+# Only Dev + Test (skip Prod)
+make onboard org="Acme Corp" project="Supply Chain" template=basic_etl stages=dev,test
+```
+
+**Result:**
+
+1. ✅ Configuration generated at `config/projects/acme_corp/supply_chain.yaml`
+2. ✅ Dev workspace deployed (connected to Git `main` branch)
+3. ✅ Test workspace created (empty — content arrives via pipeline promotion)
+4. ✅ Prod workspace created (empty — content arrives via pipeline promotion)
+5. ✅ Deployment Pipeline created and workspaces assigned to stages
+
+### Isolated Git Repo Mode
+
+For clients who need a dedicated repo:
+
+```bash
+make onboard-isolated org="Acme Corp" project="Supply Chain" template=basic_etl git_owner=acme-corp
+```
+
+This auto-creates a GitHub repo (`acme-corp/acme-corp-supply-chain`) before bootstrapping.
+
+---
+
 ## Summary of Commands
 
-| Task | Makefile Command | Direct CLI Command |
-|------|------------------|-------------------|
-| **Scaffold** | `make docker-generate org="Org" project="Proj" template=basic_etl` | `python scripts/dev/generate_project.py "Org" "Proj" --template basic_etl` |
+| Task | Makefile Command | Direct CLI / Script |
+|------|------------------|---------------------|
+| **Scaffold** | `make generate org="Org" project="Proj" template=basic_etl` | `python scripts/dev/generate_project.py "Org" "Proj" --template basic_etl` |
 | **Validate** | `make validate config=<config>` | `python -m usf_fabric_cli.cli validate <config>` |
+| **Diagnose** | `make diagnose` | `python -m usf_fabric_cli.cli diagnose` |
 | **Deploy (Dev)** | `make deploy config=<config> env=dev` | `python -m usf_fabric_cli.cli deploy <config> --env dev` |
-| **Deploy (Feature)** | `make docker-feature-deploy config=<config> env=dev branch=<name>` | `python -m usf_fabric_cli.cli deploy <config> --env dev --branch <name>` |
+| **Deploy (Feature)** | `make docker-feature-deploy config=<config> env=dev branch=<name>` | `python -m usf_fabric_cli.cli deploy <config> --env dev --branch <name> --force-branch-workspace` |
 | **Deploy (Prod)** | `make deploy config=<config> env=prod` | `python -m usf_fabric_cli.cli deploy <config> --env prod` |
+| **Promote** | `make promote pipeline="Name" source=Development target=Test` | `python -m usf_fabric_cli.cli promote --pipeline-name "Name" --source-stage Development` |
+| **Destroy** | `make destroy config=<config>` | `python -m usf_fabric_cli.cli destroy <config> --force` |
+| **Onboard (Full)** | `make onboard org="Org" project="Proj"` | `python scripts/dev/onboard.py --org "Org" --project "Proj"` |
 | **Cleanup** | `make bulk-destroy file=<list_file>` | `python scripts/admin/bulk_destroy.py <list_file>` |
+| **List Workspaces** | `make list-workspaces` | `python scripts/admin/utilities/list_workspaces.py` |
 
 ## Makefile Quick Reference (Local & Docker)
 

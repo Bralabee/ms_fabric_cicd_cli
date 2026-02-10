@@ -350,6 +350,9 @@ python scripts/admin/utilities/debug_ado_access.py \
   --organization your-org \
   --project your-project \
   --repository your-repo
+
+# General connection / API debugger
+python scripts/admin/utilities/debug_connection.py
 ```
 
 1. **Initialize repository first**:
@@ -449,6 +452,72 @@ from usf_fabric_cli.utils.templating import ArtifactTemplateEngine
 engine = ArtifactTemplateEngine()
 variables = engine.extract_template_variables("{{ env }}_{{ name }}")
 print(variables)  # ['env', 'name']
+```
+
+---
+
+### 13. Deployment Pipeline / Promote Failures
+
+**Symptom**:
+
+```bash
+fabric-cicd promote --pipeline-name "My Pipeline"
+# Error: Pipeline 'My Pipeline' not found
+```
+
+**Cause**: Pipeline name is incorrect, or the Service Principal lacks permission to view/manage pipelines.
+
+**Solutions**:
+
+1. **Check pipeline name** (must match display name exactly, including spaces):
+
+```bash
+# Verify pipeline exists in Fabric portal
+# or use: python scripts/admin/utilities/list_workspaces.py
+```
+
+1. **Check SP permissions**: The Service Principal must have "Admin" permissions to manage Deployment Pipelines. Enable in Fabric Admin Portal → Tenant Settings:
+   - ✅ "Service principals can use Fabric APIs"
+   - ✅ "Service principals can use deployment pipelines"
+
+1. **Stage assignment fails**:
+   - Ensure each workspace is only assigned to one pipeline at a time.
+   - Workspace must not already be assigned to another pipeline stage.
+
+1. **Promotion timeout**: Large workspaces may take several minutes. The CLI waits by default (`wait=True`).
+
+---
+
+### 14. Onboarding Failures
+
+**Symptom**:
+
+```bash
+make onboard org="My Org" project="My Project"
+# Error: Capacity assignment failed
+```
+
+**Cause**: Stage-specific capacity IDs are missing or invalid.
+
+**Solutions**:
+
+1. **Set stage-specific capacity IDs** (in `.env`):
+
+```bash
+# Default fallback
+FABRIC_CAPACITY_ID=your-default-capacity-id
+
+# Stage-specific overrides (optional)
+FABRIC_CAPACITY_ID_TEST=your-test-capacity-id
+FABRIC_CAPACITY_ID_PROD=your-prod-capacity-id
+```
+
+1. **Verify pipeline creation permissions**: Same as troubleshooting item 13 above.
+
+1. **Use --dry-run first** to preview what would happen:
+
+```bash
+make onboard org="My Org" project="My Project" dry_run=1
 ```
 
 ---

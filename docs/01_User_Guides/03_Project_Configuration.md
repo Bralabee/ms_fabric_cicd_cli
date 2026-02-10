@@ -66,20 +66,21 @@ code config/projects/my_org/my_project.yaml
 
 ## Available Templates
 
-The toolkit includes 10 pre-built blueprint templates for common use cases:
+The toolkit includes 11 pre-built blueprint templates for common use cases:
 
 | Template Name | Use Case | Key Resources |
 |---------------|----------|---------------|
+| `minimal_starter` | Learning, POCs, solo projects | 1 Lakehouse, 1 Notebook, minimal configuration |
 | `basic_etl` | Simple data ingestion and transformation | 1 Lakehouse, 2 Notebooks, Bronze/Silver/Gold folders |
 | `advanced_analytics` | Complex analytics with ML capabilities | 2 Lakehouses, 1 Warehouse, Notebooks, Environments |
+| `data_science` | Research and experimentation | Notebooks, Environments, ML Models |
+| `extensive_example` | Enterprise reference architecture | Full suite of Fabric items (reference only) |
+| `medallion` | Medallion Architecture (Bronze/Silver/Gold) | 3 Lakehouses, 1 Warehouse, 3 Notebooks, 1 Pipeline |
 | `realtime_streaming` | IoT and event-driven architectures | Eventstream, KQL Database, Reflex, Lakehouse |
 | `compliance_regulated` | Healthcare, finance, government workloads | Enhanced audit logging, strict access controls |
-| `data_mesh` | Domain-driven data product architecture | Multiple domains, data contracts, cross-domain sharing |
-| `data_warehouse` | Traditional BI and reporting | Warehouse, Semantic Models, Dataflows |
-| `lakehouse_medallion` | Full medallion architecture implementation | 3 Lakehouses (Bronze/Silver/Gold), transformation notebooks |
-| `ml_ops` | Machine learning operations pipeline | ML Models, Experiments, Environments, Feature Store |
-| `hybrid_analytics` | Combined lakehouse and warehouse patterns | Lakehouse + Warehouse, Power BI integration |
-| `minimal` | Lightweight starter template | 1 Lakehouse, 1 Notebook, minimal configuration |
+| `data_mesh_domain` | Domain-driven data product architecture | Multiple domains, data contracts, cross-domain sharing |
+| `migration_hybrid` | Cloud migration projects | Combined lakehouse + warehouse, migration tooling |
+| `specialized_timeseries` | Time-series, APM, and log analytics | KQL Database, Eventstream, time-series pipelines |
 
 > **Tip:** Review [07_Blueprint_Catalog.md](07_Blueprint_Catalog.md) for detailed descriptions of each template's resources and folder structures.
 
@@ -341,7 +342,7 @@ make validate config=config/projects/acme_corp/iot_analytics.yaml
 
 ```bash
 # Check CLI version, credentials, and capacity access
-python scripts/admin/preflight_check.py --auto-install
+python scripts/admin/preflight_check.py
 ```
 
 ### 4. Review Generated Resources
@@ -497,6 +498,6 @@ environments:
 
 ## Next Steps
 
-- **[04_Deployment_Guide.md](04_Deployment_Guide.md)** - Learn how to deploy configurations
-- **[05_Environment_Promotion.md](05_Environment_Promotion.md)** - DEV → TEST → PROD workflows
+- **[04_Docker_Deployment.md](04_Docker_Deployment.md)** - Learn how to deploy via Docker
+- **[02_CLI_Walkthrough.md](02_CLI_Walkthrough.md)** - DEV → TEST → PROD promotion workflows
 - **[07_Blueprint_Catalog.md](07_Blueprint_Catalog.md)** - Detailed template documentation

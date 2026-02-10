@@ -10,6 +10,7 @@ This guide provides detailed instructions on how to use the Dockerized version o
 ## 1. Configuration Setup
 
 ### Environment Variables (`.env`)
+
 Create a `.env` file in the root directory with the following required variables:
 
 ```dotenv
@@ -26,9 +27,11 @@ GITHUB_TOKEN=<your-github-token>
 ```
 
 ### Project Configuration (`config/`)
+
 Ensure your project configuration files are located in the `config/` directory. The Docker container mounts this directory to access your configurations.
 
 Example `config/my_project.yaml`:
+
 ```yaml
 workspace:
   name: "My_Project_Workspace"
@@ -60,11 +63,13 @@ docker build -t fabric-cli-cicd .
 Before deploying, validate your configuration to ensure syntax and schema correctness.
 
 Using Makefile:
+
 ```bash
 make docker-validate config=config/my_project.yaml
 ```
 
 Manually:
+
 ```bash
 docker run --rm --env-file .env \
   -v $(pwd)/config:/app/config \
@@ -77,11 +82,13 @@ docker run --rm --env-file .env \
 Deploy your workspace to the target environment (e.g., `dev`, `staging`, `prod`).
 
 Using Makefile:
+
 ```bash
 make docker-deploy config=config/my_project.yaml env=dev
 ```
 
 Manually:
+
 ```bash
 docker run --rm --env-file .env \
   -v $(pwd)/config:/app/config \
@@ -90,9 +97,11 @@ docker run --rm --env-file .env \
 ```
 
 ### Important Note on Authentication
+
 The Docker container is configured to use **Service Principal authentication**. Ensure your Service Principal has:
-1.  **Capacity Access**: The SP must be an admin or contributor on the Fabric Capacity.
-2.  **Tenant Settings**: "Allow service principals to use Power BI APIs" must be enabled in the Fabric Admin Portal.
+
+1. **Capacity Access**: The SP must be an admin or contributor on the Fabric Capacity.
+2. **Tenant Settings**: "Allow service principals to use Power BI APIs" must be enabled in the Fabric Admin Portal.
 
 ## 5. Managing Principals
 
@@ -115,6 +124,7 @@ Supported Roles: `Admin`, `Member`, `Contributor`, `Viewer`.
 ## 6. Troubleshooting
 
 ### Interactive Shell
+
 If you need to debug inside the container:
 
 ```bash
@@ -122,9 +132,39 @@ make docker-shell
 ```
 
 ### Common Issues
+
 - **Capacity Assignment Failed**: Ensure the `FABRIC_CAPACITY_ID` is correct and the Service Principal has permissions on it.
 - **Authentication Failed**: Verify `AZURE_CLIENT_ID` and `AZURE_CLIENT_SECRET` in your `.env` file.
 - **Encryption Error**: The container automatically sets `encryption_fallback_enabled` to `true` to avoid keyring issues in headless environments.
+
+### Multi-Tenant Deployments
+
+You can manage multiple clients by using separate `.env` files per organisation:
+
+```bash
+# Deploy for Client A (uses Client A's service principal)
+make docker-deploy config=config/projects/clientA/project.yaml env=dev ENVFILE=.env.clientA
+
+# Deploy for Client B
+make docker-deploy config=config/projects/clientB/project.yaml env=dev ENVFILE=.env.clientB
+```
+
+### Complete Docker Reference
+
+| Target | Usage | Description |
+|--------|-------|-------------|
+| `docker-build` | `make docker-build` | Build the Docker image |
+| `docker-validate` | `make docker-validate config=<path>` | Validate configuration |
+| `docker-deploy` | `make docker-deploy config=<path> env=<env>` | Deploy workspace |
+| `docker-promote` | `make docker-promote pipeline="Name" [source=Dev] [target=Test]` | Promote via Deployment Pipeline |
+| `docker-destroy` | `make docker-destroy config=<path>` | Destroy workspace |
+| `docker-diagnose` | `make docker-diagnose` | Run diagnostics |
+| `docker-generate` | `make docker-generate org="Org" project="Proj" [template=basic_etl]` | Generate project config |
+| `docker-init-repo` | `make docker-init-repo git_owner=<owner> repo=<name>` | Initialize GitHub repo |
+| `docker-feature-deploy` | `make docker-feature-deploy config=<path> env=dev branch=<name>` | Feature branch deploy |
+| `docker-shell` | `make docker-shell` | Interactive shell in container |
+
+All Docker targets support `ENVFILE=.env.custom` for multi-tenant operations.
 
 ## 7. Interactive Learning Webapp
 
@@ -143,11 +183,13 @@ make docker-up
 ```
 
 ### Features
+
 - **Visual Workflow Diagrams**: Step-by-step flowcharts for deployment processes
-- **7 Guided Scenarios**: From environment setup to troubleshooting
+- **10 Guided Scenarios**: From environment setup to medallion onboarding
 - **Code Snippets**: Copy-ready commands for each step
 
 ### Deploy Webapp to Azure
+
 ```bash
 cd webapp
 make deploy-azure  # Deploys to Azure Container Apps

@@ -12,11 +12,13 @@ git clone <your-repo>
 cd usf_fabric_cli_cicd
 
 # Run setup script
-chmod +x setup.sh
-./setup.sh
+chmod +x bin/setup.sh
+bin/setup.sh
+# Or use Make:
+make setup
 
 # Optionally rerun the Python preflight if Fabric CLI/secrets change
-python scripts/admin/preflight_check.py --auto-install
+python scripts/admin/preflight_check.py
 
 # Activate environment
 conda activate fabric-cli-cicd
@@ -45,6 +47,8 @@ python scripts/dev/generate_project.py \
 
 ### 3. Deploy Your First Workspace
 
+**Using Python directly:**
+
 ```bash
 # Validate configuration
 python -m usf_fabric_cli.cli validate config/projects/contoso_inc/customer_analytics.yaml
@@ -57,18 +61,85 @@ python -m usf_fabric_cli.cli deploy config/projects/contoso_inc/customer_analyti
   --env dev --branch feature/new-analytics --force-branch-workspace
 ```
 
+**Using Make (recommended for day-to-day use):**
+
+```bash
+# Validate
+make validate config=config/projects/contoso_inc/customer_analytics.yaml
+
+# Deploy to dev
+make deploy config=config/projects/contoso_inc/customer_analytics.yaml env=dev
+
+# Feature branch deployment (use Docker target or direct CLI)
+make docker-feature-deploy config=config/projects/contoso_inc/customer_analytics.yaml env=dev branch=feature/new-analytics
+```
+
+**Using Docker (for CI/CD or isolated environments):**
+
+```bash
+# Build the Docker image first
+make docker-build
+
+# Validate via Docker
+make docker-validate config=config/projects/contoso_inc/customer_analytics.yaml
+
+# Deploy via Docker
+make docker-deploy config=config/projects/contoso_inc/customer_analytics.yaml env=dev
+
+# Feature branch deploy via Docker
+make docker-feature-deploy config=config/projects/contoso_inc/customer_analytics.yaml env=dev branch=feature/new-analytics
+```
+
+## Makefile Quick Reference
+
+The `Makefile` wraps all CLI commands for convenience. Run `make help` to see the full list.
+
+### Core Operations
+
+| Target | Usage | Description |
+|--------|-------|-------------|
+| `validate` | `make validate config=<path>` | Validate project configuration |
+| `deploy` | `make deploy config=<path> env=<env>` | Deploy workspace |
+| `destroy` | `make destroy config=<path>` | Destroy workspace |
+| `promote` | `make promote pipeline="Name" [source=Dev] [target=Test]` | Promote via pipeline |
+| `diagnose` | `make diagnose` | Run diagnostic checks |
+| `generate` | `make generate org="Org" project="Proj" [template=basic_etl]` | Generate project config |
+| `onboard` | `make onboard org="Org" project="Proj" [template=medallion]` | Full bootstrap |
+| `onboard-isolated` | `make onboard-isolated org="Org" project="Proj" git_owner=<owner>` | Bootstrap with new repo |
+| `feature-workspace` | `make feature-workspace org="Org" project="Proj" [template=basic_etl]` | Feature branch workspace |
+
+### Admin Utilities
+
+| Target | Usage | Description |
+|--------|-------|-------------|
+| `list-workspaces` | `make list-workspaces` | List all accessible workspaces |
+| `list-items` | `make list-items workspace=<name>` | List items in a workspace |
+| `bulk-destroy` | `make bulk-destroy file=<list_file>` | Bulk-delete workspaces from file |
+| `init-github-repo` | `make init-github-repo git_owner=<owner> repo=<name>` | Create GitHub repository |
+
+### Advanced Deploy Options
+
+The `deploy` CLI command supports additional flags:
+
+```bash
+python -m usf_fabric_cli.cli deploy config.yaml --env dev \
+  --rollback-on-failure    # Auto-delete items if deployment fails
+  --diagnose               # Run pre-flight diagnostics before deploy
+  --validate-only          # Only validate config (no deployment)
+```
+
 ## Workflow for Multiple Projects
 
 This tool is designed to manage multiple projects and organizations from a single codebase.
 
-1.  **Create Specific Configs**:
-    *   Create `config/projects/ProductA/config.yaml`
-    *   Create `config/projects/ProductB/config.yaml`
-2.  **Define Environments**:
-    *   Ensure `config/environments/prod.yaml` contains your production secrets/capacity IDs.
-3.  **Deploy with Specifics**:
-    *   Run: `python -m usf_fabric_cli.cli deploy config/projects/ProductA/config.yaml --env prod`
-    *   Run: `python -m usf_fabric_cli.cli deploy config/projects/ProductB/config.yaml --env dev`
+1. **Create Specific Configs**:
+    * Create `config/projects/ProductA/config.yaml`
+    * Create `config/projects/ProductB/config.yaml`
+2. **Define Environments**:
+    * Ensure `config/environments/prod.yaml` contains your production secrets/capacity IDs.
+3. **Deploy with Specifics**:
+    * Run: `python -m usf_fabric_cli.cli deploy config/projects/ProductA/config.yaml --env prod`
+    * Run: `python -m usf_fabric_cli.cli deploy config/projects/ProductB/config.yaml --env dev`
 
 The `ConfigManager` looks at the file you passed (`config/projects/ProductA/config.yaml`), loads it, and then automatically looks for the environment override in `config/environments/{env}.yaml` to merge them. This allows you to maintain one "structure" file per project, while sharing "environment" settings (like Service Principals or Capacities) across them if needed.
 
@@ -90,6 +161,7 @@ vim config/projects/acme_manufacturing/production_analytics.yaml
 ```
 
 **Customization for Manufacturing:**
+
 ```yaml
 # Custom folders for manufacturing
 folders:
@@ -144,6 +216,7 @@ python -m usf_fabric_cli.cli deploy config/projects/healthtech_solutions/patient
 ```
 
 **Healthcare Customization:**
+
 ```yaml
 # HIPAA-compliant folder structure
 folders:
@@ -179,6 +252,7 @@ python -m usf_fabric_cli.cli deploy config/projects/global_bank_corp/risk_analyt
 ```
 
 **Financial Services Customization:**
+
 ```yaml
 # Risk-focused folder structure
 folders:
@@ -232,9 +306,9 @@ python -m usf_fabric_cli.cli deploy config/your-project.yaml \
 
 The included GitHub Actions workflow automatically:
 
-- **Pull Requests**: Creates feature branch workspaces
-- **Develop Branch**: Deploys to development environment
-- **Main Branch**: Deploys to staging → production
+* **Pull Requests**: Creates feature branch workspaces
+* **Develop Branch**: Deploys to development environment
+* **Main Branch**: Deploys to staging → production
 
 ```yaml
 # Customize .github/workflows/fabric-cicd.yml for your organization
@@ -250,6 +324,7 @@ env:
 We recommend using environment variables for all principal IDs to keep sensitive information out of version control.
 
 1. **Define variables in your configuration:**
+
 ```yaml
 # In your configuration file (e.g., config/environments/prod.yaml)
 principals:
@@ -266,7 +341,8 @@ principals:
     role: "Contributor"
 ```
 
-2. **Set values in your `.env` file:**
+1. **Set values in your `.env` file:**
+
 ```bash
 PROD_ADMIN_EMAIL=john.doe@yourorg.com
 PROD_VIEWERS_GROUP_ID=87654321-4321-4321-4321-210987654321
@@ -275,9 +351,9 @@ AUTOMATION_SP_ID=12345678-1234-1234-1234-123456789012
 
 ### Role Definitions
 
-- **Admin**: Full workspace control
-- **Contributor**: Can create/modify items
-- **Viewer**: Read-only access
+* **Admin**: Full workspace control
+* **Contributor**: Can create/modify items
+* **Viewer**: Read-only access
 
 ### Multi-Environment Management
 
@@ -290,17 +366,20 @@ Each environment (Dev, Staging, Prod) has its own configuration file in `config/
 Ensure these are defined in your `.env` file (or CI/CD secrets):
 
 **Development:**
-- `DEV_ADMIN_EMAIL`: Email of the dev environment admin
-- `DEV_ADMIN_OBJECT_ID`: Object ID for the dev admin group
+
+* `DEV_ADMIN_EMAIL`: Email of the dev environment admin
+* `DEV_ADMIN_OBJECT_ID`: Object ID for the dev admin group
 
 **Staging:**
-- `STAGING_ADMIN_EMAIL`: Email for staging admins
-- `STAGING_QA_GROUP_ID`: Object ID for the QA team
+
+* `STAGING_ADMIN_EMAIL`: Email for staging admins
+* `STAGING_QA_GROUP_ID`: Object ID for the QA team
 
 **Production:**
-- `PROD_ADMIN_EMAIL`: Email for production admins
-- `PROD_VIEWERS_GROUP_ID`: Object ID for production viewers
-- `PROD_AUTOMATION_SP_ID`: Object ID for the automation service principal
+
+* `PROD_ADMIN_EMAIL`: Email for production admins
+* `PROD_VIEWERS_GROUP_ID`: Object ID for production viewers
+* `PROD_AUTOMATION_SP_ID`: Object ID for the automation service principal
 
 ```bash
 # Development (smaller capacity, open access)
@@ -346,19 +425,19 @@ python scripts/admin/utilities/analyze_migration.py /path/to/your/custom/solutio
 ### Migration Strategy
 
 1. **Assessment Phase**
-   - Run migration analyzer
-   - Identify CLI-replaceable components
-   - Estimate effort
+   * Run migration analyzer
+   * Identify CLI-replaceable components
+   * Estimate effort
 
 2. **Incremental Migration**
-   - Start with new projects using thin wrapper
-   - Gradually migrate existing projects
-   - Side-by-side comparison during transition
+   * Start with new projects using thin wrapper
+   * Gradually migrate existing projects
+   * Side-by-side comparison during transition
 
 3. **Validation**
-   - Deploy to development
-   - Compare functionality with existing solution
-   - Validate audit logs and compliance
+   * Deploy to development
+   * Compare functionality with existing solution
+   * Validate audit logs and compliance
 
 ## Advanced Configurations
 
@@ -411,6 +490,7 @@ folders:
 ### Common Issues
 
 1. **Authentication Errors**
+
 ```bash
 # Validate setup
 python -m usf_fabric_cli.cli diagnose
@@ -420,13 +500,15 @@ echo $FABRIC_TOKEN
 echo $AZURE_TENANT_ID
 ```
 
-2. **Capacity Issues**
+1. **Capacity Issues**
+
 ```bash
 # Verify capacity ID exists and is accessible
 # Update configuration with correct capacity
 ```
 
-3. **Git Integration Issues**
+1. **Git Integration Issues**
+
 ```bash
 # Validate Git repository access
 git clone <your-repo-url>
@@ -435,7 +517,8 @@ git clone <your-repo-url>
 git branch -a
 ```
 
-4. **Principal Assignment Failures**
+1. **Principal Assignment Failures**
+
 ```bash
 # Verify user/group exists in Azure AD
 # Use Object ID for service principals, not Application ID
@@ -446,14 +529,17 @@ git branch -a
 If you need to delete multiple workspaces (e.g., for cleanup), use the bulk destroy utility.
 
 1. **Create a list file** (e.g., `workspaces_to_delete.txt`):
+
    ```text
    workspace-a
    workspace-b
    old-test-ws.Workspace
    ```
+
    *(Note: The script handles `fab list` output format automatically)*
 
 2. **Run the script**:
+
    ```bash
    # Dry run (preview)
    python scripts/admin/bulk_destroy.py workspaces_to_delete.txt --dry-run
@@ -478,6 +564,7 @@ Use for compliance reporting and troubleshooting.
 ### CI/CD Pipeline Failures
 
 #### Authentication Failed (Exit Code 1)
+
 If your CI/CD pipeline fails with `[AuthenticationFailed] Failed to get access token`, it means the GitHub Actions runner cannot authenticate with Microsoft Fabric.
 
 **Solution:**
@@ -492,32 +579,88 @@ Ensure the following secrets are defined in your GitHub Repository Settings > Se
 
 **Note:** Do not commit these values to `.env` files in the repository. Use GitHub Secrets for secure injection.
 
+## Environment Promotion
+
+The `promote` command promotes content through Fabric Deployment Pipelines across environments (DEV → TEST → PROD).
+
+**Using Python directly:**
+
+```bash
+# Promote from Development to Test
+python -m usf_fabric_cli.cli promote \
+  --pipeline-name "contoso-inc-customer-analytics Pipeline" \
+  --source-stage Development \
+  --target-stage Test
+
+# Promote from Test to Production
+python -m usf_fabric_cli.cli promote \
+  --pipeline-name "contoso-inc-customer-analytics Pipeline" \
+  --source-stage Test \
+  --target-stage Production
+
+# With a deployment note
+python -m usf_fabric_cli.cli promote \
+  --pipeline-name "contoso-inc-customer-analytics Pipeline" \
+  --source-stage Development \
+  --note "Sprint 42 release"
+```
+
+**Using Make:**
+
+```bash
+# Promote from dev to test
+make promote pipeline="contoso-inc-customer-analytics Pipeline" source=Development target=Test
+
+# Promote from test to production
+make promote pipeline="contoso-inc-customer-analytics Pipeline" source=Test target=Production
+```
+
+**Using Docker:**
+
+```bash
+make docker-promote pipeline="contoso-inc-customer-analytics Pipeline" source=Development target=Test
+```
+
+> **Note:** Promotion requires a Deployment Pipeline configured in the Fabric Portal. The `onboard` command auto-creates pipelines. The `--source-stage` defaults to `Development` if omitted; `--target-stage` is auto-inferred (Development → Test → Production). See [02_CLI_Walkthrough.md](02_CLI_Walkthrough.md) for a detailed walkthrough.
+
+---
+
 ## Best Practices
 
 ### 1. Configuration Management
-- Use version control for configuration files
-- Environment-specific overrides
-- Template-based approach for consistency
+
+* Use version control for configuration files
+
+* Environment-specific overrides
+* Template-based approach for consistency
 
 ### 2. Security
-- Principle of least privilege for principals
-- Environment-specific access controls
-- Service principal for automation
+
+* Principle of least privilege for principals
+
+* Environment-specific access controls
+* Service principal for automation
 
 ### 3. Deployment Strategy
-- Start with development environment
-- Use feature branches for experimentation
-- Gradual promotion through environments
+
+* Start with development environment
+
+* Use feature branches for experimentation
+* Gradual promotion through environments
 
 ### 4. Maintenance
-- Regular template updates
-- Monitor audit logs
-- Update Fabric CLI regularly
+
+* Regular template updates
+
+* Monitor audit logs
+* Update Fabric CLI regularly
 
 ### 5. Documentation
-- Document organization-specific customizations
-- Maintain environment setup guides
-- Share templates across teams
+
+* Document organization-specific customizations
+
+* Maintain environment setup guides
+* Share templates across teams
 
 ## Support and Extension
 
@@ -538,6 +681,7 @@ The key principle: **Fabric CLI for 90% of operations, thin wrapper for the 10% 
 ---
 
 **Next Steps:**
+
 1. Generate your organization's configuration
 2. Deploy to development environment
 3. Set up CI/CD pipeline
