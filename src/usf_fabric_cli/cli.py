@@ -18,7 +18,7 @@ from usf_fabric_cli.services.deployer import FabricDeployer
 logger = logging.getLogger(__name__)
 
 
-app = typer.Typer(help="Fabric CLI CI/CD - Thin Wrapper Solution")
+app = typer.Typer(help="Fabric CLI CI/CD - Enterprise Deployment Framework")
 console = Console()
 
 
@@ -111,10 +111,10 @@ def validate(
         console.print("[green]✅ Configuration is valid[/green]")
         console.print(f"Workspace: {workspace_config.name}")
         console.print(f"Capacity ID: {workspace_config.capacity_id}")
-        console.print(f"Folders: {', '.join(workspace_config.folders)}")
-        console.print(f"Lakehouses: {len(workspace_config.lakehouses)}")
-        console.print(f"Warehouses: {len(workspace_config.warehouses)}")
-        console.print(f"Notebooks: {len(workspace_config.notebooks)}")
+        console.print(f"Folders: {', '.join(workspace_config.folders or [])}")
+        console.print(f"Lakehouses: {len(workspace_config.lakehouses or [])}")
+        console.print(f"Warehouses: {len(workspace_config.warehouses or [])}")
+        console.print(f"Notebooks: {len(workspace_config.notebooks or [])}")
 
     except Exception as e:
         console.print(f"[red]❌ Configuration validation failed: {e}[/red]")
@@ -258,9 +258,7 @@ def promote(
             raise typer.Exit(1)
 
         display_target = target_stage or DeploymentStage.next_stage(source_stage)
-        console.print(
-            f"[blue]🚀 Promoting: {source_stage} → {display_target}[/blue]"
-        )
+        console.print(f"[blue]🚀 Promoting: {source_stage} → {display_target}[/blue]")
 
         result = api.promote(
             pipeline_id=pipeline["id"],

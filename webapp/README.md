@@ -8,7 +8,7 @@ An interactive web application that provides **comprehensive, actionable step-by
 - **Real Expected Outputs**: See exactly what successful execution looks like
 - **Interactive Progress Tracking**: Track your progress through each guide
 - **Code Snippets with Copy**: Easily copy commands and code examples
-- **Blueprint Templates**: Visual guide to all 10 production-ready templates
+- **Blueprint Templates**: Visual guide to all 11 production-ready templates
 - **Troubleshooting**: Comprehensive error diagnosis with utility scripts
 - **Search Functionality**: Find specific topics quickly
 - **Dark/Light Mode**: Accessible UI with theme support
@@ -59,7 +59,7 @@ make docker-build   # Build images
 make docker-up      # Start containers
 ```
 
-Application will be available at **http://localhost:8080**
+Application will be available at **<http://localhost:8080>**
 
 ```bash
 make docker-logs    # View logs
@@ -78,6 +78,7 @@ This starts both backend (port 8001) and frontend (port 5173) with hot-reload.
 ### Manual Setup
 
 **Backend:**
+
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -85,6 +86,7 @@ uvicorn app.main:app --reload --port 8001
 ```
 
 **Frontend:**
+
 ```bash
 cd frontend
 npm install
@@ -140,7 +142,7 @@ Each scenario provides **complete command references** with expected outputs:
 
 ## Blueprint Templates
 
-The guide covers all 10 production-ready blueprints:
+The guide covers all 11 production-ready blueprints:
 
 | Template | Best For | Complexity |
 |----------|----------|------------|
@@ -157,7 +159,7 @@ The guide covers all 10 production-ready blueprints:
 
 ## API Documentation
 
-Once running, visit http://localhost:8001/docs for the interactive API documentation.
+Once running, visit <http://localhost:8001/docs> for the interactive API documentation.
 
 ## Technology Stack
 
@@ -182,7 +184,7 @@ make docker-build    # Build images
 make docker-up       # Start containers
 ```
 
-**Access the application at http://localhost:8080**
+**Access the application at <http://localhost:8080>**
 
 ```bash
 # Other Docker commands
@@ -207,6 +209,7 @@ make deploy-azure
 ```
 
 The script will:
+
 1. Create a resource group and Azure Container Registry
 2. Build and push Docker images
 3. Create Container Apps Environment
@@ -214,11 +217,13 @@ The script will:
 5. Output the public URL
 
 **Prerequisites:**
+
 - Azure CLI installed (`az login` completed)
 - Docker running locally
 - Sufficient Azure permissions (Contributor role)
 
 **Customization:**
+
 ```bash
 # Custom resource names and location
 ./deploy-azure.sh --name my-fabric-guide --location westus2
@@ -228,6 +233,7 @@ The script will:
 ```
 
 **Teardown:**
+
 ```bash
 az group delete --name fabric-cli-guide-rg --yes --no-wait
 ```
@@ -258,4 +264,3 @@ TAG=latest
 CORS_ORIGINS=http://localhost:8080
 LOG_LEVEL=info
 ```
-

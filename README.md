@@ -1,10 +1,10 @@
 # Fabric CLI CI/CD - Enterprise Deployment Framework
 
-Enterprise-grade Microsoft Fabric deployment automation leveraging the official Fabric CLI with 12-Factor App configuration management, Jinja2 artifact templating, and REST API Git integration. Designed for organization-agnostic operation with 85% code reduction from traditional enterprise frameworks.
+Enterprise-grade Microsoft Fabric deployment automation leveraging the official Fabric CLI with 12-Factor App configuration management, Jinja2 artifact templating, and REST API Git integration. Designed for organization-agnostic operation with a clean, modular architecture.
 
 > **🎉 February 2026 Update:** Version **1.7.0** — CI/CD architecture refactoring: main-centric Dev workspace, automated feature workspace lifecycle, and Fabric Deployment Pipeline integration for Dev→Test→Prod promotion. See [CHANGELOG.md](CHANGELOG.md) for details.
 
-> **🔄 Lightweight Successor:** This project is the modern replacement for [usf-fabric-cicd](../usf-fabric-cicd), reducing complexity by 85% while maintaining enterprise capabilities through a thin wrapper architecture around the official Fabric CLI.
+> **🔄 Modern Successor:** This project is the evolution of [usf-fabric-cicd](../usf-fabric-cicd), providing a full-featured enterprise CLI framework built around the official Fabric CLI with comprehensive CI/CD, Git integration, and deployment pipeline support.
 
 ## Core Capabilities
 
@@ -27,7 +27,7 @@ Enterprise-grade Microsoft Fabric deployment automation leveraging the official 
     │                     │
 ┌───▼─────────────┐  ┌───▼──────────────────┐
 │  Fabric CLI     │  │ Thin Wrapper         │
-│  (90% of work)  │  │ (~1,150 LOC wrapper) │
+│  (core engine)  │  │ (modular CLI layer)  │
 └─────────────────┘  └──────────────────────┘
 ```
 
@@ -80,7 +80,7 @@ If using Azure DevOps with a Service Principal, ensure the following:
 Follow these steps to deploy a new project from scratch:
 
 **Step 1: Generate Project Configuration**
-Use the template generator to create a standardized configuration file. Choose from **10 production-ready blueprints**:
+Use the template generator to create a standardized configuration file. Choose from **11 production-ready blueprints**:
 
 ```bash
 # Standard ETL (Medallion architecture)
@@ -413,7 +413,7 @@ config/
     └── feature_workspace.json  # Feature workspace recipe & lifecycle policies
 
 templates/
-└── blueprints/            # 10 production-ready templates
+└── blueprints/            # 11 production-ready templates
     ├── basic_etl.yaml
     ├── advanced_analytics.yaml
     ├── data_science.yaml
@@ -435,7 +435,7 @@ scripts/
 │   └── onboard.py           # Unified onboarding (main-centric + feature)
 ```
 
-## Total LOC: ~4,100 (thin wrapper architecture vs original monolithic 1,830)
+## Total LOC: ~6,200 (src/) + ~2,600 (scripts/) + ~3,500 (tests/) — modular architecture
 
 ## Configuration Examples
 

@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions for USF Fabric CLI CI/CD
 
-Enterprise Microsoft Fabric deployment automation using a **thin wrapper architecture** around official Fabric CLI (~1,150 LOC wrapper with 90% CLI delegation).
+Enterprise Microsoft Fabric deployment automation using a **modular architecture** around official Fabric CLI (~6,200 LOC across services, utils, and CLI layers).
 
 **Current Version**: 1.7.0 (February 2026)
 
@@ -188,7 +188,7 @@ connection_string = "{{ secrets.STORAGE_ACCOUNT_URL }}"
 ## 🔗 Integration Points
 
 ### Fabric CLI Dependency
-- **Installation**: `pip install https://github.com/microsoft/fabric-sdk-cli/archive/refs/heads/main.zip`
+- **Installation**: `pip install git+https://github.com/microsoft/fabric-cli.git@v1.3.1#egg=ms-fabric-cli`
 - **Version Check**: `src/usf_fabric_cli/services/fabric_wrapper.py:_validate_cli_version()` ensures min version
 - **Command Pattern**: All CLI calls via `_run_command()` with `--output json` for parsing
 

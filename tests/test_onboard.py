@@ -18,9 +18,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 # Add scripts/dev to path so we can import onboard
-sys.path.insert(
-    0, str(Path(__file__).resolve().parent.parent / "scripts" / "dev")
-)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "dev"))
 
 from onboard import (  # noqa: E402
     _resolve_capacity_id,
@@ -153,16 +151,9 @@ class TestCreateEmptyWorkspace:
         )
         assert result is None
 
-    @patch(
-        "usf_fabric_cli.utils.config.get_environment_variables"
-    )
-    @patch(
-        "usf_fabric_cli.services.fabric_wrapper"
-        ".FabricCLIWrapper"
-    )
-    def test_creates_workspace_and_adds_principals(
-        self, MockWrapper, mock_env
-    ):
+    @patch("usf_fabric_cli.utils.config.get_environment_variables")
+    @patch("usf_fabric_cli.services.fabric_wrapper" ".FabricCLIWrapper")
+    def test_creates_workspace_and_adds_principals(self, MockWrapper, mock_env):
         mock_env.return_value = {"FABRIC_TOKEN": "tok"}
         mock_fabric = MagicMock()
         MockWrapper.return_value = mock_fabric
@@ -187,16 +178,9 @@ class TestCreateEmptyWorkspace:
         # Should add 2 principals
         assert mock_fabric.add_workspace_principal.call_count == 2
 
-    @patch(
-        "usf_fabric_cli.utils.config.get_environment_variables"
-    )
-    @patch(
-        "usf_fabric_cli.services.fabric_wrapper"
-        ".FabricCLIWrapper"
-    )
-    def test_skips_unresolved_env_var_principals(
-        self, MockWrapper, mock_env
-    ):
+    @patch("usf_fabric_cli.utils.config.get_environment_variables")
+    @patch("usf_fabric_cli.services.fabric_wrapper" ".FabricCLIWrapper")
+    def test_skips_unresolved_env_var_principals(self, MockWrapper, mock_env):
         mock_env.return_value = {"FABRIC_TOKEN": "tok"}
         mock_fabric = MagicMock()
         MockWrapper.return_value = mock_fabric
@@ -237,16 +221,9 @@ class TestCreateDeploymentPipeline:
         )
         assert result is True
 
-    @patch(
-        "usf_fabric_cli.utils.config.get_environment_variables"
-    )
-    @patch(
-        "usf_fabric_cli.services.deployment_pipeline"
-        ".FabricDeploymentPipelineAPI"
-    )
-    def test_creates_pipeline_and_assigns_stages(
-        self, MockAPI, mock_env
-    ):
+    @patch("usf_fabric_cli.utils.config.get_environment_variables")
+    @patch("usf_fabric_cli.services.deployment_pipeline" ".FabricDeploymentPipelineAPI")
+    def test_creates_pipeline_and_assigns_stages(self, MockAPI, mock_env):
         mock_env.return_value = {"FABRIC_TOKEN": "tok"}
         mock_api = MagicMock()
         MockAPI.return_value = mock_api
@@ -285,13 +262,8 @@ class TestCreateDeploymentPipeline:
         mock_api.create_pipeline.assert_called_once()
         assert mock_api.assign_workspace_to_stage.call_count == 3
 
-    @patch(
-        "usf_fabric_cli.utils.config.get_environment_variables"
-    )
-    @patch(
-        "usf_fabric_cli.services.deployment_pipeline"
-        ".FabricDeploymentPipelineAPI"
-    )
+    @patch("usf_fabric_cli.utils.config.get_environment_variables")
+    @patch("usf_fabric_cli.services.deployment_pipeline" ".FabricDeploymentPipelineAPI")
     def test_reuses_existing_pipeline(self, MockAPI, mock_env):
         mock_env.return_value = {"FABRIC_TOKEN": "tok"}
         mock_api = MagicMock()

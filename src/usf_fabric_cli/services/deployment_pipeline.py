@@ -299,9 +299,7 @@ class FabricDeploymentPipelineAPI:
             response = self._make_request("GET", url)
             data = response.json()
             stages = data.get("value", [])
-            logger.info(
-                "Pipeline %s has %d stages", pipeline_id, len(stages)
-            )
+            logger.info("Pipeline %s has %d stages", pipeline_id, len(stages))
             return {"success": True, "stages": stages}
         except requests.RequestException as e:
             logger.error("Pipeline stages fetch failed: %s", e)

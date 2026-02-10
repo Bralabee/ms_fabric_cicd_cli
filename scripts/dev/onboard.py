@@ -271,15 +271,11 @@ def _create_deployment_pipeline(
             )
 
             if not result["success"]:
-                logger.error(
-                    f"  ❌ Failed to create pipeline: {result.get('error')}"
-                )
+                logger.error(f"  ❌ Failed to create pipeline: {result.get('error')}")
                 return False
 
             pipeline_id = result["pipeline"]["id"]
-            logger.info(
-                f"  ✅ Pipeline created: {pipeline_name} (ID: {pipeline_id})"
-            )
+            logger.info(f"  ✅ Pipeline created: {pipeline_name} (ID: {pipeline_id})")
 
         # Get pipeline stages
         stages_result = api.get_pipeline_stages(pipeline_id)
@@ -324,9 +320,7 @@ def _create_deployment_pipeline(
             )
 
             if assign_result["success"]:
-                logger.info(
-                    f"  ✅ Assigned workspace → {target_display_name} stage"
-                )
+                logger.info(f"  ✅ Assigned workspace → {target_display_name} stage")
             else:
                 logger.error(
                     f"  ❌ Failed to assign {stage_key}: "
@@ -366,45 +360,38 @@ def _provision_repo(
 
         # Lazy import to avoid hard dep when unused
         sys.path.append(
-            str(
-                Path(__file__).resolve().parent.parent
-                / "admin" / "utilities"
-            )
+            str(Path(__file__).resolve().parent.parent / "admin" / "utilities")
         )
         from init_github_repo import init_github_repo
 
         return init_github_repo(
-            owner, repo_name, token, branch=branch,
+            owner,
+            repo_name,
+            token,
+            branch=branch,
         )
 
     elif provider == "ado":
         if not ado_project:
-            logger.error(
-                "--ado-project is required when "
-                "--git-provider ado"
-            )
+            logger.error("--ado-project is required when " "--git-provider ado")
             return None
 
         sys.path.append(
-            str(
-                Path(__file__).resolve().parent.parent
-                / "admin" / "utilities"
-            )
+            str(Path(__file__).resolve().parent.parent / "admin" / "utilities")
         )
         from init_ado_repo import (
             init_ado_repo as _init_ado,
         )
 
         return _init_ado(
-            owner, ado_project, repo_name,
+            owner,
+            ado_project,
+            repo_name,
             branch=branch,
         )
 
     else:
-        logger.error(
-            f"Unknown git provider: '{provider}'. "
-            f"Use 'github' or 'ado'."
-        )
+        logger.error(f"Unknown git provider: '{provider}'. " f"Use 'github' or 'ado'.")
         return None
 
 
@@ -468,14 +455,9 @@ def onboard_project(
         if stages & {"test", "prod"}:
             total_steps += 2
         git_mode = "Isolated" if create_repo else "Shared"
-        mode = (
-            f"Full Bootstrap ({', '.join(sorted(stages))}) "
-            f"[Git: {git_mode}]"
-        )
+        mode = f"Full Bootstrap ({', '.join(sorted(stages))}) " f"[Git: {git_mode}]"
 
-    logger.info(
-        f"🚀 Starting onboarding for {org_name} / {project_name}"
-    )
+    logger.info(f"🚀 Starting onboarding for {org_name} / {project_name}")
     logger.info(f"📋 Template: {template}")
     logger.info(f"🔀 Mode: {mode}")
 
@@ -490,16 +472,12 @@ def onboard_project(
         )
 
         if not git_owner:
-            logger.error(
-                "--git-owner is required when using --create-repo"
-            )
+            logger.error("--git-owner is required when using --create-repo")
             return False
 
         org_slug = org_name.lower().replace(" ", "_")
         project_slug = project_name.lower().replace(" ", "_")
-        repo_name = (
-            f"{org_slug}-{project_slug}".replace("_", "-")
-        )
+        repo_name = f"{org_slug}-{project_slug}".replace("_", "-")
 
         if dry_run:
             logger.info(
@@ -509,7 +487,9 @@ def onboard_project(
             git_repo = f"https://placeholder/{repo_name}"
         else:
             git_repo = _provision_repo(
-                git_provider, git_owner, repo_name,
+                git_provider,
+                git_owner,
+                repo_name,
                 ado_project=ado_project,
             )
             if not git_repo:
@@ -519,27 +499,20 @@ def onboard_project(
 
     # ─── Phase 1: Generate Configuration ──────────────────────────
     current_step += 1
-    logger.info(
-        f"\n[{current_step}/{total_steps}] "
-        f"Generating Configuration..."
-    )
+    logger.info(f"\n[{current_step}/{total_steps}] " f"Generating Configuration...")
     try:
         if dry_run:
-            logger.info(
-                "  (Dry Run) calling generate_project_config..."
-            )
+            logger.info("  (Dry Run) calling generate_project_config...")
             org_slug = org_name.lower().replace(" ", "_")
-            project_slug = (
-                project_name.lower().replace(" ", "_")
-            )
-            config_path = Path(
-                f"config/projects/{org_slug}"
-                f"/{project_slug}.yaml"
-            )
+            project_slug = project_name.lower().replace(" ", "_")
+            config_path = Path(f"config/projects/{org_slug}" f"/{project_slug}.yaml")
         else:
             config_path = generate_project_config(
-                org_name, project_name,
-                template, capacity_id, git_repo,
+                org_name,
+                project_name,
+                template,
+                capacity_id,
+                git_repo,
             )
     except Exception as e:
         logger.error(f"Failed to generate config: {e}")
@@ -581,9 +554,7 @@ def onboard_project(
         branch_name = f"feature/{project_name.lower().replace(' ', '-')}"
 
         if dry_run:
-            logger.info(
-                f"  (Dry Run) Would execute: git checkout -b {branch_name}"
-            )
+            logger.info(f"  (Dry Run) Would execute: git checkout -b {branch_name}")
         else:
             try:
                 result = run_command(
@@ -611,9 +582,7 @@ def onboard_project(
     # ─── Phase 2 (Bootstrap mode): Deploy Dev Workspace ───────────
     if "dev" in stages and not with_feature_branch:
         current_step += 1
-        logger.info(
-            f"\n[{current_step}/{total_steps}] Deploying Dev Workspace..."
-        )
+        logger.info(f"\n[{current_step}/{total_steps}] Deploying Dev Workspace...")
         logger.info(f"  📦 Workspace: {ws_names['dev']}")
         logger.info("  🔗 Connected to main branch via Git")
 
@@ -654,21 +623,14 @@ def onboard_project(
                         "Authorization": f"Bearer {token}",
                     }
                     resp = req.get(
-                        "https://api.fabric.microsoft.com"
-                        "/v1/workspaces",
+                        "https://api.fabric.microsoft.com" "/v1/workspaces",
                         headers=headers,
                         timeout=30,
                     )
                     if resp.ok:
-                        for ws in resp.json().get(
-                            "value", []
-                        ):
-                            if ws.get("displayName") == (
-                                ws_names["dev"]
-                            ):
-                                workspace_ids["dev"] = (
-                                    ws["id"]
-                                )
+                        for ws in resp.json().get("value", []):
+                            if ws.get("displayName") == (ws_names["dev"]):
+                                workspace_ids["dev"] = ws["id"]
                                 break
                 except Exception:
                     logger.warning(
@@ -682,9 +644,7 @@ def onboard_project(
     # ─── Feature branch deploy (alternative to full bootstrap) ────
     if with_feature_branch:
         current_step += 1
-        logger.info(
-            f"\n[{current_step}/{total_steps}] Deploying Feature Workspace..."
-        )
+        logger.info(f"\n[{current_step}/{total_steps}] Deploying Feature Workspace...")
 
         deploy_cmd = [
             "python3",
@@ -725,9 +685,7 @@ def onboard_project(
     # ─── Phase 3: Create Test Workspace ───────────────────────────
     if "test" in stages:
         current_step += 1
-        logger.info(
-            f"\n[{current_step}/{total_steps}] Creating Test Workspace..."
-        )
+        logger.info(f"\n[{current_step}/{total_steps}] Creating Test Workspace...")
         logger.info(f"  📦 Workspace: {ws_names['test']}")
         logger.info("  ℹ️  Empty workspace (content delivered via pipeline promotion)")
 
@@ -769,16 +727,13 @@ def onboard_project(
         pipeline_name = pipeline_name_override or _get_pipeline_name(
             org_name, project_name
         )
-        logger.info(
-            f"\n[{current_step}/{total_steps}] Creating Deployment Pipeline..."
-        )
+        logger.info(f"\n[{current_step}/{total_steps}] Creating Deployment Pipeline...")
         logger.info(f"  📦 Pipeline: {pipeline_name}")
 
         # Phase 6: Assign Stages
         current_step += 1
         logger.info(
-            f"\n[{current_step}/{total_steps}] "
-            f"Assigning Workspaces to Stages..."
+            f"\n[{current_step}/{total_steps}] " f"Assigning Workspaces to Stages..."
         )
 
         if dry_run:
@@ -868,10 +823,7 @@ def main():
     parser.add_argument(
         "--prod-workspace-name",
         default=None,
-        help=(
-            "Custom Prod workspace name "
-            "(default: '{name} [Production]')"
-        ),
+        help=("Custom Prod workspace name " "(default: '{name} [Production]')"),
     )
     # ── Git Repo Isolation ──
     parser.add_argument(
@@ -887,26 +839,17 @@ def main():
         "--git-provider",
         default="github",
         choices=["github", "ado"],
-        help=(
-            "Git provider for --create-repo. "
-            "Default: github."
-        ),
+        help=("Git provider for --create-repo. " "Default: github."),
     )
     parser.add_argument(
         "--git-owner",
         default=None,
-        help=(
-            "GitHub owner/org or ADO org name "
-            "(required with --create-repo)."
-        ),
+        help=("GitHub owner/org or ADO org name " "(required with --create-repo)."),
     )
     parser.add_argument(
         "--ado-project",
         default=None,
-        help=(
-            "Azure DevOps project name "
-            "(required with --git-provider ado)."
-        ),
+        help=("Azure DevOps project name " "(required with --git-provider ado)."),
     )
 
     args = parser.parse_args()
