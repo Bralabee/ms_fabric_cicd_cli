@@ -1,3 +1,13 @@
+> [!WARNING]
+> **📜 HISTORICAL ARCHIVE — v1.7.0 Walkthrough**
+>
+> This walkthrough documents the Git Repo Isolation feature implemented during v1.7.0 development.
+> It is preserved as a historical record of what was delivered.
+>
+> **For current documentation, see:** [User Guides](../01_User_Guides/)
+
+---
+
 # Walkthrough: Git Repo Isolation — Dual Mode CI/CD
 
 ## What Changed
