@@ -145,6 +145,17 @@ class FabricCLIWrapper:
                     "Attempting to login to Fabric CLI with Service Principal..."
                 )
 
+                # Enable plaintext token fallback for CI/CD environments
+                # (GitHub Actions runners lack a desktop keyring)
+                try:
+                    subprocess.run(
+                        ["fab", "config", "set",
+                         "encryption_fallback_enabled", "true"],
+                        capture_output=True, check=False
+                    )
+                except Exception:
+                    pass
+
                 # Logout first to clear any stale state
                 try:
                     subprocess.run(
