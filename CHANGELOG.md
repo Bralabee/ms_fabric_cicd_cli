@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.1] - 2026-02-11
+
+### Documentation
+
+- **Educational Guide** (`docs/01_User_Guides/08_Educational_Guide.md`): Comprehensive educational document covering:
+  - Project overview and architecture
+  - Three Ways to Work (Local Python, Docker, CI/CD) with full end-to-end walkthroughs
+  - Multi-agent specialisation patterns explaining codebase decomposition
+  - Blueprint selection decision tree and feature comparison table
+  - Quick reference cards: 30 Makefile targets, CLI flags, environment variables
+  - Getting Started section with copy-paste onboarding steps
+
 ## [1.7.0] - 2026-02-10
 
 ### Added
