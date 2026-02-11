@@ -1015,6 +1015,20 @@ class FabricCLIWrapper:
                 "skipped": True,
             }
 
+        # Skip if principal_id matches the deploying SP's Client ID
+        # (the SP already has implicit Admin access as workspace creator)
+        sp_client_id = os.environ.get("AZURE_CLIENT_ID", "")
+        if sp_client_id and principal_id.lower() == sp_client_id.lower():
+            logger.info(
+                f"Skipping deploying SP Client ID {principal_id[:12]}... "
+                f"(already has implicit Admin access as workspace creator)"
+            )
+            return {
+                "success": True,
+                "message": "Deploying SP already has implicit Admin access",
+                "skipped": True,
+            }
+
         # Check if principal_id looks like an email
         if "@" in principal_id and not re.match(
             r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -1047,60 +1061,77 @@ class FabricCLIWrapper:
                     principal_id.lower(),
                 )
             )
-            # ServicePrincipal for GUIDs that aren't user OIDs (we can't distinguish,
-            # but Fabric API accepts both "User" and "ServicePrincipal" and
-            # auto-resolves)
-            principal_type = "User" if "@" in principal_id else "ServicePrincipal"
-            # Fabric actually auto-detects; try Group first as fallback
-            if is_guid:
-                # Try as User first, which covers both human users and SPs in practice
-                principal_type = "User"
+            principal_type = "User" if ("@" in principal_id or is_guid) else "User"
 
-            payload = {
-                "identifier": principal_id,
-                "principalType": principal_type,
-                "workspaceRole": api_role,
-            }
+            # Try principal types in order: User → ServicePrincipal → Group
+            principal_types_to_try = ["User", "ServicePrincipal", "Group"]
+            last_error = ""
 
-            command = [
-                "api",
-                f"workspaces/{workspace_id}/roleAssignments",
-                "-X",
-                "post",
-                "-i",
-                json.dumps(payload),
-            ]
-            result = self._execute_command(command, check_existence=True)
+            for ptype in principal_types_to_try:
+                payload = {
+                    "identifier": principal_id,
+                    "principalType": ptype,
+                    "workspaceRole": api_role,
+                }
+                command = [
+                    "api",
+                    f"workspaces/{workspace_id}/roleAssignments",
+                    "-X",
+                    "post",
+                    "-i",
+                    json.dumps(payload),
+                ]
+                result = self._execute_command(command, check_existence=True)
 
-            if not result.get("success"):
-                error_msg = result.get("error", "")
-                # If User type failed, retry as ServicePrincipal
-                if "PrincipalNotFound" in error_msg or "InvalidPrincipalType" in error_msg:
-                    payload["principalType"] = "ServicePrincipal"
-                    command[-1] = json.dumps(payload)
-                    result = self._execute_command(command, check_existence=True)
+                # Check for API errors in response body (fab api may exit 0
+                # even when the REST API returns 4xx)
+                if result.get("success") and result.get("data"):
+                    data = result["data"]
+                    if isinstance(data, dict):
+                        # Fabric API returns errorCode at top level or
+                        # nested under "error"
+                        api_error = data.get("errorCode") or data.get(
+                            "error", {}
+                        ).get("code", "")
+                        api_msg = data.get("message") or data.get(
+                            "error", {}
+                        ).get("message", "")
+                        if api_error:
+                            result = {
+                                "success": False,
+                                "error": f"{api_error}: {api_msg}",
+                            }
 
-                if not result.get("success"):
-                    error_msg = result.get("error", "")
-                    # Try as Group as last resort
-                    if "PrincipalNotFound" in error_msg or "InvalidPrincipalType" in error_msg:
-                        payload["principalType"] = "Group"
-                        command[-1] = json.dumps(payload)
-                        result = self._execute_command(command, check_existence=True)
-
-            if not result.get("success"):
-                error_msg = result.get("error", "")
-                if "NotFound" in error_msg or "not found" in error_msg.lower():
-                    logger.error(
-                        f"Principal ID {principal_id} not found. Please verify the "
-                        f"Object ID and ensure it exists in the tenant."
+                if result.get("success"):
+                    logger.info(
+                        f"Added principal {principal_id[:12]}... as "
+                        f"{ptype}/{api_role}"
                     )
-                    return {
-                        "success": True,
-                        "message": f"Principal {principal_id} not found (skipped)",
-                        "skipped": True,
-                    }
-            return result
+                    return result
+
+                last_error = result.get("error", "")
+                # Only retry with next type if it's a type mismatch error
+                if not any(
+                    kw in last_error
+                    for kw in [
+                        "PrincipalNotFound",
+                        "InvalidPrincipalType",
+                        "PrincipalTypeNotSupported",
+                    ]
+                ):
+                    break  # Non-type-related error, don't retry
+
+            # All types exhausted or non-retryable error
+            if "not found" in last_error.lower() or "NotFound" in last_error:
+                logger.error(
+                    f"Principal ID {principal_id} not found in any type "
+                    f"(User/ServicePrincipal/Group). Verify the Object ID."
+                )
+                return {
+                    "success": False,
+                    "error": f"Principal {principal_id} not found in tenant",
+                }
+            return {"success": False, "error": last_error}
         else:
             # Fallback to fab acl set if workspace ID not available
             command = [
