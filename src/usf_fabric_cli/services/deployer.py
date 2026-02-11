@@ -318,6 +318,16 @@ class FabricDeployer:
         """Create all configured items"""
 
         workspace_name = self._effective_workspace_name
+        has_items = (
+            self.config.lakehouses
+            or self.config.warehouses
+            or self.config.notebooks
+            or self.config.pipelines
+            or self.config.semantic_models
+            or self.config.resources
+        )
+        if has_items:
+            console.print("[blue]Creating items...[/blue]")
 
         # Create lakehouses
         for lakehouse in self.config.lakehouses:
@@ -329,6 +339,11 @@ class FabricDeployer:
             )
 
             if result["success"]:
+                reused = "exists" if result.get("reused") else "created"
+                console.print(
+                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"Lakehouse: {lakehouse['name']} ({reused})"
+                )
                 self.audit.log_item_creation(
                     "Lakehouse",
                     lakehouse["name"],
@@ -349,6 +364,11 @@ class FabricDeployer:
             )
 
             if result["success"]:
+                reused = "exists" if result.get("reused") else "created"
+                console.print(
+                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"Warehouse: {warehouse['name']} ({reused})"
+                )
                 self.audit.log_item_creation(
                     "Warehouse",
                     warehouse["name"],
@@ -369,6 +389,11 @@ class FabricDeployer:
             )
 
             if result["success"]:
+                reused = "exists" if result.get("reused") else "created"
+                console.print(
+                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"Notebook: {notebook['name']} ({reused})"
+                )
                 self.audit.log_item_creation(
                     "Notebook",
                     notebook["name"],
@@ -389,6 +414,11 @@ class FabricDeployer:
             )
 
             if result["success"]:
+                reused = "exists" if result.get("reused") else "created"
+                console.print(
+                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"Pipeline: {pipeline['name']} ({reused})"
+                )
                 self.audit.log_item_creation(
                     "Pipeline",
                     pipeline["name"],
@@ -409,6 +439,11 @@ class FabricDeployer:
             )
 
             if result["success"]:
+                reused = "exists" if result.get("reused") else "created"
+                console.print(
+                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"SemanticModel: {model['name']} ({reused})"
+                )
                 self.audit.log_item_creation(
                     "SemanticModel",
                     model["name"],
@@ -430,6 +465,11 @@ class FabricDeployer:
             )
 
             if result["success"]:
+                reused = "exists" if result.get("reused") else "created"
+                console.print(
+                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"{resource['type']}: {resource['name']} ({reused})"
+                )
                 self.audit.log_item_creation(
                     resource["type"],
                     resource["name"],
@@ -442,6 +482,10 @@ class FabricDeployer:
     def _add_principals(self):
         """Add principals to workspace"""
         workspace_name = self._effective_workspace_name
+        if not self.config.principals:
+            return
+
+        console.print("[blue]Adding workspace principals...[/blue]")
         for principal in self.config.principals:
             # Handle comma-separated lists of IDs (e.g. from env vars)
             principal_id_raw = principal["id"]
@@ -455,20 +499,41 @@ class FabricDeployer:
                 else [principal_id_raw]
             )
 
+            role = principal.get("role", "Member")
             for pid in principal_ids:
                 if not pid:
                     continue
 
                 result = self.fabric.add_workspace_principal(
-                    workspace_name, pid, principal.get("role", "Member")
+                    workspace_name, pid, role
                 )
 
-                if result["success"]:
+                if result.get("success"):
+                    if result.get("skipped"):
+                        console.print(
+                            f"  [yellow]⚠ Skipped principal {pid[:12]}...: "
+                            f"{result.get('message', 'skipped')}[/yellow]"
+                        )
+                    elif result.get("reused"):
+                        console.print(
+                            f"  [dim]Principal {pid[:12]}... already has "
+                            f"{role} role[/dim]"
+                        )
+                    else:
+                        console.print(
+                            f"  ✓ Added {pid[:12]}... as {role}"
+                        )
                     self.audit.log_principal_assignment(
                         pid,
-                        principal.get("role", "Member"),
+                        role,
                         self.workspace_id,
                         workspace_name,
+                    )
+                else:
+                    error_msg = result.get("error", "Unknown error")
+                    console.print(
+                        f"  [red]✗ Failed to add {pid[:12]}... as {role}: "
+                        f"{error_msg}[/red]"
                     )
 
     def _assign_domain(self):
