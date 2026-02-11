@@ -15,7 +15,7 @@ Version 1.7.0 implements the **Microsoft-recommended CI/CD architecture** (Optio
 - ✅ Dev workspace now connects to `main` (not a feature branch)
 - ✅ Feature workspaces are CI/CD-managed (auto-create on push, auto-destroy on merge)
 - ✅ Content promotion via Fabric Deployment Pipelines (Dev→Test→Prod)
-- ✅ 185 tests passing (23 deployment pipeline + 20 onboard + 142 existing, zero regressions)
+- ✅ 188 tests passing (23 deployment pipeline + 20 onboard + 5 governance + 142 existing, zero regressions)
 
 ---
 
@@ -156,7 +156,8 @@ flowchart LR
 | Existing tests (142) | ✅ All pass |
 | New deployment pipeline tests (23) | ✅ All pass |
 | New onboard tests (20) | ✅ All pass |
-| **Total** | **185+ passed** |
+| New governance SP tests (5) | ✅ All pass |
+| **Total** | **188 passed** |
 | Lint compliance (flake8) | ✅ Clean |
 | Git Repo Isolation | ✅ `init_github_repo.py` + `--create-repo` flag verified |
 

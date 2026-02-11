@@ -68,7 +68,7 @@ steps:
       |-----------|--------------|
       | Validate | `make validate config=path/to/config.yaml` |
       | Deploy | `make deploy config=path/to/config.yaml env=dev` |
-      | Destroy | `make destroy config=path/to/config.yaml env=dev` |
+      | Destroy | `make destroy config=path/to/config.yaml` |
       | Bulk Destroy | `make bulk-destroy file=workspaces.txt` |
     tips:
       - Always validate before deploying
@@ -465,7 +465,7 @@ steps:
       language: bash
       content: |
         # Destroy using Make (requires confirmation)
-        make destroy config=config/projects/acme_corp/sales_analytics.yaml env=dev
+        make destroy config=config/projects/acme_corp/sales_analytics.yaml
         
         # Destroy using CLI (requires confirmation)
         fabric-cicd destroy config/projects/acme_corp/sales_analytics.yaml --env dev
@@ -591,7 +591,7 @@ steps:
       | Deploy | `make deploy config=<path> env=<env>` |
       | Validate Only | `fabric-cicd deploy <path> --env <env> --validate-only` |
       | Verify | `python scripts/admin/utilities/list_workspace_items.py --workspace <name>` |
-      | Destroy | `make destroy config=<path> env=<env>` |
+      | Destroy | `make destroy config=<path>` |
       | View Logs | `cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl \| jq` |
       
       ## Recommended Next Steps

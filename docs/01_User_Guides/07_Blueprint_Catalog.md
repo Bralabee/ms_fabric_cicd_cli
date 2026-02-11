@@ -11,11 +11,12 @@ This document provides a comprehensive guide to all available blueprint template
 | [advanced_analytics](#3-advanced-analytics) | ML/AI workloads | ★★★☆☆ | $500-1500 | F16 |
 | [data_science](#4-data-science) | Research & experimentation | ★★☆☆☆ | $200-800 | F8 |
 | [extensive_example](#5-extensive-example) | Enterprise reference | ★★★★☆ | $1000-3000 | F32 |
-| [realtime_streaming](#6-realtime-streaming) | IoT, events, real-time | ★★★★☆ | $800-2500 | F16 |
-| [compliance_regulated](#7-compliance-regulated) | Healthcare, Finance, Gov | ★★★★★ | $1500-5000 | F16 |
-| [data_mesh_domain](#8-data-mesh-domain) | Domain-driven orgs | ★★★★☆ | $500-2000 | F16 |
-| [migration_hybrid](#9-migration-hybrid) | Cloud migration projects | ★★★★☆ | $1000-5000 | F16 |
-| [specialized_timeseries](#10-specialized-timeseries) | Time-series, APM, logs | ★★★★☆ | $1000-5000 | F16 |
+| [medallion](#6-medallion) | Medallion Architecture (Bronze/Silver/Gold) | ★★★☆☆ | $300-1200 | F8 |
+| [realtime_streaming](#7-realtime-streaming) | IoT, events, real-time | ★★★★☆ | $800-2500 | F16 |
+| [compliance_regulated](#8-compliance-regulated) | Healthcare, Finance, Gov | ★★★★★ | $1500-5000 | F16 |
+| [data_mesh_domain](#9-data-mesh-domain) | Domain-driven orgs | ★★★★☆ | $500-2000 | F16 |
+| [migration_hybrid](#10-migration-hybrid) | Cloud migration projects | ★★★★☆ | $1000-5000 | F16 |
+| [specialized_timeseries](#11-specialized-timeseries) | Time-series, APM, logs | ★★★★☆ | $1000-5000 | F16 |
 
 ---
 
@@ -191,7 +192,66 @@ Comprehensive reference implementation showcasing all framework capabilities.
 
 ---
 
-## 6. Real-Time Streaming
+## 6. Medallion
+
+**File:** `templates/blueprints/medallion.yaml`
+
+### Overview
+
+Industry-standard Medallion Architecture (Bronze → Silver → Gold) for scalable data engineering with clear data lineage and auditability.
+
+### Key Features
+
+- ✅ **Three-tier data architecture** (Bronze/Silver/Gold lakehouses)
+- ✅ **Serving warehouse** (SQL-accessible Gold layer)
+- ✅ **Transformation notebooks** (ingestion, quality checks, aggregation)
+- ✅ **Orchestration pipeline** (daily refresh)
+- ✅ **Full RBAC** (admin, contributor, viewer, CI/CD service principal)
+- ✅ **Environment overrides** (dev/test/prod with separate capacities)
+- ✅ **Git integration** ready
+
+### Use Cases
+
+- Scalable data engineering foundations
+- Enterprise data lakehouse platforms
+- Clear data lineage and auditability requirements
+- Transform to medallion architecture
+- Standard Bronze/Silver/Gold processing pipelines
+
+### Resource Footprint
+
+- **Items:** 3 lakehouses, 1 warehouse, 3 notebooks, 1 pipeline, 6 principals
+- **Cost:** $300-1200/month (F8-F16)
+- **Capacity:** F8 minimum
+
+### Layer Details
+
+| Layer | Lakehouse | Purpose |
+|-------|-----------|---------|
+| **Bronze** | `lh_bronze` | Raw data landing zone (immutable, append-only) |
+| **Silver** | `lh_silver` | Cleaned, deduplicated, validated data |
+| **Gold** | `lh_gold` | Star schema / dimensional models for reporting |
+
+### Getting Started
+
+```bash
+python scripts/dev/generate_project.py "Acme Corp" "Sales Data" \
+  --template medallion \
+  --capacity-id ${FABRIC_CAPACITY_ID}
+
+make deploy config=config/projects/acme_corp/sales_data.yaml env=dev
+```
+
+### Configuration Notes
+
+- Each layer is isolated in its own Lakehouse (best practice)
+- `wh_serving` provides a SQL-accessible endpoint for BI tools
+- Use the `marketing_data_refresh` pipeline as a starting point for custom orchestration
+- Environment overrides set separate capacity IDs for dev/test/prod
+
+---
+
+## 7. Real-Time Streaming
 
 **File:** `templates/blueprints/realtime_streaming.yaml`
 
@@ -248,7 +308,7 @@ make deploy config=config/projects/techcorp/iot_platform.yaml env=dev
 
 ---
 
-## 7. Compliance-Regulated
+## 8. Compliance-Regulated
 
 **File:** `templates/blueprints/compliance_regulated.yaml`
 
@@ -323,7 +383,7 @@ make deploy config=config/projects/healthcare_inc/patient_data_platform.yaml env
 
 ---
 
-## 8. Data Mesh Domain
+## 9. Data Mesh Domain
 
 **File:** `templates/blueprints/data_mesh_domain.yaml`
 
@@ -395,7 +455,7 @@ make deploy config=config/projects/enterprise_corp/sales_domain.yaml env=prod
 
 ---
 
-## 9. Migration & Hybrid
+## 10. Migration & Hybrid
 
 **File:** `templates/blueprints/migration_hybrid.yaml`
 
@@ -495,7 +555,7 @@ make deploy config=config/projects/legacy_corp/cloud_migration.yaml env=test
 
 ---
 
-## 10. Specialized Time-Series
+## 11. Specialized Time-Series
 
 **File:** `templates/blueprints/specialized_timeseries.yaml`
 
@@ -743,6 +803,7 @@ fabric-cicd diagnose --check-capacity "${FABRIC_CAPACITY_ID}"
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.1.0 | 2026-02-10 | Added medallion template, renumbered catalog to 11 entries |
 | 2.0.0 | 2025-12-10 | Added 6 new templates (realtime_streaming, minimal_starter, compliance_regulated, data_mesh_domain, migration_hybrid, specialized_timeseries) |
 | 1.1.0 | 2025-11-28 | Updated basic_etl, advanced_analytics, data_science templates |
 | 1.0.0 | 2025-11-15 | Initial release with 4 templates |

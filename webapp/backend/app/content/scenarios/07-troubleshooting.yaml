@@ -17,7 +17,7 @@ prerequisites: []
 
 learning_outcomes:
   - "Run preflight diagnostics with `make diagnose`"
-  - "Use `python scripts/admin/preflight_check.py --auto-install` for comprehensive checks"
+  - "Use `python scripts/admin/preflight_check.py` for comprehensive checks"
   - "Examine audit logs in `audit_logs/fabric_operations_*.jsonl`"
   - "Debug ADO access with `python scripts/admin/utilities/debug_ado_access.py`"
   - "List workspaces with `python scripts/admin/utilities/list_workspaces.py`"
@@ -61,7 +61,7 @@ steps:
       | Purpose | Command |
       |---------|---------|
       | **Preflight check** | `make diagnose` |
-      | **Detailed diagnostics** | `python scripts/admin/preflight_check.py --auto-install` |
+      | **Detailed diagnostics** | `python scripts/admin/preflight_check.py` |
       | **Docker diagnostics** | `make docker-diagnose ENVFILE=.env` |
       | **Validate config** | `make validate config=...` |
       | **Debug ADO access** | `python scripts/admin/utilities/debug_ado_access.py` |
@@ -105,8 +105,8 @@ steps:
         # Quick check using Make (RECOMMENDED)
         make diagnose
         
-        # Detailed check with auto-install option
-        python scripts/admin/preflight_check.py --auto-install
+        # Run detailed diagnostics
+        python scripts/admin/preflight_check.py
         
         # Docker environment check
         make docker-diagnose ENVFILE=.env
@@ -140,7 +140,7 @@ steps:
       ════════════════════════════════════════════════════════════════
     tips:
       - If any check fails, fix it before proceeding
-      - "`--auto-install` will install missing Fabric CLI automatically"
+      - "Run preflight checks to validate environment setup"
 
   - id: audit-logs
     title: "Step 2: Check Audit Logs"
@@ -753,7 +753,7 @@ steps:
         # Full syntax for each script:
         
         # Preflight check
-        python scripts/admin/preflight_check.py --auto-install
+        python scripts/admin/preflight_check.py
         
         # Debug ADO access
         python scripts/admin/utilities/debug_ado_access.py \
@@ -855,7 +855,7 @@ steps:
       | Command | Purpose |
       |---------|---------|
       | `make diagnose` | Quick preflight check |
-      | `python scripts/admin/preflight_check.py --auto-install` | Detailed check + auto-fix |
+      | `python scripts/admin/preflight_check.py` | Detailed environment check |
       | `make docker-diagnose ENVFILE=.env` | Docker environment check |
       | `python scripts/admin/utilities/debug_ado_access.py` | ADO connectivity test |
       | `python scripts/admin/utilities/list_workspaces.py` | Verify workspace access |

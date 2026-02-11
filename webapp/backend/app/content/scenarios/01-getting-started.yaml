@@ -351,7 +351,7 @@ steps:
       | `make diagnose` | Run preflight check | `make diagnose` |
       | `make validate` | Validate config | `make validate config=path/to/config.yaml` |
       | `make deploy` | Deploy workspace | `make deploy config=path/to/config.yaml env=dev` |
-      | `make destroy` | Destroy workspace | `make destroy config=path/to/config.yaml env=dev` |
+      | `make destroy` | Destroy workspace | `make destroy config=path/to/config.yaml` |
       | `make bulk-destroy` | Bulk destroy | `make bulk-destroy file=workspaces.txt` |
       
       ## Docker Operations
@@ -496,7 +496,7 @@ steps:
       | Script | Purpose | Example |
       |--------|---------|---------|
       | `generate_project.py` | Create config from template | `python scripts/dev/generate_project.py "Org" "Project" --template basic_etl` |
-      | `preflight_check.py` | Validate environment | `python scripts/admin/preflight_check.py --auto-install` |
+      | `preflight_check.py` | Validate environment | `python scripts/admin/preflight_check.py` |
       | `bulk_destroy.py` | Destroy multiple workspaces | `python scripts/admin/bulk_destroy.py workspaces.txt` |
       
       ## Utility Scripts (in `scripts/admin/utilities/`)
@@ -521,8 +521,8 @@ steps:
         # Run preflight check
         python scripts/admin/preflight_check.py
         
-        # Run preflight check with auto-install
-        python scripts/admin/preflight_check.py --auto-install
+        # Run preflight check
+        python scripts/admin/preflight_check.py
         
         # List your accessible workspaces
         python scripts/admin/utilities/list_workspaces.py
@@ -811,8 +811,7 @@ steps:
         # OR run the Python script directly
         python scripts/admin/preflight_check.py
         
-        # OR with auto-install option (installs Fabric CLI if missing)
-        python scripts/admin/preflight_check.py --auto-install
+        python scripts/admin/preflight_check.py
         
         # OR using the CLI
         fabric-cicd diagnose
@@ -941,7 +940,7 @@ steps:
       | **Generate Project** | - | - | `python scripts/dev/generate_project.py "Org" "Proj" --template basic_etl` |
       | **Validate Config** | `make validate config=...` | `fabric-cicd validate ...` | - |
       | **Deploy** | `make deploy config=... env=dev` | `fabric-cicd deploy ... --env dev` | - |
-      | **Destroy** | `make destroy config=... env=dev` | `fabric-cicd destroy ... --env dev` | - |
+      | **Destroy** | `make destroy config=...` | `fabric-cicd destroy ... --env dev` | - |
       | **List Workspaces** | - | - | `python scripts/admin/utilities/list_workspaces.py` |
       
       ## Recommended Learning Path

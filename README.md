@@ -370,7 +370,9 @@ python scripts/admin/utilities/debug_connection.py \
 Lists all items in a specified Fabric workspace to verify deployment.
 
 ```bash
-python scripts/admin/utilities/list_workspace_items.py --workspace "Workspace Name"
+python scripts/admin/utilities/list_workspace_items.py "Workspace Name"
+# Or via Make:
+make list-items workspace="Workspace Name"
 ```
 
 ## Project Structure

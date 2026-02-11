@@ -98,6 +98,7 @@ def main():
             "advanced_analytics",
             "data_science",
             "extensive_example",
+            "medallion",
             "realtime_streaming",
             "minimal_starter",
             "compliance_regulated",

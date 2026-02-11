@@ -332,7 +332,7 @@ steps:
       make docker-feature-deploy config=config/projects/acme_corp/sales.yaml env=dev branch=feature/new-report
       
       # Clean up when done
-      make destroy config=config/projects/acme_corp/sales.yaml env=dev
+      make destroy config=config/projects/acme_corp/sales.yaml
       ```
       
       ### Git Integration
@@ -393,7 +393,7 @@ steps:
       python scripts/admin/utilities/list_workspace_items.py --workspace "workspace-name"
       
       # Destroy workspace
-      make destroy config=config/projects/org/project.yaml env=dev
+      make destroy config=config/projects/org/project.yaml
       ```
       
       ### Docker (for CI/CD)

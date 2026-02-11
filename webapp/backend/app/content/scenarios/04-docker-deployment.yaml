@@ -350,7 +350,7 @@ steps:
       language: bash
       content: |
         # Destroy using Makefile (requires confirmation)
-        make docker-destroy config=config/projects/acme_corp/sales_analytics.yaml env=dev ENVFILE=.env
+        make docker-destroy config=config/projects/acme_corp/sales_analytics.yaml ENVFILE=.env
         
         # OR manually
         docker run -it --rm \

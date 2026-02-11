@@ -25,10 +25,15 @@ All notable changes to this project will be documented in this file.
 
 - Added 23 new unit tests for `FabricDeploymentPipelineAPI` service
 - Added 20 new unit tests for onboard redesign (`test_onboard.py`)
-- Total: **185 tests passing** (142 existing + 23 deployment pipeline + 20 onboard)
+- Added 5 new unit tests for `_enrich_principals()` governance SP injection
+- Total: **188 tests passing** (142 existing + 23 deployment pipeline + 20 onboard + 3 governance)
 
 ### Fixed
 
+- **Governance SP Injection**: Test/Prod workspaces now receive mandatory `ADDITIONAL_ADMIN_PRINCIPAL_ID` and `ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID` via new `_enrich_principals()` helper in `onboard.py` (previously only Dev stage received these)
+- **Stale Admin Script Imports**: Replaced legacy `from src.core` imports with `usf_fabric_cli` paths in `list_workspace_items.py`, `init_ado_repo.py`, `debug_connection.py`, `debug_ado_access.py`
+- **`list_workspace_items.py` Rewrite**: Replaced broken `FabricSecrets` + SP auth flow with `get_environment_variables()` pattern (matching `list_workspaces.py`), fixing tenant_id validation error
+- **Makefile `list-items` target**: Added `PYTHONPATH` to enable correct module resolution
 - **Deployment Pipeline creation**: Added required `stages` array to `create_pipeline()` API body (Fabric API returns 400 without it)
 - **Git branch override**: Changed `config/environments/dev.yaml` `git_branch` from `develop` to `main`
 
