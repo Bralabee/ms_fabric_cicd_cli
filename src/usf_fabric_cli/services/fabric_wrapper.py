@@ -1042,7 +1042,7 @@ class FabricCLIWrapper:
             # UPN that works in some contexts
             # But we log a warning.
 
-        # Use REST API for role assignment (avoids fab CLI path-resolution issues)
+        # Use direct REST API for role assignment (avoids fab CLI issues)
         workspace_id = self.get_workspace_id(workspace_name)
         if workspace_id:
             # Map role names to Fabric API values
@@ -1054,83 +1054,95 @@ class FabricCLIWrapper:
             }
             api_role = role_map.get(role, role)
 
-            # Determine principal type from format
-            is_guid = bool(
-                re.match(
-                    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                    principal_id.lower(),
-                )
-            )
-            principal_type = "User" if ("@" in principal_id or is_guid) else "User"
-
             # Try principal types in order: User → ServicePrincipal → Group
             principal_types_to_try = ["User", "ServicePrincipal", "Group"]
             last_error = ""
 
             for ptype in principal_types_to_try:
+                # Fabric API expects nested format:
+                # {"principal": {"id": "...", "type": "..."}, "role": "..."}
                 payload = {
-                    "identifier": principal_id,
-                    "principalType": ptype,
-                    "workspaceRole": api_role,
+                    "principal": {
+                        "id": principal_id,
+                        "type": ptype,
+                    },
+                    "role": api_role,
                 }
-                command = [
-                    "api",
-                    f"workspaces/{workspace_id}/roleAssignments",
-                    "-X",
-                    "post",
-                    "-i",
-                    json.dumps(payload),
-                ]
-                result = self._execute_command(command, check_existence=True)
 
-                # Check for API errors in response body (fab api may exit 0
-                # even when the REST API returns 4xx)
-                if result.get("success") and result.get("data"):
-                    data = result["data"]
-                    if isinstance(data, dict):
-                        # Fabric API returns errorCode at top level or
-                        # nested under "error"
-                        api_error = data.get("errorCode") or data.get(
-                            "error", {}
-                        ).get("code", "")
-                        api_msg = data.get("message") or data.get(
-                            "error", {}
-                        ).get("message", "")
-                        if api_error:
-                            result = {
-                                "success": False,
-                                "error": f"{api_error}: {api_msg}",
-                            }
+                try:
+                    import requests
 
-                if result.get("success"):
-                    logger.info(
-                        f"Added principal {principal_id[:12]}... as "
-                        f"{ptype}/{api_role}"
+                    # Get fresh token
+                    token = self.fabric_token
+                    if self._token_manager:
+                        try:
+                            token = self._token_manager.get_token()
+                        except Exception:
+                            pass
+
+                    headers = {
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": "application/json",
+                    }
+                    url = (
+                        f"https://api.fabric.microsoft.com/v1/"
+                        f"workspaces/{workspace_id}/roleAssignments"
                     )
-                    return result
+                    resp = requests.post(url, headers=headers, json=payload)
 
-                last_error = result.get("error", "")
-                # Only retry with next type if it's a type mismatch error
-                if not any(
-                    kw in last_error
-                    for kw in [
-                        "PrincipalNotFound",
-                        "InvalidPrincipalType",
-                        "PrincipalTypeNotSupported",
-                    ]
-                ):
-                    break  # Non-type-related error, don't retry
+                    if resp.status_code == 201:
+                        logger.info(
+                            f"Added principal {principal_id[:12]}... as "
+                            f"{ptype}/{api_role}"
+                        )
+                        return {"success": True, "data": resp.json()}
+
+                    if resp.status_code == 409:
+                        # Already has a role assigned
+                        return {
+                            "success": True,
+                            "data": "already_exists",
+                            "reused": True,
+                        }
+
+                    # Parse error response
+                    try:
+                        err_body = resp.json()
+                        error_code = err_body.get("errorCode", "")
+                        error_msg = err_body.get("message", resp.text)
+                        # Check nested moreDetails for specific errors
+                        more_details = err_body.get("moreDetails", [])
+                        detail_msgs = [
+                            d.get("message", "") for d in more_details
+                        ]
+                        last_error = (
+                            f"{error_code}: {error_msg} "
+                            f"{'; '.join(detail_msgs)}".strip()
+                        )
+                    except Exception:
+                        last_error = f"HTTP {resp.status_code}: {resp.text}"
+
+                    # Only retry with next type if principal type issue
+                    if not any(
+                        kw in last_error
+                        for kw in [
+                            "PrincipalNotFound",
+                            "InvalidPrincipalType",
+                            "PrincipalTypeNotSupported",
+                            "does not exist in tenant",
+                        ]
+                    ):
+                        break  # Non-type-related error, don't retry
+
+                except Exception as e:
+                    last_error = str(e)
+                    logger.error(
+                        f"REST API call failed for principal "
+                        f"{principal_id[:12]}...: {e}"
+                    )
+                    break
 
             # All types exhausted or non-retryable error
-            if "not found" in last_error.lower() or "NotFound" in last_error:
-                logger.error(
-                    f"Principal ID {principal_id} not found in any type "
-                    f"(User/ServicePrincipal/Group). Verify the Object ID."
-                )
-                return {
-                    "success": False,
-                    "error": f"Principal {principal_id} not found in tenant",
-                }
             return {"success": False, "error": last_error}
         else:
             # Fallback to fab acl set if workspace ID not available
