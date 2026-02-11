@@ -62,8 +62,7 @@ debug_*.json
 *.tar.gz
 
 # Sensitive configurations (if any contain secrets)
-config/projects/
-# config/projects/*/secrets.yaml
+config/projects/*/secrets.yaml
 
 # Jupyter
 .ipynb_checkpoints
