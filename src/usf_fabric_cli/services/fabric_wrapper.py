@@ -54,6 +54,9 @@ class FabricCLIWrapper:
         self.cli_version: Optional[str] = None
         self.min_version = min_version or MINIMUM_CLI_VERSION
         self._token_manager = token_manager
+        # Cache workspace name → ID to avoid fab CLI lookup failures
+        # after REST API-based workspace creation
+        self._workspace_id_cache: Dict[str, str] = {}
 
         # Validate CLI version if requested
         if validate_version:
@@ -144,6 +147,17 @@ class FabricCLIWrapper:
                 logger.info(
                     "Attempting to login to Fabric CLI with Service Principal..."
                 )
+
+                # Enable plaintext token fallback for CI/CD environments
+                # (GitHub Actions runners lack a desktop keyring)
+                try:
+                    subprocess.run(
+                        ["fab", "config", "set",
+                         "encryption_fallback_enabled", "true"],
+                        capture_output=True, check=False
+                    )
+                except Exception:
+                    pass
 
                 # Logout first to clear any stale state
                 try:
@@ -370,6 +384,10 @@ class FabricCLIWrapper:
                 else:
                     workspace_id = data.get("id")
 
+            # Cache for subsequent lookups
+            if workspace_id:
+                self._workspace_id_cache[name] = workspace_id
+
             return {
                 "success": True,
                 "data": "already_exists",
@@ -478,6 +496,9 @@ class FabricCLIWrapper:
                             result["workspace_id"] = data["result"]["data"][0].get("id")
                         else:
                             result["workspace_id"] = data.get("id")
+            # Cache the workspace ID for subsequent lookups
+            if result.get("workspace_id"):
+                self._workspace_id_cache[name] = result["workspace_id"]
             return result
         else:
             print("DEBUG: Not a GUID capacity. Using mkdir.")
@@ -513,6 +534,10 @@ class FabricCLIWrapper:
                     else:
                         result["workspace_id"] = data.get("id")
 
+            # Cache the workspace ID for subsequent lookups
+            if result.get("workspace_id"):
+                self._workspace_id_cache[name] = result["workspace_id"]
+
             return result
 
     def delete_workspace(self, name: str) -> Dict[str, Any]:
@@ -527,6 +552,10 @@ class FabricCLIWrapper:
 
     def get_workspace_id(self, name: str) -> Optional[str]:
         """Helper to get workspace ID"""
+        # Check cache first (populated after REST API-based workspace creation)
+        if name in self._workspace_id_cache:
+            return self._workspace_id_cache[name]
+
         workspace_info = self.get_workspace(name)
         if workspace_info.get("success") and workspace_info.get("data"):
             data = workspace_info["data"]
@@ -653,6 +682,24 @@ class FabricCLIWrapper:
             ]
             return self._execute_command(command)
         else:
+            # Try REST API first (avoids fab CLI path-resolution issues)
+            workspace_id = self.get_workspace_id(workspace_name)
+            if workspace_id:
+                payload = {
+                    "displayName": name,
+                    "type": "Lakehouse",
+                    "description": description,
+                }
+                command = [
+                    "api",
+                    f"workspaces/{workspace_id}/items",
+                    "-X",
+                    "post",
+                    "-i",
+                    json.dumps(payload),
+                ]
+                return self._execute_command(command, check_existence=True)
+            # Fallback to fab mkdir
             path = f"{workspace_name}.Workspace/{name}.Lakehouse"
             if self._item_exists(path):
                 return {"success": True, "data": "already_exists", "reused": True}
@@ -702,6 +749,24 @@ class FabricCLIWrapper:
             ]
             return self._execute_command(command)
         else:
+            # Try REST API first (avoids fab CLI path-resolution issues)
+            workspace_id = self.get_workspace_id(workspace_name)
+            if workspace_id:
+                payload = {
+                    "displayName": name,
+                    "type": "Warehouse",
+                    "description": description,
+                }
+                command = [
+                    "api",
+                    f"workspaces/{workspace_id}/items",
+                    "-X",
+                    "post",
+                    "-i",
+                    json.dumps(payload),
+                ]
+                return self._execute_command(command, check_existence=True)
+            # Fallback to fab mkdir
             path = f"{workspace_name}.Workspace/{name}.Warehouse"
             if self._item_exists(path):
                 return {"success": True, "data": "already_exists", "reused": True}
@@ -746,6 +811,20 @@ class FabricCLIWrapper:
             ]
             return self._execute_command(command)
         else:
+            # Try REST API first (avoids fab CLI path-resolution issues)
+            workspace_id = self.get_workspace_id(workspace_name)
+            if workspace_id:
+                payload = {"displayName": name, "type": "Notebook"}
+                command = [
+                    "api",
+                    f"workspaces/{workspace_id}/items",
+                    "-X",
+                    "post",
+                    "-i",
+                    json.dumps(payload),
+                ]
+                return self._execute_command(command, check_existence=True)
+            # Fallback to fab mkdir
             path = f"{workspace_name}.Workspace/{name}.Notebook"
             if self._item_exists(path):
                 return {"success": True, "data": "already_exists", "reused": True}
@@ -795,6 +874,11 @@ class FabricCLIWrapper:
             ]
             return self._execute_command(command)
         else:
+            workspace_id = self.get_workspace_id(workspace_name)
+            if workspace_id:
+                payload = {"displayName": name, "type": "DataPipeline", "description": description}
+                command = ["api", f"workspaces/{workspace_id}/items", "-X", "post", "-i", json.dumps(payload)]
+                return self._execute_command(command, check_existence=True)
             path = f"{workspace_name}.Workspace/{name}.DataPipeline"
             if self._item_exists(path):
                 return {"success": True, "data": "already_exists", "reused": True}
@@ -844,6 +928,11 @@ class FabricCLIWrapper:
             ]
             return self._execute_command(command)
         else:
+            workspace_id = self.get_workspace_id(workspace_name)
+            if workspace_id:
+                payload = {"displayName": name, "type": "SemanticModel", "description": description}
+                command = ["api", f"workspaces/{workspace_id}/items", "-X", "post", "-i", json.dumps(payload)]
+                return self._execute_command(command, check_existence=True)
             path = f"{workspace_name}.Workspace/{name}.SemanticModel"
             if self._item_exists(path):
                 return {"success": True, "data": "already_exists", "reused": True}
@@ -894,6 +983,11 @@ class FabricCLIWrapper:
             ]
             return self._execute_command(command)
         else:
+            workspace_id = self.get_workspace_id(workspace_name)
+            if workspace_id:
+                payload = {"displayName": name, "type": item_type, "description": description}
+                command = ["api", f"workspaces/{workspace_id}/items", "-X", "post", "-i", json.dumps(payload)]
+                return self._execute_command(command, check_existence=True)
             path = f"{workspace_name}.Workspace/{name}.{item_type}"
             if self._item_exists(path):
                 return {"success": True, "data": "already_exists", "reused": True}
@@ -934,18 +1028,92 @@ class FabricCLIWrapper:
             # UPN that works in some contexts
             # But we log a warning.
 
-        # Use 'acl set'
-        command = [
-            "acl",
-            "set",
-            f"{workspace_name}.Workspace",
-            "--identity",
-            principal_id,
-            "--role",
-            role,
-            "--force",  # Skip confirmation prompt
-        ]
-        result = self._execute_command(command, check_existence=True)
+        # Use REST API for role assignment (avoids fab CLI path-resolution issues)
+        workspace_id = self.get_workspace_id(workspace_name)
+        if workspace_id:
+            # Map role names to Fabric API values
+            role_map = {
+                "Admin": "Admin",
+                "Member": "Member",
+                "Contributor": "Contributor",
+                "Viewer": "Viewer",
+            }
+            api_role = role_map.get(role, role)
+
+            # Determine principal type from format
+            is_guid = bool(
+                re.match(
+                    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    principal_id.lower(),
+                )
+            )
+            # ServicePrincipal for GUIDs that aren't user OIDs (we can't distinguish,
+            # but Fabric API accepts both "User" and "ServicePrincipal" and
+            # auto-resolves)
+            principal_type = "User" if "@" in principal_id else "ServicePrincipal"
+            # Fabric actually auto-detects; try Group first as fallback
+            if is_guid:
+                # Try as User first, which covers both human users and SPs in practice
+                principal_type = "User"
+
+            payload = {
+                "identifier": principal_id,
+                "principalType": principal_type,
+                "workspaceRole": api_role,
+            }
+
+            command = [
+                "api",
+                f"workspaces/{workspace_id}/roleAssignments",
+                "-X",
+                "post",
+                "-i",
+                json.dumps(payload),
+            ]
+            result = self._execute_command(command, check_existence=True)
+
+            if not result.get("success"):
+                error_msg = result.get("error", "")
+                # If User type failed, retry as ServicePrincipal
+                if "PrincipalNotFound" in error_msg or "InvalidPrincipalType" in error_msg:
+                    payload["principalType"] = "ServicePrincipal"
+                    command[-1] = json.dumps(payload)
+                    result = self._execute_command(command, check_existence=True)
+
+                if not result.get("success"):
+                    error_msg = result.get("error", "")
+                    # Try as Group as last resort
+                    if "PrincipalNotFound" in error_msg or "InvalidPrincipalType" in error_msg:
+                        payload["principalType"] = "Group"
+                        command[-1] = json.dumps(payload)
+                        result = self._execute_command(command, check_existence=True)
+
+            if not result.get("success"):
+                error_msg = result.get("error", "")
+                if "NotFound" in error_msg or "not found" in error_msg.lower():
+                    logger.error(
+                        f"Principal ID {principal_id} not found. Please verify the "
+                        f"Object ID and ensure it exists in the tenant."
+                    )
+                    return {
+                        "success": True,
+                        "message": f"Principal {principal_id} not found (skipped)",
+                        "skipped": True,
+                    }
+            return result
+        else:
+            # Fallback to fab acl set if workspace ID not available
+            command = [
+                "acl",
+                "set",
+                f"{workspace_name}.Workspace",
+                "--identity",
+                principal_id,
+                "--role",
+                role,
+                "--force",
+            ]
+            result = self._execute_command(command, check_existence=True)
 
         if not result.get("success"):
             error_msg = result.get("error", "")
