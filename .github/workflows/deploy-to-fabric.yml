@@ -105,13 +105,13 @@ jobs:
               FabricDeploymentPipelineAPI,
               DeploymentStage,
           )
-          from usf_fabric_cli.utils.auth import get_fabric_token
+          from usf_fabric_cli.utils.config import get_environment_variables
 
-          # Authenticate
-          token = get_fabric_token()
+          # Authenticate via Service Principal → FABRIC_TOKEN
+          env_vars = get_environment_variables(validate_vars=True)
 
           # Create API client
-          api = FabricDeploymentPipelineAPI(access_token=token)
+          api = FabricDeploymentPipelineAPI(access_token=env_vars['FABRIC_TOKEN'])
 
           # Find pipeline by name
           pipeline_name = os.environ.get('FABRIC_PIPELINE_NAME', '')
@@ -198,10 +198,10 @@ jobs:
           from usf_fabric_cli.services.deployment_pipeline import (
               FabricDeploymentPipelineAPI,
           )
-          from usf_fabric_cli.utils.auth import get_fabric_token
+          from usf_fabric_cli.utils.config import get_environment_variables
 
-          token = get_fabric_token()
-          api = FabricDeploymentPipelineAPI(access_token=token)
+          env_vars = get_environment_variables(validate_vars=True)
+          api = FabricDeploymentPipelineAPI(access_token=env_vars['FABRIC_TOKEN'])
 
           pipeline_name = '${{ inputs.pipeline_name }}'
           pipeline = api.get_pipeline_by_name(pipeline_name)
