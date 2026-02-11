@@ -122,6 +122,44 @@ def _get_pipeline_name(org_name: str, project_name: str) -> str:
     return f"{org_name}-{project_name} Pipeline"
 
 
+def _enrich_principals(principals: list) -> list:
+    """Inject mandatory env-var principals (governance SP + admin).
+
+    Mirrors the injection logic in ConfigManager._to_workspace_config()
+    to ensure Test/Prod stages receive the same mandatory principals
+    that Dev gets via the full deploy path.
+    """
+    enriched = list(principals)
+    existing_ids = {p.get("id") for p in enriched if p.get("id")}
+
+    admin_id = os.environ.get("ADDITIONAL_ADMIN_PRINCIPAL_ID", "")
+    if admin_id and admin_id not in existing_ids and not admin_id.startswith("${"):
+        enriched.append(
+            {
+                "id": admin_id,
+                "role": "Admin",
+                "description": "Mandatory Additional Admin",
+            }
+        )
+        existing_ids.add(admin_id)
+
+    contributor_id = os.environ.get("ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID", "")
+    if (
+        contributor_id
+        and contributor_id not in existing_ids
+        and not contributor_id.startswith("${")
+    ):
+        enriched.append(
+            {
+                "id": contributor_id,
+                "role": "Contributor",
+                "description": "Mandatory Additional Contributor",
+            }
+        )
+
+    return enriched
+
+
 def _create_empty_workspace(
     workspace_name: str,
     capacity_id: str,
@@ -529,6 +567,9 @@ def onboard_project(
             principals = loaded_config.get("principals", [])
         except Exception:
             logger.warning("  ⚠️  Could not load principals from config.")
+
+    # Inject mandatory env-var principals (governance SP + admin user)
+    principals = _enrich_principals(principals)
 
     # Derive workspace names
     org_slug = org_name.lower().replace(" ", "_")

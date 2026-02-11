@@ -24,6 +24,7 @@ from onboard import (  # noqa: E402
     _resolve_capacity_id,
     _get_workspace_names,
     _get_pipeline_name,
+    _enrich_principals,
     _create_empty_workspace,
     _create_deployment_pipeline,
     onboard_project,
@@ -400,3 +401,78 @@ class TestOnboardFullBootstrap:
     def test_default_stages_includes_all_three(self):
         """Default stages should include dev, test, and prod."""
         assert DEFAULT_STAGES == {"dev", "test", "prod"}
+
+
+# ── Enrich Principals Tests ───────────────────────────────────────
+
+
+class TestEnrichPrincipals:
+    """Tests for _enrich_principals env-var injection logic."""
+
+    def test_injects_admin_and_contributor(self):
+        """Should inject both mandatory principals from env vars."""
+        with patch.dict(
+            os.environ,
+            {
+                "ADDITIONAL_ADMIN_PRINCIPAL_ID": "gov-sp-oid",
+                "ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID": "contrib-oid",
+            },
+            clear=False,
+        ):
+            result = _enrich_principals([])
+            assert len(result) == 2
+            assert result[0]["id"] == "gov-sp-oid"
+            assert result[0]["role"] == "Admin"
+            assert result[1]["id"] == "contrib-oid"
+            assert result[1]["role"] == "Contributor"
+
+    def test_deduplicates_existing(self):
+        """Should not duplicate principals already in the list."""
+        existing = [{"id": "gov-sp-oid", "role": "Admin"}]
+        with patch.dict(
+            os.environ,
+            {
+                "ADDITIONAL_ADMIN_PRINCIPAL_ID": "gov-sp-oid",
+                "ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID": "contrib-oid",
+            },
+            clear=False,
+        ):
+            result = _enrich_principals(existing)
+            # Only the contributor should be added
+            assert len(result) == 2
+            assert result[1]["id"] == "contrib-oid"
+
+    def test_skips_unresolved_placeholders(self):
+        """Should skip env vars that are still ${...} placeholders."""
+        with patch.dict(
+            os.environ,
+            {
+                "ADDITIONAL_ADMIN_PRINCIPAL_ID": "${SOME_UNSET}",
+                "ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID": "",
+            },
+            clear=False,
+        ):
+            result = _enrich_principals([])
+            assert len(result) == 0
+
+    def test_skips_empty_env_vars(self):
+        """Should skip when env vars are empty."""
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("ADDITIONAL_ADMIN_PRINCIPAL_ID", None)
+            os.environ.pop("ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID", None)
+            result = _enrich_principals([{"id": "existing", "role": "Member"}])
+            assert len(result) == 1
+
+    def test_does_not_mutate_original_list(self):
+        """Should return a new list, not mutate the input."""
+        original = [{"id": "existing", "role": "Member"}]
+        with patch.dict(
+            os.environ,
+            {"ADDITIONAL_ADMIN_PRINCIPAL_ID": "admin-oid"},
+            clear=False,
+        ):
+            os.environ.pop("ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID", None)
+            result = _enrich_principals(original)
+            assert len(result) == 2
+            assert len(original) == 1  # Original unchanged
+
