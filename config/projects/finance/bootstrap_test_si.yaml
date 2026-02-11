@@ -1,0 +1,86 @@
+deployment_pipeline:
+  pipeline_name: Finance-bootstrap_test_si Pipeline
+  stages:
+    development:
+      workspace_name: finance-bootstrap-test-si
+    production:
+      capacity_id: ${PROD_CAPACITY_ID:-${FABRIC_CAPACITY_ID}}
+      workspace_name: finance-bootstrap-test-si [Production]
+    test:
+      capacity_id: ${TEST_CAPACITY_ID:-${FABRIC_CAPACITY_ID}}
+      workspace_name: finance-bootstrap-test-si [Test]
+environments:
+  dev:
+    workspace:
+      capacity_id: ${DEV_CAPACITY_ID}
+      name: Medallion_Dev
+  prod:
+    workspace:
+      capacity_id: ${PROD_CAPACITY_ID}
+      name: Medallion_Prod
+  test:
+    workspace:
+      capacity_id: ${STAGING_CAPACITY_ID}
+      name: Medallion_Test
+folders:
+- Bronze
+- Silver
+- Gold
+- Utilities
+- Pipelines
+lakehouses:
+- description: Raw data ingestion landing zone. immutable, append-only.
+  folder: Bronze
+  name: lh_bronze
+- description: Cleaned, deduplicated, and validated data.
+  folder: Silver
+  name: lh_silver
+- description: Star schema / dimensional models for reporting.
+  folder: Gold
+  name: lh_gold
+notebooks:
+- description: Generic ingestion framwork for raw data.
+  folder: Bronze
+  name: ingest_to_bronze
+- description: Quality checks and standardization (Bronze -> Silver).
+  folder: Silver
+  name: bronze_to_silver_quality
+- description: Business logic aggregation and dimensional modeling (Silver -> Gold).
+  folder: Gold
+  name: silver_to_gold_agg
+pipelines:
+- description: 'Daily refresh pipeline: Ingest -> Silver -> Gold.'
+  folder: Pipelines
+  name: marketing_data_refresh
+principals:
+- description: Project Owner / Admin
+  id: ${DEV_ADMIN_OBJECT_ID}
+  role: Admin
+- description: Data Engineering Team
+  id: ${DEV_CONTRIBUTOR_OBJECT_ID}
+  role: Contributor
+- description: Business Analysts (Consumption only)
+  id: ${PROD_VIEWERS_GROUP_ID}
+  role: Viewer
+- description: Service Principal for CI/CD automation
+  id: ${AZURE_CLIENT_ID}
+  role: Contributor
+- description: Enterprise Admin
+  id: ${ADDITIONAL_ADMIN_PRINCIPAL_ID}
+  role: Admin
+- description: Enterprise Contributor
+  id: ${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}
+  role: Contributor
+warehouses:
+- description: SQL-accessible serving layer for BI tools.
+  folder: Gold
+  name: wh_serving
+workspace:
+  capacity_id: ${FABRIC_CAPACITY_ID}
+  description: Data product implementing Medallion Architecture (Bronze/Silver/Gold)
+  display_name: Finance bootstrap_test_si
+  domain: ${FABRIC_DOMAIN_NAME}
+  git_branch: main
+  git_directory: /
+  git_repo: https://github.com/BralaBee-LEIT/finance-bootstrap-test-si.git
+  name: finance-bootstrap-test-si

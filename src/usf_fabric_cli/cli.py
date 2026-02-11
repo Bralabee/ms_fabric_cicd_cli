@@ -9,11 +9,16 @@ import typer
 import logging
 from typing import Optional
 
+from dotenv import load_dotenv
 from rich.console import Console
 
 from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
 from usf_fabric_cli.services.deployer import FabricDeployer
+
+# Ensure .env vars are loaded for all CLI commands, including those that
+# read env vars directly (e.g., init-github-repo reads GITHUB_TOKEN).
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -239,6 +244,11 @@ def promote(
         "-n",
         help="Deployment note",
     ),
+    wait: bool = typer.Option(
+        True,
+        "--wait/--no-wait",
+        help="Wait for promotion to complete (default: wait)",
+    ),
 ):
     """Promote content through Fabric Deployment Pipeline stages (Dev → Test → Prod)"""
 
@@ -265,7 +275,7 @@ def promote(
             source_stage_name=source_stage,
             target_stage_name=target_stage,
             note=note,
-            wait=True,
+            wait=wait,
         )
 
         if result["success"]:
@@ -539,7 +549,9 @@ def init_github_repo(
         )
         _sys.path.insert(0, str(scripts_dir))
 
-        from init_github_repo import init_github_repo as _init_repo  # type: ignore[import]
+        from init_github_repo import (  # type: ignore[import]
+            init_github_repo as _init_repo,
+        )
 
         token = os.getenv("GITHUB_TOKEN")
         if not token:
@@ -557,9 +569,7 @@ def init_github_repo(
             console.print(f"[green]✅ Repository ready: {clone_url}[/green]")
             # Show the browsable web URL for convenience
             web_url = clone_url.removesuffix(".git")
-            console.print(
-                f"[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}"
-            )
+            console.print(f"[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}")
         else:
             console.print("[red]❌ Failed to initialize repository[/red]")
             raise typer.Exit(1)

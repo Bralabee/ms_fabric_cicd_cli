@@ -79,7 +79,7 @@ CMD ["--help"]
 # docker run --rm \
 #   -e AZURE_CLIENT_ID=${AZURE_CLIENT_ID} \
 #   -e AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET} \
-#   -e TENANT_ID=${TENANT_ID} \
+#   -e AZURE_TENANT_ID=${AZURE_TENANT_ID} \
 #   -v $(pwd)/config:/app/config \
 #   usf-fabric-cli-cicd:latest \
 #   deploy config/my-workspace.yaml --env prod

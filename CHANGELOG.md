@@ -39,7 +39,7 @@ All notable changes to this project will be documented in this file.
 - Added 20 new unit tests for onboard redesign (`test_onboard.py`)
 - Added 5 new unit tests for `_enrich_principals()` governance SP injection
 - Added 7 new unit tests for CLI `promote` subcommand (`test_cli_promote.py`)
-- Total: **195 tests passing** (142 existing + 23 deployment pipeline + 20 onboard + 3 governance + 7 promote CLI)
+- Total: **283 tests passing** (unit + integration suites)
 
 ### Fixed
 

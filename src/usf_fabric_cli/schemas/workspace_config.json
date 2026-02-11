@@ -192,22 +192,55 @@
       "description": "Fabric Deployment Pipeline configuration for stage promotion (Dev → Test → Prod)",
       "type": "object",
       "properties": {
-        "name": {
+        "pipeline_name": {
           "type": "string",
           "description": "Display name for the Deployment Pipeline"
         },
         "stages": {
           "type": "object",
-          "description": "Mapping of stage names to workspace names",
+          "description": "Mapping of stage names to stage configuration objects",
           "properties": {
             "development": {
-              "type": "string"
+              "type": "object",
+              "properties": {
+                "workspace_name": {
+                  "type": "string"
+                },
+                "capacity_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "workspace_name"
+              ]
             },
             "test": {
-              "type": "string"
+              "type": "object",
+              "properties": {
+                "workspace_name": {
+                  "type": "string"
+                },
+                "capacity_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "workspace_name"
+              ]
             },
             "production": {
-              "type": "string"
+              "type": "object",
+              "properties": {
+                "workspace_name": {
+                  "type": "string"
+                },
+                "capacity_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "workspace_name"
+              ]
             }
           }
         }

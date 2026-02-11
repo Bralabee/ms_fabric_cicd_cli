@@ -71,10 +71,6 @@ If using Azure DevOps with a Service Principal, ensure the following:
 3. **Fabric Tenant Settings**: Enable "Service principals can use Fabric APIs" and "Service principals can create workspaces" in Fabric Admin Portal.
 4. **Workspace Admin**: The Service Principal must be assigned the **Admin** role in the workspace configuration (`project.yaml`).
 
-### 3. Configure Your Project
-
-```
-
 ### 3. End-to-End Workflow (From Scratch)
 
 Follow these steps to deploy a new project from scratch:

@@ -668,8 +668,7 @@ class FabricDeployer:
                 )
             self._git_browse_url = browse_url
             console.print(
-                f"[bold cyan]🔗 Open repo in browser:[/bold cyan] "
-                f"{browse_url}"
+                f"[bold cyan]🔗 Open repo in browser:[/bold cyan] " f"{browse_url}"
             )
 
             # Step 3: Initialize the Git connection
@@ -774,35 +773,19 @@ class FabricDeployer:
         logger.warning(f"Could not parse Git URL: {git_url}")
         return None
 
-    def _show_deployment_summary(
-        self, workspace_name: str, duration: float
-    ):
+    def _show_deployment_summary(self, workspace_name: str, duration: float):
         """Show deployment summary"""
 
-        summary_table = Table(
-            title=f"Deployment Summary: {workspace_name}"
-        )
+        summary_table = Table(title=f"Deployment Summary: {workspace_name}")
         summary_table.add_column("Metric", style="cyan")
         summary_table.add_column("Value", style="green")
 
-        summary_table.add_row(
-            "Workspace ID", self.workspace_id or "N/A"
-        )
-        summary_table.add_row(
-            "Items Created", str(self.items_created)
-        )
-        summary_table.add_row(
-            "Duration", f"{duration:.2f} seconds"
-        )
-        summary_table.add_row(
-            "Environment", self.environment or "default"
-        )
+        summary_table.add_row("Workspace ID", self.workspace_id or "N/A")
+        summary_table.add_row("Items Created", str(self.items_created))
+        summary_table.add_row("Duration", f"{duration:.2f} seconds")
+        summary_table.add_row("Environment", self.environment or "default")
         if self._git_browse_url:
-            summary_table.add_row(
-                "Git Repository", self._git_browse_url
-            )
+            summary_table.add_row("Git Repository", self._git_browse_url)
 
         console.print(summary_table)
-        console.print(
-            "\n[green]✅ Deployment completed successfully![/green]"
-        )
+        console.print("\n[green]✅ Deployment completed successfully![/green]")

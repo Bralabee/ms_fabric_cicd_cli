@@ -113,19 +113,23 @@ jobs:
     
     - name: Verify credentials
       env:
-        FABRIC_TOKEN: ${{ secrets.FABRIC_TOKEN }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       run: |
-        if [ -z "$FABRIC_TOKEN" ]; then
-          echo "Error: FABRIC_TOKEN secret not configured."
-          echo "Add FABRIC_TOKEN and TENANT_ID secrets in GitHub repository settings."
-          exit 1
-        fi
-        echo "Credentials verified"
+        for var in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET; do
+          if [ -z "${!var}" ]; then
+            echo "::error::Required secret $var is not configured"
+            exit 1
+          fi
+        done
+        echo "✅ Credentials verified"
     
     - name: Deploy to ${{ github.event.inputs.environment }}
       env:
-        FABRIC_TOKEN: ${{ secrets.FABRIC_TOKEN }}
-        TENANT_ID: ${{ secrets.TENANT_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       run: |
         export PYTHONPATH=$PYTHONPATH:$(pwd)/src
         python -m usf_fabric_cli.cli deploy \

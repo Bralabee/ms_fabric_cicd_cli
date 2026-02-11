@@ -33,6 +33,12 @@ import os
 from pathlib import Path
 from typing import Optional, Set
 
+from dotenv import load_dotenv
+
+# Load .env so all env-var reads (GITHUB_TOKEN, FABRIC_CAPACITY_ID, etc.) work
+# consistently with the rest of the project.
+load_dotenv()
+
 # Add src to path for imports if needed
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "src"))
 

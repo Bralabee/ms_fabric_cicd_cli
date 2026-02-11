@@ -10,9 +10,7 @@ from typing import Any, Dict
 
 from usf_fabric_cli.exceptions import FabricTelemetryError
 
-MAX_LOG_SIZE_BYTES = (
-    int(os.getenv("FABRIC_TELEMETRY_MAX_MB", "50")) * 1024 * 1024
-)
+MAX_LOG_SIZE_BYTES = int(os.getenv("FABRIC_TELEMETRY_MAX_MB", "50")) * 1024 * 1024
 
 
 class TelemetryClient:
@@ -23,9 +21,7 @@ class TelemetryClient:
         log_directory: str | Path | None = None,
         enabled: bool | None = None,
     ):
-        if enabled is False or os.getenv(
-            "DISABLE_FABRIC_TELEMETRY", ""
-        ) == "1":
+        if enabled is False or os.getenv("DISABLE_FABRIC_TELEMETRY", "") == "1":
             self._enabled = False
         else:
             self._enabled = True
@@ -35,9 +31,7 @@ class TelemetryClient:
         else:
             self._log_dir = Path.home() / ".fabric-cli"
 
-        self._log_file = (
-            self._log_dir / "fabric_cli_telemetry.jsonl"
-        )
+        self._log_file = self._log_dir / "fabric_cli_telemetry.jsonl"
 
     @property
     def _max_log_size(self) -> int:
@@ -48,8 +42,7 @@ class TelemetryClient:
         """Rotate log file if it exceeds size threshold."""
         if (
             self._log_file.exists()
-            and self._log_file.stat().st_size
-            > self._max_log_size
+            and self._log_file.stat().st_size > self._max_log_size
         ):
             rotated = self._log_file.with_suffix(".jsonl.1")
             if rotated.exists():
@@ -66,14 +59,10 @@ class TelemetryClient:
             self._rotate_if_needed()
 
             record: Dict[str, Any] = {
-                "timestamp": datetime.now(
-                    tz=UTC
-                ).isoformat(),
+                "timestamp": datetime.now(tz=UTC).isoformat(),
                 **kwargs,
             }
             with open(self._log_file, "a") as fh:
                 fh.write(json.dumps(record) + "\n")
         except Exception as exc:
-            raise FabricTelemetryError(
-                f"Failed to write telemetry: {exc}"
-            ) from exc
+            raise FabricTelemetryError(f"Failed to write telemetry: {exc}") from exc
