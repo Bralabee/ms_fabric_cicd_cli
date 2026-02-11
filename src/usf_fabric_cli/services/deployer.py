@@ -89,6 +89,7 @@ class FabricDeployer:
         self.items_created = 0
         self.deployment_state = DeploymentState()
         self._git_browse_url = None  # Browsable Git repo URL
+        self._effective_workspace_name = self.config.name  # May be overridden for branch workspaces
 
     def _wait_for_propagation(self, progress, seconds: int, message: str):
         """Wait with visual feedback"""
@@ -126,6 +127,9 @@ class FabricDeployer:
                     f"[yellow]Creating branch-specific workspace: "
                     f"{workspace_name}[/yellow]"
                 )
+
+        # Store the effective workspace name for use by all sub-methods
+        self._effective_workspace_name = workspace_name
 
         # Log deployment start
         self.audit.log_deployment_start(
@@ -302,17 +306,18 @@ class FabricDeployer:
 
     def _create_folders(self):
         """Create folder structure"""
+        workspace_name = self._effective_workspace_name
         if self.config.folders:
             console.print("[blue]Creating folders...[/blue]")
             for folder in self.config.folders:
-                result = self.fabric.create_folder(self.config.name, folder)
+                result = self.fabric.create_folder(workspace_name, folder)
                 if result["success"]:
                     console.print(f"  Created folder: {folder}")
 
     def _create_items(self):
         """Create all configured items"""
 
-        workspace_name = self.config.name  # We need name for CLI paths
+        workspace_name = self._effective_workspace_name
 
         # Create lakehouses
         for lakehouse in self.config.lakehouses:
@@ -328,7 +333,7 @@ class FabricDeployer:
                     "Lakehouse",
                     lakehouse["name"],
                     self.workspace_id,
-                    self.config.name,
+                    workspace_name,
                     lakehouse.get("folder"),
                 )
                 if not result.get("reused"):
@@ -348,7 +353,7 @@ class FabricDeployer:
                     "Warehouse",
                     warehouse["name"],
                     self.workspace_id,
-                    self.config.name,
+                    workspace_name,
                     warehouse.get("folder"),
                 )
                 if not result.get("reused"):
@@ -368,7 +373,7 @@ class FabricDeployer:
                     "Notebook",
                     notebook["name"],
                     self.workspace_id,
-                    self.config.name,
+                    workspace_name,
                     notebook.get("folder"),
                 )
                 if not result.get("reused"):
@@ -388,7 +393,7 @@ class FabricDeployer:
                     "Pipeline",
                     pipeline["name"],
                     self.workspace_id,
-                    self.config.name,
+                    workspace_name,
                     pipeline.get("folder"),
                 )
                 if not result.get("reused"):
@@ -408,7 +413,7 @@ class FabricDeployer:
                     "SemanticModel",
                     model["name"],
                     self.workspace_id,
-                    self.config.name,
+                    workspace_name,
                     model.get("folder"),
                 )
                 if not result.get("reused"):
@@ -429,14 +434,14 @@ class FabricDeployer:
                     resource["type"],
                     resource["name"],
                     self.workspace_id,
-                    self.config.name,
+                    workspace_name,
                 )
                 if not result.get("reused"):
                     self.items_created += 1
 
     def _add_principals(self):
         """Add principals to workspace"""
-        workspace_name = self.config.name
+        workspace_name = self._effective_workspace_name
         for principal in self.config.principals:
             # Handle comma-separated lists of IDs (e.g. from env vars)
             principal_id_raw = principal["id"]
@@ -463,13 +468,23 @@ class FabricDeployer:
                         pid,
                         principal.get("role", "Member"),
                         self.workspace_id,
-                        self.config.name,
+                        workspace_name,
                     )
 
     def _assign_domain(self):
         """Assign workspace to domain"""
         if self.config.domain:
-            result = self.fabric.assign_to_domain(self.config.name, self.config.domain)
+            # Skip if domain contains unresolved env var placeholders
+            if "${" in self.config.domain:
+                console.print(
+                    f"[yellow]⚠ Skipping domain assignment: "
+                    f"'{self.config.domain}' contains unresolved environment "
+                    f"variable. Set the FABRIC_DOMAIN_NAME secret if needed.[/yellow]"
+                )
+                return
+            result = self.fabric.assign_to_domain(
+                self._effective_workspace_name, self.config.domain
+            )
             if result["success"]:
                 console.print(f"  Assigned to domain: {self.config.domain}")
             else:
@@ -491,7 +506,7 @@ class FabricDeployer:
             console.print("[red]Cannot connect Git: Workspace ID not available[/red]")
             return
 
-        workspace_name = self.config.name
+        workspace_name = self._effective_workspace_name
         git_repo = self.config.git_repo
         git_directory = self.config.git_directory or "/"
 
