@@ -25,6 +25,9 @@ learning_outcomes:
   - "Generate projects with `make docker-generate`"
   - "Initialize repos with `make docker-init-repo`"
   - "Deploy feature branches with `make docker-feature-deploy`"
+  - "Full bootstrap with `make docker-onboard`"
+  - "List workspaces with `make docker-list-workspaces`"
+  - "List workspace items with `make docker-list-items`"
   - Manage multi-tenant deployments with different ENVFILE values
   - Debug inside containers
 
@@ -64,15 +67,22 @@ steps:
       
       | Command | Purpose |
       |---------|---------|
-      | `make docker-build` | Build the Docker image |
+      | `make docker-build` | Build the Docker image (multi-stage, ~60% smaller) |
       | `make docker-shell ENVFILE=.env` | Interactive debugging shell |
       | `make docker-diagnose ENVFILE=.env` | Run preflight checks |
       | `make docker-validate config=... ENVFILE=.env` | Validate configuration |
       | `make docker-deploy config=... env=dev ENVFILE=.env` | Deploy workspace |
       | `make docker-destroy config=... ENVFILE=.env` | Destroy workspace |
+      | `make docker-promote pipeline="Name" ENVFILE=.env` | Promote via Deployment Pipeline |
       | `make docker-generate org="..." project="..." template="..."` | Generate config |
       | `make docker-init-repo org="..." project="..." repo="..."` | Initialize ADO repo |
       | `make docker-feature-deploy config=... env=dev branch=feature/x` | Feature branch deploy |
+      | `make docker-onboard org="..." project="..." ENVFILE=.env` | Full bootstrap (Dev+Test+Prod+Pipeline) |
+      | `make docker-onboard-isolated org="..." project="..." git_owner="..."` | Bootstrap with auto-created repo |
+      | `make docker-feature-workspace org="..." project="..." ENVFILE=.env` | Create isolated feature workspace |
+      | `make docker-bulk-destroy file=... ENVFILE=.env` | Bulk destroy workspaces from list |
+      | `make docker-list-workspaces ENVFILE=.env` | List all accessible workspaces |
+      | `make docker-list-items workspace="..." ENVFILE=.env` | List items in a workspace |
     tips:
       - Docker deployment is recommended for production CI/CD use
       - "All `docker-*` commands require the image built first"
@@ -129,10 +139,11 @@ steps:
       | Component | Description |
       |-----------|-------------|
       | Python 3.11 | Runtime environment |
+      | Multi-stage build | Builder installs deps, runtime copies only the pre-built venv (~60% smaller) |
       | Framework code | All `src/usf_fabric_cli/` modules and scripts |
       | Dependencies | typer, rich, pyyaml, jinja2, azure-identity |
-      | Fabric CLI | Official Microsoft Fabric CLI (`fab` command) |
-      | Non-root user | Security hardening |
+      | Fabric CLI | Official Microsoft Fabric CLI v1.3.1 (`fab` command) |
+      | 11 CLI subcommands | deploy, validate, diagnose, destroy, promote, onboard, generate, list-workspaces, list-items, bulk-destroy, init-github-repo |
     code:
       language: bash
       content: |
@@ -200,10 +211,17 @@ steps:
         --help     Show this message and exit.
       
       Commands:
-        deploy    Deploy Fabric workspace from configuration file.
-        destroy   Destroy Fabric workspace and all items.
-        diagnose  Run preflight diagnostics.
-        validate  Validate configuration file syntax and structure.
+        bulk-destroy    Bulk destroy workspaces from a list file.
+        deploy          Deploy Fabric workspace from configuration file.
+        destroy         Destroy Fabric workspace and all items.
+        diagnose        Run preflight diagnostics.
+        generate        Generate project configuration from blueprint template.
+        init-github-repo  Create and initialize a GitHub repository.
+        list-items      List all items in a Fabric workspace.
+        list-workspaces List all accessible Fabric workspaces.
+        onboard         Onboard a new Fabric Data Product (full bootstrap).
+        promote         Promote content through Deployment Pipeline stages.
+        validate        Validate configuration file syntax and structure.
       
       All imports OK
     tips:
@@ -622,15 +640,22 @@ steps:
       
       | Command | Purpose |
       |---------|---------|
-      | `make docker-build` | Build image |
+      | `make docker-build` | Build image (multi-stage) |
       | `make docker-shell ENVFILE=.env` | Interactive debugging |
       | `make docker-diagnose ENVFILE=.env` | Preflight checks |
       | `make docker-validate config=... ENVFILE=.env` | Validate config |
       | `make docker-deploy config=... env=dev ENVFILE=.env` | Deploy |
       | `make docker-destroy config=... ENVFILE=.env` | Destroy |
+      | `make docker-promote pipeline="Name" ENVFILE=.env` | Promote via Pipeline |
       | `make docker-generate org="..." project="..." template="..."` | Generate |
       | `make docker-init-repo org="..." project="..." repo="..."` | Init repo |
       | `make docker-feature-deploy config=... env=dev branch=feature/x` | Feature branch |
+      | `make docker-onboard org="..." project="..." ENVFILE=.env` | Full bootstrap |
+      | `make docker-onboard-isolated org="..." project="..." git_owner="..."` | Bootstrap + repo |
+      | `make docker-feature-workspace org="..." project="..." ENVFILE=.env` | Feature workspace |
+      | `make docker-bulk-destroy file=... ENVFILE=.env` | Bulk destroy |
+      | `make docker-list-workspaces ENVFILE=.env` | List workspaces |
+      | `make docker-list-items workspace="..." ENVFILE=.env` | List items |
       
       ## Recommended Next Steps
       

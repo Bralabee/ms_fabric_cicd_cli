@@ -51,6 +51,9 @@ class WorkspaceConfig:
     # Principals (users/service principals to add)
     principals: Optional[List[Dict[str, str]]] = None
 
+    # Deployment Pipeline configuration
+    deployment_pipeline: Optional[Dict[str, Any]] = None
+
 
 class ConfigManager:
     """Manages configuration loading and validation"""
@@ -254,6 +257,7 @@ class ConfigManager:
             semantic_models=data.get("semantic_models", []),
             resources=data.get("resources", []),
             principals=unique_principals,
+            deployment_pipeline=data.get("deployment_pipeline"),
         )
 
     def _load_schema(self) -> Dict[str, Any]:

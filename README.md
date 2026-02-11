@@ -209,7 +209,7 @@ make validate config=config/projects/your_org/your_project.yaml
 make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
 
-## Make Targets Reference (24 Available)
+## Make Targets Reference (30 Available)
 
 ### Local Development
 
@@ -220,6 +220,9 @@ make deploy config=config/projects/your_org/your_project.yaml env=dev
 | `test` | Run unit tests (no credentials) | `make test` |
 | `test-integration` | Run integration tests (requires credentials) | `make test-integration` |
 | `lint` | Format and lint code | `make lint` |
+| `format` | Auto-format code (black + isort) | `make format` |
+| `security` | Run bandit security scan | `make security` |
+| `coverage` | Run tests with coverage report | `make coverage` |
 | `clean` | Remove cache files | `make clean` |
 | `help` | Show all available targets | `make help` |
 
@@ -229,11 +232,17 @@ make deploy config=config/projects/your_org/your_project.yaml env=dev
 |--------|-------------|---------|
 | `validate` | Validate config file syntax | `make validate config=path/to/config.yaml` |
 | `diagnose` | Run pre-flight system checks | `make diagnose` |
+| `generate` | Generate project config from template | `make generate org="Org" project="Proj" template=basic_etl` |
 | `onboard` | Dev workspace on main (Config+Deploy) | `make onboard org="Org" project="Proj"` |
+| `onboard-isolated` | Bootstrap with auto-created repo | `make onboard-isolated org="Org" project="Proj" git_owner="Owner"` |
 | `feature-workspace` | Isolated feature workspace with branch | `make feature-workspace org="Org" project="Proj"` |
 | `deploy` | Deploy workspace from config | `make deploy config=path/to/config.yaml env=dev` |
+| `promote` | Promote via Deployment Pipeline | `make promote pipeline="Name" source=Dev target=Test` |
 | `destroy` | Destroy workspace from config | `make destroy config=path/to/config.yaml` |
 | `bulk-destroy` | Bulk delete workspaces from list | `make bulk-destroy file=list.txt` |
+| `list-workspaces` | List all accessible workspaces | `make list-workspaces` |
+| `list-items` | List items in a workspace | `make list-items workspace="Name"` |
+| `init-github-repo` | Create GitHub repository | `make init-github-repo git_owner="Owner" repo="Name"` |
 
 ### Docker Operations
 
@@ -241,15 +250,22 @@ All Docker targets accept `ENVFILE=.env.xxx` to specify which environment file t
 
 | Target | Description | Example |
 |--------|-------------|---------|
-| `docker-build` | Build Docker image | `make docker-build` |
+| `docker-build` | Build Docker image (multi-stage) | `make docker-build` |
 | `docker-validate` | Validate config in container | `make docker-validate config=... ENVFILE=.env` |
 | `docker-deploy` | Deploy workspace in container | `make docker-deploy config=... env=dev ENVFILE=.env` |
 | `docker-destroy` | Destroy workspace in container | `make docker-destroy config=... ENVFILE=.env` |
+| `docker-promote` | Promote via Deployment Pipeline | `make docker-promote pipeline="Name" ENVFILE=.env` |
 | `docker-generate` | Generate project config in container | `make docker-generate org="Org" project="Proj" template=basic_etl` |
 | `docker-init-repo` | Initialize ADO repo in container | `make docker-init-repo org="..." project="..." repo="..."` |
 | `docker-shell` | Interactive shell in container | `make docker-shell ENVFILE=.env` |
 | `docker-diagnose` | Run diagnostics in container | `make docker-diagnose ENVFILE=.env` |
 | `docker-feature-deploy` | Deploy feature branch workspace | `make docker-feature-deploy config=... env=dev branch=feature/x` |
+| `docker-onboard` | Full bootstrap in container | `make docker-onboard org="Org" project="Proj" ENVFILE=.env` |
+| `docker-onboard-isolated` | Bootstrap with auto-created repo | `make docker-onboard-isolated org="Org" project="Proj" git_owner="Owner"` |
+| `docker-feature-workspace` | Create feature workspace in container | `make docker-feature-workspace org="Org" project="Proj" ENVFILE=.env` |
+| `docker-bulk-destroy` | Bulk destroy workspaces in container | `make docker-bulk-destroy file=list.txt ENVFILE=.env` |
+| `docker-list-workspaces` | List workspaces in container | `make docker-list-workspaces ENVFILE=.env` |
+| `docker-list-items` | List workspace items in container | `make docker-list-items workspace="Name" ENVFILE=.env` |
 
 ## CLI Flags Reference
 
@@ -385,7 +401,8 @@ src/
 │   ├── exceptions.py        # Exception hierarchy
 │   ├── commands/            # CLI subcommands (future modularization)
 │   ├── services/
-│   │   ├── fabric_wrapper.py       # Fabric CLI wrapper with version validation
+│   │   ├── deployer.py              # Deployment orchestrator
+│   │   ├── fabric_wrapper.py        # Fabric CLI wrapper with version validation
 │   │   ├── fabric_git_api.py       # REST API client for Git integration
 │   │   ├── git_integration.py      # Git synchronization logic
 │   │   ├── token_manager.py        # Azure AD token refresh for long deployments

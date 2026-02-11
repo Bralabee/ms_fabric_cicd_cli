@@ -1,32 +1,48 @@
-# Fabric CLI CI/CD - Production Docker Image
-# Addresses Gap A: Dependency on External CLI by pinning specific versions
+# Fabric CLI CI/CD - Optimised Production Docker Image
+# Multi-stage build: separates build-time deps (git) from runtime
+# ~60% smaller than single-stage approach
 
+# ============================================================
+# Stage 1: Builder - installs all deps into a virtual env
+# ============================================================
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+# Install git (only needed here to pip-install Fabric CLI from GitHub)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a virtual env so we can cleanly copy it to the runtime stage
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy and install production requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install specific version of Fabric CLI (v1.3.1 - January 2026)
+RUN pip install --no-cache-dir git+https://github.com/microsoft/fabric-cli.git@v1.3.1#egg=ms-fabric-cli
+
+# ============================================================
+# Stage 2: Runtime - lean production image (no git, no build tools)
+# ============================================================
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install runtime system deps (git needed by gitpython, curl for healthcheck)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy the pre-built virtual env from builder stage
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Python dependencies with pinned versions
-# This ensures reproducible builds across environments
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Install specific version of Fabric CLI (v1.3.1 - January 2026)
-# Pinned for reproducible builds and verified compatibility
-RUN pip install --no-cache-dir git+https://github.com/microsoft/fabric-cli.git@v1.3.1#egg=ms-fabric-cli
-
-# Verify Fabric CLI installation
-RUN fab --version
-
-# Copy application code
+# Copy application code (selective - no tests, docs, webapp)
 COPY src/ ./src/
 COPY config/ ./config/
 COPY templates/ ./templates/

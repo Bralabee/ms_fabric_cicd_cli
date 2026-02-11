@@ -97,47 +97,12 @@ jobs:
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
 
-          python -c "
-          import os, sys
-          sys.path.insert(0, 'src')
-
-          from usf_fabric_cli.services.deployment_pipeline import (
-              FabricDeploymentPipelineAPI,
-              DeploymentStage,
-          )
-          from usf_fabric_cli.utils.config import get_environment_variables
-
-          # Authenticate via Service Principal → FABRIC_TOKEN
-          env_vars = get_environment_variables(validate_vars=True)
-
-          # Create API client
-          api = FabricDeploymentPipelineAPI(access_token=env_vars['FABRIC_TOKEN'])
-
-          # Find pipeline by name
-          pipeline_name = os.environ.get('FABRIC_PIPELINE_NAME', '')
-          pipeline = api.get_pipeline_by_name(pipeline_name)
-
-          if not pipeline:
-              print(f'::warning::Pipeline \"{pipeline_name}\" not found. Skipping.')
-              sys.exit(0)
-
-          pipeline_id = pipeline['id']
-
-          # Promote Dev → Test
-          result = api.promote(
-              pipeline_id=pipeline_id,
-              source_stage_name=DeploymentStage.DEV,
-              target_stage_name=DeploymentStage.TEST,
-              note=f'Auto-promote from push to main (commit: ${GITHUB_SHA:.8})',
-              wait=True,
-          )
-
-          if result['success']:
-              print('✅ Promotion Dev → Test succeeded')
-          else:
-              print(f'❌ Promotion failed: {result.get(\"error\", \"unknown\")}')
-              sys.exit(1)
-          "
+          python -m usf_fabric_cli.cli promote \
+            --pipeline-name "$FABRIC_PIPELINE_NAME" \
+            --source-stage Development \
+            --target-stage Test \
+            --note "Auto-promote from push to main (commit: ${GITHUB_SHA:0:8})" \
+            --wait
 
       - name: Report promotion
         if: success() && env.skip != 'true'
@@ -191,39 +156,17 @@ jobs:
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
 
-          python -c "
-          import os, sys
-          sys.path.insert(0, 'src')
+          NOTE="${{ inputs.note }}"
+          if [ -z "$NOTE" ]; then
+            NOTE="Manual promotion by ${{ github.actor }}"
+          fi
 
-          from usf_fabric_cli.services.deployment_pipeline import (
-              FabricDeploymentPipelineAPI,
-          )
-          from usf_fabric_cli.utils.config import get_environment_variables
-
-          env_vars = get_environment_variables(validate_vars=True)
-          api = FabricDeploymentPipelineAPI(access_token=env_vars['FABRIC_TOKEN'])
-
-          pipeline_name = '${{ inputs.pipeline_name }}'
-          pipeline = api.get_pipeline_by_name(pipeline_name)
-
-          if not pipeline:
-              print(f'::error::Pipeline \"{pipeline_name}\" not found')
-              sys.exit(1)
-
-          result = api.promote(
-              pipeline_id=pipeline['id'],
-              source_stage_name='${{ inputs.source_stage }}',
-              target_stage_name='${{ inputs.target_stage }}',
-              note='${{ inputs.note }}' or f'Manual promotion by ${{ github.actor }}',
-              wait=True,
-          )
-
-          if result['success']:
-              print('✅ Promotion succeeded')
-          else:
-              print(f'❌ Promotion failed: {result.get(\"error\", \"unknown\")}')
-              sys.exit(1)
-          "
+          python -m usf_fabric_cli.cli promote \
+            --pipeline-name "${{ inputs.pipeline_name }}" \
+            --source-stage "${{ inputs.source_stage }}" \
+            --target-stage "${{ inputs.target_stage }}" \
+            --note "$NOTE" \
+            --wait
 
       - name: Report promotion
         if: success()

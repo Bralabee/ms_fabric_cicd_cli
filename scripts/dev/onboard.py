@@ -534,6 +534,9 @@ def onboard_project(
                 logger.error("Repo provisioning failed")
                 return False
             logger.info(f"  ✅ Repo URL: {git_repo}")
+            # Show browsable web URL for user convenience
+            web_url = git_repo.removesuffix(".git")
+            logger.info(f"  🔗 Open in browser: {web_url}")
 
     # ─── Phase 1: Generate Configuration ──────────────────────────
     current_step += 1

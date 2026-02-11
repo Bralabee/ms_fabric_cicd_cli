@@ -257,6 +257,8 @@ This auto-creates a GitHub repo (`acme-corp/acme-corp-supply-chain`) before boot
 | **Onboard (Full)** | `make onboard org="Org" project="Proj"` | `python scripts/dev/onboard.py --org "Org" --project "Proj"` |
 | **Cleanup** | `make bulk-destroy file=<list_file>` | `python scripts/admin/bulk_destroy.py <list_file>` |
 | **List Workspaces** | `make list-workspaces` | `python scripts/admin/utilities/list_workspaces.py` |
+| **List Items** | `make list-items workspace="Name"` | `python scripts/admin/utilities/list_workspace_items.py --workspace "Name"` |
+| **Init Repo** | `make init-github-repo git_owner="Owner" repo="Name"` | `python scripts/admin/utilities/init_github_repo.py --owner "Owner" --repo "Name"` |
 
 ## Makefile Quick Reference (Local & Docker)
 
@@ -300,6 +302,15 @@ make docker-feature-deploy \
   env=dev \
   branch=feature/new-analytics \
   ENVFILE=.env.ricoh
+
+# Full onboard using Docker
+make docker-onboard org="Ricoh" project="Sales" ENVFILE=.env.ricoh
+
+# List workspaces using Docker
+make docker-list-workspaces ENVFILE=.env.ricoh
+
+# List items in a workspace using Docker
+make docker-list-items workspace="Ricoh-Sales-Dev" ENVFILE=.env.ricoh
 
 # Interactive shell inside the container
 make docker-shell ENVFILE=.env.ricoh

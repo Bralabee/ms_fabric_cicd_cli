@@ -3,6 +3,3 @@ uvicorn[standard]>=0.25.0
 pydantic>=2.5.0
 pyyaml>=6.0.1
 python-dotenv>=1.0.0
-# Testing dependencies
-pytest>=7.4.0
-httpx>=0.25.0  # Required for TestClient

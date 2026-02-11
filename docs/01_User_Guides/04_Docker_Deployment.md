@@ -58,6 +58,8 @@ Or manually:
 docker build -t fabric-cli-cicd .
 ```
 
+> **Note:** The Docker image uses a **multi-stage build** (builder + runtime) for ~60% smaller images. The builder stage installs all dependencies into a virtual environment, and the runtime stage copies only the pre-built venv.
+
 ## 3. Validating Configuration
 
 Before deploying, validate your configuration to ensure syntax and schema correctness.
@@ -153,7 +155,7 @@ make docker-deploy config=config/projects/clientB/project.yaml env=dev ENVFILE=.
 
 | Target | Usage | Description |
 |--------|-------|-------------|
-| `docker-build` | `make docker-build` | Build the Docker image |
+| `docker-build` | `make docker-build` | Build the Docker image (multi-stage) |
 | `docker-validate` | `make docker-validate config=<path>` | Validate configuration |
 | `docker-deploy` | `make docker-deploy config=<path> env=<env>` | Deploy workspace |
 | `docker-promote` | `make docker-promote pipeline="Name" [source=Dev] [target=Test]` | Promote via Deployment Pipeline |
@@ -162,6 +164,12 @@ make docker-deploy config=config/projects/clientB/project.yaml env=dev ENVFILE=.
 | `docker-generate` | `make docker-generate org="Org" project="Proj" [template=basic_etl]` | Generate project config |
 | `docker-init-repo` | `make docker-init-repo git_owner=<owner> repo=<name>` | Initialize GitHub repo |
 | `docker-feature-deploy` | `make docker-feature-deploy config=<path> env=dev branch=<name>` | Feature branch deploy |
+| `docker-onboard` | `make docker-onboard org="Org" project="Proj"` | Full bootstrap (Dev+Test+Prod+Pipeline) |
+| `docker-onboard-isolated` | `make docker-onboard-isolated org="Org" project="Proj" git_owner="Owner"` | Bootstrap with auto-created repo |
+| `docker-feature-workspace` | `make docker-feature-workspace org="Org" project="Proj"` | Create isolated feature workspace |
+| `docker-bulk-destroy` | `make docker-bulk-destroy file=<list>` | Bulk destroy workspaces from list |
+| `docker-list-workspaces` | `make docker-list-workspaces` | List all accessible workspaces |
+| `docker-list-items` | `make docker-list-items workspace="Name"` | List items in a workspace |
 | `docker-shell` | `make docker-shell` | Interactive shell in container |
 
 All Docker targets support `ENVFILE=.env.custom` for multi-tenant operations.

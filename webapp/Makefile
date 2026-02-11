@@ -40,7 +40,7 @@ help:
 
 install:
 	@echo "$(GREEN)Installing backend dependencies...$(NC)"
-	cd backend && pip install -r requirements.txt
+	cd backend && pip install -r requirements-dev.txt
 	@echo "$(GREEN)Installing frontend dependencies...$(NC)"
 	cd frontend && npm install
 

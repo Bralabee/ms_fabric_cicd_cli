@@ -179,13 +179,13 @@ class FabricCLIWrapper:
     def _emit_telemetry(
         self, event: str, command: List[str], duration: float, **extra: Any
     ) -> None:
-        payload = {
-            "command": " ".join(command),
-            "duration_ms": round(duration * 1000, 2),
-            **extra,
-        }
         try:
-            self.telemetry.emit(event, payload)
+            self.telemetry.emit(
+                event=event,
+                command=" ".join(command),
+                duration_ms=round(duration * 1000, 2),
+                **extra,
+            )
         except FabricTelemetryError as exc:
             logger.debug("Telemetry write failed: %s", exc)
 

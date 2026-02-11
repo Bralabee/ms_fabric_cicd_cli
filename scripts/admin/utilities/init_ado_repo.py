@@ -166,6 +166,14 @@ def main(
             console.print(response.text)
             raise typer.Exit(1)
 
+        # Show the browsable web URL for convenience
+        web_url = (
+            f"https://dev.azure.com/{organization}/{project}/_git/{repository}"
+        )
+        console.print(
+            f"\n[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}"
+        )
+
     except Exception as e:
         console.print(f"[red]Error: {str(e)}[/red]")
         raise typer.Exit(1)
@@ -285,6 +293,14 @@ def init_ado_repo(
             console.print(
                 f"[yellow]Branch init returned " f"{resp.status_code}[/yellow]"
             )
+
+        # Show the browsable web URL for convenience
+        web_url = (
+            f"https://dev.azure.com/{organization}/{project}/_git/{repo_name}"
+        )
+        console.print(
+            f"\n[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}"
+        )
 
         return clone_url
 

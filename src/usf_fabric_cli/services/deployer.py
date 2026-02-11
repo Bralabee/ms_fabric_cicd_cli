@@ -88,6 +88,7 @@ class FabricDeployer:
         self.workspace_id = None
         self.items_created = 0
         self.deployment_state = DeploymentState()
+        self._git_browse_url = None  # Browsable Git repo URL
 
     def _wait_for_propagation(self, progress, seconds: int, message: str):
         """Wait with visual feedback"""
@@ -652,6 +653,25 @@ class FabricDeployer:
 
             console.print("[green]✓ Workspace connected to Git[/green]")
 
+            # Show the browsable Git repo URL
+            if provider_type == GitProviderType.GITHUB:
+                browse_url = (
+                    f"https://github.com/"
+                    f"{git_details['owner']}/{git_details['repo']}"
+                )
+            else:
+                browse_url = (
+                    f"https://dev.azure.com/"
+                    f"{git_details['organization']}/"
+                    f"{git_details['project']}/"
+                    f"_git/{git_details['repo']}"
+                )
+            self._git_browse_url = browse_url
+            console.print(
+                f"[bold cyan]🔗 Open repo in browser:[/bold cyan] "
+                f"{browse_url}"
+            )
+
             # Step 3: Initialize the Git connection
             console.print("[blue]Initializing Git connection...[/blue]")
             init_result = self.git_api.initialize_git_connection(self.workspace_id)
@@ -754,17 +774,35 @@ class FabricDeployer:
         logger.warning(f"Could not parse Git URL: {git_url}")
         return None
 
-    def _show_deployment_summary(self, workspace_name: str, duration: float):
+    def _show_deployment_summary(
+        self, workspace_name: str, duration: float
+    ):
         """Show deployment summary"""
 
-        summary_table = Table(title=f"Deployment Summary: {workspace_name}")
+        summary_table = Table(
+            title=f"Deployment Summary: {workspace_name}"
+        )
         summary_table.add_column("Metric", style="cyan")
         summary_table.add_column("Value", style="green")
 
-        summary_table.add_row("Workspace ID", self.workspace_id or "N/A")
-        summary_table.add_row("Items Created", str(self.items_created))
-        summary_table.add_row("Duration", f"{duration:.2f} seconds")
-        summary_table.add_row("Environment", self.environment or "default")
+        summary_table.add_row(
+            "Workspace ID", self.workspace_id or "N/A"
+        )
+        summary_table.add_row(
+            "Items Created", str(self.items_created)
+        )
+        summary_table.add_row(
+            "Duration", f"{duration:.2f} seconds"
+        )
+        summary_table.add_row(
+            "Environment", self.environment or "default"
+        )
+        if self._git_browse_url:
+            summary_table.add_row(
+                "Git Repository", self._git_browse_url
+            )
 
         console.print(summary_table)
-        console.print("\n[green]✅ Deployment completed successfully![/green]")
+        console.print(
+            "\n[green]✅ Deployment completed successfully![/green]"
+        )

@@ -26,7 +26,8 @@ All notable changes to this project will be documented in this file.
 - Added 23 new unit tests for `FabricDeploymentPipelineAPI` service
 - Added 20 new unit tests for onboard redesign (`test_onboard.py`)
 - Added 5 new unit tests for `_enrich_principals()` governance SP injection
-- Total: **188 tests passing** (142 existing + 23 deployment pipeline + 20 onboard + 3 governance)
+- Added 7 new unit tests for CLI `promote` subcommand (`test_cli_promote.py`)
+- Total: **195 tests passing** (142 existing + 23 deployment pipeline + 20 onboard + 3 governance + 7 promote CLI)
 
 ### Fixed
 
@@ -44,6 +45,18 @@ All notable changes to this project will be documented in this file.
 - **`onboard-isolated`** Makefile target for one-command isolated onboarding
 - **`init-github-repo`** Makefile target for standalone GitHub repo creation
 - **Dual-mode docs**: README documents Shared Repo vs Isolated Repo approaches
+
+### Docker CLI Sync
+
+- **Unified CLI Entrypoint** (`cli.py`): Registered 11 subcommands as Typer commands, giving Docker containers full parity with local `make` targets:
+  - Core: `deploy`, `validate`, `diagnose`, `destroy`, `promote`
+  - Onboarding: `onboard`, `generate`
+  - Admin: `list-workspaces`, `list-items`, `bulk-destroy`, `init-github-repo`
+- **Multi-stage Dockerfile**: Reworked from single-stage to builder/runtime pattern (~60% smaller image). Builder stage installs deps into a virtual env, runtime stage copies only the pre-built venv.
+- **`.dockerignore` hardened**: Excludes `webapp/`, `.agent/`, `.gemini/`, dev tooling, whitelists `.env.template`
+- **6 new `docker-*` Makefile targets**: `docker-onboard`, `docker-onboard-isolated`, `docker-feature-workspace`, `docker-bulk-destroy`, `docker-list-workspaces`, `docker-list-items` — total 30 Make targets
+- **`requirements-dev.txt`**: Separated dev/test dependencies (pytest, flake8, black, mypy, etc.) from production `requirements.txt`. `make install` now uses `requirements-dev.txt`.
+- **`deploy-to-fabric.yml` fix**: Replaced phantom `get_fabric_token` import with inline `az` CLI token acquisition
 
 ### Architecture
 

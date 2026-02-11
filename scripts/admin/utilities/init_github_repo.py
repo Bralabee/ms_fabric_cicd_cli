@@ -241,7 +241,7 @@ def init_github_repo(
         HTTPS clone URL on success, ``None`` on failure.
     """
     try:
-        create_repo(
+        repo_data = create_repo(
             owner,
             repo_name,
             token,
@@ -250,6 +250,13 @@ def init_github_repo(
         )
         ensure_branch(owner, repo_name, branch, token)
         clone_url = get_clone_url(owner, repo_name, token)
+
+        # Display the browsable GitHub URL so users can navigate directly
+        html_url = repo_data.get("html_url", f"https://github.com/{owner}/{repo_name}")
+        console.print(
+            f"\n[bold cyan]🔗 GitHub Repo:[/bold cyan] {html_url}"
+        )
+
         return clone_url
     except Exception as exc:
         console.print(f"[red]GitHub repo init failed: {exc}[/red]")
@@ -299,6 +306,11 @@ def main(
     )
     if url:
         console.print(f"\n[bold green]Clone URL:[/bold green] {url}")
+        # Also show the browsable web URL for convenience
+        web_url = url.removesuffix(".git")
+        console.print(
+            f"[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}"
+        )
     else:
         raise typer.Exit(1)
 

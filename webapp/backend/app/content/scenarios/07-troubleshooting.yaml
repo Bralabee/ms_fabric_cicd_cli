@@ -364,10 +364,17 @@ steps:
         --help     Show this message and exit.
       
       Commands:
-        deploy    Deploy Fabric workspace from configuration file.
-        destroy   Destroy Fabric workspace and all items.
-        diagnose  Run preflight diagnostics.
-        validate  Validate configuration file syntax and structure.
+        bulk-destroy    Bulk destroy workspaces from a list file.
+        deploy          Deploy Fabric workspace from configuration file.
+        destroy         Destroy Fabric workspace and all items.
+        diagnose        Run preflight diagnostics.
+        generate        Generate project configuration from blueprint template.
+        init-github-repo  Create and initialize a GitHub repository.
+        list-items      List all items in a Fabric workspace.
+        list-workspaces List all accessible Fabric workspaces.
+        onboard         Onboard a new Fabric Data Product (full bootstrap).
+        promote         Promote content through Deployment Pipeline stages.
+        validate        Validate configuration file syntax and structure.
     tips:
       - "`pip install -e .` installs in \"editable\" mode (changes apply immediately)"
       - "`python -m usf_fabric_cli.cli` is equivalent and always works"

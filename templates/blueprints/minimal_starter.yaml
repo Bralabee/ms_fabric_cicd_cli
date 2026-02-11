@@ -1,4 +1,4 @@
-# Minimal Starter Blueprint
+# Minimal Starter Workspace Configuration Template
 # Optimized for: Quick prototyping, learning, POC projects, individual contributors
 # Use Cases: Data exploration, single-person projects, training environments
 
@@ -64,6 +64,14 @@ environments:
       capacity_id: "F8"  # Upgrade for production
       name: "Starter_Project_Prod"
 
+# Deployment Pipeline (optional, for stage promotion)
+deployment_pipeline:
+  name: "Starter_Pipeline"
+  stages:
+    development: "Starter_Project_Dev"
+    # test: "Starter_Project_Test"   # Uncomment when ready
+    production: "Starter_Project_Prod"
+
 # Configuration Notes:
 # 1. This is the absolute minimum viable Fabric workspace
 # 2. Single lakehouse reduces complexity for beginners
@@ -72,3 +80,4 @@ environments:
 # 5. Ideal for F2 (trial) capacity - very low resource usage
 # 6. Can be extended by copying sections from other blueprints
 # 7. Cost: ~$0/month on trial capacity, <$100/month on F8
+# 8. deployment_pipeline enables Dev→Prod promotion workflow

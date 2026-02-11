@@ -17,7 +17,9 @@ CONDA_ACTIVATE := source ~/miniconda3/etc/profile.d/conda.sh && conda activate $
 	webapp-dev webapp-build \
 	docker-build docker-validate docker-deploy docker-destroy \
 	docker-shell docker-diagnose docker-generate docker-init-repo \
-	docker-feature-deploy docker-promote
+	docker-feature-deploy docker-promote \
+	docker-onboard docker-onboard-isolated docker-feature-workspace \
+	docker-bulk-destroy docker-list-workspaces docker-list-items
 
 # Check if conda environment is active
 check-env:
@@ -40,7 +42,7 @@ setup: ## First-time project setup (creates conda env, installs deps, copies .en
 	bin/setup.sh
 
 install: check-env ## Install dependencies and package in editable mode
-	$(PIP) install -r requirements.txt
+	$(PIP) install -r requirements-dev.txt
 	$(PIP) install -e .
 
 build: check-env ## Build Python package (wheel)
@@ -179,6 +181,9 @@ list-items: ## List items in a workspace (Usage: make list-items workspace="Name
 	@if [ -z "$(workspace)" ]; then echo "Error: 'workspace' argument is missing."; exit 1; fi
 	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) scripts/admin/utilities/list_workspace_items.py "$(workspace)"
 
+analyze-migration: ## Analyze what can be replaced with Fabric CLI (Usage: make analyze-migration)
+	$(PYTHON) scripts/admin/utilities/analyze_migration.py
+
 
 ##@ Webapp (Interactive Guide)
 
@@ -244,3 +249,38 @@ docker-feature-deploy: ## Deploy feature workspace using Docker (Usage: make doc
 	@if [ -z "$(branch)" ]; then echo "Error: branch argument required"; exit 1; fi
 	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	deploy $(config) --env $(env) --branch $(branch) --force-branch-workspace
+
+docker-onboard: ## Full bootstrap using Docker (Usage: make docker-onboard org="Org" project="Proj" [stages="dev,test,prod"] ENVFILE=.env)
+	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
+	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
+	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) $(if $(stages),--stages $(stages),)
+
+docker-onboard-isolated: ## Bootstrap with auto-created repo using Docker (Usage: make docker-onboard-isolated org="Org" project="Proj" git_owner="Owner" ENVFILE=.env)
+	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
+	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
+	@if [ -z "$(git_owner)" ]; then echo "Error: git_owner argument required"; exit 1; fi
+	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
+	--create-repo --git-provider $(or $(git_provider),github) --git-owner "$(git_owner)" \
+	$(if $(ado_project),--ado-project "$(ado_project)",) $(if $(stages),--stages $(stages),)
+
+docker-feature-workspace: ## Create isolated feature workspace using Docker (Usage: make docker-feature-workspace org="Org" project="Proj" ENVFILE=.env)
+	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
+	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
+	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
+
+docker-bulk-destroy: ## Bulk destroy workspaces using Docker (Usage: make docker-bulk-destroy file=list.txt ENVFILE=.env)
+	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make docker-bulk-destroy file=list.txt"; exit 1; fi
+	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/$(file):/app/$(file) $(DOCKER_IMAGE) \
+	scripts/admin/bulk_destroy.py $(file)
+
+docker-list-workspaces: ## List all Fabric workspaces using Docker (Usage: make docker-list-workspaces ENVFILE=.env)
+	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
+	scripts/admin/utilities/list_workspaces.py
+
+docker-list-items: ## List items in a workspace using Docker (Usage: make docker-list-items workspace="Name" ENVFILE=.env)
+	@if [ -z "$(workspace)" ]; then echo "Error: workspace argument required"; exit 1; fi
+	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
+	scripts/admin/utilities/list_workspace_items.py "$(workspace)"

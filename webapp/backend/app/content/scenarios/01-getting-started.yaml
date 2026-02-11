@@ -326,10 +326,17 @@ steps:
         --help     Show this message and exit.
       
       Commands:
-        deploy    Deploy Fabric workspace from configuration file.
-        destroy   Destroy Fabric workspace and all items.
-        diagnose  Run preflight diagnostics.
-        validate  Validate configuration file syntax and structure.
+        bulk-destroy    Bulk destroy workspaces from a list file.
+        deploy          Deploy Fabric workspace from configuration file.
+        destroy         Destroy Fabric workspace and all items.
+        diagnose        Run preflight diagnostics.
+        generate        Generate project configuration from blueprint template.
+        init-github-repo  Create and initialize a GitHub repository.
+        list-items      List all items in a Fabric workspace.
+        list-workspaces List all accessible Fabric workspaces.
+        onboard         Onboard a new Fabric Data Product (full bootstrap).
+        promote         Promote content through Deployment Pipeline stages.
+        validate        Validate configuration file syntax and structure.
     tips:
       - "The `-e` flag installs in \"editable\" mode - code changes take effect immediately"
       - "If `fabric-cicd` isn't found, ensure conda environment is active"
@@ -364,9 +371,16 @@ steps:
       | `make docker-validate config=... ENVFILE=.env` | Validate in container |
       | `make docker-deploy config=... env=dev ENVFILE=.env` | Deploy from container |
       | `make docker-destroy config=... ENVFILE=.env` | Destroy from container |
+      | `make docker-promote pipeline="Name" ENVFILE=.env` | Promote via Deployment Pipeline |
       | `make docker-generate org="Org" project="Proj" template="basic_etl"` | Generate config |
       | `make docker-init-repo org="ADOOrg" project="ADOProj" repo="RepoName"` | Init ADO repo |
       | `make docker-feature-deploy config=... env=dev branch=feature/x` | Feature branch deploy |
+      | `make docker-onboard org="Org" project="Proj" ENVFILE=.env` | Full bootstrap |
+      | `make docker-onboard-isolated org="Org" project="Proj" git_owner="Owner"` | Bootstrap with auto-repo |
+      | `make docker-feature-workspace org="Org" project="Proj" ENVFILE=.env` | Feature workspace |
+      | `make docker-bulk-destroy file=list.txt ENVFILE=.env` | Bulk destroy workspaces |
+      | `make docker-list-workspaces ENVFILE=.env` | List workspaces |
+      | `make docker-list-items workspace="Name" ENVFILE=.env` | List workspace items |
       
       ## Development Commands
       

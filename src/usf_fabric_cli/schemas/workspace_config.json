@@ -187,6 +187,31 @@
           "name"
         ]
       }
+    },
+    "deployment_pipeline": {
+      "description": "Fabric Deployment Pipeline configuration for stage promotion (Dev → Test → Prod)",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name for the Deployment Pipeline"
+        },
+        "stages": {
+          "type": "object",
+          "description": "Mapping of stage names to workspace names",
+          "properties": {
+            "development": {
+              "type": "string"
+            },
+            "test": {
+              "type": "string"
+            },
+            "production": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
   "required": [

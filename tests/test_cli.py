@@ -82,12 +82,31 @@ class TestCLIDiagnose:
         """Create a CLI test runner."""
         return CliRunner()
 
-    def test_diagnose_runs(self, runner):
+    @patch("usf_fabric_cli.cli.FabricDiagnostics")
+    @patch("usf_fabric_cli.cli.FabricCLIWrapper")
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    def test_diagnose_runs(self, mock_get_env, mock_wrapper, mock_diagnostics, runner):
         """Test that diagnose command runs without crashing."""
+        # Setup mocks
+        mock_get_env.return_value = {"FABRIC_TOKEN": "mock-token"}
+
+        mock_diag_instance = MagicMock()
+        mock_diag_instance.validate_fabric_cli_installation.return_value = {
+            "success": True, "version": "1.0.0"
+        }
+        mock_diag_instance.validate_authentication.return_value = {
+            "success": True
+        }
+        mock_diag_instance.validate_api_connectivity.return_value = {
+            "success": True, "workspaces_count": 5
+        }
+        mock_diagnostics.return_value = mock_diag_instance
+
         result = runner.invoke(app, ["diagnose"])
 
-        # Should complete (may or may not find fab CLI)
-        assert result.exit_code in [0, 1]
+        # Should complete successfully
+        assert result.exit_code == 0
+        assert "All diagnostic checks completed" in result.output
 
     def test_diagnose_checks_fabric_cli(self, runner):
         """Test that diagnose checks for Fabric CLI."""

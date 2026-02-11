@@ -82,9 +82,18 @@ principals:
   #   folder: "Notebooks"
   #   description: "Data cleaning and transformation"
 
+# Deployment Pipeline (Fabric Deployment Pipelines)
+deployment_pipeline:
+  name: "analytics-pipeline"
+  stages:
+    development: "analytics-workspace"
+    test: "analytics-workspace-test"
+    production: "analytics-workspace-prod"
+
 # Configuration notes:
 # 1. Replace all placeholder values with your organization's details
 # 2. Capacity ID should match your Fabric capacity
 # 3. Git repository should be accessible with your credentials
 # 4. Principal IDs: Use emails for Users, but Object IDs (GUIDs) for Groups and Service Principals
 # 5. Remove sections you don't need (e.g., if no Git integration needed)
+# 6. deployment_pipeline stages should match your workspace naming convention
