@@ -5,104 +5,73 @@ List Workspace Items Utility
 Lists all items in a specified Fabric workspace.
 
 Usage:
-    python scripts/utilities/list_workspace_items.py --workspace "Workspace Name"
+    python scripts/admin/utilities/list_workspace_items.py "Workspace Name"
+    make list-items workspace="Workspace Name"
 """
 
+import os
 import sys
-import logging
 from pathlib import Path
-import typer
-from rich.console import Console
-from rich.table import Table
 
 # Add project root and src to path
-project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(project_root))
+project_root = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.append(str(project_root / "src"))
 
-from src.core.secrets import FabricSecrets
-from src.core.fabric_wrapper import FabricCLIWrapper
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-console = Console()
-
-app = typer.Typer(help="List Fabric Workspace Items")
+from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper  # noqa: E402
+from usf_fabric_cli.utils.config import get_environment_variables  # noqa: E402
 
 
-@app.command()
-def main(
-    workspace: str = typer.Option(..., help="Workspace Name or ID"),
-):
-    """
-    List all items in the specified workspace.
-    """
+def list_workspace_items(workspace_name: str) -> None:
+    """List all items in the specified workspace."""
     try:
-        # Load secrets
-        secrets = FabricSecrets.load_with_fallback()
+        env_vars = get_environment_variables()
+        token = env_vars.get("FABRIC_TOKEN", "")
+        if not token:
+            token = os.getenv("FABRIC_TOKEN", "")
 
-        # Ensure token is available
-        import os
+        if not token:
+            print("Error: FABRIC_TOKEN is not set. Please set it in .env "
+                  "or export it as an environment variable.")
+            sys.exit(1)
 
-        if not os.getenv("FABRIC_TOKEN"):
-            if secrets.fabric_token:
-                os.environ["FABRIC_TOKEN"] = secrets.fabric_token
-            elif secrets.azure_client_id and secrets.azure_client_secret:
-                console.print("[blue]Generating Fabric token from secrets...[/blue]")
-                from azure.identity import ClientSecretCredential
+        fabric = FabricCLIWrapper(token)
+        print(f"Listing items in workspace '{workspace_name}'...")
 
-                cred = ClientSecretCredential(
-                    tenant_id=secrets.get_tenant_id(),
-                    client_id=secrets.azure_client_id,
-                    client_secret=secrets.azure_client_secret,
-                )
-                token = cred.get_token(
-                    "https://api.fabric.microsoft.com/.default"
-                ).token
-                os.environ["FABRIC_TOKEN"] = token
+        result = fabric.list_workspace_items(workspace_name)
 
-        fabric = FabricCLIWrapper(os.environ["FABRIC_TOKEN"])
-
-        console.print(f"[blue]Listing items in workspace '{workspace}'...[/blue]")
-        result = fabric.list_workspace_items(workspace)
-
-        if result["success"]:
-            data = result["data"]
+        if result.get("success"):
+            data = result.get("data")
 
             if isinstance(data, str):
-                console.print("[yellow]Received raw output (not JSON):[/yellow]")
-                console.print(data)
+                print("Raw output (not JSON):")
+                print(data)
                 return
 
-            items = data
-            # Handle case where data is None or empty
-            if not items:
-                items = []
+            items = data or []
+            print(f"Found {len(items)} items:\n")
 
-            console.print(f"[green]Found {len(items)} items:[/green]")
-
-            table = Table(title=f"Items in {workspace}")
-            table.add_column("Name", style="cyan")
-            table.add_column("Type", style="magenta")
-            table.add_column("Description", style="white")
+            # Simple table output
+            print(f"  {'Name':<40} {'Type':<25} {'Description'}")
+            print(f"  {'─' * 40} {'─' * 25} {'─' * 30}")
 
             for item in items:
-                table.add_row(
-                    item.get("displayName", "N/A"),
-                    item.get("type", "N/A"),
-                    item.get("description", ""),
-                )
-
-            console.print(table)
+                name = item.get("displayName", "N/A")
+                item_type = item.get("type", "N/A")
+                desc = item.get("description", "")
+                print(f"  {name:<40} {item_type:<25} {desc}")
         else:
-            console.print(f"[red]Failed to list items: {result.get('error')}[/red]")
-            raise typer.Exit(1)
+            print(f"Failed to list items: {result.get('error')}")
+            sys.exit(1)
 
     except Exception as e:
-        console.print(f"[red]Error: {str(e)}[/red]")
-        raise typer.Exit(1)
+        print(f"Error: {str(e)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    app()
+    if len(sys.argv) < 2:
+        print("Usage: python list_workspace_items.py <workspace_name>")
+        print("   or: make list-items workspace=\"Name\"")
+        sys.exit(1)
+
+    list_workspace_items(sys.argv[1])

@@ -177,7 +177,7 @@ list-workspaces: ## List all Fabric workspaces
 
 list-items: ## List items in a workspace (Usage: make list-items workspace="Name")
 	@if [ -z "$(workspace)" ]; then echo "Error: 'workspace' argument is missing."; exit 1; fi
-	$(PYTHON) scripts/admin/utilities/list_workspace_items.py "$(workspace)"
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) scripts/admin/utilities/list_workspace_items.py "$(workspace)"
 
 
 ##@ Webapp (Interactive Guide)

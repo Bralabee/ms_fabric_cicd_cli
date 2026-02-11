@@ -18,11 +18,12 @@ import typer
 from rich.console import Console
 from azure.identity import ClientSecretCredential
 
-# Add project root to path to allow imports from src
+# Add project root and src to path to allow imports
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(project_root))
+sys.path.append(str(project_root / "src"))
 
-from src.core.secrets import FabricSecrets
+from usf_fabric_cli.utils.secrets import FabricSecrets
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
