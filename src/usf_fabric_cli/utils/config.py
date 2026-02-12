@@ -85,10 +85,20 @@ class ConfigManager:
             content = self._substitute_env_vars(content)
             config_data = yaml.safe_load(content)
 
-        # Apply environment overrides
+        # Apply environment overrides (inline block takes priority over external files)
         if environment:
-            env_config = self._load_environment_config(environment)
+            # Check for inline 'environments' block first
+            inline_envs = config_data.get("environments", {})
+            if environment in inline_envs:
+                env_config = inline_envs[environment]
+                logger.info("Applying inline environment override: %s", environment)
+            else:
+                env_config = self._load_environment_config(environment)
             config_data = self._merge_configs(config_data, env_config)
+
+        # Remove 'environments' meta-key before schema validation
+        # (it's a config convenience, not a deployment property)
+        config_data.pop("environments", None)
 
         # Validate against schema
         validate(instance=config_data, schema=self.schema)
