@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.4] - 2026-02-12
+
+### Fixed
+
+- **Idempotent Workspace Destroy**: The `destroy` command now exits 0 when the target workspace no longer exists (`NotFound`), printing a warning instead of failing. This resolves the race condition where both `pull_request:closed` and `delete` events fire simultaneously on PR merge with branch deletion — the second cleanup no longer fails.
+
+### Tests
+
+- Added `test_destroy_idempotent_not_found` — verifies destroy exits cleanly when workspace is already gone
+- Added `test_destroy_real_error_still_fails` — verifies genuine errors (e.g. permission denied) still propagate correctly
+- Total: **76 tests passing** across the full unit test suite
+
 ## [1.7.3] - 2026-02-12
 
 ### Fixed
