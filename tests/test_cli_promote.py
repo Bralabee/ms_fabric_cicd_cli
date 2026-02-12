@@ -1,4 +1,3 @@
-
 import os
 from unittest.mock import patch, MagicMock
 import pytest
@@ -28,23 +27,33 @@ class TestCLIPromote:
 
     def test_promote_args_passed_correctly(self, runner, mock_env_vars):
         """Verify promote calls API with correct arguments."""
-        with patch("usf_fabric_cli.services.deployment_pipeline.FabricDeploymentPipelineAPI") as MockAPI:
+        with patch(
+            "usf_fabric_cli.services.deployment_pipeline.FabricDeploymentPipelineAPI"
+        ) as MockAPI:
             # Setup mock
             mock_api_instance = MagicMock()
             mock_api_instance.get_pipeline_by_name.return_value = {
-                "id": "pipe-123", "displayName": "My Pipeline"
+                "id": "pipe-123",
+                "displayName": "My Pipeline",
             }
             mock_api_instance.promote.return_value = {"success": True}
             MockAPI.return_value = mock_api_instance
 
             # Run command
-            result = runner.invoke(app, [
-                "promote",
-                "--pipeline-name", "My Pipeline",
-                "--source-stage", "Development",
-                "--target-stage", "Test",
-                "--note", "Test deployment"
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "promote",
+                    "--pipeline-name",
+                    "My Pipeline",
+                    "--source-stage",
+                    "Development",
+                    "--target-stage",
+                    "Test",
+                    "--note",
+                    "Test deployment",
+                ],
+            )
 
             # Verify call
             assert result.exit_code == 0
@@ -53,7 +62,7 @@ class TestCLIPromote:
                 source_stage_name="Development",
                 target_stage_name="Test",
                 note="Test deployment",
-                wait=True
+                wait=True,
             )
 
     def test_promote_api_failure_handles_error(self, runner, mock_env_vars):
@@ -65,15 +74,13 @@ class TestCLIPromote:
             mock_api_instance = MagicMock()
             mock_api_instance.get_pipeline_by_name.return_value = {"id": "pipe-123"}
             mock_api_instance.promote.return_value = {
-                "success": False, "error": "API Error"
+                "success": False,
+                "error": "API Error",
             }
             MockAPI.return_value = mock_api_instance
 
             # Run command
-            result = runner.invoke(app, [
-                "promote",
-                "--pipeline-name", "My Pipeline"
-            ])
+            result = runner.invoke(app, ["promote", "--pipeline-name", "My Pipeline"])
 
             # Verify failure
             assert result.exit_code == 1
@@ -91,10 +98,9 @@ class TestCLIPromote:
             MockAPI.return_value = mock_api_instance
 
             # Run command
-            result = runner.invoke(app, [
-                "promote",
-                "--pipeline-name", "NonExistent Pipeline"
-            ])
+            result = runner.invoke(
+                app, ["promote", "--pipeline-name", "NonExistent Pipeline"]
+            )
 
             # Verify failure
             assert result.exit_code == 1
@@ -111,11 +117,16 @@ class TestCLIPromote:
             MockAPI.return_value = mock_api_instance
 
             # Run command without target stage
-            result = runner.invoke(app, [
-                "promote",
-                "--pipeline-name", "My Pipeline",
-                "--source-stage", "Development"
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "promote",
+                    "--pipeline-name",
+                    "My Pipeline",
+                    "--source-stage",
+                    "Development",
+                ],
+            )
 
             assert result.exit_code == 0
             # Backend logic in cli.py passes None to api.promote if target_stage is None

@@ -169,7 +169,6 @@ class TestFabricCLIWrapper:
         assert "not found" in result["error"]
         assert "remediation" in result
 
-
     @patch("subprocess.run")
     def test_delete_workspace(self, mock_run):
         """Test workspace deletion"""
@@ -207,9 +206,7 @@ class TestFabricCLIWrapper:
     @patch("subprocess.run")
     def test_get_folder_id_found(self, mock_run):
         """Test getting folder ID when folder exists"""
-        ws_response = Mock(
-            stdout='{"id": "workspace-123"}', stderr="", returncode=0
-        )
+        ws_response = Mock(stdout='{"id": "workspace-123"}', stderr="", returncode=0)
         folder_response = Mock(
             stdout='{"value": [{"id": "folder-789", "displayName": "Bronze"}]}',
             stderr="",
@@ -224,9 +221,7 @@ class TestFabricCLIWrapper:
     @patch("subprocess.run")
     def test_get_folder_id_not_found(self, mock_run):
         """Test getting folder ID when folder does not exist"""
-        ws_response = Mock(
-            stdout='{"id": "workspace-123"}', stderr="", returncode=0
-        )
+        ws_response = Mock(stdout='{"id": "workspace-123"}', stderr="", returncode=0)
         folder_response = Mock(
             stdout='{"value": [{"id": "folder-789", "displayName": "Silver"}]}',
             stderr="",
@@ -279,9 +274,7 @@ class TestFabricCLIWrapper:
         mock_run.side_effect = [workspace_response, create_response]
 
         # Create a temp .py file
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("print('hello')")
             py_path = f.name
 
@@ -303,9 +296,7 @@ class TestFabricCLIWrapper:
             assert part["payloadType"] == "InlineBase64"
 
             # Decode and verify notebook structure
-            decoded = json.loads(
-                base64.b64decode(part["payload"]).decode("utf-8")
-            )
+            decoded = json.loads(base64.b64decode(part["payload"]).decode("utf-8"))
             assert decoded["nbformat"] == 4
             assert decoded["cells"][0]["source"] == "print('hello')"
         finally:
@@ -322,15 +313,11 @@ class TestFabricCLIWrapper:
         workspace_response = Mock(
             stdout='{"id": "workspace-123"}', stderr="", returncode=0
         )
-        create_response = Mock(
-            stdout='{"id": "notebook-456"}', stderr="", returncode=0
-        )
+        create_response = Mock(stdout='{"id": "notebook-456"}', stderr="", returncode=0)
         mock_run.side_effect = [workspace_response, create_response]
 
         nb_content = json.dumps({"nbformat": 4, "cells": []})
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".ipynb", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ipynb", delete=False) as f:
             f.write(nb_content)
             nb_path = f.name
 
@@ -362,9 +349,7 @@ class TestFabricCLIWrapper:
         """Test _read_notebook_definition with unsupported extension"""
         import tempfile
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("some content")
             txt_path = f.name
 

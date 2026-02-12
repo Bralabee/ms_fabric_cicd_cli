@@ -19,9 +19,7 @@ import yaml
 # Add scripts path so we can import generate_project
 sys.path.insert(
     0,
-    str(
-        Path(__file__).resolve().parent.parent / "scripts" / "dev"
-    ),
+    str(Path(__file__).resolve().parent.parent / "scripts" / "dev"),
 )
 
 from generate_project import generate_project_config  # noqa: E402
@@ -42,9 +40,7 @@ class TestGenerateProjectConfig:
             / "blueprints"
             / "basic_etl.yaml"
         )
-        (templates_dir / "basic_etl.yaml").write_text(
-            src_template.read_text()
-        )
+        (templates_dir / "basic_etl.yaml").write_text(src_template.read_text())
 
         result = generate_project_config(
             org_name="TestOrg",
@@ -60,9 +56,7 @@ class TestGenerateProjectConfig:
             parsed = yaml.safe_load(f)
         assert isinstance(parsed, dict)
 
-    def test_deployment_pipeline_section_present(
-        self, tmp_path, monkeypatch
-    ):
+    def test_deployment_pipeline_section_present(self, tmp_path, monkeypatch):
         """Generated config should include deployment_pipeline."""
         monkeypatch.chdir(tmp_path)
         templates_dir = tmp_path / "templates" / "blueprints"
@@ -73,9 +67,7 @@ class TestGenerateProjectConfig:
             / "blueprints"
             / "basic_etl.yaml"
         )
-        (templates_dir / "basic_etl.yaml").write_text(
-            src.read_text()
-        )
+        (templates_dir / "basic_etl.yaml").write_text(src.read_text())
 
         result = generate_project_config(
             org_name="Org",
@@ -92,9 +84,7 @@ class TestGenerateProjectConfig:
         pipeline = config["deployment_pipeline"]
         assert "stages" in pipeline
 
-    def test_workspace_section_present(
-        self, tmp_path, monkeypatch
-    ):
+    def test_workspace_section_present(self, tmp_path, monkeypatch):
         """Generated config should have a workspace section."""
         monkeypatch.chdir(tmp_path)
         templates_dir = tmp_path / "templates" / "blueprints"
@@ -105,9 +95,7 @@ class TestGenerateProjectConfig:
             / "blueprints"
             / "basic_etl.yaml"
         )
-        (templates_dir / "basic_etl.yaml").write_text(
-            src.read_text()
-        )
+        (templates_dir / "basic_etl.yaml").write_text(src.read_text())
 
         result = generate_project_config(
             org_name="Org",
@@ -123,9 +111,7 @@ class TestGenerateProjectConfig:
         assert "workspace" in config
         assert "name" in config["workspace"]
 
-    def test_org_name_in_workspace(
-        self, tmp_path, monkeypatch
-    ):
+    def test_org_name_in_workspace(self, tmp_path, monkeypatch):
         """Org name should appear in workspace naming."""
         monkeypatch.chdir(tmp_path)
         templates_dir = tmp_path / "templates" / "blueprints"
@@ -136,9 +122,7 @@ class TestGenerateProjectConfig:
             / "blueprints"
             / "basic_etl.yaml"
         )
-        (templates_dir / "basic_etl.yaml").write_text(
-            src.read_text()
-        )
+        (templates_dir / "basic_etl.yaml").write_text(src.read_text())
 
         result = generate_project_config(
             org_name="ACME",

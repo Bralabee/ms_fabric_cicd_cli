@@ -475,4 +475,3 @@ class TestEnrichPrincipals:
             result = _enrich_principals(original)
             assert len(result) == 2
             assert len(original) == 1  # Original unchanged
-

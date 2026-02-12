@@ -48,9 +48,7 @@ class AuditLogger:
         """Log a Fabric operation for audit trail"""
 
         audit_record = {
-            "timestamp": datetime.now(timezone.utc).strftime(
-                "%Y-%m-%dT%H:%M:%S.%fZ"
-            ),
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             "operation": operation,
             "workspace_id": workspace_id,
             "workspace_name": workspace_name,

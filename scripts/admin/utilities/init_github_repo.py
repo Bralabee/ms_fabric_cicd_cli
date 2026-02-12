@@ -258,9 +258,7 @@ def init_github_repo(
 
         # Display the browsable GitHub URL so users can navigate directly
         html_url = repo_data.get("html_url", f"https://github.com/{owner}/{repo_name}")
-        console.print(
-            f"\n[bold cyan]🔗 GitHub Repo:[/bold cyan] {html_url}"
-        )
+        console.print(f"\n[bold cyan]🔗 GitHub Repo:[/bold cyan] {html_url}")
 
         return clone_url
     except Exception as exc:
@@ -313,9 +311,7 @@ def main(
         console.print(f"\n[bold green]Clone URL:[/bold green] {url}")
         # Also show the browsable web URL for convenience
         web_url = url.removesuffix(".git")
-        console.print(
-            f"[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}"
-        )
+        console.print(f"[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}")
     else:
         raise typer.Exit(1)
 

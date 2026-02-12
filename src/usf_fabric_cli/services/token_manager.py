@@ -215,8 +215,7 @@ class TokenManager:
             # Enable plaintext token fallback for CI/CD environments
             # (GitHub Actions runners lack a desktop keyring)
             subprocess.run(
-                ["fab", "config", "set",
-                 "encryption_fallback_enabled", "true"],
+                ["fab", "config", "set", "encryption_fallback_enabled", "true"],
                 capture_output=True,
                 check=False,
                 timeout=10,

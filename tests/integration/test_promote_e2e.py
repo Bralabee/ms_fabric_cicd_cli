@@ -16,9 +16,7 @@ import sys
 
 import pytest
 
-sys.path.insert(
-    0, os.path.join(os.path.dirname(__file__), "..", "..", "src")
-)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 
 @pytest.mark.integration
@@ -70,7 +68,9 @@ def main():
     except ValueError as e:
         print(f"  ❌ Auth failed: {e}")
         print("  → Cannot proceed with e2e test without valid credentials.")
-        print("  → Fix: ensure .env has AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET")
+        print(
+            "  → Fix: ensure .env has AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET"
+        )
         sys.exit(1)
 
     # ── Step 4: Create API client and list pipelines ───────────
@@ -101,8 +101,8 @@ def main():
             print(f"  Stages ({len(stages)}):")
             for s in stages:
                 ws = s.get("workspaceId", "unassigned")
-                sid = s.get('id', '?')[:8]
-                sname = s.get('displayName', '?')
+                sid = s.get("id", "?")[:8]
+                sname = s.get("displayName", "?")
                 print(
                     f"    - {sname} "
                     f"(id: {sid}..., workspace: "

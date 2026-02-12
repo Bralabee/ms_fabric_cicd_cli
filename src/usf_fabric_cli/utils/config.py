@@ -307,7 +307,9 @@ def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
 
     # Try the new secrets module first
     try:
-        from usf_fabric_cli.utils.secrets import get_environment_variables as get_secrets_env
+        from usf_fabric_cli.utils.secrets import (
+            get_environment_variables as get_secrets_env,
+        )
 
         return get_secrets_env()
     except ImportError:

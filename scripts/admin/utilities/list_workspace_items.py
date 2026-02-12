@@ -30,8 +30,10 @@ def list_workspace_items(workspace_name: str) -> None:
             token = os.getenv("FABRIC_TOKEN", "")
 
         if not token:
-            print("Error: FABRIC_TOKEN is not set. Please set it in .env "
-                  "or export it as an environment variable.")
+            print(
+                "Error: FABRIC_TOKEN is not set. Please set it in .env "
+                "or export it as an environment variable."
+            )
             sys.exit(1)
 
         fabric = FabricCLIWrapper(token)
@@ -71,7 +73,7 @@ def list_workspace_items(workspace_name: str) -> None:
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python list_workspace_items.py <workspace_name>")
-        print("   or: make list-items workspace=\"Name\"")
+        print('   or: make list-items workspace="Name"')
         sys.exit(1)
 
     list_workspace_items(sys.argv[1])

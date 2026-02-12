@@ -65,9 +65,7 @@ class TestTelemetryDisabled:
 
     def test_disabled_client_writes_nothing(self, tmp_path):
         """Disabled client should not create any files."""
-        client = TelemetryClient(
-            log_directory=str(tmp_path), enabled=False
-        )
+        client = TelemetryClient(log_directory=str(tmp_path), enabled=False)
         client.emit(command="deploy", status="success")
 
         log_file = tmp_path / "fabric_cli_telemetry.jsonl"

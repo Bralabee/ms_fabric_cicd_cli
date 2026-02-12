@@ -131,9 +131,7 @@ def test_env_var_substitution_missing_var():
         "properties": {"workspace": {"type": "object"}},
     }
 
-    result = config_manager._substitute_env_vars(
-        "capacity: ${NONEXISTENT_VAR_12345}"
-    )
+    result = config_manager._substitute_env_vars("capacity: ${NONEXISTENT_VAR_12345}")
     assert "${NONEXISTENT_VAR_12345}" in result
 
 
