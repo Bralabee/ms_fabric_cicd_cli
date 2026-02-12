@@ -668,7 +668,9 @@ class TestDeploymentPipelineSetup:
         deployer = _build_deployer(config=config)
         deployer.workspace_id = "ws-dev-id"
 
-        deployer.pipeline_api.get_pipeline_by_name.return_value = {"id": "pipe-existing"}
+        deployer.pipeline_api.get_pipeline_by_name.return_value = {
+            "id": "pipe-existing"
+        }
         deployer.pipeline_api.get_pipeline_stages.return_value = {
             "success": True,
             "stages": [
@@ -746,7 +748,9 @@ class TestDeploymentPipelineSetup:
         result = deployer.deploy()
 
         assert result is True
-        deployer.pipeline_api.get_pipeline_by_name.assert_called_once_with("my-pipeline")
+        deployer.pipeline_api.get_pipeline_by_name.assert_called_once_with(
+            "my-pipeline"
+        )
 
     def test_setup_handles_already_assigned_workspace(self):
         """Idempotent: already-assigned workspace doesn't fail."""

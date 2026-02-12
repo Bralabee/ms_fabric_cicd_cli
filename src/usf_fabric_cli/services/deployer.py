@@ -1081,9 +1081,7 @@ class FabricDeployer:
                 pipeline_id, stage_id, ws_id
             )
             if assign_result["success"]:
-                console.print(
-                    f"    → Assigned to {fabric_stage_name} stage"
-                )
+                console.print(f"    → Assigned to {fabric_stage_name} stage")
             else:
                 error = assign_result.get("error", "")
                 # Already assigned is OK (idempotent)
@@ -1092,9 +1090,7 @@ class FabricDeployer:
                         f"    · Already assigned to {fabric_stage_name} stage"
                     )
                 else:
-                    console.print(
-                        f"    [red]✗ Assignment failed: {error}[/red]"
-                    )
+                    console.print(f"    [red]✗ Assignment failed: {error}[/red]")
 
         console.print(f"  [green]Pipeline '{pipeline_name}' configured.[/green]")
 
