@@ -84,11 +84,14 @@ principals:
 
 # Deployment Pipeline (Fabric Deployment Pipelines)
 deployment_pipeline:
-  name: "analytics-pipeline"
+  pipeline_name: "analytics-pipeline"
   stages:
-    development: "analytics-workspace"
-    test: "analytics-workspace-test"
-    production: "analytics-workspace-prod"
+    development:
+      workspace_name: "analytics-workspace"
+    test:
+      workspace_name: "analytics-workspace-test"
+    production:
+      workspace_name: "analytics-workspace-prod"
 
 # Configuration notes:
 # 1. Replace all placeholder values with your organization's details

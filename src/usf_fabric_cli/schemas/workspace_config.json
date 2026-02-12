@@ -158,6 +158,10 @@
           },
           "role": {
             "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this principal"
           }
         },
         "required": [
@@ -173,13 +177,29 @@
         "properties": {
           "type": {
             "type": "string",
-            "description": "The Fabric item type (e.g. Eventstream, KQLDatabase)"
+            "description": "The Fabric item type (e.g. Eventstream, KQLDatabase)",
+            "examples": [
+              "DataPipeline",
+              "DataflowGen2",
+              "Eventstream",
+              "KQLDatabase",
+              "KQLQueryset",
+              "MLModel",
+              "MLExperiment",
+              "Reflex",
+              "Report",
+              "SparkJobDefinition"
+            ]
           },
           "name": {
             "type": "string"
           },
           "description": {
             "type": "string"
+          },
+          "folder": {
+            "type": "string",
+            "description": "Folder to place this resource in"
           }
         },
         "required": [

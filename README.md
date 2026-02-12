@@ -2,7 +2,7 @@
 
 Enterprise-grade Microsoft Fabric deployment automation leveraging the official Fabric CLI with 12-Factor App configuration management, Jinja2 artifact templating, and REST API Git integration. Designed for organization-agnostic operation with a clean, modular architecture.
 
-> **🎉 February 2026 Update:** Version **1.7.0** — CI/CD architecture refactoring: main-centric Dev workspace, automated feature workspace lifecycle, and Fabric Deployment Pipeline integration for Dev→Test→Prod promotion. See [CHANGELOG.md](CHANGELOG.md) for details.
+> **🎉 February 2026 Update:** Version **1.7.2** — GitHub Git connection fixes, idempotent deployment improvements, and Makefile enhancements. See [CHANGELOG.md](CHANGELOG.md) for details.
 
 > **🔄 Modern Successor:** This project is the evolution of [usf-fabric-cicd](../usf-fabric-cicd), providing a full-featured enterprise CLI framework built around the official Fabric CLI with comprehensive CI/CD, Git integration, and deployment pipeline support.
 
@@ -429,16 +429,17 @@ config/
 
 templates/
 └── blueprints/            # 11 production-ready templates
-    ├── basic_etl.yaml
     ├── advanced_analytics.yaml
-    ├── data_science.yaml
-    ├── realtime_streaming.yaml
+    ├── basic_etl.yaml
     ├── compliance_regulated.yaml
     ├── data_mesh_domain.yaml
+    ├── data_science.yaml
+    ├── extensive_example.yaml
+    ├── medallion.yaml
     ├── migration_hybrid.yaml
     ├── minimal_starter.yaml
-    ├── specialized_timeseries.yaml
-    └── extensive_example.yaml
+    ├── realtime_streaming.yaml
+    └── specialized_timeseries.yaml
 
 scripts/
 ├── admin/                 # Administrative/operational scripts
@@ -471,7 +472,13 @@ pytest --cov=src
 
 ## CI/CD Integration
 
-GitHub Actions workflows included for:
+> **Important: Consumer Repo Pattern** — This repository is a **library/toolkit**, not a deployment repo.
+> GitHub Actions workflows and secrets should be configured in your **consumer project repository**
+> (i.e., the repo created by `make onboard-isolated` or `make init-github-repo`), not here.
+
+### Recommended Workflow Architecture
+
+Your consumer repo should include workflows for:
 
 | Workflow | Trigger | Purpose |
 |:---|:---|:---|
@@ -480,6 +487,8 @@ GitHub Actions workflows included for:
 | `feature-workspace-cleanup.yml` | PR merge / branch delete | Auto-destroy feature workspace |
 | `deploy-to-fabric.yml` | Push to `main` / manual | Promote content via Deployment Pipeline (Dev→Test→Prod) |
 
+Sample workflow templates can be generated during project onboarding.
+
 ### Deployment Pipeline Promotion
 
 Content promotion follows the Microsoft-recommended **Option 3** pattern:
@@ -487,7 +496,7 @@ Content promotion follows the Microsoft-recommended **Option 3** pattern:
 1. **Automatic:** Push to `main` → Dev workspace syncs via Git → auto-promote Dev→Test
 2. **Manual:** `workflow_dispatch` with approval gate for Test→Prod promotions
 
-**Required GitHub Secrets:**
+**Required GitHub Secrets (in your consumer repo):**
 
 | Secret | Purpose |
 |:---|:---|

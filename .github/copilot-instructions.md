@@ -2,7 +2,7 @@
 
 Enterprise Microsoft Fabric deployment automation using a **modular architecture** around official Fabric CLI (~6,200 LOC across services, utils, and CLI layers).
 
-**Current Version**: 1.7.0 (February 2026)
+**Current Version**: 1.7.2 (February 2026)
 
 ## 📏 Development Standards
 
@@ -78,7 +78,7 @@ conda env list  # Should show * next to fabric-cli-cicd
 ```bash
 # 1. Generate project config from template
 # Available templates: basic_etl, advanced_analytics, realtime_streaming, compliance_regulated, etc.
-# See docs/BLUEPRINT_CATALOG.md for full list.
+# See docs/01_User_Guides/07_Blueprint_Catalog.md for full list.
 python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" --template realtime_streaming
 # Output: config/projects/acme_corp/sales_analytics.yaml
 
@@ -231,7 +231,7 @@ Service Principal must have:
 
 ## 📦 Packaging & Distribution
 
-- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.7.0-py3-none-any.whl`
+- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.7.2-py3-none-any.whl`
 - **Entry Point**: `pyproject.toml` defines `fabric-cicd` command → `usf_fabric_cli.cli:app`
 - **Docker Image**: `Dockerfile` installs wheel + Fabric CLI, runs as non-root user
 
@@ -261,7 +261,7 @@ make dev        # Start both servers (backend: 8001, frontend: 5173)
 Scenario YAML files in `webapp/backend/app/content/scenarios/`:
 - `00-complete-journey.yaml` - End-to-end walkthrough (7 phases)
 - `01-getting-started.yaml` - Environment setup, credentials (17 steps including project config generation)
-- `02-project-generation.yaml` - Blueprint templates, all 10 templates covered
+- `02-project-generation.yaml` - Blueprint templates, all 11 templates covered
 - `03-local-deployment.yaml` - Validate, deploy, idempotency, verify
 - `04-docker-deployment.yaml` - Build, deploy, multi-tenant, debugging
 - `05-feature-branch-workflows.yaml` - Isolation, branch workspaces, cleanup
@@ -277,7 +277,7 @@ Scenario YAML files in `webapp/backend/app/content/scenarios/`:
 
 - **README.md**: Quick start, Make Targets Reference (24 targets), CLI Flags Reference
 - **docs/01_User_Guides/03_Project_Configuration.md**: Comprehensive project config generation guide
-- **docs/BLUEPRINT_CATALOG.md**: All 10 blueprint templates with selection guidance
+- **docs/01_User_Guides/07_Blueprint_Catalog.md**: All 11 blueprint templates with selection guidance
 - **.env.template**: Environment variable template with Azure credential structure
 
 ## 🔄 Environment Promotion (DEV → TEST → PROD)

@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.2] - 2026-02-12
+
+### Fixed
+
+- **GitHub Git Connection — 409 DuplicateConnectionName Recovery**: When creating a GitHub connection that already exists (409), the deployer now looks up the existing connection by name (matching the existing Azure DevOps recovery pattern) and reuses it instead of failing.
+- **GitHub Git Connection — myGitCredentials SSO**: The `connect_workspace_to_git` method now includes `myGitCredentials` with `"source": "Automatic"` for GitHub connections, resolving `400 InvalidInput` ("myGitCredentials is required for GitProviderType GitHub") errors when using SSO-based authentication.
+- **WorkspaceAlreadyConnectedToGit — Idempotent Handling**: A 409 response with `WorkspaceAlreadyConnectedToGit` error code is now treated as an idempotent success (`✓ Workspace already connected to Git`) instead of logging an alarming "Failed to connect" error message.
+
+### Tests
+
+- Added 4 tests for GitHub `myGitCredentials` behavior (`TestConnectWorkspaceCredentials`)
+- Added 2 tests for `WorkspaceAlreadyConnectedToGit` idempotent handling (`TestWorkspaceAlreadyConnected`)
+- Added 2 tests for GitHub `DuplicateConnectionName` recovery (`TestGitHubDuplicateConnectionRecovery`)
+- Updated `test_token_manager.py` to account for `encryption_fallback_enabled` CLI call in auth flow
+- Total: **324 tests passing**
+
+### Improved
+
+- **Makefile `deploy` target**: Now supports optional `branch=feature/x` parameter for feature branch workspace deployments (`--branch` + `--force-branch-workspace` flags)
+- **Makefile `onboard` target**: Routed through CLI entrypoint with new `capacity_id`, `pipeline_name`, and `dry_run` parameters
+- **Makefile `destroy` target**: Added `env`, `force`, and `workspace_override` parameters for targeted workspace destruction
+- **Makefile `docker-diagnose`**: Updated to use CLI `diagnose` entrypoint instead of direct script invocation
+- **Workspace config schema**: Added `description` field to principals, `folder` field and type examples to generic resources
+- **Blueprint templates** (`basic_etl.yaml`, `minimal_starter.yaml`): Fixed `deployment_pipeline` format to use `pipeline_name` key and nested `workspace_name` stage structure (matching schema)
+- **Azure Pipelines** (`azure-pipelines.yml`): Parameterized `CONFIG_PATH` and `DEPLOY_ENV` variables, upgraded Python to 3.11
+
+### Documentation
+
+- **From Local to CI/CD Guide** (`docs/01_User_Guides/09_From_Local_to_CICD.md`): Comprehensive 550-line document explaining all CI/CD environment differences, with detailed analysis of 9 problems fixed from v1.5.0 through v1.7.2
+
 ## [1.7.1] - 2026-02-11
 
 ### Documentation

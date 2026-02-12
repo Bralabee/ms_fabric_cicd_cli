@@ -6,11 +6,15 @@ pool:
 
 variables:
   - group: fabric-credentials # Variable group in ADO Library containing CLIENT_ID, SECRET, etc.
+  - name: CONFIG_PATH
+    value: 'config/projects/YOUR_ORG/YOUR_PROJECT.yaml'  # Override in pipeline UI
+  - name: DEPLOY_ENV
+    value: 'dev'  # Override per environment (dev, test, prod)
 
 steps:
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: '3.10'
+    versionSpec: '3.11'
 
 - script: |
     python -m pip install --upgrade pip
@@ -25,8 +29,8 @@ steps:
     
     # Validate configuration first
     export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-    python -m usf_fabric_cli.cli validate config/projects/contoso/finance_analytics.yaml
+    python -m usf_fabric_cli.cli validate $(CONFIG_PATH)
     
     # Deploy
-    python -m usf_fabric_cli.cli deploy config/projects/contoso/finance_analytics.yaml --env dev
+    python -m usf_fabric_cli.cli deploy $(CONFIG_PATH) --env $(DEPLOY_ENV)
   displayName: 'Deploy to Fabric'

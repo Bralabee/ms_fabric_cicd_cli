@@ -192,16 +192,17 @@ class TestRefreshFabricCliAuth:
         result = manager.refresh_fabric_cli_auth()
 
         assert result is True
-        # Should call logout then login
-        assert mock_run.call_count == 2
+        # Should call: encryption_fallback_enabled + logout + login
+        assert mock_run.call_count == 3
 
     @patch("usf_fabric_cli.services.token_manager.subprocess.run")
     def test_refresh_cli_auth_login_failure(self, mock_run, manager):
         """Test CLI re-authentication failure."""
-        # Logout succeeds, login fails
+        # encryption_fallback succeeds, logout succeeds, login fails
         from subprocess import CalledProcessError
 
         mock_run.side_effect = [
+            MagicMock(returncode=0),  # encryption_fallback
             MagicMock(returncode=0),  # logout
             CalledProcessError(1, "fab", stderr="auth failed"),  # login
         ]
