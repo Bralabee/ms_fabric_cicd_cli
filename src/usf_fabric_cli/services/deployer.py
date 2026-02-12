@@ -22,6 +22,7 @@ from usf_fabric_cli.services.git_integration import GitFabricIntegration
 from usf_fabric_cli.services.deployment_state import DeploymentState, ItemType
 from usf_fabric_cli.utils.audit import AuditLogger
 from usf_fabric_cli.services.fabric_git_api import FabricGitAPI, GitProviderType
+from usf_fabric_cli.services.deployment_pipeline import FabricDeploymentPipelineAPI
 from usf_fabric_cli.utils.secrets import FabricSecrets
 from usf_fabric_cli.utils.templating import ArtifactTemplateEngine
 
@@ -84,6 +85,7 @@ class FabricDeployer:
         self.fabric = FabricCLIWrapper(env_vars["FABRIC_TOKEN"])
         self.git = GitFabricIntegration(self.fabric)
         self.git_api = FabricGitAPI(env_vars["FABRIC_TOKEN"])
+        self.pipeline_api = FabricDeploymentPipelineAPI(env_vars["FABRIC_TOKEN"])
         self.audit = AuditLogger()
 
         self.workspace_id = None
@@ -226,6 +228,16 @@ class FabricDeployer:
                     git_branch = branch or self.config.git_branch
                     self._connect_git(git_branch)
                     progress.update(task, description="✅ Git connected")
+
+                # Step 7: Set up Deployment Pipeline (if configured)
+                if self.config.deployment_pipeline and not force_branch_workspace:
+                    task = progress.add_task(
+                        "Setting up Deployment Pipeline...", total=None
+                    )
+                    self._setup_deployment_pipeline(workspace_name)
+                    progress.update(
+                        task, description="✅ Deployment Pipeline configured"
+                    )
 
             # Log completion
             duration = time.time() - start_time
@@ -941,6 +953,150 @@ class FabricDeployer:
         # Could not parse
         logger.warning(f"Could not parse Git URL: {git_url}")
         return None
+
+    def _setup_deployment_pipeline(self, dev_workspace_name: str):
+        """Set up Deployment Pipeline and assign workspaces to stages.
+
+        Creates the pipeline if it doesn't exist, creates Test/Prod workspaces
+        if needed, and assigns each workspace to its pipeline stage.
+
+        Only called for base workspace deployments (not feature branches).
+        """
+        dp_config = self.config.deployment_pipeline
+        if not dp_config:
+            return
+
+        pipeline_name = dp_config.get("pipeline_name")
+        stages_config = dp_config.get("stages", {})
+
+        if not pipeline_name:
+            logger.warning("deployment_pipeline.pipeline_name not set, skipping")
+            return
+
+        console.print(f"\n[blue]Setting up Deployment Pipeline: {pipeline_name}[/blue]")
+
+        # Step 1: Get or create the pipeline
+        pipeline = self.pipeline_api.get_pipeline_by_name(pipeline_name)
+        if pipeline:
+            pipeline_id = pipeline["id"]
+            console.print(f"  · Pipeline exists: {pipeline_id[:8]}...")
+        else:
+            result = self.pipeline_api.create_pipeline(
+                display_name=pipeline_name,
+                description=f"Deployment pipeline for {dev_workspace_name}",
+            )
+            if not result["success"]:
+                logger.error("Failed to create pipeline: %s", result.get("error"))
+                console.print(
+                    f"  [red]✗ Failed to create pipeline: "
+                    f"{result.get('error')}[/red]"
+                )
+                return
+            pipeline_id = result["pipeline"]["id"]
+            console.print(f"  ✓ Pipeline created: {pipeline_id[:8]}...")
+
+        # Step 2: Get pipeline stage IDs
+        stages_result = self.pipeline_api.get_pipeline_stages(pipeline_id)
+        if not stages_result["success"]:
+            logger.error(
+                "Failed to get pipeline stages: %s", stages_result.get("error")
+            )
+            console.print(
+                f"  [red]✗ Failed to get stages: {stages_result.get('error')}[/red]"
+            )
+            return
+
+        # Build a map: stage display name (lowercase) → stage id
+        stage_map = {}
+        for stage in stages_result["stages"]:
+            stage_map[stage["displayName"].lower()] = stage["id"]
+
+        # Step 3: For each configured stage, ensure workspace exists and assign
+        stage_order = ["development", "test", "production"]
+        for stage_key in stage_order:
+            stage_cfg = stages_config.get(stage_key)
+            if not stage_cfg:
+                continue
+
+            ws_name = stage_cfg.get("workspace_name")
+            capacity_id = stage_cfg.get("capacity_id", self.config.capacity_id)
+
+            if not ws_name:
+                continue
+
+            # Map config key to Fabric pipeline stage name
+            fabric_stage_name = {
+                "development": "development",
+                "test": "test",
+                "production": "production",
+            }.get(stage_key, stage_key)
+
+            stage_id = stage_map.get(fabric_stage_name)
+            if not stage_id:
+                logger.warning("No pipeline stage '%s' found", fabric_stage_name)
+                console.print(
+                    f"  [yellow]⚠ Stage '{fabric_stage_name}' not found "
+                    f"in pipeline[/yellow]"
+                )
+                continue
+
+            # For the dev workspace, use the workspace ID we already have
+            if ws_name == dev_workspace_name and self.workspace_id:
+                ws_id = self.workspace_id
+                console.print(
+                    f"  · {stage_key.title()}: {ws_name} (current deployment)"
+                )
+            else:
+                # Create workspace if it doesn't exist (idempotent)
+                ws_result = self.fabric.create_workspace(
+                    ws_name, capacity_name=capacity_id
+                )
+                if not ws_result["success"]:
+                    console.print(
+                        f"  [red]✗ Failed to create workspace {ws_name}: "
+                        f"{ws_result.get('error')}[/red]"
+                    )
+                    continue
+
+                ws_id = ws_result.get("workspace_id")
+                if not ws_id:
+                    ws_id = self.fabric.get_workspace_id(ws_name)
+
+                if not ws_id:
+                    console.print(
+                        f"  [red]✗ Could not resolve workspace ID "
+                        f"for {ws_name}[/red]"
+                    )
+                    continue
+
+                reused = ws_result.get("reused", False)
+                action = "exists" if reused else "created"
+                console.print(
+                    f"  {'·' if reused else '✓'} {stage_key.title()}: "
+                    f"{ws_name} ({action})"
+                )
+
+            # Assign workspace to pipeline stage
+            assign_result = self.pipeline_api.assign_workspace_to_stage(
+                pipeline_id, stage_id, ws_id
+            )
+            if assign_result["success"]:
+                console.print(
+                    f"    → Assigned to {fabric_stage_name} stage"
+                )
+            else:
+                error = assign_result.get("error", "")
+                # Already assigned is OK (idempotent)
+                if "already" in str(error).lower():
+                    console.print(
+                        f"    · Already assigned to {fabric_stage_name} stage"
+                    )
+                else:
+                    console.print(
+                        f"    [red]✗ Assignment failed: {error}[/red]"
+                    )
+
+        console.print(f"  [green]Pipeline '{pipeline_name}' configured.[/green]")
 
     def _show_deployment_summary(self, workspace_name: str, duration: float):
         """Show deployment summary"""
