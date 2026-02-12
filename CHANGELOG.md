@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.3] - 2026-02-12
+
+### Fixed
+
+- **Clean CI/CD Log Messages for Idempotent Git Operations**: Eliminated three alarming log messages that appeared during successful idempotent re-deploys:
+  - `create_git_connection()`: Now returns structured `duplicate: True` flag for 409 DuplicateConnectionName instead of logging `Failed to create Git connection` at error level
+  - `initialize_git_connection()`: Now returns `already_initialized: True` for 409 instead of logging `Failed to initialize Git connection` at error level
+  - Deployer uses structured flags (`duplicate`, `already_initialized`) instead of parsing raw response body text
+  - Clean CI/CD output on re-deploy: `✓ Git connection already initialized (idempotent)` instead of `Warning: Could not initialize Git connection`
+
+### Tests
+
+- Added 4 new tests for 409 idempotent behavior (`TestInitializeGitConnection`, `TestCreateGitConnectionDuplicate`)
+- Updated 2 existing deployer tests with structured `duplicate` flag (`TestGitHubDuplicateConnectionRecovery`)
+- Total: **65 targeted tests passing** (git API + deployer suites)
+
 ## [1.7.2] - 2026-02-12
 
 ### Fixed

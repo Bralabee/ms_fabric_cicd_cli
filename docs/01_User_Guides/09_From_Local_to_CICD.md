@@ -548,4 +548,4 @@ Always test API calls against the real endpoint. Documentation, CLI abstractions
 
 ---
 
-*Document generated: 12 February 2026 | Covers changes from v1.5.0 through v1.7.2*
+*Document generated: 12 February 2026 | Covers changes from v1.5.0 through v1.7.3*
