@@ -765,7 +765,13 @@ class FabricDeployer:
                 )
                 return
 
-            console.print("[green]✓ Workspace connected to Git[/green]")
+            if result.get("already_connected"):
+                console.print(
+                    "[green]✓ Workspace already connected to Git "
+                    "(idempotent)[/green]"
+                )
+            else:
+                console.print("[green]✓ Workspace connected to Git[/green]")
 
             # Show the browsable Git repo URL
             if provider_type == GitProviderType.GITHUB:
