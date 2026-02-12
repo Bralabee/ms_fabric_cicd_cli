@@ -211,14 +211,30 @@ def destroy(
         if result["success"]:
             console.print(f"[green]✅ Workspace '{workspace_name}' destroyed[/green]")
         else:
-            console.print(
-                f"[red]❌ Failed to destroy workspace: {result.get('error')}[/red]"
-            )
-            raise typer.Exit(1)
+            error_msg = result.get("error", "")
+            # Treat "not found" as success — workspace already cleaned up (idempotent)
+            if "NotFound" in str(error_msg) or "could not be found" in str(
+                error_msg
+            ).lower():
+                console.print(
+                    f"[yellow]⚠️  Workspace '{workspace_name}' not found — already cleaned up[/yellow]"
+                )
+            else:
+                console.print(
+                    f"[red]❌ Failed to destroy workspace: {error_msg}[/red]"
+                )
+                raise typer.Exit(1)
 
     except Exception as e:
-        console.print(f"[red]Destroy failed: {e}[/red]")
-        raise typer.Exit(1)
+        error_str = str(e)
+        # Treat "not found" as success — workspace already cleaned up (idempotent)
+        if "NotFound" in error_str or "could not be found" in error_str.lower():
+            console.print(
+                f"[yellow]⚠️  Workspace '{workspace_name}' not found — already cleaned up[/yellow]"
+            )
+        else:
+            console.print(f"[red]Destroy failed: {e}[/red]")
+            raise typer.Exit(1)
 
 
 @app.command()

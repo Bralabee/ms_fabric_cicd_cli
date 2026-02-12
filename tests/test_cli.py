@@ -253,6 +253,42 @@ workspace:
 
         assert result.exit_code != 0
 
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    @patch("usf_fabric_cli.cli.FabricCLIWrapper")
+    def test_destroy_idempotent_not_found(
+        self, mock_wrapper_cls, mock_env, runner, config_file
+    ):
+        """Test that destroy exits cleanly when workspace is already gone (NotFound)."""
+        mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
+        mock_wrapper = mock_wrapper_cls.return_value
+        mock_wrapper.delete_workspace.return_value = {
+            "success": False,
+            "error": "x rm: [NotFound] The Workspace 'test-to-destroy.Workspace' could not be found",
+        }
+
+        result = runner.invoke(app, ["destroy", config_file, "--force"])
+
+        assert result.exit_code == 0
+        assert "already cleaned up" in result.output
+
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    @patch("usf_fabric_cli.cli.FabricCLIWrapper")
+    def test_destroy_real_error_still_fails(
+        self, mock_wrapper_cls, mock_env, runner, config_file
+    ):
+        """Test that destroy still fails on genuine errors (not NotFound)."""
+        mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
+        mock_wrapper = mock_wrapper_cls.return_value
+        mock_wrapper.delete_workspace.return_value = {
+            "success": False,
+            "error": "Permission denied: insufficient privileges",
+        }
+
+        result = runner.invoke(app, ["destroy", config_file, "--force"])
+
+        assert result.exit_code == 1
+        assert "Failed to destroy" in result.output
+
 
 class TestFabricDeployerDeploy:
     """Tests for FabricDeployer.deploy() method with mocked Fabric CLI."""
