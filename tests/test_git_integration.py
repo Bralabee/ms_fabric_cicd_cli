@@ -25,16 +25,12 @@ class TestGetWorkspaceNameFromBranch:
 
     def test_main_returns_base_name(self):
         """Main branch returns base workspace name unchanged."""
-        result = self.git.get_workspace_name_from_branch(
-            "my-workspace", "main"
-        )
+        result = self.git.get_workspace_name_from_branch("my-workspace", "main")
         assert result == "my-workspace"
 
     def test_master_returns_base_name(self):
         """Master branch returns base workspace name unchanged."""
-        result = self.git.get_workspace_name_from_branch(
-            "my-workspace", "master"
-        )
+        result = self.git.get_workspace_name_from_branch("my-workspace", "master")
         assert result == "my-workspace"
 
     def test_feature_branch_appends_sanitized_suffix(self):

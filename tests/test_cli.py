@@ -92,13 +92,13 @@ class TestCLIDiagnose:
 
         mock_diag_instance = MagicMock()
         mock_diag_instance.validate_fabric_cli_installation.return_value = {
-            "success": True, "version": "1.0.0"
+            "success": True,
+            "version": "1.0.0",
         }
-        mock_diag_instance.validate_authentication.return_value = {
-            "success": True
-        }
+        mock_diag_instance.validate_authentication.return_value = {"success": True}
         mock_diag_instance.validate_api_connectivity.return_value = {
-            "success": True, "workspaces_count": 5
+            "success": True,
+            "workspaces_count": 5,
         }
         mock_diagnostics.return_value = mock_diag_instance
 

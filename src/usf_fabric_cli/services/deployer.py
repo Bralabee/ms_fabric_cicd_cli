@@ -90,7 +90,8 @@ class FabricDeployer:
         self.items_created = 0
         self.deployment_state = DeploymentState()
         self._git_browse_url = None  # Browsable Git repo URL
-        self._effective_workspace_name = self.config.name  # May be overridden for branch workspaces
+        # May be overridden for branch workspaces
+        self._effective_workspace_name = self.config.name
 
         # Initialize Jinja2 template engine for artifact rendering
         self._template_engine = ArtifactTemplateEngine(strict_mode=False)
@@ -559,9 +560,7 @@ class FabricDeployer:
                 if not pid:
                     continue
 
-                result = self.fabric.add_workspace_principal(
-                    workspace_name, pid, role
-                )
+                result = self.fabric.add_workspace_principal(workspace_name, pid, role)
 
                 if result.get("success"):
                     if result.get("skipped"):
@@ -575,9 +574,7 @@ class FabricDeployer:
                             f"{role} role[/dim]"
                         )
                     else:
-                        console.print(
-                            f"  ✓ Added {pid[:12]}... as {role}"
-                        )
+                        console.print(f"  ✓ Added {pid[:12]}... as {role}")
                     self.audit.log_principal_assignment(
                         pid,
                         role,
@@ -675,9 +672,7 @@ class FabricDeployer:
                         else:
                             # Check if it's a duplicate connection
                             error_msg = str(conn_result.get("error", ""))
-                            response_body = str(
-                                conn_result.get("response", "")
-                            )
+                            response_body = str(conn_result.get("response", ""))
 
                             if (
                                 "DuplicateConnectionName" in response_body
@@ -688,10 +683,8 @@ class FabricDeployer:
                                     "Trying to find existing "
                                     "connection...[/yellow]"
                                 )
-                                existing_conn = (
-                                    self.git_api.get_connection_by_name(
-                                        f"GitHub-{workspace_name}"
-                                    )
+                                existing_conn = self.git_api.get_connection_by_name(
+                                    f"GitHub-{workspace_name}"
                                 )
                                 if existing_conn:
                                     connection_id = existing_conn["id"]
@@ -770,14 +763,14 @@ class FabricDeployer:
                                     "despite conflict error.[/red]"
                                 )
                         else:
-                                console.print(
-                                    f"[yellow]Warning: Could not create connection: "
-                                    f"{conn_result.get('error')}[/yellow]"
-                                )
-                                console.print(
-                                    "[yellow]Attempting connection without "
-                                    "explicit credentials...[/yellow]"
-                                )
+                            console.print(
+                                f"[yellow]Warning: Could not create connection: "
+                                f"{conn_result.get('error')}[/yellow]"
+                            )
+                            console.print(
+                                "[yellow]Attempting connection without "
+                                "explicit credentials...[/yellow]"
+                            )
 
             # Step 2: Connect workspace to Git
             console.print("[blue]Connecting workspace to Git repository...[/blue]")

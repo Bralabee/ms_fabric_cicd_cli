@@ -153,9 +153,9 @@ class FabricCLIWrapper:
                 # (GitHub Actions runners lack a desktop keyring)
                 try:
                     subprocess.run(
-                        ["fab", "config", "set",
-                         "encryption_fallback_enabled", "true"],
-                        capture_output=True, check=False
+                        ["fab", "config", "set", "encryption_fallback_enabled", "true"],
+                        capture_output=True,
+                        check=False,
                     )
                 except Exception:
                     pass
@@ -337,8 +337,7 @@ class FabricCLIWrapper:
     ) -> Dict[str, Any]:
         """Create workspace with idempotency"""
         logger.debug(
-            "create_workspace called with name='%s', "
-            "capacity_name='%s'",
+            "create_workspace called with name='%s', " "capacity_name='%s'",
             name,
             capacity_name,
         )
@@ -935,8 +934,19 @@ class FabricCLIWrapper:
         else:
             workspace_id = self.get_workspace_id(workspace_name)
             if workspace_id:
-                payload = {"displayName": name, "type": "DataPipeline", "description": description}
-                command = ["api", f"workspaces/{workspace_id}/items", "-X", "post", "-i", json.dumps(payload)]
+                payload = {
+                    "displayName": name,
+                    "type": "DataPipeline",
+                    "description": description,
+                }
+                command = [
+                    "api",
+                    f"workspaces/{workspace_id}/items",
+                    "-X",
+                    "post",
+                    "-i",
+                    json.dumps(payload),
+                ]
                 return self._execute_command(command, check_existence=True)
             path = f"{workspace_name}.Workspace/{name}.DataPipeline"
             if self._item_exists(path):
@@ -989,8 +999,19 @@ class FabricCLIWrapper:
         else:
             workspace_id = self.get_workspace_id(workspace_name)
             if workspace_id:
-                payload = {"displayName": name, "type": "SemanticModel", "description": description}
-                command = ["api", f"workspaces/{workspace_id}/items", "-X", "post", "-i", json.dumps(payload)]
+                payload = {
+                    "displayName": name,
+                    "type": "SemanticModel",
+                    "description": description,
+                }
+                command = [
+                    "api",
+                    f"workspaces/{workspace_id}/items",
+                    "-X",
+                    "post",
+                    "-i",
+                    json.dumps(payload),
+                ]
                 return self._execute_command(command, check_existence=True)
             path = f"{workspace_name}.Workspace/{name}.SemanticModel"
             if self._item_exists(path):
@@ -1044,8 +1065,19 @@ class FabricCLIWrapper:
         else:
             workspace_id = self.get_workspace_id(workspace_name)
             if workspace_id:
-                payload = {"displayName": name, "type": item_type, "description": description}
-                command = ["api", f"workspaces/{workspace_id}/items", "-X", "post", "-i", json.dumps(payload)]
+                payload = {
+                    "displayName": name,
+                    "type": item_type,
+                    "description": description,
+                }
+                command = [
+                    "api",
+                    f"workspaces/{workspace_id}/items",
+                    "-X",
+                    "post",
+                    "-i",
+                    json.dumps(payload),
+                ]
                 return self._execute_command(command, check_existence=True)
             path = f"{workspace_name}.Workspace/{name}.{item_type}"
             if self._item_exists(path):
@@ -1171,9 +1203,7 @@ class FabricCLIWrapper:
                         error_msg = err_body.get("message", resp.text)
                         # Check nested moreDetails for specific errors
                         more_details = err_body.get("moreDetails", [])
-                        detail_msgs = [
-                            d.get("message", "") for d in more_details
-                        ]
+                        detail_msgs = [d.get("message", "") for d in more_details]
                         last_error = (
                             f"{error_code}: {error_msg} "
                             f"{'; '.join(detail_msgs)}".strip()

@@ -213,16 +213,16 @@ def destroy(
         else:
             error_msg = result.get("error", "")
             # Treat "not found" as success — workspace already cleaned up (idempotent)
-            if "NotFound" in str(error_msg) or "could not be found" in str(
-                error_msg
-            ).lower():
+            if (
+                "NotFound" in str(error_msg)
+                or "could not be found" in str(error_msg).lower()
+            ):
                 console.print(
-                    f"[yellow]⚠️  Workspace '{workspace_name}' not found — already cleaned up[/yellow]"
+                    f"[yellow]⚠️  Workspace '{workspace_name}'"
+                    " not found — already cleaned up[/yellow]"
                 )
             else:
-                console.print(
-                    f"[red]❌ Failed to destroy workspace: {error_msg}[/red]"
-                )
+                console.print(f"[red]❌ Failed to destroy workspace: {error_msg}[/red]")
                 raise typer.Exit(1)
 
     except Exception as e:
@@ -230,7 +230,8 @@ def destroy(
         # Treat "not found" as success — workspace already cleaned up (idempotent)
         if "NotFound" in error_str or "could not be found" in error_str.lower():
             console.print(
-                f"[yellow]⚠️  Workspace '{workspace_name}' not found — already cleaned up[/yellow]"
+                f"[yellow]⚠️  Workspace '{workspace_name}'"
+                " not found — already cleaned up[/yellow]"
             )
         else:
             console.print(f"[red]Destroy failed: {e}[/red]")

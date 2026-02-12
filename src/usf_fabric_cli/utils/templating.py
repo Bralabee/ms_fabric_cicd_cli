@@ -57,7 +57,8 @@ class ArtifactTemplateEngine:
             )
         else:
             self.env = sandbox.SandboxedEnvironment(
-                undefined=StrictUndefined if strict_mode else Undefined, autoescape=False
+                undefined=(StrictUndefined if strict_mode else Undefined),
+                autoescape=False,
             )
 
         # Add custom filters

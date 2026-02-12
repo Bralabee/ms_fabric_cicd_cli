@@ -46,16 +46,12 @@ def _make_config(**overrides):
 def _build_deployer(config=None, secrets=None):
     """Construct a FabricDeployer with fully-mocked dependencies."""
     with patch("dotenv.load_dotenv"):
-        with patch(
-            "usf_fabric_cli.services.deployer.ConfigManager"
-        ) as MockCM:
+        with patch("usf_fabric_cli.services.deployer.ConfigManager") as MockCM:
             cm = MockCM.return_value
             cm.load_config.return_value = config or _make_config()
             cm.config_path = "/fake/config.yaml"
 
-            with patch(
-                "usf_fabric_cli.services.deployer.FabricSecrets"
-            ) as MockSecrets:
+            with patch("usf_fabric_cli.services.deployer.FabricSecrets") as MockSecrets:
                 sec = secrets or MagicMock()
                 sec.validate_fabric_auth.return_value = (True, "")
                 sec.fabric_token = "fake-token"
@@ -74,9 +70,7 @@ def _build_deployer(config=None, secrets=None):
                         with patch(
                             "usf_fabric_cli.services.deployer.GitFabricIntegration"
                         ):
-                            with patch(
-                                "usf_fabric_cli.services.deployer.FabricGitAPI"
-                            ):
+                            with patch("usf_fabric_cli.services.deployer.FabricGitAPI"):
                                 with patch(
                                     "usf_fabric_cli.services.deployer.AuditLogger"
                                 ):
@@ -84,13 +78,9 @@ def _build_deployer(config=None, secrets=None):
                                         FabricDeployer,
                                     )
 
-                                    deployer = FabricDeployer.__new__(
-                                        FabricDeployer
-                                    )
+                                    deployer = FabricDeployer.__new__(FabricDeployer)
                                     deployer.config_manager = cm
-                                    deployer.config = (
-                                        cm.load_config.return_value
-                                    )
+                                    deployer.config = cm.load_config.return_value
                                     deployer.environment = "dev"
                                     deployer.secrets = sec
                                     deployer.fabric = MockWrapper.return_value
@@ -272,7 +262,12 @@ class TestCreateItems:
             lakehouses=[],
             notebooks=[],
             resources=[
-                {"type": "Eventstream", "name": "es1", "description": "ES", "folder": "Streams"}
+                {
+                    "type": "Eventstream",
+                    "name": "es1",
+                    "description": "ES",
+                    "folder": "Streams",
+                }
             ],
         )
         deployer = _build_deployer(config=config)
@@ -323,9 +318,7 @@ class TestAddPrincipals:
         )
 
     def test_add_comma_separated_principals(self):
-        config = _make_config(
-            principals=[{"id": "id1,id2,id3", "role": "Contributor"}]
-        )
+        config = _make_config(principals=[{"id": "id1,id2,id3", "role": "Contributor"}])
         deployer = _build_deployer(config=config)
         deployer.fabric.add_workspace_principal.return_value = {"success": True}
 
@@ -386,9 +379,7 @@ class TestParseGitRepoUrl:
 
     def test_parse_github_url(self):
         deployer = _build_deployer()
-        result = deployer._parse_git_repo_url(
-            "https://github.com/myorg/myrepo"
-        )
+        result = deployer._parse_git_repo_url("https://github.com/myorg/myrepo")
 
         assert result is not None
         assert result["owner"] == "myorg"
@@ -396,9 +387,7 @@ class TestParseGitRepoUrl:
 
     def test_parse_github_url_with_git_suffix(self):
         deployer = _build_deployer()
-        result = deployer._parse_git_repo_url(
-            "https://github.com/owner/repo.git"
-        )
+        result = deployer._parse_git_repo_url("https://github.com/owner/repo.git")
 
         assert result is not None
         assert result["owner"] == "owner"
@@ -480,17 +469,13 @@ class TestGitHubDuplicateConnectionRecovery:
         )
 
         # Verify connect_workspace_to_git was called with the recovered ID
-        call_kwargs = (
-            deployer.git_api.connect_workspace_to_git.call_args.kwargs
-        )
+        call_kwargs = deployer.git_api.connect_workspace_to_git.call_args.kwargs
         assert call_kwargs["connection_id"] == "existing-conn-id-123"
 
     def test_github_duplicate_connection_not_found_continues(self):
         """When GitHub 409 occurs but lookup finds nothing, should continue
         with connection_id=None (SSO fallback)."""
-        config = _make_config(
-            git_repo="https://github.com/org/repo"
-        )
+        config = _make_config(git_repo="https://github.com/org/repo")
         deployer = _build_deployer(config=config)
         deployer.workspace_id = "ws-123"
         deployer._effective_workspace_name = "test-workspace"
@@ -523,9 +508,7 @@ class TestGitHubDuplicateConnectionRecovery:
 
         # connect_workspace_to_git should still be called (SSO fallback)
         deployer.git_api.connect_workspace_to_git.assert_called_once()
-        call_kwargs = (
-            deployer.git_api.connect_workspace_to_git.call_args.kwargs
-        )
+        call_kwargs = deployer.git_api.connect_workspace_to_git.call_args.kwargs
         assert call_kwargs["connection_id"] is None
 
 
@@ -576,9 +559,7 @@ class TestDeployOrchestration:
         deployer.fabric.create_notebook.return_value = {"success": True}
         deployer.fabric.add_workspace_principal.return_value = {"success": True}
 
-        result = deployer.deploy(
-            branch="feature/x", force_branch_workspace=True
-        )
+        result = deployer.deploy(branch="feature/x", force_branch_workspace=True)
 
         assert result is True
         deployer.fabric.create_workspace.assert_called_once_with(

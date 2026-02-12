@@ -404,7 +404,7 @@ class FabricGitAPI:
             logger.info("Using automatic SSO authentication")
 
         try:
-            response = self._make_request("POST", url, json=request_body)
+            self._make_request("POST", url, json=request_body)
 
             logger.info(f"Connected workspace {workspace_id} to Git")
             return {"success": True, "message": "Workspace connected to Git"}
@@ -419,9 +419,7 @@ class FabricGitAPI:
                     error_code = ""
 
                 if error_code == "WorkspaceAlreadyConnectedToGit":
-                    logger.info(
-                        f"Workspace {workspace_id} is already connected to Git"
-                    )
+                    logger.info(f"Workspace {workspace_id} is already connected to Git")
                     return {
                         "success": True,
                         "message": "Workspace already connected to Git",

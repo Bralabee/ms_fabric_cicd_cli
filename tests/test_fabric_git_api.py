@@ -608,8 +608,7 @@ class TestCreateGitConnectionDuplicate:
         mock_response = MagicMock()
         mock_response.status_code = 409
         mock_response.text = (
-            '{"errorCode":"DuplicateConnectionName",'
-            '"message":"already being used"}'
+            '{"errorCode":"DuplicateConnectionName",' '"message":"already being used"}'
         )
         http_error = req_lib.exceptions.HTTPError(response=mock_response)
         mock_response.raise_for_status.side_effect = http_error
