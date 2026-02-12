@@ -33,9 +33,9 @@ workspace:
   display_name: Test Workspace
   description: A test workspace
   capacity_id: "12345678-1234-1234-1234-123456789012"
-  folders:
-    - Bronze
-    - Silver
+folders:
+  - Bronze
+  - Silver
 """
         config_file = tmp_path / "test_config.yaml"
         config_file.write_text(config_content)
@@ -131,8 +131,8 @@ workspace:
   display_name: Test Workspace
   description: Test
   capacity_id: "12345678-1234-1234-1234-123456789012"
-  folders:
-    - Bronze
+folders:
+  - Bronze
 """
         config_file = tmp_path / "config.yaml"
         config_file.write_text(config_content)
@@ -351,6 +351,7 @@ principals:
             patch("usf_fabric_cli.services.deployer.GitFabricIntegration") as MockGit,
             patch("usf_fabric_cli.services.deployer.FabricGitAPI") as MockGitAPI,
             patch("usf_fabric_cli.services.deployer.AuditLogger") as MockAudit,
+            patch("usf_fabric_cli.services.deployer.ArtifactTemplateEngine"),
         ):
 
             # Setup mock wrapper
@@ -385,6 +386,7 @@ principals:
             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"),
             patch("usf_fabric_cli.services.deployer.FabricGitAPI"),
             patch("usf_fabric_cli.services.deployer.AuditLogger"),
+            patch("usf_fabric_cli.services.deployer.ArtifactTemplateEngine"),
         ):
 
             MockWrapper.return_value = MagicMock()
@@ -474,6 +476,7 @@ workspace:
             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"),
             patch("usf_fabric_cli.services.deployer.FabricGitAPI"),
             patch("usf_fabric_cli.services.deployer.AuditLogger"),
+            patch("usf_fabric_cli.services.deployer.ArtifactTemplateEngine"),
         ):
 
             deployer = FabricDeployer(config_path=minimal_config)
@@ -492,6 +495,7 @@ workspace:
             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"),
             patch("usf_fabric_cli.services.deployer.FabricGitAPI"),
             patch("usf_fabric_cli.services.deployer.AuditLogger"),
+            patch("usf_fabric_cli.services.deployer.ArtifactTemplateEngine"),
         ):
 
             deployer = FabricDeployer(config_path=minimal_config)
@@ -513,6 +517,7 @@ workspace:
             patch("usf_fabric_cli.services.deployer.GitFabricIntegration"),
             patch("usf_fabric_cli.services.deployer.FabricGitAPI"),
             patch("usf_fabric_cli.services.deployer.AuditLogger"),
+            patch("usf_fabric_cli.services.deployer.ArtifactTemplateEngine"),
         ):
 
             deployer = FabricDeployer(config_path=minimal_config)

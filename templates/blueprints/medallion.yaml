@@ -94,18 +94,9 @@ principals:
     description: "Enterprise Contributor"
 
 # Environment Overrides
-environments:
-  dev:
-    workspace:
-      name: "Medallion_Dev"
-      capacity_id: "${DEV_CAPACITY_ID}"
-  
-  test:
-    workspace:
-      name: "Medallion_Test"
-      capacity_id: "${STAGING_CAPACITY_ID}"
-  
-  prod:
-    workspace:
-      name: "Medallion_Prod"
-      capacity_id: "${PROD_CAPACITY_ID}"
+# NOTE: Inline environments: blocks are NOT read by ConfigManager.
+# Use config/environments/{dev,test,prod}.yaml for per-environment overrides.
+# Example overrides (place in config/environments/dev.yaml):
+#   workspace:
+#     name: "Medallion_Dev"
+#     capacity_id: "${DEV_CAPACITY_ID}"

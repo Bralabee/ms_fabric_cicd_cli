@@ -2,6 +2,10 @@
 Git Integration - Thin Wrapper Component 3/5
 ~60 LOC - Git + Fabric synchronization and branch management
 
+DEPRECATED: The deployer now uses FabricGitAPI (fabric_git_api.py) directly
+for workspace-to-Git connections via REST API. This module is retained for
+local Git repository validation (branch checks, dirty-state detection) only.
+
 Key Learning Applied: Feature Branch Workflows
 - Support feature branch deployments
 - Git repository validation
@@ -9,6 +13,7 @@ Key Learning Applied: Feature Branch Workflows
 """
 
 import logging
+import warnings
 from typing import Dict, Any, Optional
 
 from git import InvalidGitRepositoryError, Repo

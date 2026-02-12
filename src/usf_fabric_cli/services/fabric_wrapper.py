@@ -7,6 +7,7 @@ import logging
 import subprocess
 import time
 import re
+import base64
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 import os
@@ -203,33 +204,6 @@ class FabricCLIWrapper:
         except FabricTelemetryError as exc:
             logger.debug("Telemetry write failed: %s", exc)
 
-    def _run_command(self, command: List[str]) -> dict:
-        """Run Fabric CLI command"""
-        try:
-            # Use 'fabric-cli' instead of 'fab' if 'fab' is not found
-            executable = "fabric-cli"
-
-            # Construct command
-            full_command = [executable] + command
-
-            # Prepare environment
-            env = os.environ.copy()
-            # Remove SP credentials to force use of cached token from _setup_auth
-            env.pop("AZURE_CLIENT_ID", None)
-            env.pop("AZURE_CLIENT_SECRET", None)
-            env.pop("AZURE_TENANT_ID", None)
-            env.pop("TENANT_ID", None)
-            env.pop("FABRIC_TOKEN", None)
-            env.pop("AZURE_ACCESS_TOKEN", None)
-
-            # Run command
-            result = subprocess.run(
-                full_command, capture_output=True, text=True, env=env
-            )
-            return {"success": True, "data": result.stdout}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
-
     def _execute_command(
         self, command: List[str], check_existence: bool = False, timeout: int = 300
     ) -> Dict[str, Any]:
@@ -362,9 +336,11 @@ class FabricCLIWrapper:
         self, name: str, capacity_name: Optional[str] = None, description: str = ""
     ) -> Dict[str, Any]:
         """Create workspace with idempotency"""
-        print(
-            f"DEBUG: create_workspace called with name='{name}', "
-            f"capacity_name='{capacity_name}'"
+        logger.debug(
+            "create_workspace called with name='%s', "
+            "capacity_name='%s'",
+            name,
+            capacity_name,
         )
 
         # Check existence first
@@ -432,28 +408,19 @@ class FabricCLIWrapper:
                         else "Unknown"
                     )
 
-                    print(
-                        f"Error creating workspace with capacity: {error_code} - "
-                        f"{error_message}"
+                    logger.error(
+                        "Error creating workspace with capacity: %s - %s",
+                        error_code,
+                        error_message,
                     )
                     if error_code == "InsufficientPermissionsOverCapacity":
-                        print(
+                        logger.error(
                             "ACTION REQUIRED: The Service Principal needs 'Capacity "
                             "Admin' or 'Contributor' permissions on the Fabric "
                             "Capacity."
                         )
 
                     return {"success": False, "error": f"{error_code}: {error_message}"}
-
-            if result.get("success"):
-                # If status_code is missing or 2xx, assume success (though
-                # _execute_command usually returns success=True even for 4xx if the
-                # command ran)
-                # We need to verify if the workspace was actually created.
-                # However, for now, let's assume if we didn't catch a 4xx above, it
-                # might be okay or we fall through.
-                # Actually, if it failed, we should probably return False.
-                pass
 
             if result.get("success"):
                 # Check for API error in data (fab api returns 0 even on error)
@@ -501,7 +468,7 @@ class FabricCLIWrapper:
                 self._workspace_id_cache[name] = result["workspace_id"]
             return result
         else:
-            print("DEBUG: Not a GUID capacity. Using mkdir.")
+            logger.debug("Not a GUID capacity. Using mkdir.")
             # Use 'mkdir' with -P capacityName=... (Legacy/Name-based)
             command = ["mkdir", f"{name}.Workspace"]
 
@@ -773,6 +740,61 @@ class FabricCLIWrapper:
             command = ["mkdir", path]
             return self._execute_command(command, check_existence=True)
 
+    def _read_notebook_definition(self, file_path: str) -> Optional[str]:
+        """Read notebook file and return base64-encoded content for Fabric API.
+
+        Supports .py (converted to single-cell .ipynb) and .ipynb files.
+
+        Args:
+            file_path: Path to notebook source file
+
+        Returns:
+            Base64-encoded notebook content, or None if file not found
+        """
+        from pathlib import Path
+
+        path = Path(file_path)
+        if not path.exists():
+            # Try relative to config file directory
+            logger.warning(f"Notebook file not found: {file_path}")
+            return None
+
+        try:
+            content = path.read_text(encoding="utf-8")
+
+            if path.suffix == ".py":
+                # Wrap Python content in minimal .ipynb structure
+                notebook_json = json.dumps(
+                    {
+                        "nbformat": 4,
+                        "nbformat_minor": 5,
+                        "metadata": {
+                            "language_info": {"name": "python"},
+                            "kernel_info": {"name": "synapse_pyspark"},
+                        },
+                        "cells": [
+                            {
+                                "cell_type": "code",
+                                "source": content,
+                                "metadata": {},
+                                "outputs": [],
+                            }
+                        ],
+                    }
+                )
+                return base64.b64encode(notebook_json.encode("utf-8")).decode("utf-8")
+            elif path.suffix == ".ipynb":
+                return base64.b64encode(content.encode("utf-8")).decode("utf-8")
+            else:
+                logger.warning(
+                    f"Unsupported notebook file type: {path.suffix}. "
+                    f"Supported: .py, .ipynb"
+                )
+                return None
+        except Exception as e:
+            logger.error(f"Failed to read notebook file {file_path}: {e}")
+            return None
+
     def create_notebook(
         self,
         workspace_name: str,
@@ -780,7 +802,19 @@ class FabricCLIWrapper:
         file_path: Optional[str] = None,
         folder: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Create notebook"""
+        """Create notebook, optionally importing content from file_path."""
+        # Read notebook content if file_path is provided
+        notebook_definition = None
+        if file_path:
+            notebook_definition = self._read_notebook_definition(file_path)
+            if notebook_definition:
+                logger.info(f"Loaded notebook content from {file_path}")
+            else:
+                logger.warning(
+                    f"Could not load notebook from {file_path}; "
+                    f"creating empty notebook"
+                )
+
         if folder:
             folder_id = self.get_folder_id(workspace_name, folder)
             if not folder_id:
@@ -801,6 +835,18 @@ class FabricCLIWrapper:
 
             payload = {"displayName": name, "type": "Notebook", "folderId": folder_id}
 
+            if notebook_definition:
+                payload["definition"] = {
+                    "format": "ipynb",
+                    "parts": [
+                        {
+                            "path": "notebook-content.py",
+                            "payload": notebook_definition,
+                            "payloadType": "InlineBase64",
+                        }
+                    ],
+                }
+
             command = [
                 "api",
                 f"workspaces/{workspace_id}/items",
@@ -815,6 +861,19 @@ class FabricCLIWrapper:
             workspace_id = self.get_workspace_id(workspace_name)
             if workspace_id:
                 payload = {"displayName": name, "type": "Notebook"}
+
+                if notebook_definition:
+                    payload["definition"] = {
+                        "format": "ipynb",
+                        "parts": [
+                            {
+                                "path": "notebook-content.py",
+                                "payload": notebook_definition,
+                                "payloadType": "InlineBase64",
+                            }
+                        ],
+                    }
+
                 command = [
                     "api",
                     f"workspaces/{workspace_id}/items",

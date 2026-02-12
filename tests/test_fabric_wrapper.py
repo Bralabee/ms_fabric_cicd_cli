@@ -170,6 +170,369 @@ class TestFabricCLIWrapper:
         assert "remediation" in result
 
 
+    @patch("subprocess.run")
+    def test_delete_workspace(self, mock_run):
+        """Test workspace deletion"""
+        mock_run.return_value = Mock(stdout="", stderr="", returncode=0)
+
+        result = self.fabric.delete_workspace("test-workspace")
+
+        assert result["success"] is True
+        args = mock_run.call_args[0][0]
+        assert args == ["fab", "rm", "test-workspace.Workspace", "--force"]
+
+    @patch("subprocess.run")
+    def test_get_workspace_id_from_api(self, mock_run):
+        """Test getting workspace ID from API response"""
+        mock_run.return_value = Mock(
+            stdout='{"id": "ws-abc-123", "displayName": "my-workspace"}',
+            stderr="",
+            returncode=0,
+        )
+
+        ws_id = self.fabric.get_workspace_id("my-workspace")
+
+        assert ws_id == "ws-abc-123"
+
+    @patch("subprocess.run")
+    def test_get_workspace_id_cached(self, mock_run):
+        """Test workspace ID cache hit avoids API call"""
+        self.fabric._workspace_id_cache["cached-ws"] = "cached-id-999"
+
+        ws_id = self.fabric.get_workspace_id("cached-ws")
+
+        assert ws_id == "cached-id-999"
+        mock_run.assert_not_called()
+
+    @patch("subprocess.run")
+    def test_get_folder_id_found(self, mock_run):
+        """Test getting folder ID when folder exists"""
+        ws_response = Mock(
+            stdout='{"id": "workspace-123"}', stderr="", returncode=0
+        )
+        folder_response = Mock(
+            stdout='{"value": [{"id": "folder-789", "displayName": "Bronze"}]}',
+            stderr="",
+            returncode=0,
+        )
+        mock_run.side_effect = [ws_response, folder_response]
+
+        folder_id = self.fabric.get_folder_id("test-ws", "Bronze", retries=1)
+
+        assert folder_id == "folder-789"
+
+    @patch("subprocess.run")
+    def test_get_folder_id_not_found(self, mock_run):
+        """Test getting folder ID when folder does not exist"""
+        ws_response = Mock(
+            stdout='{"id": "workspace-123"}', stderr="", returncode=0
+        )
+        folder_response = Mock(
+            stdout='{"value": [{"id": "folder-789", "displayName": "Silver"}]}',
+            stderr="",
+            returncode=0,
+        )
+        mock_run.side_effect = [ws_response, folder_response]
+
+        folder_id = self.fabric.get_folder_id("test-ws", "NonExistent", retries=1)
+
+        assert folder_id is None
+
+    @patch("subprocess.run")
+    def test_create_notebook_without_file_path(self, mock_run):
+        """Test notebook creation without file_path (empty notebook)"""
+        workspace_response = Mock(
+            stdout='{"id": "workspace-123"}', stderr="", returncode=0
+        )
+        create_response = Mock(
+            stdout='{"id": "notebook-456", "displayName": "my-notebook"}',
+            stderr="",
+            returncode=0,
+        )
+        mock_run.side_effect = [workspace_response, create_response]
+
+        result = self.fabric.create_notebook("test-ws", "my-notebook")
+
+        assert result["success"] is True
+        # Verify no definition payload for empty notebook
+        create_call = mock_run.call_args_list[1]
+        args = create_call[0][0]
+        payload_idx = args.index("-i") + 1
+        payload = json.loads(args[payload_idx])
+        assert "definition" not in payload
+        assert payload["type"] == "Notebook"
+
+    @patch("subprocess.run")
+    def test_create_notebook_with_py_file(self, mock_run):
+        """Test notebook creation importing content from .py file"""
+        import tempfile
+        import base64
+
+        workspace_response = Mock(
+            stdout='{"id": "workspace-123"}', stderr="", returncode=0
+        )
+        create_response = Mock(
+            stdout='{"id": "notebook-456", "displayName": "my-notebook"}',
+            stderr="",
+            returncode=0,
+        )
+        mock_run.side_effect = [workspace_response, create_response]
+
+        # Create a temp .py file
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as f:
+            f.write("print('hello')")
+            py_path = f.name
+
+        try:
+            result = self.fabric.create_notebook(
+                "test-ws", "my-notebook", file_path=py_path
+            )
+
+            assert result["success"] is True
+            # Verify definition payload contains base64 content
+            create_call = mock_run.call_args_list[1]
+            args = create_call[0][0]
+            payload_idx = args.index("-i") + 1
+            payload = json.loads(args[payload_idx])
+            assert "definition" in payload
+            assert payload["definition"]["format"] == "ipynb"
+            assert len(payload["definition"]["parts"]) == 1
+            part = payload["definition"]["parts"][0]
+            assert part["payloadType"] == "InlineBase64"
+
+            # Decode and verify notebook structure
+            decoded = json.loads(
+                base64.b64decode(part["payload"]).decode("utf-8")
+            )
+            assert decoded["nbformat"] == 4
+            assert decoded["cells"][0]["source"] == "print('hello')"
+        finally:
+            import os
+
+            os.unlink(py_path)
+
+    @patch("subprocess.run")
+    def test_create_notebook_with_ipynb_file(self, mock_run):
+        """Test notebook creation importing content from .ipynb file"""
+        import tempfile
+        import base64
+
+        workspace_response = Mock(
+            stdout='{"id": "workspace-123"}', stderr="", returncode=0
+        )
+        create_response = Mock(
+            stdout='{"id": "notebook-456"}', stderr="", returncode=0
+        )
+        mock_run.side_effect = [workspace_response, create_response]
+
+        nb_content = json.dumps({"nbformat": 4, "cells": []})
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ipynb", delete=False
+        ) as f:
+            f.write(nb_content)
+            nb_path = f.name
+
+        try:
+            result = self.fabric.create_notebook(
+                "test-ws", "my-notebook", file_path=nb_path
+            )
+
+            assert result["success"] is True
+            create_call = mock_run.call_args_list[1]
+            args = create_call[0][0]
+            payload_idx = args.index("-i") + 1
+            payload = json.loads(args[payload_idx])
+            decoded = base64.b64decode(
+                payload["definition"]["parts"][0]["payload"]
+            ).decode("utf-8")
+            assert decoded == nb_content
+        finally:
+            import os
+
+            os.unlink(nb_path)
+
+    def test_read_notebook_definition_missing_file(self):
+        """Test _read_notebook_definition with non-existent file"""
+        result = self.fabric._read_notebook_definition("/nonexistent/path.py")
+        assert result is None
+
+    def test_read_notebook_definition_unsupported_extension(self):
+        """Test _read_notebook_definition with unsupported extension"""
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False
+        ) as f:
+            f.write("some content")
+            txt_path = f.name
+
+        try:
+            result = self.fabric._read_notebook_definition(txt_path)
+            assert result is None
+        finally:
+            import os
+
+            os.unlink(txt_path)
+
+    @patch("subprocess.run")
+    def test_create_pipeline(self, mock_run):
+        """Test pipeline creation via REST API"""
+        workspace_response = Mock(
+            stdout='{"id": "workspace-123"}', stderr="", returncode=0
+        )
+        create_response = Mock(
+            stdout='{"id": "pipeline-456", "displayName": "etl-pipeline"}',
+            stderr="",
+            returncode=0,
+        )
+        mock_run.side_effect = [workspace_response, create_response]
+
+        result = self.fabric.create_pipeline("test-ws", "etl-pipeline", "ETL job")
+
+        assert result["success"] is True
+        create_call = mock_run.call_args_list[1]
+        args = create_call[0][0]
+        payload_idx = args.index("-i") + 1
+        payload = json.loads(args[payload_idx])
+        assert payload["type"] == "DataPipeline"
+        assert payload["displayName"] == "etl-pipeline"
+        assert payload["description"] == "ETL job"
+
+    @patch("subprocess.run")
+    def test_create_warehouse(self, mock_run):
+        """Test warehouse creation via REST API"""
+        workspace_response = Mock(
+            stdout='{"id": "workspace-123"}', stderr="", returncode=0
+        )
+        create_response = Mock(
+            stdout='{"id": "wh-789", "displayName": "sales-warehouse"}',
+            stderr="",
+            returncode=0,
+        )
+        mock_run.side_effect = [workspace_response, create_response]
+
+        result = self.fabric.create_warehouse("test-ws", "sales-warehouse")
+
+        assert result["success"] is True
+        create_call = mock_run.call_args_list[1]
+        args = create_call[0][0]
+        payload_idx = args.index("-i") + 1
+        payload = json.loads(args[payload_idx])
+        assert payload["type"] == "Warehouse"
+
+    @patch("subprocess.run")
+    def test_create_semantic_model(self, mock_run):
+        """Test semantic model creation via REST API"""
+        workspace_response = Mock(
+            stdout='{"id": "workspace-123"}', stderr="", returncode=0
+        )
+        create_response = Mock(
+            stdout='{"id": "sm-101", "displayName": "sales-model"}',
+            stderr="",
+            returncode=0,
+        )
+        mock_run.side_effect = [workspace_response, create_response]
+
+        result = self.fabric.create_semantic_model(
+            "test-ws", "sales-model", "Sales semantic model"
+        )
+
+        assert result["success"] is True
+        create_call = mock_run.call_args_list[1]
+        args = create_call[0][0]
+        payload_idx = args.index("-i") + 1
+        payload = json.loads(args[payload_idx])
+        assert payload["type"] == "SemanticModel"
+        assert payload["description"] == "Sales semantic model"
+
+    @patch("subprocess.run")
+    def test_create_item_generic(self, mock_run):
+        """Test generic item creation (e.g., Eventstream, KQLDatabase)"""
+        workspace_response = Mock(
+            stdout='{"id": "workspace-123"}', stderr="", returncode=0
+        )
+        create_response = Mock(
+            stdout='{"id": "es-202", "displayName": "iot-events"}',
+            stderr="",
+            returncode=0,
+        )
+        mock_run.side_effect = [workspace_response, create_response]
+
+        result = self.fabric.create_item(
+            "test-ws", "iot-events", "Eventstream", "IoT ingestion"
+        )
+
+        assert result["success"] is True
+        create_call = mock_run.call_args_list[1]
+        args = create_call[0][0]
+        payload_idx = args.index("-i") + 1
+        payload = json.loads(args[payload_idx])
+        assert payload["type"] == "Eventstream"
+        assert payload["displayName"] == "iot-events"
+        assert payload["description"] == "IoT ingestion"
+
+    @patch("subprocess.run")
+    def test_add_workspace_principal_empty_id(self, mock_run):
+        """Test that empty principal ID is silently skipped"""
+        result = self.fabric.add_workspace_principal("test-ws", "", "Admin")
+
+        assert result["success"] is True
+        assert result.get("skipped") is True
+        mock_run.assert_not_called()
+
+    @patch("subprocess.run")
+    def test_add_workspace_principal_placeholder(self, mock_run):
+        """Test that placeholder email principals are skipped"""
+        result = self.fabric.add_workspace_principal(
+            "test-ws", "user@your-company.com", "Member"
+        )
+
+        assert result["success"] is True
+        assert result.get("skipped") is True
+        mock_run.assert_not_called()
+
+    @patch.dict("os.environ", {"AZURE_CLIENT_ID": "sp-client-id-123"})
+    @patch("subprocess.run")
+    def test_add_workspace_principal_deploying_sp_skipped(self, mock_run):
+        """Test that deploying SP's own client ID is skipped"""
+        result = self.fabric.add_workspace_principal(
+            "test-ws", "sp-client-id-123", "Admin"
+        )
+
+        assert result["success"] is True
+        assert result.get("skipped") is True
+        mock_run.assert_not_called()
+
+    @patch("subprocess.run")
+    def test_assign_to_domain(self, mock_run):
+        """Test domain assignment"""
+        mock_run.return_value = Mock(stdout="", stderr="", returncode=0)
+
+        result = self.fabric.assign_to_domain("test-ws", "Sales")
+
+        assert result["success"] is True
+        args = mock_run.call_args[0][0]
+        assert args[:2] == ["fab", "assign"]
+        assert ".domains/Sales.Domain" in args
+        assert "-W" in args
+        assert "test-ws.Workspace" in args
+
+    @patch("subprocess.run")
+    def test_assign_to_domain_full_path(self, mock_run):
+        """Test domain assignment with already-qualified domain name"""
+        mock_run.return_value = Mock(stdout="", stderr="", returncode=0)
+
+        result = self.fabric.assign_to_domain("test-ws", ".domains/Finance.Domain")
+
+        assert result["success"] is True
+        args = mock_run.call_args[0][0]
+        # Should not double-prefix
+        assert ".domains/Finance.Domain" in args
+        assert ".domains/.domains/" not in " ".join(args)
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
 

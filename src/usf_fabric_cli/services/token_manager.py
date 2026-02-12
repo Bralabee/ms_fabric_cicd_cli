@@ -14,6 +14,7 @@ Key Features:
 
 import logging
 import subprocess
+import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -98,6 +99,7 @@ class TokenManager:
         )
         self._token_info: Optional[TokenInfo] = None
         self._last_cli_auth: Optional[datetime] = None
+        self._lock = threading.Lock()
 
         logger.info(
             "TokenManager initialized with %ds refresh buffer", refresh_buffer_seconds
@@ -176,23 +178,26 @@ class TokenManager:
         """
         Get a valid access token, refreshing if necessary.
 
+        Thread-safe: uses a lock to prevent concurrent token refresh.
+
         Returns:
             Valid access token string
 
         Raises:
             Exception: If token acquisition fails
         """
-        if self._should_refresh():
-            self._token_info = self._acquire_token()
+        with self._lock:
+            if self._should_refresh():
+                self._token_info = self._acquire_token()
 
-            # Notify callback if registered
-            if self._on_token_refresh:
-                try:
-                    self._on_token_refresh(self._token_info.token)
-                except Exception as e:
-                    logger.warning("Token refresh callback failed: %s", e)
+                # Notify callback if registered
+                if self._on_token_refresh:
+                    try:
+                        self._on_token_refresh(self._token_info.token)
+                    except Exception as e:
+                        logger.warning("Token refresh callback failed: %s", e)
 
-        return self._token_info.token
+            return self._token_info.token
 
     def refresh_fabric_cli_auth(self) -> bool:
         """

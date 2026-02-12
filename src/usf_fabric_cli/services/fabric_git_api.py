@@ -254,10 +254,7 @@ class FabricGitAPI:
         }
 
         try:
-            response = requests.post(
-                url, headers=self.headers, json=request_body, timeout=30
-            )
-            response.raise_for_status()
+            response = self._make_request("POST", url, json=request_body)
 
             result = response.json()
             logger.info(f"Created Git connection: {result.get('id')}")
@@ -393,13 +390,13 @@ class FabricGitAPI:
         # Add credentials - required for GitHub, optional for Azure DevOps
         if connection_id:
             request_body["myGitCredentials"] = {
-                "source": "ConfiguredConnection",
+                "source": GitConnectionSource.CONFIGURED_CONNECTION.value,
                 "connectionId": connection_id,
             }
         elif provider_type == GitProviderType.GITHUB:
             # GitHub provider REQUIRES myGitCredentials even for SSO
             request_body["myGitCredentials"] = {
-                "source": "Automatic",
+                "source": GitConnectionSource.AUTOMATIC.value,
             }
             logger.info("Using automatic SSO authentication for GitHub")
         else:
@@ -407,10 +404,7 @@ class FabricGitAPI:
             logger.info("Using automatic SSO authentication")
 
         try:
-            response = requests.post(
-                url, headers=self.headers, json=request_body, timeout=30
-            )
-            response.raise_for_status()
+            response = self._make_request("POST", url, json=request_body)
 
             logger.info(f"Connected workspace {workspace_id} to Git")
             return {"success": True, "message": "Workspace connected to Git"}
@@ -454,8 +448,7 @@ class FabricGitAPI:
         url = f"{self.base_url}/workspaces/{workspace_id}/git/initializeConnection"
 
         try:
-            response = requests.post(url, headers=self.headers, json={}, timeout=30)
-            response.raise_for_status()
+            response = self._make_request("POST", url, json={})
 
             result = response.json()
             required_action = result.get("RequiredAction", "None")
@@ -512,10 +505,7 @@ class FabricGitAPI:
         }
 
         try:
-            response = requests.post(
-                url, headers=self.headers, json=request_body, timeout=30
-            )
-            response.raise_for_status()
+            response = self._make_request("POST", url, json=request_body)
 
             # Extract operation ID from headers
             operation_id = response.headers.get("x-ms-operation-id")
@@ -563,10 +553,7 @@ class FabricGitAPI:
             request_body["items"] = items
 
         try:
-            response = requests.post(
-                url, headers=self.headers, json=request_body, timeout=30
-            )
-            response.raise_for_status()
+            response = self._make_request("POST", url, json=request_body)
 
             # Extract operation ID from headers
             operation_id = response.headers.get("x-ms-operation-id")
@@ -596,8 +583,7 @@ class FabricGitAPI:
         url = f"{self.base_url}/workspaces/{workspace_id}/git/status"
 
         try:
-            response = requests.get(url, headers=self.headers, timeout=30)
-            response.raise_for_status()
+            response = self._make_request("GET", url)
 
             result = response.json()
             return {"success": True, "status": result}
@@ -619,8 +605,7 @@ class FabricGitAPI:
         url = f"{self.base_url}/workspaces/{workspace_id}/git/connection"
 
         try:
-            response = requests.get(url, headers=self.headers, timeout=30)
-            response.raise_for_status()
+            response = self._make_request("GET", url)
 
             result = response.json()
             return {"success": True, "connection": result}
@@ -642,8 +627,7 @@ class FabricGitAPI:
         url = f"{self.base_url}/workspaces/{workspace_id}/git/disconnect"
 
         try:
-            response = requests.post(url, headers=self.headers, json={}, timeout=30)
-            response.raise_for_status()
+            self._make_request("POST", url, json={})
 
             logger.info(f"Disconnected workspace {workspace_id} from Git")
             return {"success": True, "message": "Workspace disconnected from Git"}
@@ -670,8 +654,7 @@ class FabricGitAPI:
 
         for attempt in range(max_attempts):
             try:
-                response = requests.get(url, headers=self.headers, timeout=30)
-                response.raise_for_status()
+                response = self._make_request("GET", url)
 
                 result = response.json()
                 status = result.get("status", "Unknown")

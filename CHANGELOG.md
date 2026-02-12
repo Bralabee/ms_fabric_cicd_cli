@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.5] - 2026-02-12
+
+### Added
+
+- **Notebook Content Import**: `create_notebook()` now accepts `.py` and `.ipynb` files via `file_path`, base64-encoding them into the Fabric Items API `definition` payload. Python files are auto-wrapped in a single-cell `.ipynb` structure with `synapse_pyspark` kernel metadata.
+- **Jinja2 Template Rendering for Notebooks**: The deployer renders notebook `file_path` content through `ArtifactTemplateEngine` before upload, enabling `{{ environment }}`, `{{ workspace_name }}`, and `{{ secrets.* }}` variable substitution in notebook source files.
+- **7 New Fabric Item Types**: `deployment_state.py` now tracks `Environment`, `Reflex`, `MLModel`, `MLExperiment`, `DataflowGen2`, `KQLQueryset`, and `Eventhouse` for rollback support.
+- **Thread-Safe Token Refresh**: `TokenManager.get_token()` now uses `threading.Lock` to prevent concurrent token acquisition races during parallel operations.
+- **Real Audit Summary**: `AuditLogger.get_audit_summary()` now parses JSONL log files and returns actual operation counts, success/failure rates, and per-operation-type breakdowns (was a stub).
+- **Automation SP in Data Science Blueprint**: Added `${AZURE_CLIENT_ID}` as Admin principal to `data_science.yaml` for CI/CD deployments.
+
+### Fixed
+
+- **Import Path Bug**: Fixed `config.py` importing from `usf_fabric_cli.secrets` → `usf_fabric_cli.utils.secrets` (prevents `ImportError` in fresh installs).
+- **UTC Timestamp Deprecation**: `audit.py` now uses `datetime.now(timezone.utc)` instead of deprecated `datetime.utcnow()`.
+- **Jinja2 Undefined Handling**: `ArtifactTemplateEngine` in non-strict mode now uses `Undefined` class instead of `None` (prevents `TypeError` on missing variables).
+- **Blueprint `environments:` Blocks**: Removed unsupported inline `environments:` from `compliance_regulated`, `medallion`, `minimal_starter`, and `realtime_streaming` blueprints — `ConfigManager` does not read these. Added comments pointing to `config/environments/` overlay files.
+- **Compliance Blueprint**: Removed `ManagedPrivateEndpoint` resource (requires Networking API, not Items API) with documentation link.
+- **Schema Strictness**: Added `additionalProperties: false` to workspace config JSON schema (root and workspace object) to catch typos early.
+
+### Improved
+
+- **Centralized HTTP Requests**: All `fabric_git_api.py` methods now use `_make_request()` instead of direct `requests.post/get` calls, consolidating timeout, retry, and header management.
+- **Dead Code Removal**: Removed unused `_run_command()` method from `FabricCLIWrapper` (superseded by `_execute_command()`).
+- **Logging Hygiene**: Replaced 7 `print()` calls with proper `logger.debug/info/warning/error` in `config.py` and `fabric_wrapper.py`.
+- **Deprecation Notice**: `git_integration.py` docstring now documents its deprecated status (superseded by `FabricGitAPI`).
+- **GitConnectionSource Enum**: `connect_workspace_to_git()` now uses `GitConnectionSource.CONFIGURED_CONNECTION.value` / `GitConnectionSource.AUTOMATIC.value` instead of raw strings.
+
+### Tests
+
+- Added 9 new config tests: env var substitution, missing var passthrough, deep merge, list concatenation, principal injection/dedup, defaults, import path
+- Added 18 new wrapper tests: notebook definition (py/ipynb/missing/unsupported), pipeline, warehouse, semantic model, generic item, principal guards (empty/placeholder/self-SP), domain assignment
+- Updated all `fabric_git_api` test mocks from `requests.post`/`requests.get` → `requests.request` (matching `_make_request()` refactor)
+- Added `ArtifactTemplateEngine` mock patches to 5 deployer tests
+- Total: **357 tests passing** across the full unit test suite
+
 ## [1.7.4] - 2026-02-12
 
 ### Fixed

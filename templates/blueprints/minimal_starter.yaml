@@ -53,16 +53,12 @@ principals:
     description: "MANDATORY: Enterprise contributor principal"
 
 # Environment-Specific Overrides
-environments:
-  dev:
-    workspace:
-      capacity_id: "F2"  # Free trial capacity
-      name: "Starter_Project_Dev"
-  
-  prod:
-    workspace:
-      capacity_id: "F8"  # Upgrade for production
-      name: "Starter_Project_Prod"
+# NOTE: Inline environments: blocks are NOT read by ConfigManager.
+# Use config/environments/{dev,test,prod}.yaml for per-environment overrides.
+# Example overrides (place in config/environments/dev.yaml):
+#   workspace:
+#     capacity_id: "F2"
+#     name: "Starter_Project_Dev"
 
 # Deployment Pipeline (optional, for stage promotion)
 deployment_pipeline:

@@ -37,7 +37,8 @@
       "required": [
         "name",
         "capacity_id"
-      ]
+      ],
+      "additionalProperties": false
     },
     "folders": {
       "type": "array",
@@ -269,5 +270,6 @@
   },
   "required": [
     "workspace"
-  ]
+  ],
+  "additionalProperties": false
 }
