@@ -339,3 +339,59 @@ python -m usf_fabric_cli.cli promote --pipeline-name "MyPipeline" -s Test -t Pro
 - **usf-fabric-cicd**: Original monolithic framework (this CLI is the lightweight successor)
 - **usf_fabric_monitoring**: Monitor Hub analysis for operational insights
 - **fabric-purview-playbook-webapp**: Delivery playbook web application
+## 🔄 CI/CD Protocols (MANDATORY)
+
+### Quality Gate — Every PR Must Pass
+All code changes must pass the automated CI pipeline before merge:
+1. **Lint**: `flake8 src/` — zero violations
+2. **Format**: `black --check .` — zero formatting differences (line-length: 88)
+3. **Type Check**: `mypy src/` — informational (soft gate)
+4. **Security Scan**: `bandit -r src/ -ll` — no high-severity findings
+5. **Unit Tests**: `pytest tests/ -m "not integration"` — 100% pass rate
+6. **Coverage**: Uploaded to Codecov — minimum 70% on changed files
+7. **Docker Build**: `docker build` must succeed
+8. **Blueprint Validation**: All template YAMLs must validate
+
+### Pre-commit Hooks (REQUIRED for local development)
+```bash
+pip install pre-commit && pre-commit install
+```
+Hooks run automatically on `git commit`: black (88 chars), isort, flake8, bandit, detect-secrets, yamllint, trailing-whitespace, no-commit-to-branch.
+
+### Commit Message Convention
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+```
+feat: add Reflex item type support
+fix: resolve capacity timeout on F2
+docs: update blueprint catalog with new templates
+refactor: extract git connection retry logic
+test: add integration tests for GitHub provider
+ci: upgrade codecov action to v4
+chore: update dependencies
+```
+
+### Branch Strategy
+| Type | Pattern | Example |
+|------|---------|---------|
+| Feature | `feature/<description>` | `feature/add-kql-support` |
+| Bug fix | `fix/<issue>-<description>` | `fix/42-capacity-timeout` |
+| Hotfix | `hotfix/<version>-<description>` | `hotfix/1.7.6-auth-fix` |
+| Docs | `docs/<description>` | `docs/update-blueprint-catalog` |
+
+### PR Requirements
+- Fill out PR template completely
+- All CI checks pass (green)
+- At least one reviewer approval (CODEOWNERS enforced)
+- No secrets or hardcoded values
+- CHANGELOG.md updated for user-facing changes
+
+### Dependency Management
+- **Dependabot** monitors pip, GitHub Actions, and Docker dependencies weekly
+- Review and merge dependency PRs promptly
+- Pin major versions in `requirements.txt`
+
+### Release Process
+1. Update version in `pyproject.toml`
+2. Update `CHANGELOG.md` with release notes
+3. Create PR to `main` → CI validates
+4. Merge → Tag release → Build wheel/Docker image
