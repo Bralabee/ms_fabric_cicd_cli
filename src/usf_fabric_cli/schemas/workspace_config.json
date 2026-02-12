@@ -209,6 +209,13 @@
         ]
       }
     },
+    "environments": {
+      "description": "Inline environment-specific overrides (e.g., dev, test, prod). Each key is an environment name with workspace/resource overrides.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
     "deployment_pipeline": {
       "description": "Fabric Deployment Pipeline configuration for stage promotion (Dev → Test → Prod)",
       "type": "object",
