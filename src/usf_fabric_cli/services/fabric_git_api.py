@@ -396,6 +396,24 @@ class FabricGitAPI:
             return {"success": True, "message": "Workspace connected to Git"}
 
         except requests.exceptions.RequestException as e:
+            # Handle "already connected" as idempotent success
+            if hasattr(e, "response") and e.response is not None:
+                try:
+                    error_body = e.response.json()
+                    error_code = error_body.get("errorCode", "")
+                except Exception:
+                    error_code = ""
+
+                if error_code == "WorkspaceAlreadyConnectedToGit":
+                    logger.info(
+                        f"Workspace {workspace_id} is already connected to Git"
+                    )
+                    return {
+                        "success": True,
+                        "message": "Workspace already connected to Git",
+                        "already_connected": True,
+                    }
+
             logger.error(f"Failed to connect workspace to Git: {e}")
             error_detail = e.response.text if hasattr(e, "response") else str(e)
             return {"success": False, "error": str(e), "details": error_detail}

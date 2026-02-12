@@ -472,6 +472,66 @@ class TestConnectWorkspaceCredentials:
         assert request_body["myGitCredentials"]["connectionId"] == "conn-xyz"
 
 
+class TestWorkspaceAlreadyConnected:
+    """Tests for WorkspaceAlreadyConnectedToGit idempotent handling."""
+
+    @pytest.fixture
+    def api(self):
+        """Create API instance."""
+        return FabricGitAPI(access_token="test-token")
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    def test_already_connected_returns_success(self, mock_post, api):
+        """WorkspaceAlreadyConnectedToGit 409 should be treated as success."""
+        import requests as req_lib
+
+        mock_response = MagicMock()
+        mock_response.status_code = 409
+        mock_response.json.return_value = {
+            "errorCode": "WorkspaceAlreadyConnectedToGit",
+            "message": "Workspace already connected to Git.",
+        }
+        mock_response.text = '{"errorCode":"WorkspaceAlreadyConnectedToGit"}'
+        http_error = req_lib.exceptions.HTTPError(response=mock_response)
+        mock_response.raise_for_status.side_effect = http_error
+        mock_post.return_value = mock_response
+
+        result = api.connect_workspace_to_git(
+            workspace_id="ws-123",
+            provider_type=GitProviderType.GITHUB,
+            owner_name="myowner",
+            repository_name="myrepo",
+        )
+
+        assert result["success"] is True
+        assert result.get("already_connected") is True
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    def test_other_409_still_fails(self, mock_post, api):
+        """Other 409 errors should still return failure."""
+        import requests as req_lib
+
+        mock_response = MagicMock()
+        mock_response.status_code = 409
+        mock_response.json.return_value = {
+            "errorCode": "SomeOtherConflict",
+            "message": "Some other conflict.",
+        }
+        mock_response.text = '{"errorCode":"SomeOtherConflict"}'
+        http_error = req_lib.exceptions.HTTPError(response=mock_response)
+        mock_response.raise_for_status.side_effect = http_error
+        mock_post.return_value = mock_response
+
+        result = api.connect_workspace_to_git(
+            workspace_id="ws-123",
+            provider_type=GitProviderType.GITHUB,
+            owner_name="myowner",
+            repository_name="myrepo",
+        )
+
+        assert result["success"] is False
+
+
 class TestInitializeGitConnection:
     """Tests for initialize_git_connection method."""
 
