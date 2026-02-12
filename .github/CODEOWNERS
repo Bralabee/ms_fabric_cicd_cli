@@ -1,0 +1,27 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CODEOWNERS — Automatic reviewer assignment for pull requests
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Default owners for everything
+*                                   @BralaBee-LEIT
+
+# Core source code
+src/                                @BralaBee-LEIT
+tests/                              @BralaBee-LEIT
+
+# CI/CD & Infrastructure
+.github/                            @BralaBee-LEIT
+Dockerfile                          @BralaBee-LEIT
+Makefile                            @BralaBee-LEIT
+azure-pipelines.yml                 @BralaBee-LEIT
+
+# Configuration & Templates
+config/                             @BralaBee-LEIT
+templates/                          @BralaBee-LEIT
+
+# Webapp (Learning Guide)
+webapp/                             @BralaBee-LEIT
+
+# Documentation
+docs/                               @BralaBee-LEIT
+*.md                                @BralaBee-LEIT
