@@ -228,6 +228,9 @@ def get_secrets() -> FabricSecrets:
     """
     Loads and validates Fabric authentication credentials.
 
+    If FABRIC_TOKEN is not set but Service Principal credentials are available,
+    auto-generates the token from the SP credentials.
+
     Returns:
         Validated FabricSecrets instance
 
@@ -235,6 +238,37 @@ def get_secrets() -> FabricSecrets:
         ValueError: When required authentication credentials are missing
     """
     secrets = FabricSecrets()
+
+    # Auto-generate FABRIC_TOKEN from SP credentials if not already set
+    if (
+        not secrets.fabric_token
+        and secrets.azure_client_id
+        and secrets.azure_client_secret
+        and secrets.tenant_id
+    ):
+        try:
+            from azure.identity import ClientSecretCredential
+
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.info("Generating Fabric token from secrets...")
+
+            cred = ClientSecretCredential(
+                tenant_id=secrets.tenant_id,
+                client_id=secrets.azure_client_id,
+                client_secret=secrets.azure_client_secret,
+            )
+            token = cred.get_token("https://api.fabric.microsoft.com/.default").token
+            secrets.fabric_token = token
+            os.environ["FABRIC_TOKEN"] = token
+            logger.info("Fabric token generated successfully")
+        except Exception as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning("Failed to generate token from SP: %s", e)
+
     is_valid, error_msg = secrets.validate_fabric_auth()
 
     if not is_valid:
