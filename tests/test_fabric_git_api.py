@@ -362,6 +362,116 @@ class TestPollOperation:
         assert result["status"] == "Failed"
 
 
+class TestConnectWorkspaceCredentials:
+    """Tests for myGitCredentials handling in connect_workspace_to_git.
+
+    Verifies fixes for:
+    - GitHub REQUIRES myGitCredentials even without connection_id (SSO)
+    - Azure DevOps does NOT require myGitCredentials without connection_id
+    - ConfiguredConnection is used when connection_id is provided
+    """
+
+    @pytest.fixture
+    def api(self):
+        """Create API instance."""
+        return FabricGitAPI(access_token="test-token")
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    def test_github_without_connection_id_includes_automatic_credentials(
+        self, mock_post, api
+    ):
+        """GitHub provider must include myGitCredentials with Automatic source
+        even when no connection_id is provided (SSO fallback)."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_post.return_value = mock_response
+
+        api.connect_workspace_to_git(
+            workspace_id="ws-123",
+            provider_type=GitProviderType.GITHUB,
+            owner_name="myowner",
+            repository_name="myrepo",
+            # No connection_id
+        )
+
+        call_args = mock_post.call_args
+        request_body = call_args.kwargs.get("json") or call_args[1].get("json")
+
+        assert "myGitCredentials" in request_body
+        assert request_body["myGitCredentials"]["source"] == "Automatic"
+        assert "connectionId" not in request_body["myGitCredentials"]
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    def test_github_with_connection_id_includes_configured_credentials(
+        self, mock_post, api
+    ):
+        """GitHub provider uses ConfiguredConnection when connection_id given."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_post.return_value = mock_response
+
+        api.connect_workspace_to_git(
+            workspace_id="ws-123",
+            provider_type=GitProviderType.GITHUB,
+            connection_id="conn-abc",
+            owner_name="myowner",
+            repository_name="myrepo",
+        )
+
+        call_args = mock_post.call_args
+        request_body = call_args.kwargs.get("json") or call_args[1].get("json")
+
+        assert "myGitCredentials" in request_body
+        assert request_body["myGitCredentials"]["source"] == "ConfiguredConnection"
+        assert request_body["myGitCredentials"]["connectionId"] == "conn-abc"
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    def test_ado_without_connection_id_omits_credentials(self, mock_post, api):
+        """Azure DevOps without connection_id should NOT include myGitCredentials."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_post.return_value = mock_response
+
+        api.connect_workspace_to_git(
+            workspace_id="ws-456",
+            provider_type=GitProviderType.AZURE_DEVOPS,
+            organization_name="myorg",
+            project_name="myproj",
+            repository_name="myrepo",
+            # No connection_id
+        )
+
+        call_args = mock_post.call_args
+        request_body = call_args.kwargs.get("json") or call_args[1].get("json")
+
+        assert "myGitCredentials" not in request_body
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    def test_ado_with_connection_id_includes_configured_credentials(
+        self, mock_post, api
+    ):
+        """Azure DevOps with connection_id uses ConfiguredConnection."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_post.return_value = mock_response
+
+        api.connect_workspace_to_git(
+            workspace_id="ws-456",
+            provider_type=GitProviderType.AZURE_DEVOPS,
+            connection_id="conn-xyz",
+            organization_name="myorg",
+            project_name="myproj",
+            repository_name="myrepo",
+        )
+
+        call_args = mock_post.call_args
+        request_body = call_args.kwargs.get("json") or call_args[1].get("json")
+
+        assert "myGitCredentials" in request_body
+        assert request_body["myGitCredentials"]["source"] == "ConfiguredConnection"
+        assert request_body["myGitCredentials"]["connectionId"] == "conn-xyz"
+
+
 class TestInitializeGitConnection:
     """Tests for initialize_git_connection method."""
 

@@ -618,14 +618,48 @@ class FabricDeployer:
                                 f"{connection_id}[/green]"
                             )
                         else:
-                            console.print(
-                                f"[yellow]Warning: Could not create connection: "
-                                f"{conn_result.get('error')}[/yellow]"
+                            # Check if it's a duplicate connection
+                            error_msg = str(conn_result.get("error", ""))
+                            response_body = str(
+                                conn_result.get("response", "")
                             )
-                            console.print(
-                                "[yellow]Attempting connection without explicit "
-                                "credentials...[/yellow]"
-                            )
+
+                            if (
+                                "DuplicateConnectionName" in response_body
+                                or "Conflict" in error_msg
+                            ):
+                                console.print(
+                                    "[yellow]Connection name already exists. "
+                                    "Trying to find existing "
+                                    "connection...[/yellow]"
+                                )
+                                existing_conn = (
+                                    self.git_api.get_connection_by_name(
+                                        f"GitHub-{workspace_name}"
+                                    )
+                                )
+                                if existing_conn:
+                                    connection_id = existing_conn["id"]
+                                    console.print(
+                                        f"[green]✓ Found existing connection"
+                                        f": {connection_id}[/green]"
+                                    )
+                                else:
+                                    console.print(
+                                        "[red]Could not find existing "
+                                        "connection despite conflict "
+                                        "error.[/red]"
+                                    )
+                            else:
+                                console.print(
+                                    f"[yellow]Warning: Could not create "
+                                    f"connection: "
+                                    f"{conn_result.get('error')}[/yellow]"
+                                )
+                                console.print(
+                                    "[yellow]Attempting connection without "
+                                    "explicit credentials...[/yellow]"
+                                )
 
                 elif provider_type == GitProviderType.AZURE_DEVOPS:
                     # Check for Service Principal credentials
