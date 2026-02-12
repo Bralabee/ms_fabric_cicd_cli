@@ -264,15 +264,35 @@ class FabricGitAPI:
             return {"success": True, "connection": result}
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to create Git connection: {e}")
+            # Check for 409 DuplicateConnectionName — expected in
+            # idempotent re-deploys, not a real error
             if hasattr(e, "response") and e.response is not None:
+                if e.response.status_code == 409:
+                    response_text = e.response.text
+                    logger.info(
+                        f"Connection creation returned 409 "
+                        f"(duplicate): {response_text}"
+                    )
+                    return {
+                        "success": False,
+                        "duplicate": True,
+                        "error": str(e),
+                        "response": response_text,
+                    }
+                logger.error(f"Failed to create Git connection: {e}")
                 logger.error(f"Response Status: {e.response.status_code}")
                 logger.error(f"Response Body: {e.response.text}")
+            else:
+                logger.error(f"Failed to create Git connection: {e}")
 
             return {
                 "success": False,
                 "error": str(e),
-                "response": e.response.text if hasattr(e, "response") else None,
+                "response": (
+                    e.response.text
+                    if hasattr(e, "response") and e.response is not None
+                    else None
+                ),
             }
 
     def list_connections(self) -> Dict[str, Any]:
@@ -452,6 +472,19 @@ class FabricGitAPI:
             }
 
         except requests.exceptions.RequestException as e:
+            # 409 means workspace Git connection is already initialized
+            # — this is expected on idempotent re-deploys
+            if hasattr(e, "response") and e.response is not None:
+                if e.response.status_code == 409:
+                    logger.info(
+                        f"Git connection already initialized for "
+                        f"workspace {workspace_id} (idempotent)"
+                    )
+                    return {
+                        "success": True,
+                        "already_initialized": True,
+                        "required_action": "None",
+                    }
             logger.error(f"Failed to initialize Git connection: {e}")
             return {"success": False, "error": str(e)}
 

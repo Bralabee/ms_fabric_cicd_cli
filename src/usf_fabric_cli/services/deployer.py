@@ -693,34 +693,28 @@ class FabricDeployer:
                                 f"[green]✓ Created Azure DevOps connection: "
                                 f"{connection_id}[/green]"
                             )
-                        else:
-                            # Check if it's a duplicate connection
-                            error_msg = str(conn_result.get("error", ""))
-                            response_body = conn_result.get("response", "")
-
-                            if (
-                                "DuplicateConnectionName" in response_body
-                                or "Conflict" in error_msg
-                            ):
+                        elif conn_result.get("duplicate"):
+                            # 409 DuplicateConnectionName — look up
+                            # the existing connection by name
+                            console.print(
+                                "[blue]Connection already exists. "
+                                "Looking up existing connection...[/blue]"
+                            )
+                            existing_conn = self.git_api.get_connection_by_name(
+                                f"AzureDevOps-{workspace_name}"
+                            )
+                            if existing_conn:
+                                connection_id = existing_conn["id"]
                                 console.print(
-                                    "[yellow]Connection name already exists. "
-                                    "Trying to find existing connection...[/yellow]"
+                                    f"[green]✓ Found existing connection: "
+                                    f"{connection_id}[/green]"
                                 )
-                                existing_conn = self.git_api.get_connection_by_name(
-                                    f"AzureDevOps-{workspace_name}"
-                                )
-                                if existing_conn:
-                                    connection_id = existing_conn["id"]
-                                    console.print(
-                                        f"[green]✓ Found existing connection: "
-                                        f"{connection_id}[/green]"
-                                    )
-                                else:
-                                    console.print(
-                                        "[red]Could not find existing connection "
-                                        "despite conflict error.[/red]"
-                                    )
                             else:
+                                console.print(
+                                    "[red]Could not find existing connection "
+                                    "despite conflict error.[/red]"
+                                )
+                        else:
                                 console.print(
                                     f"[yellow]Warning: Could not create connection: "
                                     f"{conn_result.get('error')}[/yellow]"
@@ -799,6 +793,13 @@ class FabricDeployer:
                 console.print(
                     f"[yellow]Warning: Could not initialize Git connection: "
                     f"{init_result.get('error')}[/yellow]"
+                )
+                return
+
+            if init_result.get("already_initialized"):
+                console.print(
+                    "[green]\u2713 Git connection already initialized "
+                    "(idempotent)[/green]"
                 )
                 return
 
