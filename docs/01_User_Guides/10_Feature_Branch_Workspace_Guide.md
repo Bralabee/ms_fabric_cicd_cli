@@ -67,12 +67,11 @@ This guide covers the **Microsoft-recommended Option 3** pattern for Fabric CI/C
  │  workflow_dispatch → setup-base-workspaces.yml                           │
  │    → fabric-cicd deploy base_workspace.yaml --env dev                    │
  │      → Creates: fabric-cicd-demo-dev (Git-synced to main)               │
+ │      → Auto-creates Deployment Pipeline: fabric-cicd-demo-pipeline      │
+ │      → Auto-creates: fabric-cicd-demo-test → assigns to Test stage      │
+ │      → Auto-creates: fabric-cicd-demo-prod → assigns to Prod stage      │
  │                                                                          │
- │  Fabric Portal (manual):                                                 │
- │    → Create Deployment Pipeline: fabric-cicd-demo-pipeline               │
- │    → Assign: Dev workspace → Development stage                          │
- │    → Create: fabric-cicd-demo-test → assign to Test stage               │
- │    → Create: fabric-cicd-demo-prod → assign to Production stage         │
+ │  ✅ Fully automated — no manual Fabric portal steps required             │
  └──────────────────────────────────────────────────────────────────────────┘
 
  ┌──────────────────────────────────────────────────────────────────────────┐
@@ -115,7 +114,7 @@ This guide covers the **Microsoft-recommended Option 3** pattern for Fabric CI/C
 | **Azure Entra ID Service Principal** | With `Client ID`, `Client Secret`, and `Tenant ID` |
 | **Fabric Capacity** | An active capacity (e.g., F2 trial, F64 production) |
 | **SP Workspace Permissions** | The Service Principal must be able to create workspaces on the capacity |
-| **Fabric Deployment Pipeline** | Created in Fabric portal with Dev / Test / Prod stages (Phase 1 setup) |
+| **Fabric Deployment Pipeline** | Auto-created by the deployer during Phase 1 setup (no manual steps) |
 | **Fabric Domain** (optional) | If your config specifies a domain, the SP needs domain assignment rights |
 
 ### GitHub
@@ -235,6 +234,7 @@ deployment_pipeline:
   stages:
     development:
       workspace_name: fabric-cicd-demo-dev
+      capacity_id: ${FABRIC_CAPACITY_ID}
     test:
       workspace_name: fabric-cicd-demo-test
       capacity_id: ${FABRIC_CAPACITY_ID}
@@ -353,17 +353,20 @@ jobs:
         run: |
           fabric-cicd deploy config/projects/demo/base_workspace.yaml --env dev
 
-      - name: Next steps
+      - name: Report setup complete
+        if: success()
         run: |
-          echo "✅ Dev workspace created."
-          echo ""
-          echo "MANUAL STEPS REQUIRED:"
-          echo "1. Open Fabric portal → Deployment Pipelines"
-          echo "2. Create pipeline: fabric-cicd-demo-pipeline"
-          echo "3. Assign workspaces to stages:"
-          echo "   - Development → fabric-cicd-demo-dev"
-          echo "   - Test        → fabric-cicd-demo-test (create if needed)"
-          echo "   - Production  → fabric-cicd-demo-prod (create if needed)"
+          echo "## ✅ Base Workspace Setup Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### What was deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Dev workspace created and Git-synced to main" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Deployment Pipeline created" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Test and Prod workspaces created and assigned" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Create a feature/* branch to test the lifecycle" >> $GITHUB_STEP_SUMMARY
+          echo "2. Merge a PR to main to trigger Dev → Test promotion" >> $GITHUB_STEP_SUMMARY
+          echo "3. Manually trigger Promote Test → Prod when ready" >> $GITHUB_STEP_SUMMARY
 ```
 
 ### 7b. Create Workflow (`feature-workspace-create.yml`)
@@ -645,33 +648,35 @@ jobs:
 
 This is a **one-time setup** to create the permanent environment before any feature work begins.
 
+The deployer **automatically** handles everything — no manual Fabric portal steps required.
+
 ### Step 1: Run the setup workflow
 
 ```
 GitHub → Actions → Setup Base Workspaces → Run workflow
 ```
 
-This deploys the Dev workspace from `base_workspace.yaml`, connected to the `main` branch via Git.
+The workflow deploys `base_workspace.yaml` which triggers the following automated sequence:
 
-### Step 2: Create the Deployment Pipeline in Fabric
+1. **Dev workspace** created with folders, lakehouse, notebook, and Git connection to `main`
+2. **Deployment Pipeline** `fabric-cicd-demo-pipeline` auto-created (or reused if it exists)
+3. **Test workspace** `fabric-cicd-demo-test` auto-created with capacity assigned
+4. **Prod workspace** `fabric-cicd-demo-prod` auto-created with capacity assigned
+5. **All workspaces assigned** to their respective pipeline stages (Development / Test / Production)
 
-1. Open [Fabric portal](https://app.fabric.microsoft.com) → **Deployment Pipelines**
-2. Click **New pipeline** → Name: `fabric-cicd-demo-pipeline`
-3. Add three stages: **Development**, **Test**, **Production**
+> **Timing**: The full setup completes in approximately **3 minutes** (validated E2E: 3m 6s).
 
-### Step 3: Assign workspaces to stages
+### Step 2: Verify
 
-| Stage | Workspace | Notes |
-|:---|:---|:---|
-| Development | `fabric-cicd-demo-dev` | Already created by setup workflow |
-| Test | `fabric-cicd-demo-test` | Create in Fabric portal, assign capacity |
-| Production | `fabric-cicd-demo-prod` | Create in Fabric portal, assign capacity |
+After the workflow completes successfully, verify in the Fabric portal:
 
-### Step 4: Verify
-
-- Dev workspace has folders (Bronze/Silver/Gold), lakehouse, notebook
-- All three workspaces are assigned to the Deployment Pipeline
-- Git connection on Dev workspace points to `main` branch
+| Check | Expected |
+|:---|:---|
+| Dev workspace | Folders (Bronze/Silver/Gold), lakehouse, notebook, Git-synced to `main` |
+| Deployment Pipeline | `fabric-cicd-demo-pipeline` with 3 stages |
+| Test workspace | Exists, assigned to Test stage (empty — awaiting first promotion) |
+| Prod workspace | Exists, assigned to Production stage (empty — awaiting promotion) |
+| SP admin access | Service Principal is Admin on all three workspaces |
 
 > **Note**: Test and Prod workspaces start empty — content will be promoted from Dev via the pipeline.
 
@@ -711,7 +716,7 @@ gh run watch <run-id>
 gh run view <run-id> --web
 ```
 
-**Expected output**: The workflow runs for ~2-3 minutes and creates:
+**Expected output**: The workflow runs for ~2 minutes (validated: 2m 14s) and creates:
 - Workspace: `fabric-cicd-demo-feature-my-data-product`
 - Folders: Bronze, Silver, Gold
 - Lakehouse: `lh_bronze` in Bronze
@@ -1004,11 +1009,12 @@ python scripts/admin/preflight_check.py
 
 | Error | Cause | Fix |
 |:---|:---|:---|
-| `Pipeline not found` | Pipeline name mismatch between config and Fabric | Ensure `pipeline_name` in `base_workspace.yaml` matches the Fabric portal exactly |
-| `No workspaces assigned to stage` | Stage not configured in Fabric portal | Assign workspaces to all 3 stages in the Deployment Pipeline |
+| `Pipeline not found` | Pipeline name mismatch or pipeline not yet created | Re-run setup workflow, or verify `pipeline_name` in `base_workspace.yaml` |
+| `No workspaces assigned to stage` | Setup workflow didn't complete fully | Re-run `setup-base-workspaces.yml` — it auto-creates and assigns all stages |
 | `Promotion rejected` (Test→Prod) | Didn't type `PROMOTE` | Re-run the workflow and type `PROMOTE` exactly |
 | `Content conflict` | Items modified directly in Test/Prod | Resolve in Fabric portal, then re-promote |
-| `Insufficient permissions` | SP not admin on target workspace | Add SP as Admin on Test and Prod workspaces |
+| `Insufficient permissions` | SP not admin on target workspace | Re-run setup workflow (auto-assigns SP as Admin), or add manually in portal |
+| `403 Forbidden` on promote | `FABRIC_TOKEN` not generated | Upgrade to CLI v1.7.6+ which auto-generates tokens from SP credentials |
 
 ---
 
@@ -1063,14 +1069,16 @@ Where:
 
 | Operation | Typical Duration |
 |:---|:---|
-| Base workspace setup | 2–3 minutes |
-| Workspace creation (feature) | 2–3 minutes |
-| Workspace destruction | 20–30 seconds |
+| Base workspace setup (Phase 1) | ~3 minutes (validated: 3m 6s) |
+| Workspace creation (feature) | ~2 minutes (validated: 2m 14s) |
+| Workspace destruction | ~30 seconds (validated: 27s) |
 | CI install + setup | ~60 seconds |
 | Fabric Git Sync (main) | 10–30 seconds |
-| Dev → Test promotion | 1–5 minutes (depends on content size) |
-| Test → Prod promotion | 1–5 minutes (depends on content size) |
+| Dev → Test promotion | ~1 minute (validated: 1m 14s) |
+| Test → Prod promotion | ~1 minute (validated: 48s) |
 
 ---
 
-*Document created: 12 February 2026 | Updated: 12 February 2026 | CLI version: 1.7.6*
+*Document created: 12 February 2026 | Updated: 13 February 2026 | CLI version: 1.7.6*
+
+*E2E lifecycle validated: 13 February 2026 — all 3 phases passed (setup, feature branch, promotion).*
