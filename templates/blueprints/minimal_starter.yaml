@@ -66,11 +66,14 @@ environments:
 
 # Deployment Pipeline (optional, for stage promotion)
 deployment_pipeline:
-  name: "Starter_Pipeline"
+  pipeline_name: "Starter_Pipeline"
   stages:
-    development: "Starter_Project_Dev"
-    # test: "Starter_Project_Test"   # Uncomment when ready
-    production: "Starter_Project_Prod"
+    development:
+      workspace_name: "Starter_Project_Dev"
+    # test:                              # Uncomment when ready
+    #   workspace_name: "Starter_Project_Test"
+    production:
+      workspace_name: "Starter_Project_Prod"
 
 # Configuration Notes:
 # 1. This is the absolute minimum viable Fabric workspace

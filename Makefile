@@ -115,7 +115,7 @@ generate: ## Generate project config (Usage: make generate org="Org" project="Pr
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
 	$(PYTHON) scripts/dev/generate_project.py "$(org)" "$(project)" --template $(or $(template),medallion)
 
-deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env=dev)
+deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env=dev [branch=feature/x])
 	@if [ -z "$(config)" ]; then \
 	echo "\033[31mError: 'config' argument is missing.\033[0m"; \
 	echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
@@ -126,7 +126,8 @@ deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env
 	echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy $(config) --env $(env)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy $(config) --env $(env) \
+		$(if $(branch),--branch $(branch) --force-branch-workspace,)
 
 promote: ## Promote through Deployment Pipeline stages (Usage: make promote pipeline="Name" [source=Dev] [target=Test] [note="msg"])
 	@if [ -z "$(pipeline)" ]; then echo "Error: 'pipeline' argument is missing."; exit 1; fi
@@ -136,10 +137,15 @@ promote: ## Promote through Deployment Pipeline stages (Usage: make promote pipe
 		$(if $(target),--target-stage $(target),) \
 		$(if $(note),--note "$(note)",)
 
-onboard: ## Full bootstrap: Dev+Test+Prod + Pipeline (Usage: make onboard org="Org" project="Proj" [stages="dev,test,prod"])
+onboard: ## Full bootstrap: Dev+Test+Prod + Pipeline (Usage: make onboard org="Org" project="Proj" [stages="dev,test,prod"] [capacity_id=...] [dry_run=1])
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
-	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) $(if $(stages),--stages $(stages),)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli onboard \
+		--org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
+		$(if $(stages),--stages $(stages),) \
+		$(if $(capacity_id),--capacity-id $(capacity_id),) \
+		$(if $(pipeline_name),--pipeline-name "$(pipeline_name)",) \
+		$(if $(dry_run),--dry-run,)
 
 onboard-isolated: ## Bootstrap with auto-created project repo (Usage: make onboard-isolated org="Org" project="Proj" git_owner="Owner")
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
@@ -159,13 +165,16 @@ feature-workspace: ## Create isolated feature workspace (Usage: make feature-wor
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
 	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
 
-destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml)
+destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override="Name"])
 	@if [ -z "$(config)" ]; then \
 	echo "\033[31mError: 'config' argument is missing.\033[0m"; \
-	echo "Usage: make destroy config=path/to/config.yaml"; \
+	echo "Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override=Name]"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli destroy $(config)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli destroy $(config) \
+		$(if $(env),--env $(env),) \
+		$(if $(force),--force,) \
+		$(if $(workspace_override),--workspace-name-override "$(workspace_override)",)
 
 bulk-destroy: ## Bulk destroy workspaces from list (Usage: make bulk-destroy file=list.txt)
 	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make bulk-destroy file=list.txt"; exit 1; fi
@@ -228,7 +237,7 @@ docker-shell: ## Run interactive shell in Docker container (Usage: make docker-s
 	docker run --rm -it --entrypoint /bin/bash --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE)
 
 docker-diagnose: ## Run diagnostics in Docker (Usage: make docker-diagnose ENVFILE=.env)
-	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) scripts/admin/preflight_check.py
+	docker run --rm --env-file $(ENVFILE) $(DOCKER_IMAGE) diagnose
 
 docker-generate: ## Generate project config in Docker (Usage: make docker-generate org="Org" project="Proj" template="basic_etl")
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi

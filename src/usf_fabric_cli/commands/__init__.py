@@ -1,6 +1,7 @@
-"""Commands package - CLI subcommands."""
+"""Commands package — CLI subcommands.
 
-# Commands will be split from cli.py in a future phase
-# For now, this serves as a placeholder for the modular command structure
+Subcommand modules are registered via @app.command() decorators in cli.py.
+This package exists to support future modular command splitting.
+"""
 
 __all__ = []
