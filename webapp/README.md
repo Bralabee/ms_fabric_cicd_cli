@@ -20,7 +20,7 @@ Each scenario provides **production-ready commands** you can run immediately:
 | Scenario | Key Commands |
 |----------|--------------|
 | Getting Started | `make install`, `make diagnose`, `make help` |
-| Project Generation | `python scripts/dev/generate_project.py` with all 10 templates |
+| Project Generation | `python scripts/dev/generate_project.py` with all 11 templates |
 | Local Deployment | `make validate`, `make deploy`, `make destroy`, `make bulk-destroy` |
 | Docker Deployment | `make docker-build`, `make docker-deploy`, `make docker-shell`, `make docker-generate` |
 | Feature Branches | `make docker-feature-deploy`, feature workspace naming |
@@ -105,7 +105,7 @@ Each scenario provides **complete command references** with expected outputs:
    - Preflight diagnostics: `make diagnose`, `preflight_check.py`
 
 2. **Project Generation** - Blueprint templates and config generation
-   - All 10 templates with detailed use cases
+   - All 11 templates with detailed use cases
    - `python scripts/dev/generate_project.py "Org" "Project" --template <template>`
    - Generated YAML structure walkthrough
    - Customization guidance

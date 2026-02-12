@@ -545,7 +545,24 @@ Always test API calls against the real endpoint. Documentation, CLI abstractions
 | `516d96c` | Install `requirements-dev.txt` in CI |
 | `a9d9eb9` | Rename `GITHUB_TOKEN_FABRIC` → `FABRIC_GITHUB_TOKEN` |
 | `5316a88` | Inject governance SP into Test/Prod stages |
+| `2021c6d` | Support inline `environments` block in config schema and loader |
 
 ---
 
-*Document generated: 12 February 2026 | Covers changes from v1.5.0 through v1.7.3*
+### v1.7.6: Inline Environments & E2E Validation
+
+The final milestone addressed a subtle but impactful schema validation bug: project configs with inline `environments:` blocks (used by most blueprint templates) failed validation because the JSON schema had `additionalProperties: false` without listing `environments` as a valid property.
+
+**Fixes applied:**
+1. Added `environments` property definition to `workspace_config.json` schema
+2. Updated `ConfigManager.load_config()` to extract inline environments *before* schema validation
+3. Inline `environments:` blocks now take priority over external `config/environments/*.yaml` files
+
+**E2E Validation:** Full feature branch workspace lifecycle tested via `fabric_cicd_test_repo`:
+- Create workflow: workspace provisioned with folders, lakehouse, notebook, principals, and Git connection (2m 26s)
+- Cleanup workflow: workspace destroyed on branch delete (28s)
+- 355 unit tests passing (backward-compatible change)
+
+---
+
+*Document generated: 12 February 2026 | Covers changes from v1.5.0 through v1.7.6*
