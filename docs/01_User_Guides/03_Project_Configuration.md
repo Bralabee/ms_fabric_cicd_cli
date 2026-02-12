@@ -193,6 +193,8 @@ principals:
 
 ### Environments Section
 
+> **v1.7.6+**: Inline `environments:` blocks are now fully supported in the config schema. When defined inline, they take **priority** over external files in `config/environments/*.yaml`. The `environments` key is stripped before schema validation, so older CLI versions that don't support it will reject configs containing this block — upgrade to v1.7.6+.
+
 ```yaml
 environments:
   dev:
@@ -208,6 +210,12 @@ environments:
       name: "acme-iot-analytics-prod"
       capacity_id: "${PROD_CAPACITY_ID}"
 ```
+
+**How inline environments work:** During config loading, the CLI:
+1. Extracts the `environments:` block from the YAML
+2. Merges the selected environment's overrides into the base config (deep merge)
+3. Strips the `environments` meta-key before JSON schema validation
+4. Inline environments override external `config/environments/<env>.yaml` files
 
 ---
 

@@ -551,6 +551,44 @@ docker run --rm fabric-cli-cicd --help
 
 ---
 
+### 15. Inline Environments Schema Validation Error
+
+**Symptom**:
+
+```bash
+jsonschema.exceptions.ValidationError: Additional properties are not allowed ('environments' was unexpected)
+```
+
+**Cause**: CLI version older than v1.7.6. The JSON schema (`workspace_config.json`) did not include `environments` as a valid top-level property, so configs with inline `environments:` blocks failed validation.
+
+**Solution**:
+
+1. **Upgrade to v1.7.6+** (recommended):
+
+```bash
+pip install -e .  # In updated usf_fabric_cli_cicd repo
+```
+
+2. **Move environments to external files** (workaround for older CLIs):
+
+```bash
+# Remove `environments:` block from your project YAML
+# Create separate files instead:
+# config/environments/dev.yaml
+# config/environments/test.yaml
+# config/environments/prod.yaml
+```
+
+3. **Verify schema supports environments**:
+
+```bash
+# Check the schema includes 'environments' property
+python -c "import json; s=json.load(open('src/usf_fabric_cli/schemas/workspace_config.json')); print('environments' in s['properties'])"
+# Should print: True
+```
+
+---
+
 ## Getting Help
 
 1. **Check Documentation**:

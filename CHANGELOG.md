@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.6] - 2026-02-12
+
+### Fixed
+
+- **Inline `environments` Config Support**: The JSON schema (`workspace_config.json`) now includes `environments` as a valid top-level property. Previously, configs with inline `environments:` blocks (used by most blueprints) failed validation with `Additional properties are not allowed ('environments')`. The `ConfigManager` now reads inline environment overrides before schema validation, with inline blocks taking priority over external `config/environments/*.yaml` files.
+
+### Validated
+
+- **End-to-End Feature Branch Workspace Test (E2E)**: Full lifecycle validated via `fabric_cicd_test_repo`:
+  - Push `feature/e2e-test-feb12` → Create Feature Workspace workflow → workspace `fabric-cicd-demo-feature-e2e-test-feb12` created with folders (Bronze/Silver/Gold), lakehouse (`lh_bronze`), notebook (`demo_notebook`), 2 admin principals, and Git connection — **2m 26s**
+  - Delete branch → Cleanup Feature Workspace workflow → workspace destroyed — **28s**
+  - Full create→destroy cycle confirmed working end-to-end in GitHub Actions
+
+### Tests
+
+- All **355 unit tests passing** (unchanged from v1.7.5, schema change is backward-compatible)
+
+---
+
 ## [1.7.5] - 2026-02-12
 
 ### Added
