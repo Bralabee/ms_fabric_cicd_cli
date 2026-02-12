@@ -131,18 +131,11 @@ principals:
     description: "MANDATORY: Enterprise contributor principal"
 
 # Environment-Specific Overrides
-environments:
-  dev:
-    workspace:
-      capacity_id: "F2"  # Trial capacity for development
-  
-  test:
-    workspace:
-      capacity_id: "F8"
-  
-  prod:
-    workspace:
-      capacity_id: "F64"  # Production capacity
+# NOTE: Inline environments: blocks are NOT read by ConfigManager.
+# Use config/environments/{dev,test,prod}.yaml for per-environment overrides.
+# Example overrides (place in config/environments/dev.yaml):
+#   workspace:
+#     capacity_id: "F2"
 
 # Configuration Notes:
 # 1. Eventstreams support multiple sources: Event Hub, IoT Hub, Kafka, custom endpoints

@@ -39,6 +39,13 @@ class ItemType(str, Enum):
     EVENTSTREAM = "eventstream"
     KQL_DATABASE = "kql_database"
     SPARK_JOB_DEFINITION = "spark_job_definition"
+    ENVIRONMENT = "environment"
+    REFLEX = "reflex"
+    ML_MODEL = "ml_model"
+    ML_EXPERIMENT = "ml_experiment"
+    DATAFLOW_GEN2 = "dataflow_gen2"
+    KQL_QUERYSET = "kql_queryset"
+    EVENTHOUSE = "eventhouse"
 
 
 @dataclass

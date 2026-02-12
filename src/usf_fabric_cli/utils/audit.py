@@ -10,7 +10,7 @@ Key Learning Applied: Compliance Requirements
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional
 import os
@@ -48,7 +48,9 @@ class AuditLogger:
         """Log a Fabric operation for audit trail"""
 
         audit_record = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).strftime(
+                "%Y-%m-%dT%H:%M:%S.%fZ"
+            ),
             "operation": operation,
             "workspace_id": workspace_id,
             "workspace_name": workspace_name,
@@ -172,14 +174,55 @@ class AuditLogger:
         )
 
     def get_audit_summary(self, days: int = 7) -> Dict[str, Any]:
-        """Get audit summary for recent operations"""
+        """Get audit summary by parsing recent JSONL log files."""
+        from datetime import timedelta
 
-        # For simplicity, just return basic stats
-        # In production, you might parse JSONL files and aggregate
-
-        return {
+        summary: Dict[str, Any] = {
             "audit_log_file": str(self.log_file),
-            "message": f"Check {self.log_file} for detailed audit trail",
             "format": "JSONL - one JSON record per line",
             "retention": f"Logs older than {days} days should be archived",
         }
+
+        cutoff = datetime.now() - timedelta(days=days)
+        total_ops = 0
+        successes = 0
+        failures = 0
+        operations: Dict[str, int] = {}
+
+        for log_path in sorted(self.log_directory.glob("fabric_operations_*.jsonl")):
+            # Parse date from filename: fabric_operations_YYYY-MM-DD.jsonl
+            try:
+                date_str = log_path.stem.replace("fabric_operations_", "")
+                file_date = datetime.strptime(date_str, "%Y-%m-%d")
+                if file_date < cutoff:
+                    continue
+            except ValueError:
+                continue
+
+            try:
+                with open(log_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            record = json.loads(line)
+                            total_ops += 1
+                            op = record.get("operation", "unknown")
+                            operations[op] = operations.get(op, 0) + 1
+                            if record.get("success", True):
+                                successes += 1
+                            else:
+                                failures += 1
+                        except json.JSONDecodeError:
+                            continue
+            except OSError:
+                continue
+
+        summary["total_operations"] = total_ops
+        summary["successes"] = successes
+        summary["failures"] = failures
+        summary["operations_by_type"] = operations
+        summary["period_days"] = days
+
+        return summary

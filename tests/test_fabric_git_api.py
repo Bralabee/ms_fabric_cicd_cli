@@ -158,13 +158,13 @@ class TestConnectWorkspaceToGit:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
-    def test_connect_github_repository(self, mock_post, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_connect_github_repository(self, mock_request, api):
         """Test connecting workspace to GitHub repository."""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.connect_workspace_to_git(
             workspace_id="ws-123",
@@ -175,19 +175,19 @@ class TestConnectWorkspaceToGit:
         )
 
         assert result["success"] is True
-        mock_post.assert_called_once()
+        mock_request.assert_called_once()
 
         # Verify request body structure
-        call_args = mock_post.call_args
+        call_args = mock_request.call_args
         assert "json" in call_args.kwargs
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
-    def test_connect_azure_devops_repository(self, mock_post, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_connect_azure_devops_repository(self, mock_request, api):
         """Test connecting workspace to Azure DevOps repository."""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.connect_workspace_to_git(
             workspace_id="ws-456",
@@ -227,8 +227,8 @@ class TestGetGitStatus:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
-    def test_get_git_status_success(self, mock_get, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_get_git_status_success(self, mock_request, api):
         """Test getting Git status for workspace."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -237,7 +237,7 @@ class TestGetGitStatus:
             "changes": [],
         }
         mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.get_git_status("ws-123")
 
@@ -254,8 +254,8 @@ class TestGetGitConnection:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
-    def test_get_git_connection_success(self, mock_get, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_get_git_connection_success(self, mock_request, api):
         """Test getting Git connection details."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -266,7 +266,7 @@ class TestGetGitConnection:
             }
         }
         mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.get_git_connection("ws-123")
 
@@ -284,19 +284,19 @@ class TestDisconnectFromGit:
         return FabricGitAPI(access_token="test-token")
 
     @patch(
-        "usf_fabric_cli.services.fabric_git_api.requests.post"
+        "usf_fabric_cli.services.fabric_git_api.requests.request"
     )  # disconnect uses POST, not DELETE
-    def test_disconnect_success(self, mock_post, api):
+    def test_disconnect_success(self, mock_request, api):
         """Test disconnecting workspace from Git."""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.raise_for_status = MagicMock()
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.disconnect_from_git("ws-123")
 
         assert result["success"] is True
-        mock_post.assert_called_once()
+        mock_request.assert_called_once()
 
 
 class TestPollOperation:
@@ -307,9 +307,9 @@ class TestPollOperation:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
     @patch("usf_fabric_cli.services.fabric_git_api.time.sleep")
-    def test_poll_operation_succeeds(self, mock_sleep, mock_get, api):
+    def test_poll_operation_succeeds(self, mock_sleep, mock_request, api):
         """Test polling an operation until success."""
         # First call returns "Running", second returns "Succeeded"
         mock_response_running = MagicMock()
@@ -320,33 +320,33 @@ class TestPollOperation:
         mock_response_success.json.return_value = {"status": "Succeeded"}
         mock_response_success.raise_for_status = MagicMock()
 
-        mock_get.side_effect = [mock_response_running, mock_response_success]
+        mock_request.side_effect = [mock_response_running, mock_response_success]
 
         result = api.poll_operation("op-123", max_attempts=5, retry_after=1)
 
         assert result["success"] is True
         assert result["status"] == "Succeeded"
-        assert mock_get.call_count == 2
+        assert mock_request.call_count == 2
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
     @patch("usf_fabric_cli.services.fabric_git_api.time.sleep")
-    def test_poll_operation_immediate_success(self, mock_sleep, mock_get, api):
+    def test_poll_operation_immediate_success(self, mock_sleep, mock_request, api):
         """Test polling when operation immediately succeeds."""
         mock_response = MagicMock()
         mock_response.json.return_value = {"status": "Succeeded"}
         mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.poll_operation("op-123")
 
         assert result["success"] is True
         assert result["status"] == "Succeeded"
         # Should only poll once
-        assert mock_get.call_count == 1
+        assert mock_request.call_count == 1
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.get")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
     @patch("usf_fabric_cli.services.fabric_git_api.time.sleep")
-    def test_poll_operation_failed(self, mock_sleep, mock_get, api):
+    def test_poll_operation_failed(self, mock_sleep, mock_request, api):
         """Test polling when operation fails."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -354,7 +354,7 @@ class TestPollOperation:
             "error": "Something went wrong",
         }
         mock_response.raise_for_status = MagicMock()
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.poll_operation("op-123")
 
@@ -376,15 +376,15 @@ class TestConnectWorkspaceCredentials:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
     def test_github_without_connection_id_includes_automatic_credentials(
-        self, mock_post, api
+        self, mock_request, api
     ):
         """GitHub provider must include myGitCredentials with Automatic source
         even when no connection_id is provided (SSO fallback)."""
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         api.connect_workspace_to_git(
             workspace_id="ws-123",
@@ -394,21 +394,21 @@ class TestConnectWorkspaceCredentials:
             # No connection_id
         )
 
-        call_args = mock_post.call_args
+        call_args = mock_request.call_args
         request_body = call_args.kwargs.get("json") or call_args[1].get("json")
 
         assert "myGitCredentials" in request_body
         assert request_body["myGitCredentials"]["source"] == "Automatic"
         assert "connectionId" not in request_body["myGitCredentials"]
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
     def test_github_with_connection_id_includes_configured_credentials(
-        self, mock_post, api
+        self, mock_request, api
     ):
         """GitHub provider uses ConfiguredConnection when connection_id given."""
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         api.connect_workspace_to_git(
             workspace_id="ws-123",
@@ -418,19 +418,19 @@ class TestConnectWorkspaceCredentials:
             repository_name="myrepo",
         )
 
-        call_args = mock_post.call_args
+        call_args = mock_request.call_args
         request_body = call_args.kwargs.get("json") or call_args[1].get("json")
 
         assert "myGitCredentials" in request_body
         assert request_body["myGitCredentials"]["source"] == "ConfiguredConnection"
         assert request_body["myGitCredentials"]["connectionId"] == "conn-abc"
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
-    def test_ado_without_connection_id_omits_credentials(self, mock_post, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_ado_without_connection_id_omits_credentials(self, mock_request, api):
         """Azure DevOps without connection_id should NOT include myGitCredentials."""
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         api.connect_workspace_to_git(
             workspace_id="ws-456",
@@ -441,19 +441,19 @@ class TestConnectWorkspaceCredentials:
             # No connection_id
         )
 
-        call_args = mock_post.call_args
+        call_args = mock_request.call_args
         request_body = call_args.kwargs.get("json") or call_args[1].get("json")
 
         assert "myGitCredentials" not in request_body
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
     def test_ado_with_connection_id_includes_configured_credentials(
-        self, mock_post, api
+        self, mock_request, api
     ):
         """Azure DevOps with connection_id uses ConfiguredConnection."""
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         api.connect_workspace_to_git(
             workspace_id="ws-456",
@@ -464,7 +464,7 @@ class TestConnectWorkspaceCredentials:
             repository_name="myrepo",
         )
 
-        call_args = mock_post.call_args
+        call_args = mock_request.call_args
         request_body = call_args.kwargs.get("json") or call_args[1].get("json")
 
         assert "myGitCredentials" in request_body
@@ -480,8 +480,8 @@ class TestWorkspaceAlreadyConnected:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
-    def test_already_connected_returns_success(self, mock_post, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_already_connected_returns_success(self, mock_request, api):
         """WorkspaceAlreadyConnectedToGit 409 should be treated as success."""
         import requests as req_lib
 
@@ -494,7 +494,7 @@ class TestWorkspaceAlreadyConnected:
         mock_response.text = '{"errorCode":"WorkspaceAlreadyConnectedToGit"}'
         http_error = req_lib.exceptions.HTTPError(response=mock_response)
         mock_response.raise_for_status.side_effect = http_error
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.connect_workspace_to_git(
             workspace_id="ws-123",
@@ -506,8 +506,8 @@ class TestWorkspaceAlreadyConnected:
         assert result["success"] is True
         assert result.get("already_connected") is True
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
-    def test_other_409_still_fails(self, mock_post, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_other_409_still_fails(self, mock_request, api):
         """Other 409 errors should still return failure."""
         import requests as req_lib
 
@@ -520,7 +520,7 @@ class TestWorkspaceAlreadyConnected:
         mock_response.text = '{"errorCode":"SomeOtherConflict"}'
         http_error = req_lib.exceptions.HTTPError(response=mock_response)
         mock_response.raise_for_status.side_effect = http_error
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.connect_workspace_to_git(
             workspace_id="ws-123",
@@ -540,8 +540,8 @@ class TestInitializeGitConnection:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
-    def test_initialize_success(self, mock_post, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_initialize_success(self, mock_request, api):
         """Test initializing Git connection."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -550,15 +550,15 @@ class TestInitializeGitConnection:
             "WorkspaceHead": "def456",
         }
         mock_response.raise_for_status = MagicMock()
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.initialize_git_connection("ws-123")
 
         assert result["success"] is True
         assert result["required_action"] == "UpdateFromGit"
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
-    def test_initialize_409_returns_idempotent_success(self, mock_post, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_initialize_409_returns_idempotent_success(self, mock_request, api):
         """409 on initializeConnection means already initialized — idempotent."""
         import requests as req_lib
 
@@ -567,7 +567,7 @@ class TestInitializeGitConnection:
         mock_response.text = '{"errorCode":"Conflict"}'
         http_error = req_lib.exceptions.HTTPError(response=mock_response)
         mock_response.raise_for_status.side_effect = http_error
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.initialize_git_connection("ws-123")
 
@@ -575,8 +575,8 @@ class TestInitializeGitConnection:
         assert result.get("already_initialized") is True
         assert result["required_action"] == "None"
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
-    def test_initialize_other_error_fails(self, mock_post, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_initialize_other_error_fails(self, mock_request, api):
         """Non-409 errors should still return failure."""
         import requests as req_lib
 
@@ -585,7 +585,7 @@ class TestInitializeGitConnection:
         mock_response.text = "Internal Server Error"
         http_error = req_lib.exceptions.HTTPError(response=mock_response)
         mock_response.raise_for_status.side_effect = http_error
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.initialize_git_connection("ws-123")
 
@@ -600,8 +600,8 @@ class TestCreateGitConnectionDuplicate:
         """Create API instance."""
         return FabricGitAPI(access_token="test-token")
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
-    def test_duplicate_409_returns_duplicate_flag(self, mock_post, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_duplicate_409_returns_duplicate_flag(self, mock_request, api):
         """409 DuplicateConnectionName should return duplicate=True, no error log."""
         import requests as req_lib
 
@@ -613,7 +613,7 @@ class TestCreateGitConnectionDuplicate:
         )
         http_error = req_lib.exceptions.HTTPError(response=mock_response)
         mock_response.raise_for_status.side_effect = http_error
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.create_git_connection(
             display_name="GitHub-test",
@@ -627,8 +627,8 @@ class TestCreateGitConnectionDuplicate:
         assert result["duplicate"] is True
         assert "DuplicateConnectionName" in result["response"]
 
-    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
-    def test_non_409_error_no_duplicate_flag(self, mock_post, api):
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_non_409_error_no_duplicate_flag(self, mock_request, api):
         """Non-409 errors should NOT have duplicate flag."""
         import requests as req_lib
 
@@ -637,7 +637,7 @@ class TestCreateGitConnectionDuplicate:
         mock_response.text = '{"errorCode":"InvalidInput"}'
         http_error = req_lib.exceptions.HTTPError(response=mock_response)
         mock_response.raise_for_status.side_effect = http_error
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = api.create_git_connection(
             display_name="GitHub-test",

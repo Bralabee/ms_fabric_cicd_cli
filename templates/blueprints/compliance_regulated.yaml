@@ -79,11 +79,10 @@ semantic_models:
 
 # Advanced Resources (Compliance-Specific)
 resources:
-  # Managed Private Endpoints (Network isolation)
-  - type: "ManagedPrivateEndpoint"
-    name: "secure_storage_endpoint"
-    description: "Private endpoint to Azure Storage (no public access)"
-    folder: "Governance"
+  # NOTE: ManagedPrivateEndpoint requires the Fabric Networking API
+  # (POST /workspaces/{id}/managedPrivateEndpoints), NOT the standard items
+  # endpoint. Configure private endpoints manually or via Azure CLI after deploy.
+  # See: https://learn.microsoft.com/en-us/fabric/security/security-managed-private-endpoints-overview
   
   # Data Classification (Purview integration placeholder)
   # Note: Actual Purview integration requires Azure Purview setup
@@ -140,21 +139,12 @@ principals:
     description: "MANDATORY: Enterprise contributor principal"
 
 # Environment-Specific Overrides
-environments:
-  dev:
-    workspace:
-      capacity_id: "F8"  # Minimum F8 for development (compliance controls)
-      name: "Compliance_Platform_Dev"
-  
-  test:
-    workspace:
-      capacity_id: "F16"  # UAT environment
-      name: "Compliance_Platform_Test"
-  
-  prod:
-    workspace:
-      capacity_id: "F64"  # Production (high availability)
-      name: "Compliance_Platform_Prod"
+# NOTE: Inline environments: blocks are NOT read by ConfigManager.
+# Use config/environments/{dev,test,prod}.yaml for per-environment overrides.
+# Example overrides (place in config/environments/dev.yaml):
+#   workspace:
+#     capacity_id: "F8"
+#     name: "Compliance_Platform_Dev"
 
 # COMPLIANCE CHECKLIST (Implement these manually after deployment):
 # ☐ 1. Enable Microsoft Purview Data Catalog integration

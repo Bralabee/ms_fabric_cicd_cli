@@ -17,6 +17,7 @@ from jinja2 import (
     FileSystemLoader,
     StrictUndefined,
     TemplateSyntaxError,
+    Undefined,
     UndefinedError,
     sandbox,
 )
@@ -51,12 +52,12 @@ class ArtifactTemplateEngine:
             loader = FileSystemLoader([str(d) for d in template_dirs])
             self.env = sandbox.SandboxedEnvironment(
                 loader=loader,
-                undefined=StrictUndefined if strict_mode else None,
+                undefined=StrictUndefined if strict_mode else Undefined,
                 autoescape=False,  # We're working with code/config, not HTML
             )
         else:
             self.env = sandbox.SandboxedEnvironment(
-                undefined=StrictUndefined if strict_mode else None, autoescape=False
+                undefined=StrictUndefined if strict_mode else Undefined, autoescape=False
             )
 
         # Add custom filters

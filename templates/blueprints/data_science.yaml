@@ -57,6 +57,11 @@ principals:
   - id: "${TEMPLATE_RESEARCH_TEAM_OID}"
     role: "Contributor"
 
+  # Automation Service Principal (required for CI/CD deployments)
+  - id: "${AZURE_CLIENT_ID}"
+    role: "Admin"
+    description: "Automation Service Principal for CI/CD"
+
   # Mandatory Security Principals
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"

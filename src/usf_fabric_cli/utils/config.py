@@ -9,6 +9,7 @@ Key Learning Applied: Configuration over Code
 """
 
 import json
+import logging
 import os
 import re
 from dataclasses import dataclass
@@ -18,6 +19,8 @@ from typing import Any, Dict, List, Optional
 import yaml
 from dotenv import load_dotenv
 from jsonschema import validate
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -304,7 +307,7 @@ def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
 
     # Try the new secrets module first
     try:
-        from usf_fabric_cli.secrets import get_environment_variables as get_secrets_env
+        from usf_fabric_cli.utils.secrets import get_environment_variables as get_secrets_env
 
         return get_secrets_env()
     except ImportError:
@@ -325,7 +328,7 @@ def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
 
         if config_env_files:
             # Load the first found env file
-            print(f"Loading environment from {config_env_files[0]}")
+            logger.info("Loading environment from %s", config_env_files[0])
             load_dotenv(config_env_files[0])
 
     # Map Azure standard names to internal names if needed
@@ -341,7 +344,7 @@ def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
         try:
             from azure.identity import ClientSecretCredential
 
-            print("Generating Fabric token from Service Principal credentials...")
+            logger.info("Generating Fabric token from Service Principal credentials...")
             tenant = os.getenv("TENANT_ID") or os.getenv("AZURE_TENANT_ID")
             client = os.getenv("AZURE_CLIENT_ID")
             secret = os.getenv("AZURE_CLIENT_SECRET")
@@ -354,9 +357,9 @@ def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
             )
             token = credential.get_token("https://api.fabric.microsoft.com/.default")
             os.environ["FABRIC_TOKEN"] = token.token
-            print("✅ Fabric token generated successfully")
+            logger.info("Fabric token generated successfully")
         except Exception as e:
-            print(f"⚠️ Failed to generate token from Service Principal: {e}")
+            logger.warning("Failed to generate token from Service Principal: %s", e)
 
     # If validation is disabled, return current env immediately
     if not validate_vars:

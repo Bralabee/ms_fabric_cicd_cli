@@ -23,6 +23,7 @@ from usf_fabric_cli.services.deployment_state import DeploymentState, ItemType
 from usf_fabric_cli.utils.audit import AuditLogger
 from usf_fabric_cli.services.fabric_git_api import FabricGitAPI, GitProviderType
 from usf_fabric_cli.utils.secrets import FabricSecrets
+from usf_fabric_cli.utils.templating import ArtifactTemplateEngine
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -90,6 +91,23 @@ class FabricDeployer:
         self.deployment_state = DeploymentState()
         self._git_browse_url = None  # Browsable Git repo URL
         self._effective_workspace_name = self.config.name  # May be overridden for branch workspaces
+
+        # Initialize Jinja2 template engine for artifact rendering
+        self._template_engine = ArtifactTemplateEngine(strict_mode=False)
+
+    def _get_template_context(self) -> Dict:
+        """Build Jinja2 rendering context for artifact templates."""
+        context: Dict = {
+            "environment": self.environment or "dev",
+            "workspace_name": self._effective_workspace_name,
+            "capacity_id": self.config.capacity_id,
+        }
+        # Expose secrets (non-sensitive config) if available
+        if self.secrets:
+            context["secrets"] = {
+                "STORAGE_ACCOUNT_URL": os.getenv("STORAGE_ACCOUNT_URL", ""),
+            }
+        return context
 
     def _wait_for_propagation(self, progress, seconds: int, message: str):
         """Wait with visual feedback"""
@@ -381,10 +399,47 @@ class FabricDeployer:
 
         # Create notebooks
         for notebook in self.config.notebooks:
+            # Render file_path through Jinja2 template engine if present
+            effective_file_path = notebook.get("file_path")
+            if effective_file_path:
+                try:
+                    from pathlib import Path
+
+                    src = Path(effective_file_path)
+                    if src.exists():
+                        raw = src.read_text(encoding="utf-8")
+                        rendered = self._template_engine.render_string(
+                            raw, self._get_template_context()
+                        )
+                        # Write rendered content to temp file
+                        import tempfile
+
+                        suffix = src.suffix or ".py"
+                        tmp = tempfile.NamedTemporaryFile(
+                            mode="w",
+                            suffix=suffix,
+                            delete=False,
+                            encoding="utf-8",
+                        )
+                        tmp.write(rendered)
+                        tmp.close()
+                        effective_file_path = tmp.name
+                        logger.debug(
+                            "Rendered notebook template %s → %s",
+                            notebook.get("file_path"),
+                            effective_file_path,
+                        )
+                except Exception as e:
+                    logger.warning(
+                        "Template rendering failed for %s: %s — using raw file",
+                        notebook.get("file_path"),
+                        e,
+                    )
+
             result = self.fabric.create_notebook(
                 workspace_name,
                 notebook["name"],
-                notebook.get("file_path"),
+                effective_file_path,
                 folder=notebook.get("folder"),
             )
 
