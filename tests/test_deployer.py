@@ -447,6 +447,7 @@ class TestGitHubDuplicateConnectionRecovery:
         # Step 1: create_git_connection returns 409 conflict
         deployer.git_api.create_git_connection.return_value = {
             "success": False,
+            "duplicate": True,
             "error": "409 Client Error: Conflict for url",
             "response": (
                 '{"errorCode":"DuplicateConnectionName","message":'
@@ -500,6 +501,7 @@ class TestGitHubDuplicateConnectionRecovery:
         # create_git_connection returns 409
         deployer.git_api.create_git_connection.return_value = {
             "success": False,
+            "duplicate": True,
             "error": "409 Client Error: Conflict for url",
             "response": '{"errorCode":"DuplicateConnectionName"}',
         }

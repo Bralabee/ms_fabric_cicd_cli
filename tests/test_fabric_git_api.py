@@ -556,3 +556,96 @@ class TestInitializeGitConnection:
 
         assert result["success"] is True
         assert result["required_action"] == "UpdateFromGit"
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    def test_initialize_409_returns_idempotent_success(self, mock_post, api):
+        """409 on initializeConnection means already initialized — idempotent."""
+        import requests as req_lib
+
+        mock_response = MagicMock()
+        mock_response.status_code = 409
+        mock_response.text = '{"errorCode":"Conflict"}'
+        http_error = req_lib.exceptions.HTTPError(response=mock_response)
+        mock_response.raise_for_status.side_effect = http_error
+        mock_post.return_value = mock_response
+
+        result = api.initialize_git_connection("ws-123")
+
+        assert result["success"] is True
+        assert result.get("already_initialized") is True
+        assert result["required_action"] == "None"
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    def test_initialize_other_error_fails(self, mock_post, api):
+        """Non-409 errors should still return failure."""
+        import requests as req_lib
+
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        http_error = req_lib.exceptions.HTTPError(response=mock_response)
+        mock_response.raise_for_status.side_effect = http_error
+        mock_post.return_value = mock_response
+
+        result = api.initialize_git_connection("ws-123")
+
+        assert result["success"] is False
+
+
+class TestCreateGitConnectionDuplicate:
+    """Tests for create_git_connection 409 DuplicateConnectionName handling."""
+
+    @pytest.fixture
+    def api(self):
+        """Create API instance."""
+        return FabricGitAPI(access_token="test-token")
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    def test_duplicate_409_returns_duplicate_flag(self, mock_post, api):
+        """409 DuplicateConnectionName should return duplicate=True, no error log."""
+        import requests as req_lib
+
+        mock_response = MagicMock()
+        mock_response.status_code = 409
+        mock_response.text = (
+            '{"errorCode":"DuplicateConnectionName",'
+            '"message":"already being used"}'
+        )
+        http_error = req_lib.exceptions.HTTPError(response=mock_response)
+        mock_response.raise_for_status.side_effect = http_error
+        mock_post.return_value = mock_response
+
+        result = api.create_git_connection(
+            display_name="GitHub-test",
+            provider_type=GitProviderType.GITHUB,
+            credential_type="Key",
+            credential_value="ghp_test",
+            repository_url="https://github.com/org/repo",
+        )
+
+        assert result["success"] is False
+        assert result["duplicate"] is True
+        assert "DuplicateConnectionName" in result["response"]
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.post")
+    def test_non_409_error_no_duplicate_flag(self, mock_post, api):
+        """Non-409 errors should NOT have duplicate flag."""
+        import requests as req_lib
+
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.text = '{"errorCode":"InvalidInput"}'
+        http_error = req_lib.exceptions.HTTPError(response=mock_response)
+        mock_response.raise_for_status.side_effect = http_error
+        mock_post.return_value = mock_response
+
+        result = api.create_git_connection(
+            display_name="GitHub-test",
+            provider_type=GitProviderType.GITHUB,
+            credential_type="Key",
+            credential_value="ghp_test",
+            repository_url="https://github.com/org/repo",
+        )
+
+        assert result["success"] is False
+        assert result.get("duplicate") is not True
