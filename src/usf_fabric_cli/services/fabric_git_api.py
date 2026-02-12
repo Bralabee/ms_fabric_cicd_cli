@@ -370,14 +370,20 @@ class FabricGitAPI:
         # Build request body
         request_body = {"gitProviderDetails": git_provider_details}
 
-        # Add credentials if connection_id provided
+        # Add credentials - required for GitHub, optional for Azure DevOps
         if connection_id:
             request_body["myGitCredentials"] = {
                 "source": "ConfiguredConnection",
                 "connectionId": connection_id,
             }
+        elif provider_type == GitProviderType.GITHUB:
+            # GitHub provider REQUIRES myGitCredentials even for SSO
+            request_body["myGitCredentials"] = {
+                "source": "Automatic",
+            }
+            logger.info("Using automatic SSO authentication for GitHub")
         else:
-            # Use automatic SSO
+            # Azure DevOps can use automatic SSO without explicit credentials
             logger.info("Using automatic SSO authentication")
 
         try:
