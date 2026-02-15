@@ -1185,7 +1185,7 @@ class FabricCLIWrapper:
                         f"https://api.fabric.microsoft.com/v1/"
                         f"workspaces/{workspace_id}/roleAssignments"
                     )
-                    resp = requests.post(url, headers=headers, json=payload)
+                    resp = requests.post(url, headers=headers, json=payload, timeout=30)
 
                     if resp.status_code == 201:
                         logger.info(
