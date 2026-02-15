@@ -17,7 +17,7 @@ azure-pipelines.yml                 @BralaBee-LEIT
 
 # Configuration & Templates
 config/                             @BralaBee-LEIT
-templates/                          @BralaBee-LEIT
+src/usf_fabric_cli/templates/       @BralaBee-LEIT
 
 # Webapp (Learning Guide)
 webapp/                             @BralaBee-LEIT

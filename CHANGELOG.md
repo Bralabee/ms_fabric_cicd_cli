@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
 
 ### Tests
 
-- All **355 unit tests passing** (unchanged from v1.7.5, schema change is backward-compatible)
+- All **369 unit tests passing** (12 new tests added since v1.7.5)
 
 ---
 

@@ -1,9 +1,9 @@
 # Staging Environment Overrides
 # Pre-production environment with production-like setup
+# NOTE: Update workspace name to match your project naming convention.
 
 workspace:
-  name: "analytics-workspace-staging"
-  capacity_id: "F32"  # Mid-tier capacity
+  capacity_id: "${FABRIC_CAPACITY_ID}"  # Override via FABRIC_CAPACITY_ID env var
   git_branch: "main"
 
 # Full setup but smaller scale

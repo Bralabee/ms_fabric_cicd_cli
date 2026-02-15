@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions for USF Fabric CLI CI/CD
 
-Enterprise Microsoft Fabric deployment automation using a **modular architecture** around official Fabric CLI (~6,200 LOC across services, utils, and CLI layers).
+Enterprise Microsoft Fabric deployment automation using a **modular architecture** around official Fabric CLI (~10,000 LOC across services, utils, and CLI layers).
 
 **Current Version**: 1.7.6 (February 2026)
 
@@ -23,16 +23,28 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
 ```
 
 **Core Components** (`src/usf_fabric_cli/`):
-- `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate/promote commands)
+
+*Root:*
+- `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate/promote/onboard commands)
+- `exceptions.py`: Custom error handling classes (`FabricCLIError`, `FabricCLINotFoundError`)
+
+*Services* (`services/`):
+- `deployer.py`: Main deployment orchestrator — coordinates wrapper, Git, state, and audit
 - `fabric_wrapper.py`: Thin abstraction over `fabric` CLI subprocess calls. **Supports generic item creation** via `create_item` for 54+ Fabric item types.
+- `fabric_git_api.py`: REST API client for Git integration (Azure DevOps + GitHub)
+- `fabric_api_base.py`: Base REST client with shared auth, retry, and error handling
+- `deployment_pipeline.py`: Fabric Deployment Pipelines REST API client (Dev→Test→Prod)
+- `deployment_state.py`: Atomic rollback state management for created items
+- `token_manager.py`: Thread-safe Azure AD token refresh for long deployments
+- `git_integration.py`: *(Deprecated)* Legacy Git sync logic — superseded by `fabric_git_api.py`
+
+*Utils* (`utils/`):
 - `config.py`: YAML config loader with env-specific overrides + Jinja2 variable substitution
 - `secrets.py`: Waterfall credential management (Env Vars → .env → Azure Key Vault)
-- `git_integration.py`: Git connection automation via REST API (not CLI)
-- `deployment_pipeline.py`: Fabric Deployment Pipelines REST API client (Dev→Test→Prod)
 - `templating.py`: Jinja2 sandboxed engine for artifact transformation
 - `audit.py`: Structured JSONL logging to `audit_logs/` for compliance
 - `telemetry.py`: Lightweight usage tracking (optional)
-- `exceptions.py`: Custom error handling classes
+- `retry.py`: Exponential backoff with jitter, decorator pattern, HTTP retry helper
 
 ### Organization-Agnostic Design
 All configurations use **environment variable substitution** (`${VAR_NAME}`). No hardcoded organization names.  
@@ -231,7 +243,7 @@ Service Principal must have:
 
 ## 📦 Packaging & Distribution
 
-- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.7.3-py3-none-any.whl`
+- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.7.6-py3-none-any.whl`
 - **Entry Point**: `pyproject.toml` defines `fabric-cicd` command → `usf_fabric_cli.cli:app`
 - **Docker Image**: `Dockerfile` installs wheel + Fabric CLI, runs as non-root user
 
@@ -268,6 +280,7 @@ Scenario YAML files in `webapp/backend/app/content/scenarios/`:
 - `06-git-integration.yaml` - Azure DevOps, GitHub, debugging
 - `07-troubleshooting.yaml` - Common issues and solutions
 - `08-environment-promotion.yaml` - DEV→TEST→PROD promotion, source repointing, Jinja2 templating
+- `09-medallion-onboarding.yaml` - Medallion architecture onboarding walkthrough
 
 ### Docker Ports
 - **Backend API**: Port 8001 (FastAPI/uvicorn)
@@ -275,7 +288,7 @@ Scenario YAML files in `webapp/backend/app/content/scenarios/`:
 
 ## 📚 Key Documentation Files
 
-- **README.md**: Quick start, Make Targets Reference (24 targets), CLI Flags Reference
+- **README.md**: Quick start, Make Targets Reference (49 targets), CLI Flags Reference
 - **docs/01_User_Guides/03_Project_Configuration.md**: Comprehensive project config generation guide
 - **docs/01_User_Guides/07_Blueprint_Catalog.md**: All 11 blueprint templates with selection guidance
 - **.env.template**: Environment variable template with Azure credential structure

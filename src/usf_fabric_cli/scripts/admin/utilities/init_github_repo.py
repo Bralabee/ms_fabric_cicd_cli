@@ -10,7 +10,7 @@ both providers offer identical lifecycle management.
 
 Usage:
     python scripts/admin/utilities/init_github_repo.py \
-        --owner BralaBee-LEIT --repo finance-analytics
+        --owner YourGitHubOrg --repo your-project-repo
 
 Requires:
     GITHUB_TOKEN environment variable (PAT with ``repo`` scope).

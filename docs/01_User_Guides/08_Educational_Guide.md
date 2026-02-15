@@ -1,6 +1,6 @@
 # The Complete Guide to Fabric CLI CI/CD
 
-> **Version**: 1.7.0+ · **Audience**: Platform Engineers, Data Engineers, DevOps, Team Leads
+> **Version**: 1.7.6 · **Audience**: Platform Engineers, Data Engineers, DevOps, Team Leads
 
 ---
 
@@ -402,7 +402,7 @@ Choose a template based on your project requirements:
 
 ## 6. Quick Reference Cards
 
-### Makefile Targets (30 Total)
+### Makefile Targets (49 Total)
 
 #### Setup & Quality
 
@@ -419,6 +419,12 @@ Choose a template based on your project requirements:
 | `security` | Run bandit security scan | `make security` |
 | `ci` | Full CI suite (lint+type+test+security) | `make ci` |
 | `clean` | Remove caches and temp files | `make clean` |
+| `build` | Build wheel distribution | `make build` |
+| `check-env` | Verify conda environment is active | `make check-env` |
+| `version` | Show current project version | `make version` |
+| `help` | Show all available targets | `make help` |
+| `pre-commit-install` | Install pre-commit hooks | `make pre-commit-install` |
+| `pre-commit-run` | Run pre-commit on all files | `make pre-commit-run` |
 
 #### Core Operations
 
@@ -443,6 +449,13 @@ Choose a template based on your project requirements:
 | `list-items` | List workspace items | `make list-items workspace="Name"` |
 | `init-github-repo` | Create a GitHub repo | `make init-github-repo git_owner="Owner" repo="Repo"` |
 | `analyze-migration` | Assess migration potential | `make analyze-migration` |
+
+#### Webapp Targets
+
+| Target | Description | Example |
+|:---|:---|:---|
+| `webapp-dev` | Start webapp dev servers | `make webapp-dev` |
+| `webapp-build` | Build webapp for production | `make webapp-build` |
 
 #### Docker Targets
 

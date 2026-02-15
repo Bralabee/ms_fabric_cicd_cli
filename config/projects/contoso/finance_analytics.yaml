@@ -68,6 +68,6 @@ workspace:
   capacity_id: ${FABRIC_CAPACITY_ID}
   description: Contoso Global Finance Analytics Workspace
   name: Contoso_Finance_Analytics
-  git_repo: https://dev.azure.com/sanmi0374/testing_fabric_integration/_git/testing_fabric_integration
+  git_repo: ${GIT_REPO_URL}
   git_branch: contoso-finance
   git_directory: /

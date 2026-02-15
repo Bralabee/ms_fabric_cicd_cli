@@ -5,7 +5,7 @@
 ## Project Identity
 
 **Name**: USF Fabric CLI CI/CD
-**Version**: 1.7.0 (February 2026)
+**Version**: 1.7.6 (February 2026)
 **Purpose**: Enterprise wrapper for Microsoft Fabric CLI to enable standardized CI/CD, Monorepo support, and "One-Click" onboarding.
 **Stack**: Python 3.11+, Fabric CLI (MS), Typer, Jinja2, YAML.
 
@@ -39,7 +39,7 @@ The project enforces strict coding standards to ensure maintainability and consi
 * **Isolated Repo (opt-in)**: `--create-repo` flag auto-creates a per-project GitHub or ADO repo for full CI/CD isolation.
 * **Agent Rule**: When asked to "create a new project", use the default shared mode unless the user specifically requests an isolated repo.
 
-### 2. Main-Centric Development (v1.7.0)
+### 2. Main-Centric Development (v1.7.6)
 
 * **Default**: `make onboard` creates a Dev workspace connected to `main` — no feature branch.
 * **Isolated**: `make onboard-isolated` creates a per-project repo and onboards to it.
@@ -110,9 +110,25 @@ Configuration is resolved in this strict order (managed by `ConfigManager`):
 ## Directory Structure
 
 * `src/usf_fabric_cli`: Core package.
+  * `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate/promote/onboard).
+  * `exceptions.py`: Custom error handling classes.
+  * `services/deployer.py`: Main deployment orchestrator.
+  * `services/fabric_wrapper.py`: Thin abstraction over `fabric` CLI subprocess calls.
+  * `services/fabric_git_api.py`: REST API client for Git integration (ADO + GitHub).
+  * `services/fabric_api_base.py`: Base REST client with shared auth, retry, and error handling.
   * `services/deployment_pipeline.py`: Fabric Deployment Pipelines REST API client.
+  * `services/deployment_state.py`: Atomic rollback state management.
+  * `services/token_manager.py`: Thread-safe Azure AD token refresh.
+  * `services/git_integration.py`: *(Deprecated)* Legacy Git sync — superseded by `fabric_git_api.py`.
+  * `utils/config.py`: YAML config loader with env-specific overrides + Jinja2 substitution.
+  * `utils/secrets.py`: Waterfall credential management (Env Vars → .env → Key Vault).
+  * `utils/templating.py`: Jinja2 sandboxed engine for artifact transformation.
+  * `utils/audit.py`: Structured JSONL logging for compliance.
+  * `utils/telemetry.py`: Lightweight usage tracking (optional).
+  * `utils/retry.py`: Exponential backoff with jitter, decorator pattern.
 * `src/usf_fabric_cli/scripts/dev`: Developer tools (`generate_project.py`, `onboard.py`).
 * `src/usf_fabric_cli/scripts/admin`: Admin tools (`preflight_check.py`, `init_github_repo.py`, `init_ado_repo.py`).
+* `src/usf_fabric_cli/templates/blueprints/`: 11 project blueprint YAML templates.
 * `config/`: Usage configurations (ignored by git except templates).
 * `.github/workflows/`: CI/CD workflows (feature lifecycle, deployment pipeline promotion).
-* `webapp/`: Documentation/Dashboard frontend.
+* `webapp/`: Interactive learning guide (FastAPI backend + React frontend).
