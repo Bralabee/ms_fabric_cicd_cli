@@ -57,7 +57,9 @@ def run_preflight(auto_install: bool, skip_env: bool) -> int:
             cli_path = shutil.which("fab")
         if not cli_path:
             print(
-                "❌ Fabric CLI binary is not available on PATH. See https://github.com/microsoft/fabric-cli for manual steps."
+                "❌ Fabric CLI binary is not available on PATH."
+                " See https://github.com/microsoft/fabric-cli"
+                " for manual steps."
             )
             return 1
 
@@ -75,10 +77,13 @@ def run_preflight(auto_install: bool, skip_env: bool) -> int:
             print("      1. FABRIC_TOKEN")
             print("    OR")
             print(
-                "      2. AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, and TENANT_ID/AZURE_TENANT_ID"
+                "      2. AZURE_CLIENT_ID, AZURE_CLIENT_SECRET,"
+                " and TENANT_ID/AZURE_TENANT_ID"
             )
             print(
-                "    Create or update your .env file and rerun. Example entries are available in .env.template."
+                "    Create or update your .env file and rerun."
+                " Example entries are available in"
+                " .env.template."
             )
             return 1
         print("✅ Required environment variables detected")
