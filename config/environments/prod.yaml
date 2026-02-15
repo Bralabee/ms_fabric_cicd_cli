@@ -1,8 +1,8 @@
 # Production Environment Overrides
 # Production settings with high capacity and security
+# NOTE: Update workspace name to match your project naming convention.
 
 workspace:
-  name: "analytics-workspace-prod"
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Use configured capacity
   git_branch: "main"
 

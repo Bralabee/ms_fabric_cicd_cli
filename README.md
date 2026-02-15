@@ -205,7 +205,7 @@ make validate config=config/projects/your_org/your_project.yaml
 make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
 
-## Make Targets Reference (30 Available)
+## Make Targets Reference (49 Available)
 
 ### Local Development
 
@@ -395,7 +395,6 @@ src/
 │   ├── __init__.py          # Package exports with lazy loading
 │   ├── cli.py               # Main deployment orchestrator (Entry Point)
 │   ├── exceptions.py        # Exception hierarchy
-│   ├── commands/            # CLI subcommands (future modularization)
 │   ├── services/
 │   │   ├── deployer.py              # Deployment orchestrator
 │   │   ├── fabric_wrapper.py        # Fabric CLI wrapper with version validation
@@ -428,7 +427,7 @@ config/
     └── feature_workspace.json  # Feature workspace recipe & lifecycle policies
 ```
 
-## Total LOC: ~8,800 (src/) + ~3,500 (tests/) — modular architecture
+## Total LOC: ~10,000 (src/) + ~6,500 (tests/) — modular architecture
 
 ## Configuration Examples
 

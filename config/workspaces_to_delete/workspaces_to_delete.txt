@@ -1,5 +1,3 @@
-test-workspace-creation
-usf2-fabric-comprehensive-demo-demo-dev
-usf2-fabric-customer-analytics-workspace-dev
-usf2-fabric-sales-analytics-dev
-your-org-prefix-sales-analytics-dev
+# Add workspace names to delete (one per line).
+# This file is used by the bulk cleanup utility:
+#   python -m usf_fabric_cli.scripts.admin.cleanup_workspaces

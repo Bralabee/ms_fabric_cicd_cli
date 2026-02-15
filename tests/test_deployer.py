@@ -425,7 +425,7 @@ class TestGitHubDuplicateConnectionRecovery:
         """When GitHub connection creation returns 409 DuplicateConnectionName,
         deployer should look up existing connection and use its ID."""
         config = _make_config(
-            git_repo="https://github.com/BralaBee-LEIT/fabric_cicd_test_repo"
+            git_repo="https://github.com/test-org/test-repo"
         )
         deployer = _build_deployer(config=config)
         deployer.workspace_id = "ws-123"
