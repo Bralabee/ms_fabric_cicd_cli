@@ -113,23 +113,23 @@ run_cmd() {
 # Check prerequisites
 check_prerequisites() {
     log_info "Checking prerequisites..."
-    
+
     if ! command -v az &> /dev/null; then
         log_error "Azure CLI not found. Please install: https://docs.microsoft.com/cli/azure/install-azure-cli"
         exit 1
     fi
-    
+
     if ! command -v docker &> /dev/null; then
         log_error "Docker not found. Please install Docker."
         exit 1
     fi
-    
+
     # Check Azure login
     if ! az account show &> /dev/null; then
         log_error "Not logged into Azure. Please run 'az login' first."
         exit 1
     fi
-    
+
     log_success "All prerequisites met"
 }
 
@@ -175,22 +175,22 @@ build_and_push_images() {
         log_warning "Skipping image build (--skip-build specified)"
         return
     fi
-    
+
     log_info "Building and pushing Docker images..."
-    
+
     # Get ACR credentials
     ACR_USERNAME=$(az acr credential show --name "$ACR_NAME" --query "username" -o tsv)
     ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
-    
+
     # Login to ACR
     echo "$ACR_PASSWORD" | docker login "${ACR_NAME}.azurecr.io" -u "$ACR_USERNAME" --password-stdin
-    
+
     # Build backend
     log_info "Building backend image..."
     run_cmd docker build -t "$BACKEND_IMAGE" ./backend
     run_cmd docker push "$BACKEND_IMAGE"
     log_success "Backend image pushed"
-    
+
     # Build frontend
     log_info "Building frontend image..."
     run_cmd docker build -t "$FRONTEND_IMAGE" ./frontend
@@ -212,10 +212,10 @@ create_container_env() {
 # Deploy backend container app
 deploy_backend() {
     log_info "Deploying backend container app..."
-    
+
     ACR_USERNAME=$(az acr credential show --name "$ACR_NAME" --query "username" -o tsv)
     ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
-    
+
     run_cmd az containerapp create \
         --name "$BACKEND_APP" \
         --resource-group "$RESOURCE_GROUP" \
@@ -232,23 +232,23 @@ deploy_backend() {
         --memory 1.0Gi \
         --env-vars "CORS_ORIGINS=*" \
         --output none
-    
+
     # Get backend FQDN
     BACKEND_FQDN=$(az containerapp show \
         --name "$BACKEND_APP" \
         --resource-group "$RESOURCE_GROUP" \
         --query "properties.configuration.ingress.fqdn" -o tsv)
-    
+
     log_success "Backend deployed at: $BACKEND_FQDN"
 }
 
 # Deploy frontend container app
 deploy_frontend() {
     log_info "Deploying frontend container app..."
-    
+
     ACR_USERNAME=$(az acr credential show --name "$ACR_NAME" --query "username" -o tsv)
     ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
-    
+
     run_cmd az containerapp create \
         --name "$FRONTEND_APP" \
         --resource-group "$RESOURCE_GROUP" \
@@ -264,13 +264,13 @@ deploy_frontend() {
         --cpu 0.25 \
         --memory 0.5Gi \
         --output none
-    
+
     # Get frontend URL
     FRONTEND_URL=$(az containerapp show \
         --name "$FRONTEND_APP" \
         --resource-group "$RESOURCE_GROUP" \
         --query "properties.configuration.ingress.fqdn" -o tsv)
-    
+
     log_success "Frontend deployed at: https://$FRONTEND_URL"
 }
 
@@ -281,28 +281,28 @@ main() {
     echo "║    Fabric CLI CI/CD Interactive Guide - Azure Deployment      ║"
     echo "╚═══════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
-    
+
     check_prerequisites
     print_summary
-    
+
     if [ "$DRY_RUN" = true ]; then
         log_warning "DRY RUN MODE - No changes will be made"
     fi
-    
+
     read -p "Proceed with deployment? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         log_info "Deployment cancelled"
         exit 0
     fi
-    
+
     create_resource_group
     create_acr
     build_and_push_images
     create_container_env
     deploy_backend
     deploy_frontend
-    
+
     echo ""
     echo -e "${GREEN}=== Deployment Complete ===${NC}"
     echo ""

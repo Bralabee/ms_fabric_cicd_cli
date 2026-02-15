@@ -6,26 +6,26 @@ and audit logging. Supports environment-specific deployments with
 automatic credential management and template-based transformations.
 """
 
-import time
 import logging
 import os
 import re
-from typing import Optional, Dict
+import time
+from typing import Dict, Optional
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
+from usf_fabric_cli.services.deployment_pipeline import FabricDeploymentPipelineAPI
+from usf_fabric_cli.services.deployment_state import DeploymentState, ItemType
+from usf_fabric_cli.services.fabric_git_api import FabricGitAPI, GitProviderType
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
 from usf_fabric_cli.services.git_integration import GitFabricIntegration
-from usf_fabric_cli.services.deployment_state import DeploymentState, ItemType
+from usf_fabric_cli.services.token_manager import create_token_manager_from_env
 from usf_fabric_cli.utils.audit import AuditLogger
-from usf_fabric_cli.services.fabric_git_api import FabricGitAPI, GitProviderType
-from usf_fabric_cli.services.deployment_pipeline import FabricDeploymentPipelineAPI
+from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
 from usf_fabric_cli.utils.secrets import FabricSecrets
 from usf_fabric_cli.utils.templating import ArtifactTemplateEngine
-from usf_fabric_cli.services.token_manager import create_token_manager_from_env
 
 logger = logging.getLogger(__name__)
 console = Console()

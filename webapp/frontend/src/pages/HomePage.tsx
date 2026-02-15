@@ -4,12 +4,12 @@ import { fetchScenarios, fetchCategories } from '@/lib/api'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  Clock, 
-  BookOpen, 
-  Rocket, 
-  Settings, 
-  GitBranch, 
+import {
+  Clock,
+  BookOpen,
+  Rocket,
+  Settings,
+  GitBranch,
   AlertTriangle,
   ChevronRight,
   Layers,
@@ -85,7 +85,7 @@ export default function HomePage() {
           Learn Microsoft Fabric deployment automation step by step. From environment
           setup to production deployments, we've got you covered.
         </p>
-        
+
         {/* Quick Stats */}
         <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export default function HomePage() {
               )
             })}
           </div>
-          
+
           {/* Mobile Flow - Vertical */}
           <div className="md:hidden space-y-3">
             {workflowSteps.map((step) => {
@@ -161,7 +161,7 @@ export default function HomePage() {
             })}
           </div>
         </div>
-        
+
         {/* Link to detailed visual workflows */}
         <div className="text-center mt-6">
           <Link to="/workflows">
@@ -194,7 +194,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          
+
           <div>
             <h3 className="font-medium mb-3 flex items-center gap-2">
               <span className="h-6 w-6 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center">2</span>
@@ -209,7 +209,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          
+
           <div>
             <h3 className="font-medium mb-3 flex items-center gap-2">
               <span className="h-6 w-6 rounded-full bg-green-500 text-white text-xs flex items-center justify-center">3</span>
@@ -224,7 +224,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          
+
           <div>
             <h3 className="font-medium mb-3 flex items-center gap-2">
               <span className="h-6 w-6 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center">4</span>
@@ -255,7 +255,7 @@ export default function HomePage() {
               <Icon className="h-6 w-6 text-primary" />
               <h2 className="text-2xl font-semibold">{category.name}</h2>
             </div>
-            
+
             <div className="grid gap-4 md:grid-cols-2">
               {categoryScenarios.map((scenario) => (
                 <Link key={scenario.id} to={`/scenario/${scenario.id}`}>

@@ -141,7 +141,7 @@ usf_fabric_cli promote --pipeline-name "MyPipeline" -s Test -t Production
 flowchart LR
     A["Dev Workspace<br/>(main branch)"] -->|"Auto on push to main"| B["Test Workspace"]
     B -->|"Manual (approval gate)"| C["Prod Workspace"]
-    
+
     style A fill:#4CAF50,color:white
     style B fill:#2196F3,color:white
     style C fill:#FF5722,color:white

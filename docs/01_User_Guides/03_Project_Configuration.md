@@ -471,7 +471,7 @@ notebooks:
       # Environment-aware notebook
       env = "{{ environment }}"
       lakehouse = f"{env}_data_lakehouse"
-      
+
       # Connection strings from secrets
       storage_url = "{{ secrets.STORAGE_ACCOUNT_URL }}"
 ```

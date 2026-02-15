@@ -2,10 +2,11 @@
 Unit tests for configuration management
 """
 
-import pytest
 import tempfile
-import yaml
 from pathlib import Path
+
+import pytest
+import yaml
 
 from usf_fabric_cli.utils.config import ConfigManager
 

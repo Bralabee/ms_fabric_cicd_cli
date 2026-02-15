@@ -3,10 +3,11 @@
 Quick project generator - creates customized configuration for your organization
 """
 
-import yaml
 import argparse
-from pathlib import Path
 from importlib.resources import files
+from pathlib import Path
+
+import yaml
 
 
 def generate_project_config(

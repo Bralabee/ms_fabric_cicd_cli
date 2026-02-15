@@ -6,7 +6,7 @@ workspace:
   display_name: "Analytics Workspace"
   description: "ETL workspace for data analytics"
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
-  
+
   # Git integration (optional)
   git_repo: "${GIT_REPO_URL}"  # Environment variable substitution
   git_branch: "main"
@@ -25,11 +25,11 @@ lakehouses:
   - name: "raw_data_lakehouse"
     folder: "Bronze"
     description: "Raw data from source systems"
-  
+
   - name: "processed_data_lakehouse"
     folder: "Silver"
     description: "Cleaned and validated data"
-  
+
   - name: "analytics_lakehouse"
     folder: "Gold"
     description: "Business-ready analytics data"
@@ -46,11 +46,11 @@ notebooks:
     folder: "Notebooks"
     description: "Data ingestion from source systems"
     # file_path: "notebooks/data_ingestion.py"  # Optional: import from file
-  
+
   - name: "data_transformation"
     folder: "Notebooks"
     description: "Data cleaning and transformation"
-  
+
   - name: "data_quality_checks"
     folder: "Notebooks"
     description: "Data quality validation and monitoring"
@@ -65,7 +65,7 @@ pipelines:
 principals:
   - id: "${DEV_ADMIN_OBJECT_ID}"  # Group Object ID (Recommended over email)
     role: "Contributor"
-  
+
   # Service principal for automation
   - id: "${AZURE_CLIENT_ID}"  # Service Principal Object ID (Required)
     role: "Contributor"

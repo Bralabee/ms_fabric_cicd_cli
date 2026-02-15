@@ -10,10 +10,10 @@ Key Learning Applied: Compliance Requirements
 
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, Optional
-import os
+from typing import Any, Dict, Optional
 
 
 class AuditLogger:

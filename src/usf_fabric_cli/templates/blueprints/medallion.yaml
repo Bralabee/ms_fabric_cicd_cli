@@ -8,7 +8,7 @@ workspace:
   description: "Data product implementing Medallion Architecture (Bronze/Silver/Gold)"
   capacity_id: "${FABRIC_CAPACITY_ID}"
   domain: "${FABRIC_DOMAIN_NAME}" # Optional: assign to a governance domain
-  
+
   # Git Integration
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
@@ -27,11 +27,11 @@ lakehouses:
   - name: "lh_bronze"
     folder: "Bronze"
     description: "Raw data ingestion landing zone. immutable, append-only."
-  
+
   - name: "lh_silver"
     folder: "Silver"
     description: "Cleaned, deduplicated, and validated data."
-  
+
   - name: "lh_gold"
     folder: "Gold"
     description: "Star schema / dimensional models for reporting."
@@ -47,11 +47,11 @@ notebooks:
   - name: "ingest_to_bronze"
     folder: "Bronze"
     description: "Generic ingestion framwork for raw data."
-  
+
   - name: "bronze_to_silver_quality"
     folder: "Silver"
     description: "Quality checks and standardization (Bronze -> Silver)."
-  
+
   - name: "silver_to_gold_agg"
     folder: "Gold"
     description: "Business logic aggregation and dimensional modeling (Silver -> Gold)."
@@ -68,12 +68,12 @@ principals:
   - id: "${DEV_ADMIN_OBJECT_ID}"
     role: "Admin"
     description: "Project Owner / Admin"
-  
+
   # Data Engineering Team
   - id: "${DEV_CONTRIBUTOR_OBJECT_ID}"
     role: "Contributor"
     description: "Data Engineering Team"
-  
+
   # Business Analysts (Read-only)
   - id: "${PROD_VIEWERS_GROUP_ID}"
     role: "Viewer"
@@ -88,7 +88,7 @@ principals:
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "Enterprise Admin"
-  
+
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "Enterprise Contributor"

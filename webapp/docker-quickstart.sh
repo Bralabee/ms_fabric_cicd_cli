@@ -36,7 +36,7 @@ case "${1:-default}" in
         docker compose build
         echo -e "${GREEN}Build complete!${NC}"
         ;;
-    
+
     up)
         echo -e "${GREEN}Starting containers...${NC}"
         docker compose up -d
@@ -47,32 +47,32 @@ case "${1:-default}" in
         echo ""
         echo "Run './docker-quickstart.sh logs' to view logs"
         ;;
-    
+
     down)
         echo -e "${YELLOW}Stopping containers...${NC}"
         docker compose down
         echo -e "${GREEN}Containers stopped${NC}"
         ;;
-    
+
     logs)
         docker compose logs -f
         ;;
-    
+
     status)
         echo -e "${GREEN}Container Status:${NC}"
         docker compose ps
         ;;
-    
+
     clean)
         echo -e "${YELLOW}Removing containers, images, and volumes...${NC}"
         docker compose down --rmi all --volumes --remove-orphans
         echo -e "${GREEN}Cleanup complete${NC}"
         ;;
-    
+
     help|-h|--help)
         head -22 "$0" | tail -17
         ;;
-    
+
     default)
         echo -e "${GREEN}"
         echo "╔═══════════════════════════════════════════════════════════════╗"
@@ -94,7 +94,7 @@ case "${1:-default}" in
         echo "  ./docker-quickstart.sh down    - Stop containers"
         echo "  ./docker-quickstart.sh status  - Show status"
         ;;
-    
+
     *)
         echo "Unknown command: $1"
         echo "Run './docker-quickstart.sh help' for usage"

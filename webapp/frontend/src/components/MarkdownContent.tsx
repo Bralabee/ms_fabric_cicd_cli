@@ -18,7 +18,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
           code({ node, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '')
             const isInline = !match && !className
-            
+
             if (isInline) {
               return (
                 <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>

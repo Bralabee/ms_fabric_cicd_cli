@@ -7,7 +7,7 @@ workspace:
   description: "Experimental workspace for data science research"
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
   domain: "${FABRIC_DOMAIN_NAME}"       # Optional: Assign to a Fabric Domain
-  
+
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
 
@@ -25,7 +25,7 @@ lakehouses:
   - name: "research_data"
     folder: "Raw Data"
     description: "Research datasets and external data sources"
-  
+
   - name: "experiment_results"
     folder: "Experiments"
     description: "ML experiment results and metrics"
@@ -35,15 +35,15 @@ notebooks:
   - name: "exploratory_analysis"
     folder: "Notebooks"
     description: "Initial data exploration and hypothesis formation"
-  
+
   - name: "statistical_analysis"
-    folder: "Notebooks" 
+    folder: "Notebooks"
     description: "Statistical tests and significance analysis"
-  
+
   - name: "deep_learning_experiments"
     folder: "Experiments"
     description: "Neural network architecture experiments"
-  
+
   - name: "research_paper_analysis"
     folder: "Publications"
     description: "Analysis for research publication"
@@ -53,7 +53,7 @@ notebooks:
 principals:
   - id: "${TEMPLATE_LEAD_DS_OID}"
     role: "Admin"
-  
+
   - id: "${TEMPLATE_RESEARCH_TEAM_OID}"
     role: "Contributor"
 
@@ -66,7 +66,7 @@ principals:
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "Mandatory Additional Admin"
-  
+
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "Mandatory Additional Contributor"

@@ -5,22 +5,22 @@ This module provides the CLI entry points using Typer. The actual deployment
 logic is in services/deployer.py (FabricDeployer class).
 """
 
-import typer
 import logging
 from typing import Optional
 
+import typer
 from dotenv import load_dotenv
 from rich.console import Console
 
-from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
-from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
-from usf_fabric_cli.services.deployer import FabricDeployer
 from usf_fabric_cli.scripts.admin.bulk_destroy import bulk_destroy as bulk_destroy_fn
 from usf_fabric_cli.scripts.admin.utilities.init_github_repo import (
     init_github_repo as init_github_repo_fn,
 )
 from usf_fabric_cli.scripts.dev.generate_project import generate_project_config
 from usf_fabric_cli.scripts.dev.onboard import onboard_project
+from usf_fabric_cli.services.deployer import FabricDeployer
+from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
+from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
 
 # Ensure .env vars are loaded for all CLI commands, including those that
 # read env vars directly (e.g., init-github-repo reads GITHUB_TOKEN).
@@ -279,12 +279,10 @@ def promote(
 
     try:
         from usf_fabric_cli.services.deployment_pipeline import (
-            FabricDeploymentPipelineAPI,
             DeploymentStage,
+            FabricDeploymentPipelineAPI,
         )
-        from usf_fabric_cli.services.token_manager import (
-            create_token_manager_from_env,
-        )
+        from usf_fabric_cli.services.token_manager import create_token_manager_from_env
 
         env_vars = get_environment_variables(validate_vars=True)
 

@@ -175,7 +175,7 @@ lakehouses:
   - name: "sensor_data_raw"
     folder: "Raw Sensors"
     description: "Raw IoT sensor data from production floor"
-  
+
   - name: "production_metrics"
     folder: "Production Lines"
     description: "Processed production line metrics"
@@ -187,7 +187,7 @@ resources:
     name: "iot_ingestion"
     folder: "Raw Sensors"
     description: "Real-time IoT data stream"
-  
+
   - type: "KQLDatabase"
     name: "sensor_logs"
     folder: "Raw Sensors"
@@ -266,9 +266,9 @@ warehouses:
   - name: "risk_data_warehouse"
     folder: "Credit Risk"
     description: "Primary risk analytics warehouse"
-  
+
   - name: "regulatory_reporting"
-    folder: "Regulatory Reports" 
+    folder: "Regulatory Reports"
     description: "Regulatory compliance reporting"
 
 # Financial services principals
@@ -331,11 +331,11 @@ principals:
   # Individual users
   - id: "${PROD_ADMIN_EMAIL}"
     role: "Admin"
-  
+
   # Azure AD groups
   - id: "${PROD_VIEWERS_GROUP_ID}"
     role: "Viewer"
-  
+
   # Service principals
   - id: "${AUTOMATION_SP_ID}"
     role: "Contributor"
@@ -666,13 +666,13 @@ make docker-promote pipeline="contoso-inc-customer-analytics Pipeline" source=De
 
 This thin wrapper approach provides:
 
-✅ **Fabric CLI-first** architecture (Fabric CLI handles 90% of operations)  
-✅ **Configuration-driven** deployments  
-✅ **Organization-agnostic** templates  
-✅ **Feature branch** support  
-✅ **Audit compliance** ready  
-✅ **CI/CD integration** included  
-✅ **Migration tools** for existing solutions  
+✅ **Fabric CLI-first** architecture (Fabric CLI handles 90% of operations)
+✅ **Configuration-driven** deployments
+✅ **Organization-agnostic** templates
+✅ **Feature branch** support
+✅ **Audit compliance** ready
+✅ **CI/CD integration** included
+✅ **Migration tools** for existing solutions
 
 For advanced scenarios not covered by Fabric CLI, extend the thin wrapper with minimal custom code (~30-50 LOC per feature).
 

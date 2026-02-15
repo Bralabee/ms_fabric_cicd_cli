@@ -2,9 +2,10 @@
 Unit tests for Fabric CLI wrapper
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 import json
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
 
@@ -260,8 +261,8 @@ class TestFabricCLIWrapper:
     @patch("subprocess.run")
     def test_create_notebook_with_py_file(self, mock_run):
         """Test notebook creation importing content from .py file"""
-        import tempfile
         import base64
+        import tempfile
 
         workspace_response = Mock(
             stdout='{"id": "workspace-123"}', stderr="", returncode=0
@@ -307,8 +308,8 @@ class TestFabricCLIWrapper:
     @patch("subprocess.run")
     def test_create_notebook_with_ipynb_file(self, mock_run):
         """Test notebook creation importing content from .ipynb file"""
-        import tempfile
         import base64
+        import tempfile
 
         workspace_response = Mock(
             stdout='{"id": "workspace-123"}', stderr="", returncode=0
@@ -557,8 +558,9 @@ class TestRetryUtilities:
 
     def test_calculate_backoff_exponential(self):
         """Test exponential backoff calculation."""
-        from usf_fabric_cli.services.fabric_wrapper import calculate_backoff
         import random
+
+        from usf_fabric_cli.services.fabric_wrapper import calculate_backoff
 
         random.seed(42)
 

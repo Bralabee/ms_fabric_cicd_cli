@@ -7,10 +7,8 @@ and deployment summary.
 """
 
 import os
-import pytest
 from types import SimpleNamespace
-from unittest.mock import MagicMock, Mock, patch, PropertyMock
-
+from unittest.mock import MagicMock, patch
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -19,27 +17,27 @@ from unittest.mock import MagicMock, Mock, patch, PropertyMock
 
 def _make_config(**overrides):
     """Return a minimal config SimpleNamespace mirroring ConfigManager output."""
-    defaults = dict(
-        name="test-workspace",
-        display_name="Test Workspace",
-        description="A test workspace",
-        capacity_id="test-capacity",
-        domain=None,
-        git_repo=None,
-        git_branch="main",
-        git_directory="/",
-        folders=["Bronze", "Silver"],
-        lakehouses=[{"name": "raw", "folder": "Bronze", "description": "Raw"}],
-        warehouses=[],
-        notebooks=[{"name": "nb1", "folder": "Silver"}],
-        pipelines=[],
-        semantic_models=[],
-        resources=[],
-        principals=[
+    defaults = {
+        "name": "test-workspace",
+        "display_name": "Test Workspace",
+        "description": "A test workspace",
+        "capacity_id": "test-capacity",
+        "domain": None,
+        "git_repo": None,
+        "git_branch": "main",
+        "git_directory": "/",
+        "folders": ["Bronze", "Silver"],
+        "lakehouses": [{"name": "raw", "folder": "Bronze", "description": "Raw"}],
+        "warehouses": [],
+        "notebooks": [{"name": "nb1", "folder": "Silver"}],
+        "pipelines": [],
+        "semantic_models": [],
+        "resources": [],
+        "principals": [
             {"id": "user-1", "role": "Admin"},
         ],
-        deployment_pipeline=None,
-    )
+        "deployment_pipeline": None,
+    }
     defaults.update(overrides)
     return SimpleNamespace(**defaults)
 
@@ -57,7 +55,7 @@ def _build_deployer(config=None, secrets=None):
                 sec.validate_fabric_auth.return_value = (True, "")
                 sec.fabric_token = "fake-token"
                 sec.azure_client_id = "cid"
-                sec.azure_client_secret = "csecret"
+                sec.azure_client_secret = "csecret"  # pragma: allowlist secret
                 sec.tenant_id = "tid"
                 MockSecrets.load_with_fallback.return_value = sec
 
@@ -424,9 +422,7 @@ class TestGitHubDuplicateConnectionRecovery:
     def test_github_duplicate_connection_recovers_existing(self):
         """When GitHub connection creation returns 409 DuplicateConnectionName,
         deployer should look up existing connection and use its ID."""
-        config = _make_config(
-            git_repo="https://github.com/test-org/test-repo"
-        )
+        config = _make_config(git_repo="https://github.com/test-org/test-repo")
         deployer = _build_deployer(config=config)
         deployer.workspace_id = "ws-123"
         deployer._effective_workspace_name = "test-workspace"

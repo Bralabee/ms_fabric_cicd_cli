@@ -5,12 +5,12 @@ Interactive guide API for Fabric CLI CI/CD Framework.
 """
 
 import os
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.api import scenarios, search, progress
+from app.api import progress, scenarios, search
 from app.content.loader import load_all_scenarios
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager

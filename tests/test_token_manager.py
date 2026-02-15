@@ -8,8 +8,9 @@ Tests verify:
 - Factory function creates manager from environment
 """
 
-from datetime import datetime, timezone, timedelta
-from unittest.mock import patch, MagicMock
+from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 

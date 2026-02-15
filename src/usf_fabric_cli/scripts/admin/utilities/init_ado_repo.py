@@ -11,11 +11,12 @@ Usage:
 """
 
 import logging
-import requests
 from typing import Optional
+
+import requests
 import typer
-from rich.console import Console
 from azure.identity import ClientSecretCredential
+from rich.console import Console
 
 from usf_fabric_cli.utils.secrets import FabricSecrets
 

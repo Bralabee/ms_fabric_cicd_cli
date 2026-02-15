@@ -4,7 +4,7 @@
 id: project-generation
 title: Generate Project Configurations from Templates
 description: |
-  Master the 10 production-ready blueprint templates. Learn the exact `python -m usf_fabric_cli.scripts.dev.generate_project` 
+  Master the 10 production-ready blueprint templates. Learn the exact `python -m usf_fabric_cli.scripts.dev.generate_project`
   command syntax, understand when to use each template, and customize configurations for your organization's needs.
 difficulty: beginner
 estimated_duration_minutes: 30
@@ -43,9 +43,9 @@ steps:
     content: |
       The framework includes **10 production-ready blueprint templates** located in `src/usf_fabric_cli/templates/blueprints/`.
       Instead of writing YAML from scratch, you generate configurations using the `generate_project.py` script.
-      
+
       ## The 10 Available Templates
-      
+
       | Template | Complexity | Best For | Est. Monthly Cost |
       |----------|------------|----------|-------------------|
       | `minimal_starter` | ★☆☆☆☆ | Learning, POCs | $0 (F2 trial) |
@@ -58,9 +58,9 @@ steps:
       | `specialized_timeseries` | ★★★★☆ | Time-series analytics | $600-2000 |
       | `extensive_example` | ★★★★☆ | Reference architecture | $1000-3000 |
       | `compliance_regulated` | ★★★★★ | HIPAA, Finance, Gov | $1500-5000 |
-      
+
       ## Quick Start Recommendation
-      
+
       - "**New to Fabric?** → Start with `minimal_starter`"
       - "**Production ETL?** → Use `basic_etl` (most common choice)"
       - "**Real-time data?** → Use `realtime_streaming`"
@@ -75,15 +75,15 @@ steps:
     type: command
     content: |
       The `generate_project.py` script is your primary tool for creating configurations.
-      
+
       ## Command Syntax
-      
+
       ```bash
       python -m usf_fabric_cli.scripts.dev.generate_project "Organization Name" "Project Name" [OPTIONS]
       ```
-      
+
       ## All Available Options
-      
+
       | Option | Description | Default |
       |--------|-------------|---------|
       | `--template`, `-t` | Template name (see list above) | `basic_etl` |
@@ -92,11 +92,11 @@ steps:
       | `--git-branch` | Git branch name | `main` |
       | `--output-dir` | Output directory | `config/projects/` |
       | `--force` | Overwrite existing | `False` |
-      
+
       ## Output Location
-      
+
       Generated files go to: `config/projects/{org_slug}/{project_slug}.yaml`
-      
+
       - "\"Acme Corp\" → `acme_corp`"
       - "\"Sales Analytics\" → `sales_analytics`"
       - "Result: `config/projects/acme_corp/sales_analytics.yaml`"
@@ -105,15 +105,15 @@ steps:
       content: |
         # See all available options
         python -m usf_fabric_cli.scripts.dev.generate_project --help
-        
+
         # List all available templates
         ls src/usf_fabric_cli/templates/blueprints/
     expected_output: |
       # --help output:
       Usage: generate_project.py [OPTIONS] ORG_NAME PROJECT_NAME
-      
+
         Generate a project configuration from a blueprint template.
-      
+
       Options:
         -t, --template TEXT     Blueprint template name  [default: basic_etl]
         --capacity-id TEXT      Fabric capacity ID  [default: ${FABRIC_CAPACITY_ID}]
@@ -122,7 +122,7 @@ steps:
         --output-dir TEXT       Output directory  [default: config/projects/]
         --force                 Overwrite existing configuration
         --help                  Show this message and exit.
-      
+
       # ls src/usf_fabric_cli/templates/blueprints/ output:
       advanced_analytics.yaml
       basic_etl.yaml
@@ -140,25 +140,25 @@ steps:
     type: command
     content: |
       **Best For:** Learning Fabric, POCs, Solo projects
-      
+
       The absolute minimum viable configuration for quick prototyping.
-      
+
       ## What's Included
-      
+
       | Resource | Count | Purpose |
       |----------|-------|---------|
       | Lakehouse | 1 | All-in-one data storage |
       | Notebook | 1 | Clear entry point for exploration |
       | Pipeline | 1 | Basic ETL orchestration |
       | Git Integration | No | Simplicity first |
-      
+
       ## Use Cases
-      
+
       - Learning Microsoft Fabric fundamentals
       - Individual contributor experiments
       - Quick proof-of-concept development
       - Training environments
-      
+
       **Est. Cost:** Free on F2 trial, $50-100/month on F8
     code:
       language: bash
@@ -166,16 +166,16 @@ steps:
         # Generate a minimal starter config
         python -m usf_fabric_cli.scripts.dev.generate_project "My Company" "Learning Project" \
           --template minimal_starter
-        
+
         # View the generated file
         cat config/projects/my_company/learning_project.yaml
     expected_output: |
       ✓ Configuration generated: config/projects/my_company/learning_project.yaml
-      
+
       Template: minimal_starter
       Organization: My Company → my_company
       Project: Learning Project → learning_project
-      
+
       Resources:
         - 1 Lakehouse
         - 1 Notebook
@@ -189,12 +189,12 @@ steps:
     type: command
     content: |
       **Best For:** Standard ETL pipelines, Team collaboration
-      
+
       The **recommended starting template** for most production projects.
       Uses the industry-standard medallion architecture (Bronze → Silver → Gold).
-      
+
       ## What's Included
-      
+
       | Resource | Count | Purpose |
       |----------|-------|---------|
       | Lakehouses | 3 | Bronze (raw), Silver (cleaned), Gold (curated) |
@@ -203,7 +203,7 @@ steps:
       | Pipelines | 2 | ETL orchestration |
       | Semantic Model | 1 | Power BI dataset |
       | Git Integration | Yes | Version control |
-      
+
       **Est. Cost:** $100-500/month (F8-F16)
     code:
       language: bash
@@ -212,23 +212,23 @@ steps:
         python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "Sales Analytics" \
           --template basic_etl \
           --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
-        
+
         # View the generated file
         cat config/projects/acme_corp/sales_analytics.yaml
     expected_output: |
       ✓ Configuration generated: config/projects/acme_corp/sales_analytics.yaml
-      
+
       Template: basic_etl
       Organization: Acme Corp → acme_corp
       Project: Sales Analytics → sales_analytics
-      
+
       Resources:
         - 3 Lakehouses (Bronze, Silver, Gold)
         - 1 Warehouse
         - 3 Notebooks
         - 2 Pipelines
         - 1 Semantic Model
-      
+
       Git Integration: https://dev.azure.com/acme/FabricProjects/_git/sales
     tips:
       - The medallion architecture is industry standard for data lakes
@@ -239,11 +239,11 @@ steps:
     type: command
     content: |
       **Best For:** IoT, Events, Real-time analytics
-      
+
       High-throughput streaming platform with real-time analytics and alerting.
-      
+
       ## What's Included
-      
+
       | Resource | Count | Purpose |
       |----------|-------|---------|
       | Lakehouse | 1 | Archival storage |
@@ -253,11 +253,11 @@ steps:
       | KQL Queryset | 1 | Reusable analytics queries |
       | Reflex | 2 | Event-driven automation & alerts |
       | KQL Dashboard | 1 | Live monitoring |
-      
+
       **Est. Cost:** $800-2500/month (F16-F32)
-      
+
       ## Use Cases
-      
+
       - IoT device telemetry (1M+ devices)
       - Real-time log aggregation
       - Clickstream analysis
@@ -269,16 +269,16 @@ steps:
         python -m usf_fabric_cli.scripts.dev.generate_project "TechCorp" "IoT Platform" \
           --template realtime_streaming \
           --capacity-id F32
-        
+
         # View the generated file
         cat config/projects/techcorp/iot_platform.yaml
     expected_output: |
       ✓ Configuration generated: config/projects/techcorp/iot_platform.yaml
-      
+
       Template: realtime_streaming
       Organization: TechCorp → techcorp
       Project: IoT Platform → iot_platform
-      
+
       Resources:
         - 1 Lakehouse
         - 3 Eventstreams
@@ -296,12 +296,12 @@ steps:
     type: command
     content: |
       **Best For:** HIPAA, SOX, GDPR, Government regulations
-      
+
       Enterprise template with comprehensive audit logging, data classification,
       and regulatory compliance features.
-      
+
       ## What's Included
-      
+
       | Resource | Purpose |
       |----------|---------|
       | 4 Lakehouses | PHI Zone, Business Data, Analytics, Audit Trail |
@@ -309,16 +309,16 @@ steps:
       | Audit Notebooks | Compliance verification scripts |
       | Retention Configs | Data lifecycle management |
       | Access Matrix | Role-based access control templates |
-      
+
       ## Compliance Features
-      
+
       - ✅ Data classification tiers (Confidential, Internal, Public)
       - ✅ PHI/PII isolation zones
       - ✅ Audit trail notebooks
       - ✅ Access control matrices
       - ✅ Retention policy templates
       - ✅ Lineage tracking
-      
+
       **Est. Cost:** $1500-5000/month (F16+)
     code:
       language: bash
@@ -327,23 +327,23 @@ steps:
         python -m usf_fabric_cli.scripts.dev.generate_project "HealthCo" "Patient Platform" \
           --template compliance_regulated \
           --capacity-id F64
-        
+
         # View the generated file
         cat config/projects/healthco/patient_platform.yaml
     expected_output: |
       ✓ Configuration generated: config/projects/healthco/patient_platform.yaml
-      
+
       Template: compliance_regulated
       Organization: HealthCo → healthco
       Project: Patient Platform → patient_platform
-      
+
       Resources:
         - 4 Lakehouses (PHI, Business, Analytics, Audit)
         - 2 Warehouses
         - 6 Notebooks (including audit)
         - 4 Pipelines
         - 2 Semantic Models
-      
+
       Compliance Features:
         - PHI/PII isolation zones
         - Audit trail logging
@@ -358,73 +358,73 @@ steps:
     type: info
     content: |
       ## Template 5: data_science - Research & ML Experiments
-      
+
       For data scientists needing experiment tracking and model development.
-      
+
       ```bash
       python -m usf_fabric_cli.scripts.dev.generate_project "Research Lab" "ML Platform" --template data_science
       ```
-      
+
       **Includes:** 2 Lakehouses, MLflow integration, Experiment notebooks, Model registry setup
-      
+
       ---
-      
+
       ## Template 6: advanced_analytics - ML/AI Production
-      
+
       For production ML pipelines with model serving and monitoring.
-      
+
       ```bash
       python -m usf_fabric_cli.scripts.dev.generate_project "AI Corp" "Prediction Engine" --template advanced_analytics
       ```
-      
+
       **Includes:** 4 Lakehouses, ML pipelines, Model deployment configs, Feature store setup
-      
+
       ---
-      
+
       ## Template 7: data_mesh_domain - Domain-Driven Design
-      
+
       For organizations adopting data mesh architecture with federated ownership.
-      
+
       ```bash
       python -m usf_fabric_cli.scripts.dev.generate_project "Enterprise" "Finance Domain" --template data_mesh_domain
       ```
-      
+
       **Includes:** Domain-specific zones, Data products, Self-serve templates, Cross-domain sharing
-      
+
       ---
-      
+
       ## Template 8: migration_hybrid - Cloud Migration
-      
+
       For migrating existing on-premises data warehouses to Fabric.
-      
+
       ```bash
       python -m usf_fabric_cli.scripts.dev.generate_project "Legacy Corp" "DW Migration" --template migration_hybrid
       ```
-      
+
       **Includes:** Staging zones, Migration notebooks, Data validation, Legacy connectors
-      
+
       ---
-      
+
       ## Template 9: specialized_timeseries - APM & Metrics
-      
+
       For time-series data, application performance monitoring, and metrics.
-      
+
       ```bash
       python -m usf_fabric_cli.scripts.dev.generate_project "Ops Team" "APM Platform" --template specialized_timeseries
       ```
-      
+
       **Includes:** KQL databases, Time-series optimized storage, Alerting, Dashboards
-      
+
       ---
-      
+
       ## Template 10: extensive_example - Reference Architecture
-      
+
       Comprehensive example showing all framework capabilities. Use as learning reference.
-      
+
       ```bash
       python -m usf_fabric_cli.scripts.dev.generate_project "Demo" "Reference" --template extensive_example
       ```
-      
+
       **Includes:** Every resource type, All features demonstrated, Documentation examples
     tips:
       - "View any template source: `cat src/usf_fabric_cli/templates/blueprints/<name>.yaml`"
@@ -435,9 +435,9 @@ steps:
     type: command
     content: |
       Let's generate a configuration using the recommended `basic_etl` template.
-      
+
       ## Complete Example with All Options
-      
+
       This example shows all available command-line options:
     code:
       language: bash
@@ -452,29 +452,29 @@ steps:
           --git-branch "main" \
           --output-dir "config/projects/" \
           --force  # Overwrite if exists
-        
+
         # Verify the generated file
         ls -la config/projects/global_bank_corp/
-        
+
         # View the configuration
         cat config/projects/global_bank_corp/risk_analytics_platform.yaml
     expected_output: |
       ✓ Configuration generated: config/projects/global_bank_corp/risk_analytics_platform.yaml
-      
+
       Template: advanced_analytics
       Organization: Global Bank Corp → global_bank_corp
       Project: Risk Analytics Platform → risk_analytics_platform
-      
+
       Resources:
         - 4 Lakehouses
         - 2 Warehouses
         - 6 Notebooks
         - 4 Pipelines
         - 2 Semantic Models
-      
+
       Git Integration: https://dev.azure.com/globalbank/Fabric/_git/risk-analytics (branch: main)
       Capacity: F128
-      
+
       # ls -la output:
       total 8
       drwxrwxr-x 2 user user 4096 Jan 15 10:00 .
@@ -488,9 +488,9 @@ steps:
     type: config
     content: |
       Let's examine the key sections of a generated configuration file.
-      
+
       ## Top-Level Structure
-      
+
       | Section | Purpose |
       |---------|---------|
       | `workspace` | Workspace name, capacity, Git settings |
@@ -503,9 +503,9 @@ steps:
       | `principals` | User/group access assignments |
       | `resources` | Generic resources (any Fabric item type) |
       | `environments` | Environment-specific overrides (dev/staging/prod) |
-      
+
       ## Key Concepts
-      
+
       - "**`${VAR_NAME}`** - Environment variable substitution (from `.env`)"
       - "**`{{ env }}`** - Jinja2 template variable (resolved at deploy time)"
       - "**`folder:`** - Places items in a specific folder"
@@ -519,47 +519,47 @@ steps:
           display_name: "Acme Sales Analytics [{{ env | upper }}]"
           description: "Sales analytics platform for Acme Corp"
           capacity_id: "${FABRIC_CAPACITY_ID}"      # From .env file
-          
+
           # Git integration
           git:
             repository_url: "${GIT_REPO_URL}"
             branch: "main"
             directory: "/"
-        
+
         # Folder structure
         folders:
           - "01_Bronze"      # Raw data landing zone
           - "02_Silver"      # Cleaned and transformed
           - "03_Gold"        # Business-ready data
           - "99_Notebooks"   # Analysis notebooks
-        
+
         # Lakehouse definitions
         lakehouses:
           - name: "sales_raw"
             folder: "01_Bronze"
             description: "Raw sales data from source systems"
-          
+
           - name: "sales_curated"
             folder: "02_Silver"
             description: "Cleaned and transformed sales data"
-          
+
           - name: "sales_gold"
             folder: "03_Gold"
             description: "Business-ready aggregations"
-        
+
         # Warehouse definitions
         warehouses:
           - name: "sales_reporting"
             folder: "03_Gold"
             description: "Structured reporting layer for BI tools"
-        
+
         # Access control
         principals:
           - id: "${DEV_ADMIN_OBJECT_ID}"
             role: "Admin"
           - id: "sales-team@acme.com"
             role: "Contributor"
-        
+
         # Environment overrides
         environments:
           dev:
@@ -577,9 +577,9 @@ steps:
     type: config
     content: |
       After generation, you'll typically want to customize the configuration.
-      
+
       ## Common Customizations
-      
+
       | Customization | Example |
       |---------------|---------|
       | **Folder names** | Match your organization's naming conventions |
@@ -595,7 +595,7 @@ steps:
           name: "acme-manufacturing-{{ env }}"
           display_name: "Acme Manufacturing Analytics [{{ env | upper }}]"
           capacity_id: "${FABRIC_CAPACITY_ID}"
-          
+
         # Custom folder structure for manufacturing domain
         folders:
           - "01_Sensors"         # IoT sensor data
@@ -603,21 +603,21 @@ steps:
           - "03_Quality"         # Quality control data
           - "04_Maintenance"     # Predictive maintenance
           - "99_Analysis"        # Notebooks and reports
-        
+
         # Domain-specific lakehouse naming
         lakehouses:
           - name: "mfg_sensor_raw"
             folder: "01_Sensors"
             description: "Raw IoT sensor data from production floor"
-          
+
           - name: "mfg_production_metrics"
             folder: "02_Production"
             description: "Aggregated production line KPIs"
-          
+
           - name: "mfg_quality_data"
             folder: "03_Quality"
             description: "Quality control measurements and results"
-        
+
         # Team-specific access control
         principals:
           - id: "${ADMIN_SERVICE_PRINCIPAL}"
@@ -628,7 +628,7 @@ steps:
             role: "Member"
           - id: "plant-managers@acme.com"
             role: "Viewer"
-        
+
         # Environment-specific overrides
         environments:
           dev:
@@ -637,7 +637,7 @@ steps:
             principals:
               - id: "${DEV_ADMIN_OBJECT_ID}"
                 role: "Admin"
-          
+
           prod:
             workspace:
               capacity_id: "F64"
@@ -656,9 +656,9 @@ steps:
     content: |
       The framework supports **any Fabric item type** through generic resource definitions.
       This future-proofs your configurations as Microsoft adds new item types.
-      
+
       ## Syntax
-      
+
       ```yaml
       resources:
         - type: "ItemTypeName"
@@ -666,9 +666,9 @@ steps:
           folder: "Optional/Folder"
           description: "Optional description"
       ```
-      
+
       ## Supported Item Types
-      
+
       | Category | Types |
       |----------|-------|
       | **Real-time** | Eventstream, Eventhouse, Reflex |
@@ -686,27 +686,27 @@ steps:
             name: "iot_device_ingestion"
             folder: "01_Sensors"
             description: "Real-time IoT device telemetry stream"
-          
+
           - type: "Eventhouse"
             name: "sensor_analytics"
             folder: "01_Sensors"
             description: "Real-time analytics engine"
-          
+
           - type: "KQLDatabase"
             name: "sensor_logs"
             folder: "01_Sensors"
             description: "Time-series sensor data"
-          
+
           - type: "KQLQueryset"
             name: "sensor_queries"
             folder: "01_Sensors"
             description: "Reusable KQL queries"
-          
+
           - type: "Reflex"
             name: "maintenance_alerts"
             folder: "04_Maintenance"
             description: "Predictive maintenance alerting"
-          
+
           - type: "KQLDashboard"
             name: "plant_floor_monitor"
             folder: "99_Analysis"
@@ -721,9 +721,9 @@ steps:
     content: |
       After generating a config, you'll almost always need to customize it.
       Here's the recommended workflow:
-      
+
       ## The Edit-After-Generate Workflow
-      
+
       ```
       ┌────────────────────────────────────────────────────────────────┐
       │                 CONFIGURATION WORKFLOW                          │
@@ -744,9 +744,9 @@ steps:
       │                                                                 │
       └────────────────────────────────────────────────────────────────┘
       ```
-      
+
       ## Common Edits to Make
-      
+
       | What to Edit | Why | Example |
       |--------------|-----|---------|
       | **principals** | Add YOUR team's Object IDs | `"${DEV_ADMIN_OBJECT_ID}"` |
@@ -760,13 +760,13 @@ steps:
       content: |
         # Step 1: Generate the starting config
         python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "Sales Analytics" --template basic_etl
-        
+
         # Step 2: Review what was generated
         cat config/projects/acme_corp/sales_analytics.yaml
-        
+
         # Step 3: Open in VS Code for editing
         code config/projects/acme_corp/sales_analytics.yaml
-        
+
         # ─────────────────────────────────────────────────────────
         # NOW MAKE YOUR EDITS IN VS CODE:
         # - Update principals with your team's Object IDs
@@ -774,20 +774,20 @@ steps:
         # - Customize folder and lakehouse names
         # - Add/remove items as needed
         # ─────────────────────────────────────────────────────────
-        
+
         # Step 4: Validate after editing
         make validate config=config/projects/acme_corp/sales_analytics.yaml
-        
+
         # Step 5: Deploy when validation passes
         make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
     expected_output: |
       # After editing and validating:
       Validating configuration: config/projects/acme_corp/sales_analytics.yaml
-      
+
       ✓ YAML syntax valid
       ✓ Required fields present
       ✓ Environment variables resolved (4 variables)
-      
+
       ════════════════════════════════════════════════════════════
       ✅ Configuration is valid!
       ════════════════════════════════════════════════════════════
@@ -804,7 +804,7 @@ steps:
     type: command
     content: |
       **Always validate your configuration before deploying!**
-      
+
       Validation checks for:
       - ✅ YAML syntax errors
       - ✅ Required fields present
@@ -816,25 +816,25 @@ steps:
       content: |
         # Validate using Make (RECOMMENDED)
         make validate config=config/projects/acme_corp/sales_analytics.yaml
-        
+
         # OR using the CLI directly
         fabric-cicd validate config/projects/acme_corp/sales_analytics.yaml
-        
+
         # OR using Python module
         python -m usf_fabric_cli.cli validate config/projects/acme_corp/sales_analytics.yaml
-        
+
         # Validate with specific environment
         fabric-cicd validate config/projects/acme_corp/sales_analytics.yaml --env prod
     expected_output: |
       Validating configuration: config/projects/acme_corp/sales_analytics.yaml
-      
+
       ✓ YAML syntax valid
       ✓ Required fields present
       ✓ Environment variables resolved (4 variables)
       ✓ Jinja2 template syntax valid
       ✓ Folder references valid
       ✓ No duplicate item names
-      
+
       ════════════════════════════════════════════════════════════
       ✅ Configuration is valid!
       ════════════════════════════════════════════════════════════
@@ -850,17 +850,17 @@ steps:
     type: info
     content: |
       You've learned how to generate and customize project configurations!
-      
+
       ## What You've Accomplished
-      
+
       - ✅ Understand all 10 blueprint templates
       - "✅ Can use `python -m usf_fabric_cli.scripts.dev.generate_project` with all options"
       - ✅ Know the YAML configuration structure
       - ✅ Can customize configurations for your organization
       - "✅ Can validate configurations with `make validate`"
-      
+
       ## Quick Reference: All Templates
-      
+
       | Template | Command |
       |----------|---------|
       | Learning | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template minimal_starter` |
@@ -873,9 +873,9 @@ steps:
       | Migration | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template migration_hybrid` |
       | Time-series | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template specialized_timeseries` |
       | Reference | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template extensive_example` |
-      
+
       ## Recommended Next Steps
-      
+
       1. **Next:** [Local Deployment](#local-deployment) - Deploy your configuration to Fabric
       2. **Then:** [Git Integration](#git-integration) - Connect workspace to version control
       3. **Advanced:** [Docker Deployment](#docker-deployment) - CI/CD pipeline integration
@@ -884,10 +884,10 @@ steps:
       content: |
         # Generate your first config
         python -m usf_fabric_cli.scripts.dev.generate_project "My Company" "First Project" --template basic_etl
-        
+
         # Validate it
         make validate config=config/projects/my_company/first_project.yaml
-        
+
         # Deploy it (next scenario!)
         make deploy config=config/projects/my_company/first_project.yaml env=dev
     tips:

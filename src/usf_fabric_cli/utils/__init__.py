@@ -6,13 +6,13 @@ from usf_fabric_cli.utils.config import (
     WorkspaceConfig,
     get_environment_variables,
 )
+from usf_fabric_cli.utils.retry import retry_with_backoff
 from usf_fabric_cli.utils.secrets import FabricSecrets
 from usf_fabric_cli.utils.telemetry import TelemetryClient
 from usf_fabric_cli.utils.templating import (
     ArtifactTemplateEngine,
     FabricArtifactTemplater,
 )
-from usf_fabric_cli.utils.retry import retry_with_backoff
 
 __all__ = [
     "AuditLogger",

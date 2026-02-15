@@ -14,7 +14,6 @@ import pytest
 
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
 
-
 pytestmark = pytest.mark.integration
 
 

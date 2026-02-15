@@ -748,7 +748,7 @@ environments:
     workspace:
       capacity_id: "F2"  # Trial for dev
       name: "project_dev"
-  
+
   prod:
     workspace:
       capacity_id: "F64"  # Production capacity

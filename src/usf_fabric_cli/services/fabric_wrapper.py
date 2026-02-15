@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
+import os
+import re
 import subprocess
 import time
-import re
-import base64
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
-
-import os
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from packaging import version
 
@@ -19,14 +18,14 @@ from usf_fabric_cli.exceptions import (
     FabricCLINotFoundError,
     FabricTelemetryError,
 )
-from usf_fabric_cli.utils.telemetry import TelemetryClient
 
 # Re-export retry utilities for backwards compatibility
 from usf_fabric_cli.utils.retry import (  # noqa: F401
-    is_retryable_error,
     calculate_backoff,
+    is_retryable_error,
     retry_with_backoff,
 )
+from usf_fabric_cli.utils.telemetry import TelemetryClient
 
 if TYPE_CHECKING:
     from usf_fabric_cli.services.token_manager import TokenManager

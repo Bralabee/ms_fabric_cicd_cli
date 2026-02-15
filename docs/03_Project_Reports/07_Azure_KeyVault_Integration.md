@@ -197,15 +197,15 @@ def deploy_fabric_workspace(org_name: str, project_name: str, env: str = "dev"):
     or environment variables (development) automatically.
     """
     from src.core.secrets import FabricSecrets
-    
+
     # Security: The Agent never sees the credentials
     secrets = FabricSecrets.load_with_fallback()
-    
+
     # Validate authentication
     is_valid, error_msg = secrets.validate_fabric_auth()
     if not is_valid:
         return f"❌ Authentication failed: {error_msg}"
-    
+
     # Proceed with deployment (credentials loaded internally)
     # ...
 ```

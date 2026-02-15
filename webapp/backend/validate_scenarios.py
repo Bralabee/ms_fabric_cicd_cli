@@ -4,8 +4,9 @@ Quick validation script for scenario YAML files.
 Run with: python validate_scenarios.py
 """
 
-import yaml
 from pathlib import Path
+
+import yaml
 
 
 def validate_scenarios():

@@ -6,11 +6,11 @@ Note: This is a simple in-memory implementation.
 For production, replace with a proper database.
 """
 
-from typing import Dict
 from datetime import datetime
-from fastapi import APIRouter, Request, HTTPException
+from typing import Dict
 
-from app.models import UserProgress, ProgressUpdate
+from app.models import ProgressUpdate, UserProgress
+from fastapi import APIRouter, HTTPException, Request
 
 router = APIRouter()
 

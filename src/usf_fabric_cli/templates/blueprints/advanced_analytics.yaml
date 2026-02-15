@@ -7,7 +7,7 @@ workspace:
   description: "Workspace for ML, AI, and advanced analytics"
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
   domain: "${FABRIC_DOMAIN_NAME}"       # Optional: Assign to a Fabric Domain
-  
+
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
   git_directory: "/"
@@ -29,15 +29,15 @@ lakehouses:
   - name: "raw_customer_data"
     folder: "Bronze"
     description: "Raw customer interaction data"
-  
+
   - name: "processed_customer_data"
     folder: "Silver"
     description: "Cleaned customer data with features"
-  
+
   - name: "customer_360"
     folder: "Gold"
     description: "Complete customer view for analytics"
-  
+
   - name: "ml_feature_store"
     folder: "Feature Store"
     description: "ML features for model training"
@@ -46,7 +46,7 @@ warehouses:
   - name: "analytics_warehouse"
     folder: "Gold"
     description: "Primary analytics warehouse"
-  
+
   - name: "reporting_warehouse"
     folder: "Gold"
     description: "Optimized for business reporting"
@@ -56,23 +56,23 @@ notebooks:
   - name: "data_exploration"
     folder: "Notebooks"
     description: "Exploratory data analysis"
-  
+
   - name: "feature_engineering"
     folder: "Notebooks"
     description: "Feature creation and selection"
-  
+
   - name: "customer_segmentation"
     folder: "Notebooks"
     description: "Customer segmentation analysis"
-  
+
   - name: "churn_prediction_model"
     folder: "Models"
     description: "Customer churn prediction ML model"
-  
+
   - name: "recommendation_engine"
     folder: "Models"
     description: "Product recommendation ML model"
-  
+
   - name: "ab_test_analysis"
     folder: "Experiments"
     description: "A/B test statistical analysis"
@@ -82,11 +82,11 @@ pipelines:
   - name: "feature_pipeline"
     folder: "Pipelines"
     description: "Feature engineering and store updates"
-  
+
   - name: "model_training_pipeline"
     folder: "Pipelines"
     description: "Automated model training and validation"
-  
+
   - name: "model_inference_pipeline"
     folder: "Pipelines"
     description: "Batch inference for predictions"
@@ -96,13 +96,13 @@ pipelines:
 principals:
   - id: "${TEMPLATE_DS_TEAM_OID}"
     role: "Admin"
-  
+
   - id: "${TEMPLATE_ANALYTICS_TEAM_OID}"
     role: "Contributor"
-  
+
   - id: "${TEMPLATE_BUSINESS_ANALYSTS_OID}"
     role: "Viewer"
-  
+
   # ML automation service principal
   - id: "${TEMPLATE_ML_AUTOMATION_SP_ID}"
     role: "Contributor"
@@ -111,7 +111,7 @@ principals:
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "Mandatory Additional Admin"
-  
+
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "Mandatory Additional Contributor"

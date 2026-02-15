@@ -1,7 +1,9 @@
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
 from typer.testing import CliRunner
+
 from usf_fabric_cli.cli import app
 
 

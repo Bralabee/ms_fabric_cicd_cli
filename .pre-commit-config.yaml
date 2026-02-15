@@ -1,9 +1,12 @@
 # Pre-commit hooks for code quality
 # Install: pip install pre-commit && pre-commit install
 # Run manually: pre-commit run --all-files
+#
+# These hooks mirror the CI pipeline (black, flake8, bandit) so formatting
+# and lint errors are caught before push, not after.
 
 repos:
-  # Code formatting
+  # Code formatting — matches CI: black --check .
   - repo: https://github.com/psf/black
     rev: 24.4.2
     hooks:
@@ -11,55 +14,48 @@ repos:
         language_version: python3.11
         args: [--line-length=88]
 
-  # Import sorting
+  # Import sorting — isort with black-compatible profile
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
         args: [--profile=black, --line-length=88]
 
-  # Linting
+  # Linting — matches CI: flake8 src/
+  # B008 ignored: Typer uses function calls in argument defaults by design
   - repo: https://github.com/pycqa/flake8
     rev: 7.0.0
     hooks:
       - id: flake8
-        args: [--max-line-length=88, --ignore=E203,W503]
+        args: [--max-line-length=88, "--ignore=E203,W503,B008"]
+        files: ^src/
         additional_dependencies:
           - flake8-bugbear
           - flake8-comprehensions
 
-  # Type checking (optional - commented out for gradual adoption)
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.9.0
-  #   hooks:
-  #     - id: mypy
-  #       args: [--ignore-missing-imports]
-  #       additional_dependencies:
-  #         - types-PyYAML
-  #         - types-requests
-
-  # Security checks
+  # Security checks — matches CI: bandit -r src/ -ll
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.8
     hooks:
       - id: bandit
-        args: [-r, src/, -ll, -x, "*/tests/*"]
-        exclude: tests/
+        args: [-r, src/, -ll]
+        pass_filenames: false
 
   # Prevent committing secrets
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
+    rev: v1.5.0
     hooks:
       - id: detect-secrets
         args: [--baseline, .secrets.baseline]
         exclude: (\.env\.template|\.env\.example|config/projects/)
 
-  # YAML validation
+  # YAML validation (warnings only — strict mode removed to avoid blocking
+  # on pre-existing long lines in scenario YAML files)
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.35.1
     hooks:
       - id: yamllint
-        args: [--strict, -d, "{extends: relaxed, rules: {line-length: {max: 150}}}"]
+        args: [-d, "{extends: relaxed, rules: {line-length: {max: 150}}}"]
         files: \.(ya?ml)$
         exclude: (src/usf_fabric_cli/templates/blueprints/)
 

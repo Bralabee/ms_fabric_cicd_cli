@@ -277,7 +277,7 @@ Automatic Git connection using Fabric REST APIs during workspace deployment.
 workspace:
   name: my-workspace
   capacity_id: F64
-  
+
   # Git Integration (NEW)
   git_repo: https://github.com/myorg/fabric-content
   git_branch: main
@@ -378,7 +378,7 @@ if init_result["required_action"] == "UpdateFromGit":
         remote_commit_hash=init_result["remote_commit_hash"],
         workspace_head=init_result["workspace_head"]
     )
-    
+
     # Poll operation status
     final_result = git_api.poll_operation(
         operation_id=update_result["operation_id"]
@@ -421,19 +421,19 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-      
+
       - name: Run linting
         run: |
           flake8 src/ --count
           black --check src/
           mypy src/ --ignore-missing-imports
-      
+
       - name: Security scan
         run: bandit -r src/ -ll
-      
+
       - name: Run tests with coverage
         run: pytest tests/ -v --cov=src/ --cov-report=xml
-      
+
       - name: Test Docker build
         run: docker build -t usf-fabric-cli-cicd:test .
 ```

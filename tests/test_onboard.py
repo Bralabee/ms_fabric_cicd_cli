@@ -15,19 +15,18 @@ Verifies:
 import os
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from usf_fabric_cli.scripts.dev.onboard import (
-    _resolve_capacity_id,
-    _get_workspace_names,
-    _get_pipeline_name,
-    _enrich_principals,
-    _create_empty_workspace,
-    _create_deployment_pipeline,
-    onboard_project,
     DEFAULT_STAGES,
+    _create_deployment_pipeline,
+    _create_empty_workspace,
+    _enrich_principals,
+    _get_pipeline_name,
+    _get_workspace_names,
+    _resolve_capacity_id,
+    onboard_project,
 )
-
 
 # ── Helper Data ───────────────────────────────────────────────────
 

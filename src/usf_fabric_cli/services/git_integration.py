@@ -13,7 +13,7 @@ Key Learning Applied: Feature Branch Workflows
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from git import InvalidGitRepositoryError, Repo
 

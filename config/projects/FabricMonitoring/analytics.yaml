@@ -7,11 +7,11 @@ workspace:
   display_name: "Fabric Monitoring Analytics"
   description: "Data Engineering workspace for monitoring Fabric usage and metrics"
   # Ensure FABRIC_CAPACITY_ID is set in your .env file, or replace this with a specific ID (e.g., "F64")
-  capacity_id: "${FABRIC_CAPACITY_ID}" 
+  capacity_id: "${FABRIC_CAPACITY_ID}"
 
   # Optional Field
-  #domain: "01 Strategy, Governance & Compliance" 
-  
+  #domain: "01 Strategy, Governance & Compliance"
+
   # Git Integration (Replace with your actual repo)
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
@@ -53,7 +53,7 @@ notebooks:
   - name: "nb_03_build_aggregates"
     folder: "04_Notebooks"
     description: "Create reporting aggregates for Gold layer"
-    
+
   - name: "nb_99_maintenance"
     folder: "99_Admin"
     description: "Vacuum and optimize tables"
@@ -76,14 +76,14 @@ principals:
   # Define these variables in your .env file for security
   - id: "${DEV_ADMIN_OBJECT_ID}"
     role: "Admin"
-  
+
   - id: "${AUTOMATION_SP_ID}"
     role: "Contributor"
 
   # Mandatory Security Principals
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
-  
+
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
 

@@ -77,11 +77,11 @@ principals:
   # Admin Access
   - id: "${DEV_ADMIN_OBJECT_ID}"
     role: "Admin"
-  
+
   # Team Access (Read/Write)
   - id: "${DEV_MEMBERS_OBJECT_ID}" # Supports lists of users
     role: "Member"
-    
+
   # Viewer Access (Read Only)
   - id: "finance-viewers-group@yourcompany.com"
     role: "Viewer"

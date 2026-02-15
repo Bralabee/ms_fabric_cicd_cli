@@ -11,10 +11,10 @@ workspace:
 principals:
   - id: "${PROD_ADMIN_EMAIL}"
     role: "Admin"
-  
+
   - id: "${PROD_VIEWERS_GROUP_ID}" # Prod Users Group Object ID
     role: "Viewer"  # Read-only access in production
-  
+
   # Production automation service principal
   - id: "${PROD_AUTOMATION_SP_ID}" # Automation SP Object ID
     role: "Contributor"
@@ -23,7 +23,7 @@ principals:
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "Mandatory Additional Admin"
-  
+
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "Mandatory Additional Contributor"

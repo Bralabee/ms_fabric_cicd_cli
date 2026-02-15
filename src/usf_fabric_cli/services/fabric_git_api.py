@@ -17,16 +17,16 @@ References:
 
 import logging
 import time
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import requests
 
 from usf_fabric_cli.services.fabric_api_base import FabricAPIBase
 from usf_fabric_cli.utils.retry import (
-    DEFAULT_MAX_RETRIES,
     DEFAULT_BASE_DELAY,
     DEFAULT_MAX_DELAY,
+    DEFAULT_MAX_RETRIES,
 )
 
 if TYPE_CHECKING:

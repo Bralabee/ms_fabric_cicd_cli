@@ -42,11 +42,11 @@ graph LR
     A[Config YAML] -->|make deploy| B(CLI / Deployer)
     B -->|Provision| C[Fabric Workspace]
     B -->|Bind| D[Git Repository]
-    
+
     subgraph "DEV Environment"
     C_DEV[Workspace: SalesAnalytics DEV] <-->|Sync| D_MAIN[Branch: main]
     end
-    
+
     subgraph "FEATURE Environment"
     C_FEAT[Workspace: SalesAnalytics Feat 123] <-->|Sync| D_FEAT[Branch: feature/123]
     end
