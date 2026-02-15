@@ -173,7 +173,7 @@ For the CI/CD workflows to operate, these secrets **must be configured** in the 
 | `AZURE_CLIENT_ID` | All workflows | Service Principal app ID |
 | `AZURE_CLIENT_SECRET` | All workflows | Service Principal secret |
 | `FABRIC_CAPACITY_ID` | Feature workspace create | Fabric capacity for workspace creation |
-| `GITHUB_TOKEN_FABRIC` | Feature workspace create | GitHub PAT for Git connection |
+| `FABRIC_GITHUB_TOKEN` | Feature workspace create | GitHub PAT for Git connection |
 | `FABRIC_PIPELINE_NAME` | Deploy-to-Fabric | Deployment pipeline display name |
 
 ---

@@ -139,7 +139,7 @@ make docker-deploy config=config/projects/.../project.yaml env=dev ENVFILE=.env
 2. **Run diagnostics**: `python -m usf_fabric_cli.scripts.admin.preflight_check` (validates CLI, credentials, capacity)
 3. **Validate config**: `make validate config=path/to/config.yaml` (schema + env var check)
 4. **Check Git connectivity**: `python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access --organization X --project Y`
-5. **List workspace items**: `python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items --workspace "workspace-name"`
+5. **List workspace items**: `python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items "workspace-name"`
 
 ## 📝 Configuration Patterns
 
@@ -202,7 +202,7 @@ connection_string = "{{ secrets.STORAGE_ACCOUNT_URL }}"
 ### Fabric CLI Dependency
 - **Installation**: `pip install git+https://github.com/microsoft/fabric-cli.git@v1.3.1#egg=ms-fabric-cli`
 - **Version Check**: `src/usf_fabric_cli/services/fabric_wrapper.py:_validate_cli_version()` ensures min version
-- **Command Pattern**: All CLI calls via `_run_command()` with `--output json` for parsing
+- **Command Pattern**: All CLI calls via `_execute_command()` with `--output json` for parsing
 
 ### Git Integration (REST API, not CLI)
 - **Why REST?**: Fabric CLI doesn't support Git connections yet (as of v1.0)

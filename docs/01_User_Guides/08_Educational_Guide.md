@@ -241,7 +241,7 @@ Configure these secrets in your repository settings (**Settings → Secrets → 
 | `AZURE_CLIENT_SECRET` | Service Principal secret value |
 | `FABRIC_CAPACITY_ID` | Target Fabric capacity |
 | `FABRIC_PIPELINE_NAME` | Deployment Pipeline display name |
-| `GITHUB_TOKEN_FABRIC` | PAT with `repo` scope for Git integration |
+| `FABRIC_GITHUB_TOKEN` | PAT with `repo` scope for Git integration |
 
 #### End-to-End Walkthrough (CI/CD)
 

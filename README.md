@@ -325,7 +325,7 @@ make dev      # Start both servers (backend: 8001, frontend: 5173)
 ### Features
 
 - **Visual Workflow Diagrams**: Interactive flowcharts showing deployment processes step-by-step
-- **8 Comprehensive Scenarios**: Getting Started, Project Generation, Local/Docker Deployment, Feature Branches, Git Integration, Environment Promotion, Troubleshooting
+- **10 Comprehensive Scenarios**: Complete Journey, Getting Started, Project Generation, Local/Docker Deployment, Feature Branches, Git Integration, Troubleshooting, Environment Promotion, Medallion Onboarding
 - **Progress Tracking**: Track your learning progress through each guide
 - **Code Snippets with Copy**: Easily copy commands and configurations
 
@@ -399,6 +399,7 @@ src/
 │   │   ├── deployer.py              # Deployment orchestrator
 │   │   ├── fabric_wrapper.py        # Fabric CLI wrapper with version validation
 │   │   ├── fabric_git_api.py       # REST API client for Git integration
+│   │   ├── fabric_api_base.py      # Base REST client with shared auth and retry
 │   │   ├── git_integration.py      # Git synchronization logic
 │   │   ├── token_manager.py        # Azure AD token refresh for long deployments
 │   │   ├── deployment_state.py     # Atomic rollback state management
@@ -480,7 +481,7 @@ Content promotion follows the Microsoft-recommended **Option 3** pattern:
 | `AZURE_CLIENT_ID` | Service Principal app ID |
 | `AZURE_CLIENT_SECRET` | Service Principal secret |
 | `FABRIC_CAPACITY_ID` | Fabric capacity for workspace creation |
-| `GITHUB_TOKEN_FABRIC` | GitHub PAT for Git connections |
+| `FABRIC_GITHUB_TOKEN` | GitHub PAT for Git connections |
 | `FABRIC_PIPELINE_NAME` | Deployment pipeline display name |
 
 See [Blueprint Catalog](docs/01_User_Guides/07_Blueprint_Catalog.md) for configuration examples.
