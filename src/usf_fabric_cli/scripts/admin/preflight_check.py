@@ -70,8 +70,6 @@ def run_preflight(auto_install: bool, skip_env: bool) -> int:
     else:
         missing = _validate_auth_vars()
         if missing:
-            # If we have missing vars, it means NEITHER method was fully complete.
-            # We'll report that we couldn't find a complete set for either method.
             print("⚠️  Missing required environment variables for authentication.")
             print("    You must provide EITHER:")
             print("      1. FABRIC_TOKEN")

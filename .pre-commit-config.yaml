@@ -61,7 +61,7 @@ repos:
       - id: yamllint
         args: [--strict, -d, "{extends: relaxed, rules: {line-length: {max: 150}}}"]
         files: \.(ya?ml)$
-        exclude: (templates/blueprints/)
+        exclude: (src/usf_fabric_cli/templates/blueprints/)
 
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -70,7 +70,7 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        exclude: (templates/blueprints/)
+        exclude: (src/usf_fabric_cli/templates/blueprints/)
       - id: check-json
       - id: check-added-large-files
         args: [--maxkb=500]

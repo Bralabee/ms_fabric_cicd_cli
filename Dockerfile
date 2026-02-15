@@ -45,8 +45,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy application code (selective - no tests, docs, webapp)
 COPY src/ ./src/
 COPY config/ ./config/
-COPY templates/ ./templates/
-COPY scripts/ ./scripts/
 COPY pyproject.toml .
 COPY README.md .
 

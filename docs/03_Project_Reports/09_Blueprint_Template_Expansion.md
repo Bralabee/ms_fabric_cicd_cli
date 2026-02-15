@@ -46,7 +46,7 @@ Successfully expanded the `usf_fabric_cli_cicd` framework from **4 to 11 product
 
 ### Updated Framework Components
 
-1. **`scripts/dev/generate_project.py`**: Added all 10 templates to CLI choices
+1. **`src/usf_fabric_cli/scripts/dev/generate_project.py`**: Added all 10 templates to CLI choices
 2. **`README.md`**: Updated quick start to showcase template variety
 3. **`CHANGELOG.md`**: Documented v1.2.0 features with detailed breakdown
 
@@ -146,7 +146,7 @@ Successfully expanded the `usf_fabric_cli_cicd` framework from **4 to 11 product
 
 ```bash
 # Generate project from new template
-python scripts/dev/generate_project.py "TestOrg" "Streaming Demo" \
+python -m usf_fabric_cli.scripts.dev.generate_project "TestOrg" "Streaming Demo" \
   --template realtime_streaming
 
 # Validate configuration
@@ -198,12 +198,12 @@ Resources: 11 items (Eventstream, KQLDatabase, Reflex, etc.)
 ### New Files (7)
 
 ```
-templates/blueprints/realtime_streaming.yaml          (4.4KB)
-templates/blueprints/minimal_starter.yaml             (1.9KB)
-templates/blueprints/compliance_regulated.yaml        (6.2KB)
-templates/blueprints/data_mesh_domain.yaml            (6.4KB)
-templates/blueprints/migration_hybrid.yaml            (8.2KB)
-templates/blueprints/specialized_timeseries.yaml      (8.5KB)
+src/usf_fabric_cli/templates/blueprints/realtime_streaming.yaml          (4.4KB)
+src/usf_fabric_cli/templates/blueprints/minimal_starter.yaml             (1.9KB)
+src/usf_fabric_cli/templates/blueprints/compliance_regulated.yaml        (6.2KB)
+src/usf_fabric_cli/templates/blueprints/data_mesh_domain.yaml            (6.4KB)
+src/usf_fabric_cli/templates/blueprints/migration_hybrid.yaml            (8.2KB)
+src/usf_fabric_cli/templates/blueprints/specialized_timeseries.yaml      (8.5KB)
 docs/01_User_Guides/07_Blueprint_Catalog.md                  (340KB)
 ```
 
@@ -212,7 +212,7 @@ docs/01_User_Guides/07_Blueprint_Catalog.md                  (340KB)
 ### Modified Files (3)
 
 ```
-scripts/dev/generate_project.py    (+7 template choices)
+src/usf_fabric_cli/scripts/dev/generate_project.py    (+7 template choices)
 README.md                      (Updated quick start examples)
 CHANGELOG.md                   (v1.2.0 release notes)
 ```
@@ -266,7 +266,7 @@ CHANGELOG.md                   (v1.2.0 release notes)
 ### Real-Time IoT Platform
 
 ```bash
-python scripts/dev/generate_project.py "TechCorp" "IoT Platform" \
+python -m usf_fabric_cli.scripts.dev.generate_project "TechCorp" "IoT Platform" \
   --template realtime_streaming \
   --capacity-id F16
 
@@ -278,7 +278,7 @@ make deploy config=config/projects/techcorp/iot_platform.yaml env=prod
 ### Healthcare Compliance
 
 ```bash
-python scripts/dev/generate_project.py "HealthCo" "Patient Data" \
+python -m usf_fabric_cli.scripts.dev.generate_project "HealthCo" "Patient Data" \
   --template compliance_regulated \
   --capacity-id F16
 
@@ -290,7 +290,7 @@ make deploy config=config/projects/healthco/patient_data.yaml env=prod
 ### SQL Server Migration
 
 ```bash
-python scripts/dev/generate_project.py "LegacyCorp" "Cloud Migration" \
+python -m usf_fabric_cli.scripts.dev.generate_project "LegacyCorp" "Cloud Migration" \
   --template migration_hybrid \
   --capacity-id F16
 

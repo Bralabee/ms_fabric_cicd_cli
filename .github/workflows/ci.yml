@@ -41,19 +41,20 @@ jobs:
       run: black --check .
 
     - name: Type check with mypy
-      run: mypy src/ --ignore-missing-imports || true
+      run: mypy src/ --ignore-missing-imports
 
     - name: Security scan with Bandit
       run: |
         pip install bandit
-        bandit -r src/ -ll || true
+        bandit -r src/ -ll
 
     - name: Validate blueprint configs
       run: |
         export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-        python -m usf_fabric_cli.cli validate templates/blueprints/basic_etl.yaml
-        python -m usf_fabric_cli.cli validate templates/blueprints/advanced_analytics.yaml
-        python -m usf_fabric_cli.cli validate templates/blueprints/data_science.yaml
+        for blueprint in src/usf_fabric_cli/templates/blueprints/*.yaml; do
+          echo "Validating $blueprint..."
+          python -m usf_fabric_cli.cli validate "$blueprint"
+        done
 
     - name: Run unit tests with coverage
       run: |
@@ -66,6 +67,33 @@ jobs:
         file: ./coverage.xml
         flags: unittests
         fail_ci_if_error: false
+
+    - name: Build wheel
+      run: |
+        python -m pip install build
+        python -m build --wheel
+
+    - name: Smoke test installed wheel
+      run: |
+        python -m venv /tmp/wheel-smoke
+        /tmp/wheel-smoke/bin/pip install --upgrade pip
+        /tmp/wheel-smoke/bin/pip install dist/*.whl
+
+        WORK_DIR=$(mktemp -d)
+        pushd "$WORK_DIR"
+
+        /tmp/wheel-smoke/bin/fabric-cicd --help
+        /tmp/wheel-smoke/bin/fabric-cicd onboard --help
+        /tmp/wheel-smoke/bin/fabric-cicd init-github-repo --help
+        /tmp/wheel-smoke/bin/fabric-cicd generate "CI Org" "CI Project" \
+          --template basic_etl \
+          --capacity-id cap-ci \
+          --git-repo https://example.com/repo.git
+
+        test -f config/projects/ci_org/ci_project.yaml
+
+        popd
+        rm -rf "$WORK_DIR" /tmp/wheel-smoke
 
     - name: Test Docker build
       run: docker build -t usf-fabric-cli-cicd:test .

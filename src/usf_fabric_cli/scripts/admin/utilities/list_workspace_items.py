@@ -1,24 +1,19 @@
 #!/usr/bin/env python3
 """
-List Workspace Items Utility
+List Workspace Items Utility.
 
 Lists all items in a specified Fabric workspace.
 
 Usage:
-    python scripts/admin/utilities/list_workspace_items.py "Workspace Name"
-    make list-items workspace="Workspace Name"
+    python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items \\
+        "Workspace Name"
 """
 
 import os
 import sys
-from pathlib import Path
 
-# Add project root and src to path
-project_root = Path(__file__).resolve().parent.parent.parent.parent
-sys.path.append(str(project_root / "src"))
-
-from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper  # noqa: E402
-from usf_fabric_cli.utils.config import get_environment_variables  # noqa: E402
+from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
+from usf_fabric_cli.utils.config import get_environment_variables
 
 
 def list_workspace_items(workspace_name: str) -> None:
@@ -52,7 +47,6 @@ def list_workspace_items(workspace_name: str) -> None:
             items = data or []
             print(f"Found {len(items)} items:\n")
 
-            # Simple table output
             print(f"  {'Name':<40} {'Type':<25} {'Description'}")
             print(f"  {'─' * 40} {'─' * 25} {'─' * 30}")
 
@@ -70,10 +64,14 @@ def list_workspace_items(workspace_name: str) -> None:
         sys.exit(1)
 
 
-if __name__ == "__main__":
+def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python list_workspace_items.py <workspace_name>")
+        print("Usage: python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items <workspace_name>")
         print('   or: make list-items workspace="Name"')
         sys.exit(1)
 
     list_workspace_items(sys.argv[1])
+
+
+if __name__ == "__main__":
+    main()

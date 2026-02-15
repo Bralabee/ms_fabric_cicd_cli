@@ -36,7 +36,7 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
 
 ### Organization-Agnostic Design
 All configurations use **environment variable substitution** (`${VAR_NAME}`). No hardcoded organization names.  
-Template blueprints in `templates/blueprints/*.yaml` are customized via `scripts/dev/generate_project.py`.
+Template blueprints in `src/usf_fabric_cli/templates/blueprints/*.yaml` are customized via `src/usf_fabric_cli/scripts/dev/generate_project.py`.
 
 ## 🔐 Secret Management (CRITICAL)
 
@@ -79,7 +79,7 @@ conda env list  # Should show * next to fabric-cli-cicd
 # 1. Generate project config from template
 # Available templates: basic_etl, advanced_analytics, realtime_streaming, compliance_regulated, etc.
 # See docs/01_User_Guides/07_Blueprint_Catalog.md for full list.
-python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" --template realtime_streaming
+python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "Sales Analytics" --template realtime_streaming
 # Output: config/projects/acme_corp/sales_analytics.yaml
 
 # 2. One-Click Onboard (preferred — generates config + deploys in one step)
@@ -90,7 +90,7 @@ make onboard-isolated org="Acme Corp" project="Sales" git_owner="MyGitHubOrg"
 
 # 2c. Standalone repo init (GitHub or ADO)
 make init-github-repo git_owner="MyOrg" repo="acme-sales"
-python scripts/admin/utilities/init_ado_repo.py \
+python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
   --organization "your-ado-org" \
   --project "FabricProjects" \
   --repository "acme-sales-repo"
@@ -109,7 +109,7 @@ make test  # OR: pytest -m "not integration"
 make test-integration  # OR: pytest tests/integration -m integration
 
 # Pre-flight diagnostics (check CLI version, credentials, capacity access)
-python scripts/admin/preflight_check.py --auto-install
+python -m usf_fabric_cli.scripts.admin.preflight_check --auto-install
 ```
 
 ### Docker Workflow
@@ -124,10 +124,10 @@ make docker-deploy config=config/projects/.../project.yaml env=dev ENVFILE=.env
 
 ### Debugging Failed Deployments
 1. **Check audit logs**: `audit_logs/fabric_operations_YYYY-MM-DD.jsonl` (structured JSON)
-2. **Run diagnostics**: `python scripts/admin/preflight_check.py` (validates CLI, credentials, capacity)
+2. **Run diagnostics**: `python -m usf_fabric_cli.scripts.admin.preflight_check` (validates CLI, credentials, capacity)
 3. **Validate config**: `make validate config=path/to/config.yaml` (schema + env var check)
-4. **Check Git connectivity**: `python scripts/admin/utilities/debug_ado_access.py --organization X --project Y`
-5. **List workspace items**: `python scripts/admin/utilities/list_workspace_items.py --workspace "workspace-name"`
+4. **Check Git connectivity**: `python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access --organization X --project Y`
+5. **List workspace items**: `python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items --workspace "workspace-name"`
 
 ## 📝 Configuration Patterns
 
@@ -159,7 +159,7 @@ lakehouses:
 notebooks:
   - name: "data_transformation"
     folder: "Notebooks"
-    file_path: "templates/notebooks/transform.py"  # Import from file
+    file_path: "src/usf_fabric_cli/templates/notebooks/transform.py"  # Import from file
     # Content embedded in definition will be rendered via Jinja2
 
 environments:
@@ -225,7 +225,7 @@ Service Principal must have:
 1. **Not Using Conda Environment**: ALWAYS run `conda activate fabric-cli-cicd` before any Python operations. Check with `conda env list` to verify.
 2. **Entry Point Not Available**: Run `make install` or `pip install -e .` to enable the `fabric-cicd` command (alternative: use `python -m usf_fabric_cli.cli`)
 3. **Service Principal Permissions**: Most deployment failures = missing SP permissions (workspace admin, ADO contributor)
-4. **Capacity Exhausted**: F2 (trial) has low limits. Use `scripts/admin/utilities/list_workspaces.py` to audit capacity usage
+4. **Capacity Exhausted**: F2 (trial) has low limits. Use `src/usf_fabric_cli/scripts/admin/utilities/list_workspaces.py` to audit capacity usage
 5. **Git Branch Workspaces**: Feature workspaces are now CI/CD-managed (auto-created/destroyed by GitHub Actions). Manual cleanup only needed if workflows fail.
 6. **Template Undefined Variables**: Jinja2 `StrictUndefined` mode raises errors. Check `templating.py` rendering context.
 

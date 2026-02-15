@@ -6,6 +6,7 @@ Quick project generator - creates customized configuration for your organization
 import yaml
 import argparse
 from pathlib import Path
+from importlib.resources import files
 
 
 def generate_project_config(
@@ -18,11 +19,11 @@ def generate_project_config(
     """Generate customized project configuration"""
 
     # Load base template
-    template_path = Path(f"templates/blueprints/{template}.yaml")
-    if not template_path.exists():
+    template_path = files("usf_fabric_cli.templates.blueprints") / f"{template}.yaml"
+    if not template_path.is_file():
         raise ValueError(f"Template {template} not found")
 
-    with open(template_path, "r") as f:
+    with template_path.open("r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     # Customize for organization

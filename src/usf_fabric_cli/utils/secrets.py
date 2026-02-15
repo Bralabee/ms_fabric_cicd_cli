@@ -185,7 +185,7 @@ class FabricSecrets(BaseSettings):
         }
 
     @classmethod
-    def load_with_fallback(cls) -> "FabricSecrets":
+    def load_with_fallback(cls, env_file: Optional[str] = ".env") -> "FabricSecrets":
         """
         Instantiates secrets configuration, loading available credentials without
         validation.
@@ -194,7 +194,10 @@ class FabricSecrets(BaseSettings):
         Returns:
             FabricSecrets instance
         """
-        instance = cls()
+        if env_file is None:
+            instance = cls(_env_file=None)
+        else:
+            instance = cls(_env_file=env_file)
 
         # If Key Vault is configured, attempt to populate missing secrets
         if instance.azure_keyvault_url and KEYVAULT_AVAILABLE:

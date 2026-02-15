@@ -58,7 +58,7 @@ graph LR
 
 The foundation of the factory is the **Configuration File**. This YAML file follows the schema defined in `src/usf_fabric_cli/schemas/workspace_config.json` and is validated automatically on every deployment.
 
-> **Tip:** Start from one of the 11 blueprint templates in `templates/blueprints/` instead of writing from scratch. The `basic_etl.yaml` or `medallion.yaml` blueprints cover most enterprise scenarios.
+> **Tip:** Start from one of the 11 blueprint templates in `src/usf_fabric_cli/templates/blueprints/` instead of writing from scratch. The `basic_etl.yaml` or `medallion.yaml` blueprints cover most enterprise scenarios.
 
 **Action:** Create a new file at `config/projects/sales_analytics/config.yaml`.
 
@@ -304,4 +304,4 @@ To confirm the process was successful, perform the following checks:
 
 By following this guide, you have successfully implemented a **Data Product Factory**. You can now spin up standardised, Git-integrated environments on demand, significantly reducing manual overhead and increasing deployment reliability.
 
-For more complex scenarios, explore the 11 blueprint templates in `templates/blueprints/` and the environment override system in `config/environments/`.
+For more complex scenarios, explore the 11 blueprint templates in `src/usf_fabric_cli/templates/blueprints/` and the environment override system in `config/environments/`.

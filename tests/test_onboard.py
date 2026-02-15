@@ -17,10 +17,7 @@ import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-# Add scripts/dev to path so we can import onboard
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "dev"))
-
-from onboard import (  # noqa: E402
+from usf_fabric_cli.scripts.dev.onboard import (
     _resolve_capacity_id,
     _get_workspace_names,
     _get_pipeline_name,
@@ -303,10 +300,10 @@ class TestCreateDeploymentPipeline:
 class TestOnboardFullBootstrap:
     """Integration tests for the onboard_project function."""
 
-    @patch("onboard._create_deployment_pipeline")
-    @patch("onboard._create_empty_workspace")
-    @patch("onboard.subprocess.run")
-    @patch("onboard.generate_project_config")
+    @patch("usf_fabric_cli.scripts.dev.onboard._create_deployment_pipeline")
+    @patch("usf_fabric_cli.scripts.dev.onboard._create_empty_workspace")
+    @patch("usf_fabric_cli.scripts.dev.onboard.subprocess.run")
+    @patch("usf_fabric_cli.scripts.dev.onboard.generate_project_config")
     def test_dry_run_all_phases_logged(
         self,
         mock_gen,
@@ -334,10 +331,10 @@ class TestOnboardFullBootstrap:
         # _create_deployment_pipeline is NOT called (handled inline)
         mock_create_pipeline.assert_not_called()
 
-    @patch("onboard._create_deployment_pipeline")
-    @patch("onboard._create_empty_workspace")
-    @patch("onboard.subprocess.run")
-    @patch("onboard.generate_project_config")
+    @patch("usf_fabric_cli.scripts.dev.onboard._create_deployment_pipeline")
+    @patch("usf_fabric_cli.scripts.dev.onboard._create_empty_workspace")
+    @patch("usf_fabric_cli.scripts.dev.onboard.subprocess.run")
+    @patch("usf_fabric_cli.scripts.dev.onboard.generate_project_config")
     def test_stages_flag_limits_scope(
         self,
         mock_gen,
@@ -359,10 +356,10 @@ class TestOnboardFullBootstrap:
 
         assert result is True
 
-    @patch("onboard._create_deployment_pipeline")
-    @patch("onboard._create_empty_workspace")
-    @patch("onboard.subprocess.run")
-    @patch("onboard.generate_project_config")
+    @patch("usf_fabric_cli.scripts.dev.onboard._create_deployment_pipeline")
+    @patch("usf_fabric_cli.scripts.dev.onboard._create_empty_workspace")
+    @patch("usf_fabric_cli.scripts.dev.onboard.subprocess.run")
+    @patch("usf_fabric_cli.scripts.dev.onboard.generate_project_config")
     def test_feature_branch_mode_skips_full_bootstrap(
         self,
         mock_gen,

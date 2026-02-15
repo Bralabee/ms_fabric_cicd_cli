@@ -217,7 +217,7 @@ The CLI will automatically parse this list and add each GUID individually.
 **Verify Permissions**:
 
 ```bash
-python scripts/admin/utilities/debug_ado_access.py --organization your-org --project your-project
+python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access --organization your-org --project your-project
 ```
 
 ---
@@ -303,9 +303,9 @@ echo $FABRIC_CAPACITY_ID
 1. **Use template as reference**:
 
 ```bash
-ls templates/blueprints/
+ls src/usf_fabric_cli/templates/blueprints/
 # Copy a working template
-cp templates/blueprints/basic_etl.yaml config/projects/myorg/myproject.yaml
+cp src/usf_fabric_cli/templates/blueprints/basic_etl.yaml config/projects/myorg/myproject.yaml
 ```
 
 ---
@@ -346,13 +346,13 @@ echo $GITHUB_TOKEN
 1. **Test repository access**:
 
 ```bash
-python scripts/admin/utilities/debug_ado_access.py \
+python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
   --organization your-org \
   --project your-project \
   --repository your-repo
 
 # General connection / API debugger
-python scripts/admin/utilities/debug_connection.py
+python -m usf_fabric_cli.scripts.admin.utilities.debug_connection
 ```
 
 1. **Initialize repository first**:
@@ -362,7 +362,7 @@ python scripts/admin/utilities/debug_connection.py
 make init-github-repo git_owner="your-org" repo="new-repo"
 
 # Azure DevOps
-python scripts/admin/utilities/init_ado_repo.py \
+python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
   --organization your-org \
   --project your-project \
   --repository new-repo
@@ -394,7 +394,7 @@ echo $FABRIC_CAPACITY_ID
 1. **List existing workspaces on capacity**:
 
 ```bash
-python scripts/admin/utilities/list_workspaces.py
+python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
 # Check how many workspaces exist
 ```
 
@@ -473,7 +473,7 @@ fabric-cicd promote --pipeline-name "My Pipeline"
 
 ```bash
 # Verify pipeline exists in Fabric portal
-# or use: python scripts/admin/utilities/list_workspaces.py
+# or use: python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
 ```
 
 1. **Check SP permissions**: The Service Principal must have "Admin" permissions to manage Deployment Pipelines. Enable in Fabric Admin Portal → Tenant Settings:
@@ -603,7 +603,7 @@ python -c "import json; s=json.load(open('src/usf_fabric_cli/schemas/workspace_c
 3. **Run Diagnostics**:
 
    ```bash
-   python scripts/admin/preflight_check.py
+   python -m usf_fabric_cli.scripts.admin.preflight_check
    ```
 
 4. **Check Related Projects**:

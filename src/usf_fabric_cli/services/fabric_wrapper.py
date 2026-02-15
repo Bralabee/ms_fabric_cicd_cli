@@ -37,6 +37,15 @@ logger = logging.getLogger(__name__)
 MINIMUM_CLI_VERSION = "1.0.0"
 RECOMMENDED_CLI_VERSION = "1.0.0"
 
+# Substrings (lowercased) that indicate idempotent "already exists" errors.
+# Centralised here so new patterns only need adding in one place.
+IDEMPOTENT_ERROR_PATTERNS: tuple[str, ...] = (
+    "already exists",
+    "duplicate",
+    "already has a role assigned",
+    "an item with the same name exists",
+)
+
 
 class FabricCLIWrapper:
     """Thin wrapper around Fabric CLI with idempotency and error handling."""
@@ -295,10 +304,7 @@ class FabricCLIWrapper:
             full_msg = f"{error_msg} {output_msg}"
 
             if check_existence and (
-                "already exists" in full_msg.lower()
-                or "duplicate" in full_msg.lower()
-                or "already has a role assigned" in full_msg.lower()
-                or "an item with the same name exists" in full_msg.lower()
+                any(p in full_msg.lower() for p in IDEMPOTENT_ERROR_PATTERNS)
             ):
                 logger.debug("Item already exists - continuing (idempotent)")
                 payload = {"success": True, "data": "already_exists", "reused": True}

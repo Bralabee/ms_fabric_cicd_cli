@@ -22,7 +22,7 @@ This document provides a comprehensive guide to all available blueprint template
 
 ## 1. Minimal Starter
 
-**File:** `templates/blueprints/minimal_starter.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/minimal_starter.yaml`
 
 ### Overview
 
@@ -53,7 +53,7 @@ The absolute minimum viable Fabric workspace for quick prototyping and learning.
 ### Getting Started
 
 ```bash
-python scripts/dev/generate_project.py "My Company" "Quick POC" \
+python -m usf_fabric_cli.scripts.dev.generate_project "My Company" "Quick POC" \
   --template minimal_starter \
   --capacity-id F2
 
@@ -73,7 +73,7 @@ Move to `basic_etl` when you need:
 
 ## 2. Basic ETL
 
-**File:** `templates/blueprints/basic_etl.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/basic_etl.yaml`
 
 ### Overview
 
@@ -103,7 +103,7 @@ Standard medallion architecture (Bronze → Silver → Gold) for production ETL 
 ### Getting Started
 
 ```bash
-python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" \
+python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "Sales Analytics" \
   --template basic_etl \
   --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
 
@@ -114,7 +114,7 @@ make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
 
 ## 3. Advanced Analytics
 
-**File:** `templates/blueprints/advanced_analytics.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/advanced_analytics.yaml`
 
 ### Overview
 
@@ -145,7 +145,7 @@ ML/AI-focused workspace with feature stores, model training, and MLOps.
 
 ## 4. Data Science
 
-**File:** `templates/blueprints/data_science.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/data_science.yaml`
 
 ### Overview
 
@@ -169,7 +169,7 @@ Research-oriented workspace for exploratory analysis and experimentation.
 
 ## 5. Extensive Example
 
-**File:** `templates/blueprints/extensive_example.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/extensive_example.yaml`
 
 ### Overview
 
@@ -194,7 +194,7 @@ Comprehensive reference implementation showcasing all framework capabilities.
 
 ## 6. Medallion
 
-**File:** `templates/blueprints/medallion.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/medallion.yaml`
 
 ### Overview
 
@@ -235,7 +235,7 @@ Industry-standard Medallion Architecture (Bronze → Silver → Gold) for scalab
 ### Getting Started
 
 ```bash
-python scripts/dev/generate_project.py "Acme Corp" "Sales Data" \
+python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "Sales Data" \
   --template medallion \
   --capacity-id ${FABRIC_CAPACITY_ID}
 
@@ -253,7 +253,7 @@ make deploy config=config/projects/acme_corp/sales_data.yaml env=dev
 
 ## 7. Real-Time Streaming
 
-**File:** `templates/blueprints/realtime_streaming.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/realtime_streaming.yaml`
 
 ### Overview
 
@@ -292,7 +292,7 @@ High-throughput streaming platform with real-time analytics and alerting.
 ### Getting Started
 
 ```bash
-python scripts/dev/generate_project.py "TechCorp" "IoT Platform" \
+python -m usf_fabric_cli.scripts.dev.generate_project "TechCorp" "IoT Platform" \
   --template realtime_streaming \
   --capacity-id F16
 
@@ -310,7 +310,7 @@ make deploy config=config/projects/techcorp/iot_platform.yaml env=dev
 
 ## 8. Compliance-Regulated
 
-**File:** `templates/blueprints/compliance_regulated.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/compliance_regulated.yaml`
 
 ### Overview
 
@@ -367,7 +367,7 @@ After deployment, manually configure:
 ### Getting Started
 
 ```bash
-python scripts/dev/generate_project.py "HealthCare Inc" "Patient Data Platform" \
+python -m usf_fabric_cli.scripts.dev.generate_project "HealthCare Inc" "Patient Data Platform" \
   --template compliance_regulated \
   --capacity-id F16
 
@@ -385,7 +385,7 @@ make deploy config=config/projects/healthcare_inc/patient_data_platform.yaml env
 
 ## 9. Data Mesh Domain
 
-**File:** `templates/blueprints/data_mesh_domain.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/data_mesh_domain.yaml`
 
 ### Overview
 
@@ -440,7 +440,7 @@ Clone this template for each domain:
 
 ```bash
 # Create Sales domain workspace
-python scripts/dev/generate_project.py "Enterprise Corp" "Sales Domain" \
+python -m usf_fabric_cli.scripts.dev.generate_project "Enterprise Corp" "Sales Domain" \
   --template data_mesh_domain \
   --capacity-id F16
 
@@ -457,7 +457,7 @@ make deploy config=config/projects/enterprise_corp/sales_domain.yaml env=prod
 
 ## 10. Migration & Hybrid
 
-**File:** `templates/blueprints/migration_hybrid.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/migration_hybrid.yaml`
 
 ### Overview
 
@@ -526,7 +526,7 @@ Facilitates cloud migration with minimal disruption using hybrid architecture.
 ### Getting Started
 
 ```bash
-python scripts/dev/generate_project.py "Legacy Corp" "Cloud Migration" \
+python -m usf_fabric_cli.scripts.dev.generate_project "Legacy Corp" "Cloud Migration" \
   --template migration_hybrid \
   --capacity-id F16
 
@@ -557,7 +557,7 @@ make deploy config=config/projects/legacy_corp/cloud_migration.yaml env=test
 
 ## 11. Specialized Time-Series
 
-**File:** `templates/blueprints/specialized_timeseries.yaml`
+**File:** `src/usf_fabric_cli/templates/blueprints/specialized_timeseries.yaml`
 
 ### Overview
 
@@ -617,7 +617,7 @@ High-performance platform for time-series data, IoT at scale, and operational in
 ### Getting Started
 
 ```bash
-python scripts/dev/generate_project.py "Operations Inc" "Monitoring Platform" \
+python -m usf_fabric_cli.scripts.dev.generate_project "Operations Inc" "Monitoring Platform" \
   --template specialized_timeseries \
   --capacity-id F16
 
@@ -704,13 +704,13 @@ Start Here
 
 ```bash
 # Copy existing template
-cp templates/blueprints/basic_etl.yaml templates/blueprints/my_custom_template.yaml
+cp src/usf_fabric_cli/templates/blueprints/basic_etl.yaml src/usf_fabric_cli/templates/blueprints/my_custom_template.yaml
 
 # Edit to your needs
-vim templates/blueprints/my_custom_template.yaml
+vim src/usf_fabric_cli/templates/blueprints/my_custom_template.yaml
 
 # Use custom template
-python scripts/dev/generate_project.py "My Org" "My Project" \
+python -m usf_fabric_cli.scripts.dev.generate_project "My Org" "My Project" \
   --template my_custom_template
 ```
 
@@ -765,10 +765,10 @@ environments:
 
 ```bash
 # Solution: List available templates
-ls -la templates/blueprints/
+ls -la src/usf_fabric_cli/templates/blueprints/
 
 # Verify template name matches exactly
-python scripts/dev/generate_project.py "Org" "Project" --template basic_etl
+python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Project" --template basic_etl
 ```
 
 **Issue:** Principal permissions errors
@@ -814,7 +814,7 @@ fabric-cicd diagnose --check-capacity "${FABRIC_CAPACITY_ID}"
 
 To contribute a new template:
 
-1. Create YAML file in `templates/blueprints/`
+1. Create YAML file in `src/usf_fabric_cli/templates/blueprints/`
 2. Follow naming convention: `{category}_{purpose}.yaml`
 3. Include comprehensive inline documentation
 4. Add to `generate_project.py` choices list

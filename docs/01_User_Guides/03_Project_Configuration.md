@@ -32,10 +32,10 @@ The `generate_project.py` script creates a customized configuration from a bluep
 conda activate fabric-cli-cicd
 
 # Generate a project configuration
-python scripts/dev/generate_project.py "Organization Name" "Project Name" --template <template_name>
+python -m usf_fabric_cli.scripts.dev.generate_project "Organization Name" "Project Name" --template <template_name>
 
 # Example: Create a real-time streaming project for Acme Corp
-python scripts/dev/generate_project.py "Acme Corp" "IoT Analytics" --template realtime_streaming
+python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "IoT Analytics" --template realtime_streaming
 ```
 
 **Output location:** `config/projects/<org_slug>/<project_slug>.yaml`
@@ -50,11 +50,11 @@ If you prefer manual customization, copy a blueprint template directly:
 
 ```bash
 # List available templates
-ls templates/blueprints/
+ls src/usf_fabric_cli/templates/blueprints/
 
 # Copy a template to your project directory
 mkdir -p config/projects/my_org
-cp templates/blueprints/advanced_analytics.yaml config/projects/my_org/my_project.yaml
+cp src/usf_fabric_cli/templates/blueprints/advanced_analytics.yaml config/projects/my_org/my_project.yaml
 
 # Edit the file
 code config/projects/my_org/my_project.yaml
@@ -139,7 +139,7 @@ warehouses:
 notebooks:
   - name: "bronze_to_silver_transform"
     folder: "Notebooks"
-    file_path: "templates/notebooks/transform.py"  # Import from file
+    file_path: "src/usf_fabric_cli/templates/notebooks/transform.py"  # Import from file
     description: "Data cleansing and validation"
   - name: "silver_to_gold_aggregate"
     folder: "Notebooks"
@@ -350,7 +350,7 @@ make validate config=config/projects/acme_corp/iot_analytics.yaml
 
 ```bash
 # Check CLI version, credentials, and capacity access
-python scripts/admin/preflight_check.py
+python -m usf_fabric_cli.scripts.admin.preflight_check
 ```
 
 ### 4. Review Generated Resources

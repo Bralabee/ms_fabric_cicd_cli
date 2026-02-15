@@ -1,15 +1,21 @@
-import os
-import sys
-import json
+#!/usr/bin/env python3
+"""
+List Workspaces Utility.
 
-# Add src to path
-sys.path.append(os.path.join(os.getcwd(), "src"))
+Lists all Fabric workspaces accessible with current credentials.
+
+Usage:
+    python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
+"""
+
+import json
 
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
 from usf_fabric_cli.utils.config import get_environment_variables
 
 
-def list_workspaces():
+def list_workspaces() -> None:
+    """List all accessible Fabric workspaces."""
     try:
         env_vars = get_environment_variables()
         token = env_vars.get("FABRIC_TOKEN") or "dummy"
@@ -23,7 +29,7 @@ def list_workspaces():
             if isinstance(data, str):
                 try:
                     data = json.loads(data)
-                except:
+                except json.JSONDecodeError:
                     pass
             print(json.dumps(data, indent=2))
         else:
@@ -34,5 +40,9 @@ def list_workspaces():
         print(f"An error occurred: {e}")
 
 
-if __name__ == "__main__":
+def main() -> None:
     list_workspaces()
+
+
+if __name__ == "__main__":
+    main()

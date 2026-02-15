@@ -227,7 +227,7 @@ make deploy config=config/project.yaml env=prod
 
 2. **Microsoft Fabric CLI** (Optional for CLI-based operations)
    ```bash
-   python scripts/admin/preflight_check.py --auto-install
+   python -m usf_fabric_cli.scripts.admin.preflight_check --auto-install
    ```
 
 3. **Authentication Configuration**

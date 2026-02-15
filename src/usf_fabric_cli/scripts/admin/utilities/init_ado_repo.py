@@ -6,22 +6,16 @@ Initializes an empty Azure DevOps repository with a main branch and README.
 This is required because Fabric Git integration requires an existing branch.
 
 Usage:
-    python scripts/utilities/init_ado_repo.py --organization <org> --project <proj> --repository <repo>
+    python scripts/utilities/init_ado_repo.py \
+        --organization <org> --project <proj> --repository <repo>
 """
 
-import sys
 import logging
 import requests
-from pathlib import Path
 from typing import Optional
 import typer
 from rich.console import Console
 from azure.identity import ClientSecretCredential
-
-# Add project root and src to path to allow imports
-project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(project_root))
-sys.path.append(str(project_root / "src"))
 
 from usf_fabric_cli.utils.secrets import FabricSecrets
 
@@ -37,7 +31,9 @@ def get_ado_token(secrets: FabricSecrets) -> str:
     """Get Azure DevOps access token using Service Principal."""
     if not secrets.validate_service_principal():
         raise ValueError(
-            "Service Principal credentials (CLIENT_ID, CLIENT_SECRET, TENANT_ID) are required."
+            "Service Principal credentials "
+            "(CLIENT_ID, CLIENT_SECRET, TENANT_ID) "
+            "are required."
         )
 
     console.print("[blue]Acquiring Azure DevOps access token...[/blue]")
@@ -54,7 +50,11 @@ def get_repo_id(
     organization: str, project: str, repository_name: str, token: str
 ) -> Optional[str]:
     """Get Repository ID from name. Returns None if not found."""
-    url = f"https://dev.azure.com/{organization}/{project}/_apis/git/repositories/{repository_name}?api-version=7.1"
+    url = (
+        f"https://dev.azure.com/{organization}/{project}"
+        f"/_apis/git/repositories/{repository_name}"
+        f"?api-version=7.1"
+    )
     headers = {"Authorization": f"Bearer {token}"}
 
     response = requests.get(url, headers=headers)
@@ -110,7 +110,8 @@ def main(
 
         if not repo_id:
             console.print(
-                f"[yellow]Repository '{repository}' not found. Attempting to create it...[/yellow]"
+                f"[yellow]Repository '{repository}' not found. "
+                f"Attempting to create it...[/yellow]"
             )
             repo_id = create_repo(organization, project, repository, token)
             console.print(f"[green]Created Repository ID: {repo_id}[/green]")
@@ -118,7 +119,11 @@ def main(
             console.print(f"[green]Found Repository ID: {repo_id}[/green]")
 
         # Initialize Repo/Branch
-        url = f"https://dev.azure.com/{organization}/{project}/_apis/git/repositories/{repo_id}/pushes?api-version=7.1"
+        url = (
+            f"https://dev.azure.com/{organization}/{project}"
+            f"/_apis/git/repositories/{repo_id}"
+            f"/pushes?api-version=7.1"
+        )
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
@@ -139,7 +144,12 @@ def main(
                             "changeType": "add",
                             "item": {"path": "/README.md"},
                             "newContent": {
-                                "content": f"# Fabric Integration Repo\n\nInitialized by Fabric CLI CI/CD for branch {branch}",
+                                "content": (
+                                    "# Fabric Integration Repo"
+                                    "\n\nInitialized by "
+                                    "Fabric CLI CI/CD "
+                                    f"for branch {branch}"
+                                ),
                                 "contentType": "rawtext",
                             },
                         }
@@ -153,11 +163,14 @@ def main(
 
         if response.status_code == 201:
             console.print(
-                f"[green]✅ Successfully initialized branch '{branch}' in repository '{repository}'.[/green]"
+                f"[green]✅ Successfully initialized "
+                f"branch '{branch}' in repository "
+                f"'{repository}'.[/green]"
             )
         elif response.status_code == 400 and "TF401021" in response.text:
             console.print(
-                f"[yellow]⚠️  Branch '{branch}' already exists. Skipping initialization.[/yellow]"
+                f"[yellow]⚠️  Branch '{branch}' already "
+                f"exists. Skipping initialization.[/yellow]"
             )
         else:
             console.print(

@@ -18,8 +18,8 @@ prerequisites:
   - local-deployment
 
 learning_outcomes:
-  - "Initialize Azure DevOps repositories with `python scripts/admin/utilities/init_ado_repo.py`"
-  - "Debug ADO connectivity with `python scripts/admin/utilities/debug_ado_access.py`"
+  - "Initialize Azure DevOps repositories with `python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo`"
+  - "Debug ADO connectivity with `python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access`"
   - "Use Docker for repo initialization with `make docker-init-repo`"
   - "Configure `git_repo` and `git_branch` in workspace YAML"
   - Understand Git sync behavior in Fabric workspaces
@@ -78,9 +78,9 @@ steps:
       
       | Purpose | Command |
       |---------|---------|
-      | Initialize ADO repo | `python scripts/admin/utilities/init_ado_repo.py` |
+      | Initialize ADO repo | `python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo` |
       | Docker repo init | `make docker-init-repo org="..." project="..." repo="..."` |
-      | Debug ADO access | `python scripts/admin/utilities/debug_ado_access.py` |
+      | Debug ADO access | `python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access` |
     tips:
       - Git integration requires a repository with at least one commit
       - The framework uses REST API because Fabric CLI doesn't support Git yet
@@ -143,7 +143,7 @@ steps:
       language: bash
       content: |
         # Debug Azure DevOps access
-        python scripts/admin/utilities/debug_ado_access.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
           --organization "acme-corp" \
           --project "FabricProjects"
         
@@ -196,7 +196,7 @@ steps:
       language: bash
       content: |
         # Initialize a new Azure DevOps repository
-        python scripts/admin/utilities/init_ado_repo.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
           --organization "acme-corp" \
           --project "FabricProjects" \
           --repository "sales-analytics-repo" \
@@ -437,7 +437,7 @@ steps:
       
       ```bash
       # Fix:
-      python scripts/admin/utilities/init_ado_repo.py \
+      python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
         --organization "acme-corp" \
         --project "FabricProjects" \
         --repository "sales-analytics-repo"
@@ -453,7 +453,7 @@ steps:
       
       ```bash
       # Debug:
-      python scripts/admin/utilities/debug_ado_access.py \
+      python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
         --organization "acme-corp" \
         --project "FabricProjects"
       ```
@@ -529,8 +529,8 @@ steps:
       
       | Task | Command |
       |------|---------|
-      | Debug ADO access | `python scripts/admin/utilities/debug_ado_access.py --organization "..." --project "..."` |
-      | Initialize repo (local) | `python scripts/admin/utilities/init_ado_repo.py --organization "..." --project "..." --repository "..."` |
+      | Debug ADO access | `python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access --organization "..." --project "..."` |
+      | Initialize repo (local) | `python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo --organization "..." --project "..." --repository "..."` |
       | Initialize repo (Docker) | `make docker-init-repo org="..." project="..." repo="..."` |
       | Deploy with Git | `make deploy config=... env=dev` |
       | List remote branches | `git ls-remote --heads <repo-url>` |
