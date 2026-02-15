@@ -259,9 +259,7 @@ class FabricDeployer:
                     else:
                         progress.update(
                             task,
-                            description=(
-                                "⚠️ Deployment Pipeline setup had errors"
-                            ),
+                            description=("⚠️ Deployment Pipeline setup had errors"),
                         )
                         logger.warning(
                             "Deployment Pipeline setup failed — "
@@ -1215,9 +1213,7 @@ class FabricDeployer:
                 else:
                     console.print(f"    [red]✗ Assignment failed: {error}[/red]")
                     if error_detail:
-                        logger.debug(
-                            "Assignment error detail: %s", error_detail
-                        )
+                        logger.debug("Assignment error detail: %s", error_detail)
 
         console.print(f"  [green]Pipeline '{pipeline_name}' configured.[/green]")
         return True

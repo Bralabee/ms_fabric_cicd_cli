@@ -177,8 +177,7 @@ class CustomSolutionAnalyzer:
                         " has high maintenance burden"
                     ),
                     "target_reduction": (
-                        "Potential reduction to ~270 LOC"
-                        " (85% reduction)"
+                        "Potential reduction to ~270 LOC" " (85% reduction)"
                     ),
                 }
             )
@@ -188,8 +187,7 @@ class CustomSolutionAnalyzer:
                 {
                     "priority": "MEDIUM",
                     "action": (
-                        f"Replace {len(cli_replaceable)}"
-                        " components with Fabric CLI"
+                        f"Replace {len(cli_replaceable)}" " components with Fabric CLI"
                     ),
                     "reason": "These components have direct CLI equivalents",
                     "components": [c["name"] for c in cli_replaceable],
