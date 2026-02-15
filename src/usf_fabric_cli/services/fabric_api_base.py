@@ -11,16 +11,16 @@ instead of duplicating the same ~60 lines of init / retry / refresh code.
 
 import logging
 import time
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import requests
 
 from usf_fabric_cli.utils.retry import (
-    is_retryable_exception,
-    calculate_backoff,
-    DEFAULT_MAX_RETRIES,
     DEFAULT_BASE_DELAY,
     DEFAULT_MAX_DELAY,
+    DEFAULT_MAX_RETRIES,
+    calculate_backoff,
+    is_retryable_exception,
 )
 
 if TYPE_CHECKING:

@@ -6,7 +6,7 @@ workspace:
   display_name: "USF Fabric CLI CICD Workspace"
   description: "Workspace for USF Fabric CLI CICD Project"
   capacity_id: "${FABRIC_CAPACITY_ID}"
-  
+
   # Git integration
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
@@ -25,7 +25,7 @@ lakehouses:
   - name: "raw_lakehouse"
     folder: "Bronze"
     description: "Raw data landing zone"
-  
+
   - name: "processed_lakehouse"
     folder: "Silver"
     description: "Processed data zone"
@@ -52,14 +52,14 @@ pipelines:
 principals:
   - id: "${DEV_ADMIN_OBJECT_ID}"
     role: "Admin"
-  
+
   - id: "${AZURE_CLIENT_ID}"
     role: "Contributor"
 
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "Mandatory Additional Admin"
-  
+
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "Mandatory Additional Contributor"

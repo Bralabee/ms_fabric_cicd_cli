@@ -3,13 +3,14 @@ Unit tests for secrets management module
 """
 
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from usf_fabric_cli.utils.secrets import (
     FabricSecrets,
-    get_secrets,
     get_environment_variables,
+    get_secrets,
 )
 
 

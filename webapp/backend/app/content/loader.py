@@ -4,11 +4,11 @@ Content Loader
 Loads scenario definitions from YAML files.
 """
 
-import yaml
 from pathlib import Path
 from typing import Dict
 
-from app.models import Scenario, Step, CodeBlock, DifficultyLevel, StepType
+import yaml
+from app.models import CodeBlock, DifficultyLevel, Scenario, Step, StepType
 
 
 def load_scenario_from_yaml(file_path: Path) -> Scenario:

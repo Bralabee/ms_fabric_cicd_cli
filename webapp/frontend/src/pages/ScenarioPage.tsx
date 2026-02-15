@@ -1,9 +1,9 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { 
-  fetchScenario, 
-  fetchProgress, 
+import {
+  fetchScenario,
+  fetchProgress,
   updateProgress
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -13,11 +13,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CodeBlock } from '@/components/CodeBlock'
 import { MarkdownContent } from '@/components/MarkdownContent'
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Clock, 
-  CheckCircle2, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
   AlertTriangle,
   Lightbulb,
   BookOpen,
@@ -95,8 +95,8 @@ export default function ScenarioPage() {
 
   // Calculate progress
   const completedSteps = progress?.scenario_progress[scenarioId!]?.completed_steps || []
-  const progressPercent = scenario 
-    ? (completedSteps.length / scenario.steps.length) * 100 
+  const progressPercent = scenario
+    ? (completedSteps.length / scenario.steps.length) * 100
     : 0
 
   const isStepCompleted = (stepId: string) => completedSteps.includes(stepId)
@@ -105,7 +105,7 @@ export default function ScenarioPage() {
     if (currentStep && !isStepCompleted(currentStep.id)) {
       updateProgressMutation.mutate({ stepId: currentStep.id, completed: true })
     }
-    
+
     // Auto-advance to next step
     if (currentStepIndex < (scenario?.steps.length || 0) - 1) {
       setCurrentStepIndex(prev => prev + 1)
@@ -378,9 +378,9 @@ export default function ScenarioPage() {
                   {!isStepCompleted(currentStep.id) && (
                     <Button
                       variant="secondary"
-                      onClick={() => updateProgressMutation.mutate({ 
-                        stepId: currentStep.id, 
-                        completed: true 
+                      onClick={() => updateProgressMutation.mutate({
+                        stepId: currentStep.id,
+                        completed: true
                       })}
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />

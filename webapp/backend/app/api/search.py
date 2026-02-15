@@ -5,9 +5,9 @@ Endpoints for searching scenario content.
 """
 
 from typing import List
-from fastapi import APIRouter, Request, Query
 
 from app.models import SearchResult
+from fastapi import APIRouter, Query, Request
 
 router = APIRouter()
 

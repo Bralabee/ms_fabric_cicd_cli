@@ -13,7 +13,7 @@ interface CodeBlockProps {
 
 export function CodeBlock({ codeBlock, className }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
-  
+
   // Support both 'content' (backend) and 'code' (legacy) field names
   const codeContent = codeBlock.content || codeBlock.code || ''
 

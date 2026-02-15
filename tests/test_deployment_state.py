@@ -10,12 +10,13 @@ Tests verify:
 
 import json
 from unittest.mock import MagicMock
+
 import pytest
 
 from usf_fabric_cli.services.deployment_state import (
+    CreatedItem,
     DeploymentState,
     ItemType,
-    CreatedItem,
 )
 
 

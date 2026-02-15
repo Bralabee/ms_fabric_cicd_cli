@@ -26,16 +26,17 @@ Orchestrates:
 """
 
 import argparse
-import subprocess
 import logging
 import os
+import subprocess
 from pathlib import Path
 from typing import Optional, Set
 
 from dotenv import load_dotenv
-from usf_fabric_cli.scripts.dev.generate_project import generate_project_config
+
 from usf_fabric_cli.scripts.admin.utilities.init_ado_repo import init_ado_repo
 from usf_fabric_cli.scripts.admin.utilities.init_github_repo import init_github_repo
+from usf_fabric_cli.scripts.dev.generate_project import generate_project_config
 
 # Load .env so all env-var reads (GITHUB_TOKEN, FABRIC_CAPACITY_ID, etc.) work
 # consistently with the rest of the project.
@@ -185,8 +186,8 @@ def _create_empty_workspace(
         return None
 
     try:
-        from usf_fabric_cli.utils.config import get_environment_variables
         from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
+        from usf_fabric_cli.utils.config import get_environment_variables
 
         env_vars = get_environment_variables()
         fabric = FabricCLIWrapper(env_vars["FABRIC_TOKEN"])
@@ -281,10 +282,10 @@ def _create_deployment_pipeline(
         return True
 
     try:
-        from usf_fabric_cli.utils.config import get_environment_variables
         from usf_fabric_cli.services.deployment_pipeline import (
             FabricDeploymentPipelineAPI,
         )
+        from usf_fabric_cli.utils.config import get_environment_variables
 
         env_vars = get_environment_variables()
         api = FabricDeploymentPipelineAPI(access_token=env_vars["FABRIC_TOKEN"])
@@ -636,9 +637,8 @@ def onboard_project(
                 # Look up by name via Fabric REST API
                 try:
                     import requests as req
-                    from usf_fabric_cli.utils.config import (
-                        get_environment_variables,
-                    )
+
+                    from usf_fabric_cli.utils.config import get_environment_variables
 
                     env_vars = get_environment_variables()
                     token = env_vars["FABRIC_TOKEN"]

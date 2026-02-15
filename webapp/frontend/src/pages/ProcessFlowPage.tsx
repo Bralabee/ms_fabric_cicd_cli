@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  ArrowRight, 
+import {
+  ArrowRight,
   Terminal,
   Container,
   GitBranch,
@@ -352,7 +352,7 @@ function FlowDiagram({ workflow }: { workflow: WorkflowDefinition }) {
               const isActive = activeStep === step.id
               return (
                 <div key={step.id} className="flex items-start flex-shrink-0">
-                  <div 
+                  <div
                     className="flex flex-col items-center cursor-pointer group"
                     onMouseEnter={() => setActiveStep(step.id)}
                     onMouseLeave={() => setActiveStep(null)}
@@ -365,12 +365,12 @@ function FlowDiagram({ workflow }: { workflow: WorkflowDefinition }) {
                     )}>
                       <Icon className="h-7 w-7" />
                     </div>
-                    
+
                     {/* Step Number */}
                     <div className="mt-2 h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
                       {index + 1}
                     </div>
-                    
+
                     {/* Step Label */}
                     <span className={cn(
                       "mt-1 text-sm font-medium text-center max-w-[100px] transition-colors",
@@ -396,7 +396,7 @@ function FlowDiagram({ workflow }: { workflow: WorkflowDefinition }) {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Arrow */}
                   {index < workflow.steps.length - 1 && (
                     <div className="flex items-center h-16 mx-2 lg:mx-4">
@@ -428,7 +428,7 @@ function FlowDiagram({ workflow }: { workflow: WorkflowDefinition }) {
                       <div className="w-0.5 h-8 bg-border mt-2" />
                     )}
                   </div>
-                  
+
                   {/* Step Content */}
                   <div className="flex-1 pb-4">
                     <div className="flex items-center gap-2 mb-1">
@@ -483,7 +483,7 @@ export default function ProcessFlowPage() {
           Visual guides showing the end-to-end process for each deployment approach.
           Hover over steps to see commands and expected outputs.
         </p>
-        
+
         {/* Quick Legend */}
         <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
           <div className="flex items-center gap-2">

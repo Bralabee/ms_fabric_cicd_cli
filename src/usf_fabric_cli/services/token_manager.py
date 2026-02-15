@@ -21,8 +21,8 @@ from datetime import datetime, timezone
 from typing import Callable, Optional
 
 try:
-    from azure.identity import ClientSecretCredential
     from azure.core.credentials import AccessToken
+    from azure.identity import ClientSecretCredential
 
     AZURE_IDENTITY_AVAILABLE = True
 except ImportError:

@@ -516,7 +516,7 @@ See [Blueprint Catalog](docs/01_User_Guides/07_Blueprint_Catalog.md) for configu
 This project incorporates key learnings from the original implementation:
 
 1. **Build vs Buy Assessment** - Use official tools wherever possible
-2. **Progressive Complexity** - Start simple, add features incrementally  
+2. **Progressive Complexity** - Start simple, add features incrementally
 3. **Stakeholder Alignment** - Configuration-driven, easy to understand
 4. **Maintenance Focus** - Minimal custom code, maximum leverage
 5. **Evolution Strategy** - Built to adapt as Fabric CLI evolves

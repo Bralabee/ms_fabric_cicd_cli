@@ -135,7 +135,7 @@ python src/fabric_deploy.py deploy config/project.yaml \
 ```yaml
 principals:
   - id: "user@company.com"        # Users
-  - id: "team@company.com"        # Groups  
+  - id: "team@company.com"        # Groups
   - id: "sp-object-id"            # Service principals
     role: "Contributor"
 ```

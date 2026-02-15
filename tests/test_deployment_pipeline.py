@@ -12,16 +12,15 @@ Tests verify:
 """
 
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
 
 from usf_fabric_cli.services.deployment_pipeline import (
-    FabricDeploymentPipelineAPI,
     DeploymentStage,
+    FabricDeploymentPipelineAPI,
 )
-
 
 # ── Fixtures ───────────────────────────────────────────────────────
 

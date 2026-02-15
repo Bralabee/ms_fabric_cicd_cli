@@ -3,6 +3,7 @@ Unit tests for templating engine
 """
 
 import json
+
 import pytest
 
 from usf_fabric_cli.utils.templating import (

@@ -2,9 +2,10 @@
 Pydantic models for the Guide API.
 """
 
-from typing import Optional, List
-from pydantic import BaseModel, Field
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class DifficultyLevel(str, Enum):

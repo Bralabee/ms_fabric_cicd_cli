@@ -7,7 +7,7 @@ workspace:
   description: "ETL workspace for data analytics"
   capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
   domain: "${FABRIC_DOMAIN_NAME}"       # Optional: Assign to a Fabric Domain
-  
+
   # Git integration (optional)
   git_repo: "${GIT_REPO_URL}"  # Environment variable substitution
   git_branch: "main"
@@ -26,11 +26,11 @@ lakehouses:
   - name: "raw_data_lakehouse"
     folder: "Bronze"
     description: "Raw data from source systems"
-  
+
   - name: "processed_data_lakehouse"
     folder: "Silver"
     description: "Cleaned and validated data"
-  
+
   - name: "analytics_lakehouse"
     folder: "Gold"
     description: "Business-ready analytics data"
@@ -47,22 +47,22 @@ notebooks:
     folder: "Notebooks"
     description: "Data ingestion from source systems"
     # file_path: "notebooks/data_ingestion.py"  # Optional: import from file
-  
+
   - name: "data_transformation"
 
 # Security & Access Control
 # Security & Access Control
 # Principals (users/service principals) to add to workspace
 # NOTE: Use Object IDs (GUIDs) for all principals. Email addresses are not supported.
-# PRO TIP: The 'id' field supports comma-separated lists (e.g., "id1,id2,id3") 
+# PRO TIP: The 'id' field supports comma-separated lists (e.g., "id1,id2,id3")
 # allowing you to inject a group of users via a single environment variable.
 principals:
   - id: "${DEV_ADMIN_OBJECT_ID}"  # User/Group Object ID
     role: "Admin"
-  
+
   - id: "${DEV_CONTRIBUTOR_OBJECT_ID}"  # User/Group Object ID
     role: "Contributor"
-  
+
   # Service principal for automation
   - id: "${AZURE_CLIENT_ID}"  # Service Principal Object ID (Required)
     role: "Contributor"
@@ -71,13 +71,13 @@ principals:
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "Mandatory Additional Admin"
-  
+
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "Mandatory Additional Contributor"
 
   # Example of manual entry (Service Principal):
-  # - id: "88e55555-5555-5555-5555-555555555555" 
+  # - id: "88e55555-5555-5555-5555-555555555555"
   #   role: "Contributor"
   #   folder: "Notebooks"
   #   description: "Data cleaning and transformation"

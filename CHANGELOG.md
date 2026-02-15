@@ -284,17 +284,17 @@ All notable changes to this project will be documented in this file.
   - Automatic refresh 60 seconds before expiry
   - Fabric CLI re-authentication support
   - Factory function `create_token_manager_from_env()` for environment-based setup
-  
+
 - **Deployment State** (`services/deployment_state.py`): Atomic rollback for mid-deployment failures
   - LIFO (Last-In-First-Out) rollback of created items
   - Checkpoint persistence for crash recovery
   - Support for all item types: workspace, lakehouse, warehouse, notebook, pipeline, etc.
-  
+
 - **Shared Retry Utilities** (`utils/retry.py`): Extracted exponential backoff logic
   - `retry_with_backoff` decorator
   - HTTP-specific retry helpers
   - Jitter to prevent thundering herd
-  
+
 - **New CLI Flag**: `--rollback-on-failure` for deploy command
   - Automatically deletes created items if deployment fails
   - Shows rollback progress and summary
@@ -347,7 +347,7 @@ All notable changes to this project will be documented in this file.
 - **Package Restructure Complete**: Full migration from `core` to `usf_fabric_cli` package
   - All module paths updated to `usf_fabric_cli.{services,utils,commands}`
   - CLI entry points: `fabric-cicd`, `usf-fabric` point to `usf_fabric_cli.cli:app`
-  
+
 - **Script Reorganization**:
   - `scripts/preflight_check.py` → `scripts/admin/preflight_check.py`
   - `scripts/generate_project.py` → `scripts/dev/generate_project.py`
@@ -384,7 +384,7 @@ All notable changes to this project will be documented in this file.
     - Environment variable placeholders and Jinja2 templating
     - Mandatory security principals requirements
     - Post-generation checklist and common customizations
-  
+
 - **README.md Enhancements**:
   - **Make Targets Reference** table (17 targets): Core operations, Docker operations, testing, and webapp targets
   - **CLI Flags Reference** for `deploy` and `destroy` commands with all available flags

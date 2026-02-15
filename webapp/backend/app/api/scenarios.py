@@ -5,9 +5,9 @@ Endpoints for retrieving and navigating scenario content.
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Request
 
-from app.models import Scenario, ScenarioSummary, Category
+from app.models import Category, Scenario, ScenarioSummary
+from fastapi import APIRouter, HTTPException, Request
 
 router = APIRouter()
 

@@ -36,7 +36,7 @@ Example `config/my_project.yaml`:
 workspace:
   name: "My_Project_Workspace"
   capacity_id: "${FABRIC_CAPACITY_ID}"
-  
+
 principals:
   - id: "d0555555-5555-5555-5555-555555555555" # User Object ID
     role: "Admin"

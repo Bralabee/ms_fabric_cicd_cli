@@ -9,7 +9,7 @@ workspace:
   description: "Bridge between legacy systems and modern cloud analytics"
   capacity_id: "${FABRIC_CAPACITY_ID}"
   domain: "${FABRIC_DOMAIN_NAME}"
-  
+
   # Git Integration
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
@@ -28,11 +28,11 @@ lakehouses:
   - name: "legacy_data_landing"
     folder: "Legacy"
     description: "Landing zone for data from on-premises systems"
-  
+
   - name: "migration_staging"
     folder: "Staging"
     description: "Temporary staging for data validation during migration"
-  
+
   - name: "modernized_data_lake"
     folder: "Modern"
     description: "Cloud-native data lake (target architecture)"
@@ -42,7 +42,7 @@ warehouses:
   - name: "legacy_compatibility_dw"
     folder: "Legacy"
     description: "SQL warehouse compatible with legacy queries"
-  
+
   - name: "modern_analytics_dw"
     folder: "Modern"
     description: "Optimized cloud warehouse (target architecture)"
@@ -54,12 +54,12 @@ resources:
     name: "mirrored_onprem_erp"
     description: "Real-time mirror of on-premises ERP SQL Server database"
     folder: "Legacy"
-  
+
   - type: "MirroredDatabase"
     name: "mirrored_azure_sql"
     description: "Mirror of Azure SQL Database (hybrid cloud)"
     folder: "Transition"
-  
+
   # Mirror Snowflake (multi-cloud scenario)
   - type: "MirroredDatabase"
     name: "mirrored_snowflake_dw"
@@ -89,19 +89,19 @@ notebooks:
   - name: "data_migration_validator"
     folder: "Validation"
     description: "Validate data completeness and accuracy post-migration"
-  
+
   - name: "schema_mapping_transformer"
     folder: "Transition"
     description: "Transform legacy schemas to modern data models"
-  
+
   - name: "incremental_migration_orchestrator"
     folder: "Transition"
     description: "Manage incremental migration batches"
-  
+
   - name: "legacy_query_translator"
     folder: "Transition"
     description: "Translate legacy SQL to Fabric-compatible queries"
-  
+
   - name: "performance_comparison"
     folder: "Validation"
     description: "Compare query performance: legacy vs modern"
@@ -111,15 +111,15 @@ pipelines:
   - name: "phase1_lift_and_shift"
     folder: "Transition"
     description: "Phase 1: Copy data from on-prem to cloud as-is"
-  
+
   - name: "phase2_schema_modernization"
     folder: "Transition"
     description: "Phase 2: Transform schemas to cloud-native models"
-  
+
   - name: "phase3_cutover_orchestrator"
     folder: "Transition"
     description: "Phase 3: Cutover automation with rollback capability"
-  
+
   - name: "hybrid_data_sync"
     folder: "Transition"
     description: "Ongoing hybrid sync during transition period"
@@ -137,12 +137,12 @@ resources:
     name: "connection_onprem_sql"
     description: "Connection to on-premises SQL Server via gateway"
     folder: "Legacy"
-  
+
   - type: "Connection"
     name: "connection_snowflake"
     description: "Connection to Snowflake (multi-cloud)"
     folder: "Transition"
-  
+
   - type: "Connection"
     name: "connection_aws_s3"
     description: "Connection to AWS S3 buckets (multi-cloud)"
@@ -155,27 +155,27 @@ principals:
   - id: "${MIGRATION_PM_OID}"
     role: "Admin"
     description: "MANDATORY: Migration Program Manager - overall accountability"
-  
+
   # Migration Engineering Team
   - id: "${MIGRATION_TEAM_GROUP_OID}"
     role: "Contributor"
     description: "Migration engineering team - execute migration tasks"
-  
+
   # Legacy System Admins (Transitional)
   - id: "${LEGACY_ADMIN_GROUP_OID}"
     role: "Contributor"
     description: "Legacy system administrators - support transition"
-  
+
   # Cloud Platform Team
   - id: "${CLOUD_TEAM_GROUP_OID}"
     role: "Contributor"
     description: "Cloud platform team - target environment support"
-  
+
   # Business Validation Team
   - id: "${BUSINESS_VALIDATION_GROUP_OID}"
     role: "Viewer"
     description: "Business users - validate migrated data and reports"
-  
+
   # Automation Service Principal
   - id: "${AZURE_CLIENT_ID}"
     role: "Contributor"
@@ -185,7 +185,7 @@ principals:
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "MANDATORY: Enterprise security admin principal"
-  
+
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "MANDATORY: Enterprise contributor principal"
@@ -196,12 +196,12 @@ environments:
     workspace:
       capacity_id: "F8"
       name: "Migration_Dev"
-  
+
   test:
     workspace:
       capacity_id: "F16"
       name: "Migration_Test"
-  
+
   prod:
     workspace:
       capacity_id: "F64"

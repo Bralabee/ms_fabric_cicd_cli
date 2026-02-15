@@ -4,9 +4,9 @@
 id: troubleshooting
 title: Troubleshooting Guide
 description: |
-  Master debugging with the framework's diagnostic tools. Learn to use 
-  `make diagnose` for preflight checks, `python -m usf_fabric_cli.scripts.admin.preflight_check` 
-  for detailed diagnostics, review audit logs in `audit_logs/`, and debug 
+  Master debugging with the framework's diagnostic tools. Learn to use
+  `make diagnose` for preflight checks, `python -m usf_fabric_cli.scripts.admin.preflight_check`
+  for detailed diagnostics, review audit logs in `audit_logs/`, and debug
   ADO connectivity with `debug_ado_access.py`. Covers all common error scenarios.
 difficulty: intermediate
 estimated_duration_minutes: 20
@@ -45,9 +45,9 @@ steps:
     type: info
     content: |
       When something goes wrong, follow this systematic approach:
-      
+
       ## Debugging Workflow
-      
+
       ```
       1. Run preflight check → make diagnose
       2. Check audit logs → audit_logs/fabric_operations_*.jsonl
@@ -55,9 +55,9 @@ steps:
       4. Test connectivity → debug_ado_access.py
       5. Validate config → make validate
       ```
-      
+
       ## Diagnostic Commands
-      
+
       | Purpose | Command |
       |---------|---------|
       | **Preflight check** | `make diagnose` |
@@ -67,9 +67,9 @@ steps:
       | **Debug ADO access** | `python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access` |
       | **List workspaces** | `python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces` |
       | **List workspace items** | `python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items --workspace "..."` |
-      
+
       ## Common Issue Categories
-      
+
       | Category | Likely Cause |
       |----------|--------------|
       | **Environment** | Wrong conda environment, missing packages |
@@ -86,11 +86,11 @@ steps:
     title: "Step 1: Run Preflight Diagnostics"
     type: command
     content: |
-      The preflight check is your FIRST troubleshooting step. It validates 
+      The preflight check is your FIRST troubleshooting step. It validates
       everything automatically:
-      
+
       ## What It Checks
-      
+
       | Check | What It Validates |
       |-------|-------------------|
       | Environment | Python version, conda activation |
@@ -104,37 +104,37 @@ steps:
       content: |
         # Quick check using Make (RECOMMENDED)
         make diagnose
-        
+
         # Run detailed diagnostics
         python -m usf_fabric_cli.scripts.admin.preflight_check
-        
+
         # Docker environment check
         make docker-diagnose ENVFILE=.env
     expected_output: |
       ╔══════════════════════════════════════════════════════════════╗
       ║            Fabric CLI CI/CD Preflight Check                  ║
       ╚══════════════════════════════════════════════════════════════╝
-      
+
       [Environment]
       ✓ Python version: 3.11.9
       ✓ Conda environment: fabric-cli-cicd
-      
+
       [Fabric CLI]
       ✓ Fabric CLI installed (version 0.1.5)
-      
+
       [Credentials]
       ✓ AZURE_CLIENT_ID: Set
       ✓ AZURE_CLIENT_SECRET: Set
       ✓ AZURE_TENANT_ID: Set
       ✓ FABRIC_CAPACITY_ID: Set
-      
+
       [Authentication]
       ✓ Token generation successful
-      
+
       [Connectivity]
       ✓ Fabric API accessible
       ✓ Capacity access verified
-      
+
       ════════════════════════════════════════════════════════════════
       ✅ All preflight checks passed!
       ════════════════════════════════════════════════════════════════
@@ -146,20 +146,20 @@ steps:
     title: "Step 2: Check Audit Logs"
     type: command
     content: |
-      Every operation is logged to `audit_logs/`. These logs contain detailed 
+      Every operation is logged to `audit_logs/`. These logs contain detailed
       error information that console output may not show.
-      
+
       ## Log Location
-      
+
       ```
       audit_logs/
       ├── fabric_operations_2025-01-15.jsonl   # Today's operations
       ├── fabric_operations_2025-01-14.jsonl   # Yesterday
       └── fabric_cli_telemetry.jsonl           # CLI usage stats
       ```
-      
+
       ## Log Format (JSONL)
-      
+
       Each line is a JSON object with:
       - "`timestamp` - When it happened"
       - "`operation` - What was being done"
@@ -171,16 +171,16 @@ steps:
       content: |
         # View today's audit log
         cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl
-        
+
         # Find errors only
         grep '"status":"failure"' audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl
-        
+
         # Pretty print JSON (requires jq)
         cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl | jq .
-        
+
         # Last 20 entries
         tail -20 audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl
-        
+
         # Search for specific operation
         grep "create_workspace" audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl
     expected_output: |
@@ -198,17 +198,17 @@ steps:
     type: info
     content: |
       ## Symptom
-      
+
       ```
       ModuleNotFoundError: No module named 'typer'
       ModuleNotFoundError: No module named 'rich'
       ModuleNotFoundError: No module named 'yaml'
       ```
-      
+
       ## Cause
-      
+
       Running commands in `base` or wrong conda environment.
-      
+
       ## Solution
     code:
       language: bash
@@ -216,27 +216,27 @@ steps:
         # Check which environment is active
         conda env list
         # Look for * next to fabric-cli-cicd
-        
+
         # If wrong environment, activate correct one
         conda activate fabric-cli-cicd
-        
+
         # Verify activation
         which python
         # Should show: /home/user/miniconda3/envs/fabric-cli-cicd/bin/python
-        
+
         # Verify imports work
         python -c "import typer; import rich; import yaml; print('All imports OK')"
-        
+
         # If environment doesn't exist, create it
         conda env create -f environment.yml
     expected_output: |
       # conda env list output (correct):
       base                     /home/user/miniconda3
       fabric-cli-cicd       *  /home/user/miniconda3/envs/fabric-cli-cicd
-      
+
       # python path (correct):
       /home/user/miniconda3/envs/fabric-cli-cicd/bin/python
-      
+
       # import test (correct):
       All imports OK
     tips:
@@ -250,16 +250,16 @@ steps:
     type: info
     content: |
       ## Symptom
-      
+
       ```
       ModuleNotFoundError: No module named 'usf_fabric_cli'
       ```
-      
+
       ## Cause
-      
-      Running commands from inside the `src/` directory. 
+
+      Running commands from inside the `src/` directory.
       Python cannot resolve the package structure when CWD is inside the package itself.
-      
+
       ## Solution
     code:
       language: powershell
@@ -267,12 +267,12 @@ steps:
         # WRONG - Do not run from src/
         cd src
         python -m usf_fabric_cli.cli ...
-        
+
         # CORRECT - Always run from project root
         cd ..
         # Verify you are at root (should see setup.py, pyproject.toml)
         ls
-        
+
         # Run command
         python -m usf_fabric_cli.cli ...
     expected_output: |
@@ -286,11 +286,11 @@ steps:
     type: info
     content: |
       ## Scenario
-      
+
       You need to add 50+ users or groups to a workspace managed by a single environment variable.
-      
+
       ## Solution
-      
+
       The `id` field in `principals` supports **comma-separated values**.
       The CLI automatically parses this list and adds each GUID individually.
     code:
@@ -298,7 +298,7 @@ steps:
       content: |
         # 1. In your .env file:
         DATA_ENGINEERS_GROUP="guid1,guid2,guid3,guid4"
-        
+
         # 2. In your config YAML:
         principals:
           - id: "${DATA_ENGINEERS_GROUP}"
@@ -318,51 +318,51 @@ steps:
     type: info
     content: |
       ## Symptom
-      
+
       ```
       fabric-cicd: command not found
       # or
       bash: fabric-cicd: command not found
       ```
-      
+
       ## Cause
-      
+
       Package not installed in editable mode, or entry point not registered.
-      
+
       ## Solution
     code:
       language: bash
       content: |
         # First, ensure conda environment is active
         conda activate fabric-cli-cicd
-        
+
         # Install package with entry points
         make install
         # OR
         pip install -e .
-        
+
         # Verify installation
         fabric-cicd --help
-        
+
         # Alternative: Use Python module syntax (always works)
         python -m usf_fabric_cli.cli --help
         python -m usf_fabric_cli.cli deploy config/your/config.yaml --env dev
-        
+
         # Check if entry point is registered
         pip show usf-fabric-cli | grep Entry
     expected_output: |
       # After make install:
       Successfully installed usf-fabric-cli-1.3.0
-      
+
       # fabric-cicd --help output:
       Usage: fabric-cicd [OPTIONS] COMMAND [ARGS]...
-      
+
         Fabric CLI CI/CD - Enterprise Deployment Framework
-      
+
       Options:
         --version  Show version
         --help     Show this message and exit.
-      
+
       Commands:
         bulk-destroy    Bulk destroy workspaces from a list file.
         deploy          Deploy Fabric workspace from configuration file.
@@ -384,7 +384,7 @@ steps:
     type: info
     content: |
       ## Symptoms
-      
+
       ```
       Error: Missing credentials
       Error: Token generation failed
@@ -392,23 +392,23 @@ steps:
       403 Forbidden
       401 Unauthorized
       ```
-      
+
       ## Common Causes
-      
+
       | Error | Cause |
       |-------|-------|
       | "Missing credentials" | .env file missing or incomplete |
       | "Token generation failed" | Client secret expired/wrong |
       | "403 Forbidden" | SP lacks permissions |
       | "401 Unauthorized" | Wrong tenant ID |
-      
+
       ## Solution
     code:
       language: bash
       content: |
         # 1. Check .env file exists
         ls -la .env
-        
+
         # 2. Verify required variables are set (without showing values)
         python -c "
         import os
@@ -419,7 +419,7 @@ steps:
             status = '✓ SET' if os.getenv(var) else '✗ MISSING'
             print(f'{var}: {status}')
         "
-        
+
         # 3. Test credential validation
         python -c "
         from usf_fabric_cli.utils.secrets import FabricSecrets
@@ -428,7 +428,7 @@ steps:
         print(f'Valid: {is_valid}')
         print(f'Message: {msg}')
         "
-        
+
         # 4. If .env is missing, create from template
         cp .env.template .env
         # Then edit .env with your credentials
@@ -438,7 +438,7 @@ steps:
       AZURE_CLIENT_SECRET: ✓ SET
       AZURE_TENANT_ID: ✓ SET
       FABRIC_CAPACITY_ID: ✓ SET
-      
+
       # Validation (good):
       Valid: True
       Message: All credentials valid
@@ -454,44 +454,44 @@ steps:
     type: info
     content: |
       ## Symptoms
-      
+
       ```
       403 Forbidden
       Error: Access denied
       Error: Unauthorized
       Error: Service principal cannot create workspaces
       ```
-      
+
       ## Required Permissions
-      
+
       ### Fabric Tenant Settings (Admin Portal)
-      
+
       | Setting | Required |
       |---------|----------|
       | "Service principals can use Fabric APIs" | ✓ Enabled |
       | "Service principals can create workspaces" | ✓ Enabled |
       | "Service principals can use Git integration" | ✓ Enabled (for Git) |
-      
+
       ### Azure DevOps (for Git integration)
-      
+
       | Permission | Required |
       |------------|----------|
       | Access level | **Basic** (NOT Stakeholder!) |
       | Project role | Contributor |
       | Repository | Contribute permission |
-      
+
       ## Debugging
     code:
       language: bash
       content: |
         # Check if you can list workspaces (basic connectivity test)
         python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
-        
+
         # Debug Azure DevOps access
         python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
           --organization "your-org" \
           --project "your-project"
-        
+
         # List items in a workspace (verifies read access)
         python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items \
           --workspace "your-workspace-name"
@@ -501,7 +501,7 @@ steps:
       - analytics-dev
       - analytics-staging
       - analytics-prod
-      
+
       # debug_ado_access.py (good):
       ✓ PAT authentication successful
       ✓ Organization accessible
@@ -517,39 +517,39 @@ steps:
     type: info
     content: |
       ## Symptoms
-      
+
       ```
       Error: Capacity not found
       Error: Cannot assign workspace to capacity
       Error: Capacity limit exceeded
       Error: No available capacity
       ```
-      
+
       ## Common Causes
-      
+
       | Error | Cause | Solution |
       |-------|-------|----------|
       | "Capacity not found" | Wrong capacity ID | Verify GUID in Azure Portal |
       | "Cannot assign" | SP not capacity admin | Add SP as capacity admin |
       | "Limit exceeded" | F2 trial exhausted | Delete workspaces or upgrade |
       | "No available" | Capacity paused | Resume capacity in Azure |
-      
+
       ## Solution
     code:
       language: bash
       content: |
         # 1. Verify capacity ID in .env
         grep FABRIC_CAPACITY_ID .env
-        
+
         # 2. List existing workspaces (shows capacity usage)
         python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
-        
+
         # 3. Check capacity in Azure Portal:
         #    - Go to portal.azure.com
         #    - Search "Microsoft Fabric"
         #    - Find your capacity
         #    - Verify: Status = Active, copy the Resource ID/GUID
-        
+
         # 4. Update .env with correct capacity ID
         echo "FABRIC_CAPACITY_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" >> .env
     tips:
@@ -563,39 +563,39 @@ steps:
     type: info
     content: |
       ## Symptoms
-      
+
       ```
       Error: Configuration validation failed
       Error: YAML syntax error
       Error: Missing required field
       Error: Variable not found: ${VAR_NAME}
       ```
-      
+
       ## Common YAML Mistakes
-      
+
       | Error | Cause | Fix |
       |-------|-------|-----|
       | Indentation error | Tabs instead of spaces | Use 2 spaces |
       | Special chars | Unquoted `:`, `#`, `@` | Quote the string |
       | Missing variable | ${VAR} not in .env | Add to .env or use default |
       | Wrong structure | Copy-paste error | Check template format |
-      
+
       ## Solution
     code:
       language: bash
       content: |
         # 1. Validate YAML syntax (basic)
         python -c "import yaml; yaml.safe_load(open('config/projects/your/config.yaml'))"
-        
+
         # 2. Validate with framework (comprehensive)
         make validate config=config/projects/your/config.yaml
-        
+
         # 3. Find unresolved environment variables
         grep '\${' config/projects/your/config.yaml
-        
+
         # 4. Check if those variables are in .env
         cat .env | grep -E "VAR1|VAR2|VAR3"
-        
+
         # 5. Docker validation
         make docker-validate config=config/projects/your/config.yaml ENVFILE=.env
     expected_output: |
@@ -603,14 +603,14 @@ steps:
       ╔══════════════════════════════════════════════════════════════╗
       ║              Configuration Validation                        ║
       ╚══════════════════════════════════════════════════════════════╝
-      
+
       Loading: config/projects/your/config.yaml
-      
+
       ✓ YAML syntax valid
       ✓ Required fields present
       ✓ Environment variables resolved (4 variables)
       ✓ Jinja2 template syntax valid
-      
+
       ════════════════════════════════════════════════════════════════
       ✅ Configuration is valid!
       ════════════════════════════════════════════════════════════════
@@ -623,46 +623,46 @@ steps:
     type: info
     content: |
       ## Symptoms
-      
+
       ```
       Error during docker build
       ERROR [internal] load metadata
       Error: Cannot connect to Docker daemon
       Error: ENVFILE not found
       ```
-      
+
       ## Common Causes & Solutions
-      
+
       | Error | Cause | Solution |
       |-------|-------|----------|
       | "Cannot connect" | Docker not running | Start Docker Desktop/daemon |
       | "Load metadata" | Network issues | Check internet, retry |
       | "ENVFILE not found" | Wrong path | Use `ENVFILE=.env` |
       | "Disk space" | Docker cache full | `docker system prune -a` |
-      
+
       ## Solution
     code:
       language: bash
       content: |
         # 1. Check Docker is running
         docker ps
-        
+
         # 2. Clean up Docker resources
         docker system prune -a
-        
+
         # 3. Check disk space
         docker system df
         df -h
-        
+
         # 4. Build with verbose output
         docker build -t fabric-cli-cicd . --progress=plain
-        
+
         # 5. Test container directly
         docker run --rm fabric-cli-cicd fab --version
-        
+
         # 6. Verify env file
         ls -la .env
-        
+
         # 7. Run with explicit env file
         make docker-deploy config=... env=dev ENVFILE=.env
     tips:
@@ -675,7 +675,7 @@ steps:
     type: info
     content: |
       ## Symptoms
-      
+
       ```
       Error: Git connection failed
       Error: Repository not found
@@ -683,9 +683,9 @@ steps:
       Error: Branch not found
       Error: 401 Unauthorized (Git)
       ```
-      
+
       ## Common Causes & Solutions
-      
+
       | Error | Cause | Solution |
       |-------|-------|----------|
       | "Repository is empty" | 0 commits in repo | Run `init_ado_repo.py` |
@@ -693,7 +693,7 @@ steps:
       | "Branch not found" | Branch doesn't exist | Create branch or fix YAML |
       | "401 Unauthorized" | PAT expired/wrong | Generate new PAT |
       | "Access denied" | SP not Contributor | Add to ADO project |
-      
+
       ## Solution
     code:
       language: bash
@@ -702,16 +702,16 @@ steps:
         python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
           --organization "your-org" \
           --project "your-project"
-        
+
         # 2. Initialize empty repository
         python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
           --organization "your-org" \
           --project "your-project" \
           --repository "your-repo"
-        
+
         # 3. Check remote branches
         git ls-remote --heads https://dev.azure.com/your-org/your-project/_git/your-repo
-        
+
         # 4. Verify PAT in .env
         grep AZURE_DEVOPS_PAT .env
     expected_output: |
@@ -720,7 +720,7 @@ steps:
       ✓ Organization 'your-org' accessible
       ✓ Project 'your-project' accessible
       ✓ Service Principal access level: Basic
-      
+
       # init_ado_repo.py (good):
       ✓ Repository 'your-repo' initialized
       ✓ Branch 'main' created
@@ -734,22 +734,22 @@ steps:
     type: info
     content: |
       ## Diagnostic Scripts
-      
+
       | Script | Purpose |
       |--------|---------|
       | `src/usf_fabric_cli/scripts/admin/preflight_check.py` | Comprehensive environment validation |
       | `src/usf_fabric_cli/scripts/admin/utilities/debug_ado_access.py` | Test Azure DevOps connectivity |
       | `src/usf_fabric_cli/scripts/admin/utilities/list_workspaces.py` | List all accessible workspaces |
       | `src/usf_fabric_cli/scripts/admin/utilities/list_workspace_items.py` | List items in a workspace |
-      
+
       ## Repository Scripts
-      
+
       | Script | Purpose |
       |--------|---------|
       | `src/usf_fabric_cli/scripts/admin/utilities/init_ado_repo.py` | Initialize empty ADO repository |
-      
+
       ## Deployment Scripts
-      
+
       | Script | Purpose |
       |--------|---------|
       | `src/usf_fabric_cli/scripts/dev/generate_project.py` | Generate project config from template |
@@ -758,33 +758,33 @@ steps:
       language: bash
       content: |
         # Full syntax for each script:
-        
+
         # Preflight check
         python -m usf_fabric_cli.scripts.admin.preflight_check
-        
+
         # Debug ADO access
         python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
           --organization "org" \
           --project "project"
-        
+
         # List workspaces
         python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
-        
+
         # List workspace items
         python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items \
           --workspace "workspace-name"
-        
+
         # Initialize ADO repo
         python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
           --organization "org" \
           --project "project" \
           --repository "repo" \
           --branch "main"
-        
+
         # Generate project
         python -m usf_fabric_cli.scripts.dev.generate_project "Org Name" "Project Name" \
           --template basic_etl
-        
+
         # Bulk destroy
         python -m usf_fabric_cli.scripts.admin.bulk_destroy workspace_list.txt
     tips:
@@ -796,18 +796,18 @@ steps:
     type: info
     content: |
       ## Documentation Resources
-      
+
       | Resource | Location |
       |----------|----------|
       | Main README | `README.md` |
       | CLI Walkthrough | `docs/01_User_Guides/02_CLI_Walkthrough.md` |
       | Blueprint Catalog | `docs/BLUEPRINT_CATALOG.md` |
       | Troubleshooting | `docs/TROUBLESHOOTING.md` |
-      
+
       ## Debug Information to Collect
-      
+
       When reporting issues, gather:
-      
+
       1. Preflight check output
       2. Relevant audit log entries
       3. Configuration file (REDACT SECRETS!)
@@ -819,14 +819,14 @@ steps:
         # Collect all debug info to a file
         echo "=== Preflight Check ===" > debug_info.txt
         python -m usf_fabric_cli.scripts.admin.preflight_check >> debug_info.txt 2>&1
-        
+
         echo "\n=== Version Info ===" >> debug_info.txt
         python --version >> debug_info.txt
         fab --version >> debug_info.txt 2>&1
-        
+
         echo "\n=== Recent Audit Logs ===" >> debug_info.txt
         tail -50 audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl >> debug_info.txt 2>&1
-        
+
         echo "\n=== Environment Variables (names only) ===" >> debug_info.txt
         python -c "
         import os
@@ -834,7 +834,7 @@ steps:
             status = 'SET' if os.getenv(var) else 'MISSING'
             print(f'{var}: {status}')
         " >> debug_info.txt
-        
+
         echo "Debug info saved to debug_info.txt"
     tips:
       - ALWAYS redact credentials before sharing debug info
@@ -845,9 +845,9 @@ steps:
     type: info
     content: |
       You now have all the tools to diagnose and fix common issues!
-      
+
       ## Quick Reference
-      
+
       | Problem | First Step |
       |---------|------------|
       | Anything | `make diagnose` |
@@ -856,9 +856,9 @@ steps:
       | Config errors | `make validate config=...` |
       | Docker issues | `docker ps`, `docker system prune` |
       | Git errors | `init_ado_repo.py`, `debug_ado_access.py` |
-      
+
       ## Command Cheat Sheet
-      
+
       | Command | Purpose |
       |---------|---------|
       | `make diagnose` | Quick preflight check |
@@ -867,9 +867,9 @@ steps:
       | `python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access` | ADO connectivity test |
       | `python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces` | Verify workspace access |
       | `make validate config=...` | Validate config file |
-      
+
       ## Return to Previous Scenarios
-      
+
       - [Getting Started](#getting-started) - Environment setup
       - [Local Deployment](#local-deployment) - Deploy without Docker
       - [Docker Deployment](#docker-deployment) - Containerized deployment

@@ -47,7 +47,7 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
 - `retry.py`: Exponential backoff with jitter, decorator pattern, HTTP retry helper
 
 ### Organization-Agnostic Design
-All configurations use **environment variable substitution** (`${VAR_NAME}`). No hardcoded organization names.  
+All configurations use **environment variable substitution** (`${VAR_NAME}`). No hardcoded organization names.
 Template blueprints in `src/usf_fabric_cli/templates/blueprints/*.yaml` are customized via `src/usf_fabric_cli/scripts/dev/generate_project.py`.
 
 ## 🔐 Secret Management (CRITICAL)

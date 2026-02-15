@@ -26,11 +26,11 @@ steps:
     export AZURE_CLIENT_ID=$(AZURE_CLIENT_ID)
     export AZURE_CLIENT_SECRET=$(AZURE_CLIENT_SECRET)
     export AZURE_TENANT_ID=$(AZURE_TENANT_ID)
-    
+
     # Validate configuration first
     export PYTHONPATH=$PYTHONPATH:$(pwd)/src
     python -m usf_fabric_cli.cli validate $(CONFIG_PATH)
-    
+
     # Deploy
     python -m usf_fabric_cli.cli deploy $(CONFIG_PATH) --env $(DEPLOY_ENV)
   displayName: 'Deploy to Fabric'

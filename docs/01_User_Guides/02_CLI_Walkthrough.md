@@ -54,7 +54,7 @@ vim config/projects/acme_corp/supply_chain.yaml
 # config/projects/acme_corp/supply_chain.yaml
 workspace:
   display_name: "Acme Supply Chain [{{ env }}]" # {{ env }} is auto-replaced
-  
+
 folders:
   - "Raw Data"
   - "Transformation"

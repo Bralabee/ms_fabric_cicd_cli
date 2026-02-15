@@ -51,9 +51,9 @@ steps:
     type: info
     content: |
       Docker deployment provides several advantages over local Python deployment:
-      
+
       ## Key Benefits
-      
+
       | Benefit | Description |
       |---------|-------------|
       | **Consistency** | Same environment everywhere (dev laptop, CI/CD, production) |
@@ -62,9 +62,9 @@ steps:
       | **Security** | Credentials passed via env-file, not stored in container |
       | **Multi-tenant** | Easy switching between client configurations via ENVFILE |
       | **CI/CD Ready** | Identical behavior in GitHub Actions, Azure DevOps, etc. |
-      
+
       ## All Docker Commands
-      
+
       | Command | Purpose |
       |---------|---------|
       | `make docker-build` | Build the Docker image (multi-stage, ~60% smaller) |
@@ -92,9 +92,9 @@ steps:
     type: checkpoint
     content: |
       Before starting, ensure Docker is installed and running on your machine.
-      
+
       ## Requirements
-      
+
       | Component | Minimum Version | Check Command |
       |-----------|-----------------|---------------|
       | Docker Engine | 20.x+ | `docker --version` |
@@ -105,22 +105,22 @@ steps:
       content: |
         # Check Docker version
         docker --version
-        
+
         # Check Docker daemon is running
         docker ps
-        
+
         # Check Docker Compose
         docker compose version
-        
+
         # Check available disk space (image needs ~500MB)
         df -h
     expected_output: |
       Docker version 24.0.7, build afdd53b
-      
+
       CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
-      
+
       Docker Compose version v2.24.5
-      
+
       Filesystem      Size  Used Avail Use% Mounted on
       /dev/sda1       100G   45G   55G  45% /
     checkpoint_question: Is Docker installed and the daemon running?
@@ -133,9 +133,9 @@ steps:
     type: command
     content: |
       Build the Docker image that includes everything needed for deployments:
-      
+
       ## What's in the Image
-      
+
       | Component | Description |
       |-----------|-------------|
       | Python 3.11 | Runtime environment |
@@ -149,10 +149,10 @@ steps:
       content: |
         # Build using Makefile (RECOMMENDED)
         make docker-build
-        
+
         # OR build manually with Docker
         docker build -t fabric-cli-cicd .
-        
+
         # Verify the image was created
         docker images | grep fabric-cli-cicd
     expected_output: |
@@ -170,7 +170,7 @@ steps:
        => [8/8] RUN pip install https://github.com/.../fabric-sdk   5.0s
        => exporting to image                                        1.2s
        => => naming to docker.io/library/fabric-cli-cicd            0.0s
-      
+
       REPOSITORY        TAG       IMAGE ID       CREATED          SIZE
       fabric-cli-cicd   latest    abc123def456   30 seconds ago   512MB
     tips:
@@ -188,28 +188,28 @@ steps:
       content: |
         # Check Fabric CLI version
         docker run --rm fabric-cli-cicd fab --version
-        
+
         # Check Python version
         docker run --rm fabric-cli-cicd python --version
-        
+
         # Check framework CLI
         docker run --rm fabric-cli-cicd fabric-cicd --help
-        
+
         # Test Python imports
         docker run --rm fabric-cli-cicd python -c "import typer; import rich; import yaml; print('All imports OK')"
     expected_output: |
       fab version 0.1.5
-      
+
       Python 3.11.9
-      
+
       Usage: fabric-cicd [OPTIONS] COMMAND [ARGS]...
-      
+
         Fabric CLI CI/CD - Enterprise Deployment Framework
-      
+
       Options:
         --version  Show version
         --help     Show this message and exit.
-      
+
       Commands:
         bulk-destroy    Bulk destroy workspaces from a list file.
         deploy          Deploy Fabric workspace from configuration file.
@@ -222,7 +222,7 @@ steps:
         onboard         Onboard a new Fabric Data Product (full bootstrap).
         promote         Promote content through Deployment Pipeline stages.
         validate        Validate configuration file syntax and structure.
-      
+
       All imports OK
     tips:
       - "`fab` is the official Microsoft Fabric CLI"
@@ -238,7 +238,7 @@ steps:
       content: |
         # Run diagnostics using Makefile
         make docker-diagnose ENVFILE=.env
-        
+
         # OR manually
         docker run --rm \
           --env-file .env \
@@ -248,22 +248,22 @@ steps:
       ╔══════════════════════════════════════════════════════════════╗
       ║            Fabric CLI CI/CD Preflight Check                  ║
       ╚══════════════════════════════════════════════════════════════╝
-      
+
       Checking Fabric CLI...
       ✓ Fabric CLI installed (version 0.1.5)
-      
+
       Checking Credentials...
       ✓ AZURE_CLIENT_ID loaded
       ✓ AZURE_CLIENT_SECRET loaded
       ✓ AZURE_TENANT_ID loaded
       ✓ FABRIC_CAPACITY_ID loaded
-      
+
       Checking Authentication...
       ✓ Token generation successful
-      
+
       Checking Fabric API...
       ✓ Fabric API accessible
-      
+
       ═══════════════════════════════════════════════════════════════
       ✅ All preflight checks passed!
       ═══════════════════════════════════════════════════════════════
@@ -276,9 +276,9 @@ steps:
     type: command
     content: |
       Validate your configuration inside the container before deploying:
-      
+
       ## Volume Mounts
-      
+
       The command mounts these directories:
       - "`./config:/app/config` - Your configuration files"
       - "`--env-file .env` - Your credentials"
@@ -287,7 +287,7 @@ steps:
       content: |
         # Validate using Makefile (RECOMMENDED)
         make docker-validate config=config/projects/acme_corp/sales_analytics.yaml ENVFILE=.env
-        
+
         # OR manually with docker run
         docker run --rm \
           --env-file .env \
@@ -298,14 +298,14 @@ steps:
       ╔══════════════════════════════════════════════════════════════╗
       ║              Configuration Validation                        ║
       ╚══════════════════════════════════════════════════════════════╝
-      
+
       Loading: config/projects/acme_corp/sales_analytics.yaml
-      
+
       ✓ YAML syntax valid
       ✓ Required fields present
       ✓ Environment variables resolved (4 variables)
       ✓ Jinja2 template syntax valid
-      
+
       ════════════════════════════════════════════════════════════════
       ✅ Configuration is valid!
       ════════════════════════════════════════════════════════════════
@@ -318,9 +318,9 @@ steps:
     type: command
     content: |
       Deploy your workspace using the containerized environment:
-      
+
       ## Volume Mounts
-      
+
       | Mount | Purpose |
       |-------|---------|
       | `./config:/app/config` | Configuration files |
@@ -330,7 +330,7 @@ steps:
       content: |
         # Deploy using Makefile (RECOMMENDED)
         make docker-deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev ENVFILE=.env
-        
+
         # OR manually
         docker run --rm \
           --env-file .env \
@@ -342,16 +342,16 @@ steps:
       ╔══════════════════════════════════════════════════════════════╗
       ║               Fabric Workspace Deployment                    ║
       ╚══════════════════════════════════════════════════════════════╝
-      
+
       Configuration: config/projects/acme_corp/sales_analytics.yaml
       Environment: dev
-      
+
       ✓ Authenticated as Service Principal
       ✓ Workspace 'acme-sales-analytics-dev' created
       ✓ Folder '01_Bronze' created
       ✓ Lakehouse 'sales_raw' created
       ...
-      
+
       ════════════════════════════════════════════════════════════════
       ✅ Deployment completed successfully!
       ════════════════════════════════════════════════════════════════
@@ -369,7 +369,7 @@ steps:
       content: |
         # Destroy using Makefile (requires confirmation)
         make docker-destroy config=config/projects/acme_corp/sales_analytics.yaml ENVFILE=.env
-        
+
         # OR manually
         docker run -it --rm \
           --env-file .env \
@@ -378,11 +378,11 @@ steps:
           fabric-cicd destroy config/projects/acme_corp/sales_analytics.yaml --env dev
     expected_output: |
       ⚠️  WORKSPACE DESTRUCTION
-      
+
       Workspace: acme-sales-analytics-dev
-      
+
       Type 'yes' to confirm: yes
-      
+
       ✓ Workspace destroyed
     warnings:
       - This permanently deletes the workspace and all data
@@ -393,7 +393,7 @@ steps:
     type: command
     content: |
       Need to debug issues? Open an interactive shell inside the container:
-      
+
       This is invaluable for:
       - Testing credential loading
       - Exploring the container filesystem
@@ -404,7 +404,7 @@ steps:
       content: |
         # Open interactive shell using Makefile
         make docker-shell ENVFILE=.env
-        
+
         # OR manually
         docker run -it --rm \
           --env-file .env \
@@ -412,7 +412,7 @@ steps:
           -v "$(pwd)/scripts:/app/scripts:ro" \
           --entrypoint /bin/bash \
           fabric-cli-cicd
-        
+
         # Inside the container, you can run:
         # fab --version
         # python -m usf_fabric_cli.scripts.admin.preflight_check
@@ -420,18 +420,18 @@ steps:
         # fabric-cicd diagnose
     expected_output: |
       # You'll get a bash prompt inside the container:
-      appuser@abc123:/app$ 
-      
+      appuser@abc123:/app$
+
       # Run commands:
       appuser@abc123:/app$ fab --version
       fab version 0.1.5
-      
+
       appuser@abc123:/app$ python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
       Found 3 workspaces:
       - sales-analytics-dev
       - sales-analytics-prod
       - marketing-reports
-      
+
       appuser@abc123:/app$ exit
     tips:
       - Use this to debug authentication or path issues
@@ -448,23 +448,23 @@ steps:
       content: |
         # Generate using Makefile
         make docker-generate org="Contoso Inc" project="Finance Analytics" template="basic_etl"
-        
+
         # OR manually
         docker run --rm \
           -v "$(pwd)/config:/app/config" \
           fabric-cli-cicd \
           python -m usf_fabric_cli.scripts.dev.generate_project "Contoso Inc" "Finance Analytics" --template basic_etl
-        
+
         # Verify the generated file
         ls config/projects/contoso_inc/
         cat config/projects/contoso_inc/finance_analytics.yaml
     expected_output: |
       ✓ Configuration generated: config/projects/contoso_inc/finance_analytics.yaml
-      
+
       Template: basic_etl
       Organization: Contoso Inc → contoso_inc
       Project: Finance Analytics → finance_analytics
-      
+
       # ls output:
       finance_analytics.yaml
     tips:
@@ -481,7 +481,7 @@ steps:
       content: |
         # Initialize repo using Makefile
         make docker-init-repo org="acme-org" project="FabricProjects" repo="sales-analytics"
-        
+
         # OR manually
         docker run --rm \
           --env-file .env \
@@ -492,15 +492,15 @@ steps:
             --repository "sales-analytics"
     expected_output: |
       Initializing Azure DevOps repository...
-      
+
       Organization: acme-org
       Project: FabricProjects
       Repository: sales-analytics
-      
+
       ✓ Repository 'sales-analytics' created
       ✓ Branch 'main' created
       ✓ Initial README committed
-      
+
       Repository URL: https://dev.azure.com/acme-org/FabricProjects/_git/sales-analytics
     tips:
       - "Requires `AZURE_DEVOPS_PAT` in your .env file"
@@ -510,22 +510,22 @@ steps:
     title: "Multi-Tenant Deployments"
     type: info
     content: |
-      The Docker approach excels at multi-tenant scenarios where you manage 
+      The Docker approach excels at multi-tenant scenarios where you manage
       multiple clients with different credentials.
-      
+
       ## Strategy: Separate .env Files
-      
+
       Create a separate `.env` file for each client/tenant:
-      
+
       ```
       .env                # Default/dev credentials
       .env.client_a       # Client A credentials
       .env.client_b       # Client B credentials
       .env.prod           # Production credentials
       ```
-      
+
       ## Key Parameter: ENVFILE
-      
+
       The `ENVFILE` parameter tells Make which credential file to use:
     code:
       language: bash
@@ -535,13 +535,13 @@ steps:
           config=config/projects/client_a/analytics.yaml \
           env=dev \
           ENVFILE=.env.client_a
-        
+
         # Deploy for Client B
         make docker-deploy \
           config=config/projects/client_b/analytics.yaml \
           env=dev \
           ENVFILE=.env.client_b
-        
+
         # Production deployment with production credentials
         make docker-deploy \
           config=config/projects/acme/sales.yaml \
@@ -560,14 +560,14 @@ steps:
     type: info
     content: |
       Here's how to use Docker deployment in a CI/CD pipeline:
-      
+
       ## GitHub Actions Example
     code:
       language: yaml
       filename: .github/workflows/deploy.yml
       content: |
         name: Deploy Fabric Workspace
-        
+
         on:
           push:
             branches: [main]
@@ -579,16 +579,16 @@ steps:
                 default: 'dev'
                 type: choice
                 options: [dev, staging, prod]
-        
+
         jobs:
           deploy:
             runs-on: ubuntu-latest
             steps:
               - uses: actions/checkout@v4
-              
+
               - name: Build Docker image
                 run: make docker-build
-              
+
               - name: Create .env file from secrets
                 run: |
                   cat > .env << EOF
@@ -597,17 +597,17 @@ steps:
                   AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}
                   FABRIC_CAPACITY_ID=${{ secrets.FABRIC_CAPACITY_ID }}
                   EOF
-              
+
               - name: Validate configuration
                 run: make docker-validate config=config/projects/acme/sales.yaml ENVFILE=.env
-              
+
               - name: Deploy to ${{ github.event.inputs.environment || 'dev' }}
                 run: |
                   make docker-deploy \
                     config=config/projects/acme/sales.yaml \
                     env=${{ github.event.inputs.environment || 'dev' }} \
                     ENVFILE=.env
-              
+
               - name: Upload audit logs
                 uses: actions/upload-artifact@v4
                 with:
@@ -623,9 +623,9 @@ steps:
     type: info
     content: |
       You've mastered Docker deployments!
-      
+
       ## What You've Accomplished
-      
+
       - "✅ Built the Docker image with `make docker-build`"
       - "✅ Ran diagnostics with `make docker-diagnose`"
       - "✅ Validated configs with `make docker-validate`"
@@ -635,9 +635,9 @@ steps:
       - "✅ Initialized repos with `make docker-init-repo`"
       - ✅ Understand multi-tenant deployments with ENVFILE
       - ✅ Have a CI/CD pipeline template
-      
+
       ## Complete Docker Command Reference
-      
+
       | Command | Purpose |
       |---------|---------|
       | `make docker-build` | Build image (multi-stage) |
@@ -656,9 +656,9 @@ steps:
       | `make docker-bulk-destroy file=... ENVFILE=.env` | Bulk destroy |
       | `make docker-list-workspaces ENVFILE=.env` | List workspaces |
       | `make docker-list-items workspace="..." ENVFILE=.env` | List items |
-      
+
       ## Recommended Next Steps
-      
+
       1. **Next:** [Feature Branch Workflows](#feature-branch-workflows) - Isolated development
       2. **Then:** [Git Integration](#git-integration) - Connect to version control
       3. **Reference:** [Troubleshooting](#troubleshooting) - Debug common issues

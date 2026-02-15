@@ -8,13 +8,14 @@ Tests verify:
 - Error handling
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from usf_fabric_cli.services.fabric_git_api import (
     FabricGitAPI,
-    GitProviderType,
     GitConnectionSource,
+    GitProviderType,
 )
 
 

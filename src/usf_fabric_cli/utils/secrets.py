@@ -13,6 +13,7 @@ across development, staging, and production environments.
 
 import os
 from typing import Optional
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -250,9 +251,9 @@ def get_secrets() -> FabricSecrets:
         and secrets.tenant_id
     ):
         try:
-            from azure.identity import ClientSecretCredential
-
             import logging
+
+            from azure.identity import ClientSecretCredential
 
             logger = logging.getLogger(__name__)
             logger.info("Generating Fabric token from secrets...")

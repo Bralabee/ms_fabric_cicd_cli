@@ -33,9 +33,7 @@ def env_vars():
 @pytest.fixture(scope="module")
 def api_client(env_vars):
     """Create a FabricDeploymentPipelineAPI client."""
-    from usf_fabric_cli.services.deployment_pipeline import (
-        FabricDeploymentPipelineAPI,
-    )
+    from usf_fabric_cli.services.deployment_pipeline import FabricDeploymentPipelineAPI
 
     token = env_vars.get("FABRIC_TOKEN", "")
     assert token, "FABRIC_TOKEN missing after authentication"

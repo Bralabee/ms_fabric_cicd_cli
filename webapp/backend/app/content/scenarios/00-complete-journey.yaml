@@ -4,8 +4,8 @@
 id: complete-journey
 title: "Complete User Journey: Zero to Production"
 description: |
-  A high-level roadmap of the entire Fabric CLI CI/CD workflow. Use this as a quick reference 
-  to understand where you are in the process and what comes next. Each phase links to detailed 
+  A high-level roadmap of the entire Fabric CLI CI/CD workflow. Use this as a quick reference
+  to understand where you are in the process and what comes next. Each phase links to detailed
   scenario guides for step-by-step instructions.
 difficulty: beginner
 estimated_duration_minutes: 5
@@ -41,7 +41,7 @@ steps:
     type: info
     content: |
       ## 🗺️ Your Deployment Journey
-      
+
       ```
       ┌─────────────────────────────────────────────────────────────────┐
       │                    PHASE 1: PREREQUISITES                       │
@@ -68,9 +68,9 @@ steps:
       │  Feature Branches → Git Sync → Monitoring → Cleanup             │
       └─────────────────────────────────────────────────────────────────┘
       ```
-      
+
       ## ⏱️ Time Estimates
-      
+
       | Phase | First Time | Subsequent |
       |-------|------------|------------|
       | Phase 1: Prerequisites | 30-60 min | 0 min (done once) |
@@ -88,9 +88,9 @@ steps:
     type: info
     content: |
       ## 🔐 Azure & Fabric Prerequisites
-      
+
       **Before you can deploy anything**, you need these Azure resources:
-      
+
       | # | Task | Who | Time | Output |
       |---|------|-----|------|--------|
       | 1 | Create Azure Service Principal | Any Azure AD user | 5 min | `AZURE_CLIENT_ID` |
@@ -98,22 +98,22 @@ steps:
       | 3 | Note Tenant ID | Any Azure AD user | 1 min | `AZURE_TENANT_ID` |
       | 4 | Get/Create Fabric Capacity | Azure Admin | 10-30 min | `FABRIC_CAPACITY_ID` |
       | 5 | Enable Fabric Tenant Settings | Fabric Admin | 5 min | API access enabled |
-      
+
       ## ✅ Checklist: What You Need Before Proceeding
-      
+
       ```
       ☐ AZURE_CLIENT_ID      = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
       ☐ AZURE_CLIENT_SECRET  = (your secret value)
       ☐ AZURE_TENANT_ID      = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
       ☐ FABRIC_CAPACITY_ID   = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
       ```
-      
+
       ## 🚨 Common Blocker
-      
+
       **"I can't create a Service Principal"** → Contact your Azure AD administrator
       **"I don't have Fabric Capacity"** → Use F2 trial or contact your Azure admin
       **"Tenant settings not enabled"** → Contact your Fabric administrator
-      
+
       📖 **Detailed Guide:** [Getting Started → Step 2: Azure Prerequisites](#getting-started)
     warnings:
       - "🔴 STOP: Do not proceed without all 4 credentials"
@@ -124,33 +124,33 @@ steps:
     type: command
     content: |
       ## 🛠️ Local Development Environment
-      
+
       Set up your local machine to run the CLI tools.
-      
+
       ### Quick Commands (Copy-Paste Ready)
-      
+
       ```bash
       # 1. Clone repository (if you haven't already)
       git clone https://github.com/your-org/usf_fabric_cli_cicd.git
       cd usf_fabric_cli_cicd
-      
+
       # 2. Create and activate conda environment
       conda env create -f environment.yml
       conda activate fabric-cli-cicd
-      
+
       # 3. Install the package
       make install
-      
+
       # 4. Create .env file with your credentials
       cp .env.template .env
       # Edit .env with your Azure credentials from Phase 1
-      
+
       # 5. Verify everything works
       make diagnose
       ```
-      
+
       ### Expected Result
-      
+
       After `make diagnose`, you should see:
       ```
       ✓ Fabric CLI installed
@@ -159,7 +159,7 @@ steps:
       ✓ Fabric API accessible
       ✅ All preflight checks passed!
       ```
-      
+
       📖 **Detailed Guide:** [Getting Started → Steps 3-12](#getting-started)
     code:
       language: bash
@@ -177,81 +177,81 @@ steps:
     type: command
     content: |
       ## 📝 Create Your Project Configuration
-      
+
       Use blueprint templates to generate standardized configurations.
-      
+
       ### Step 1: Choose Your Template
-      
+
       | Template | Best For | Resources Included |
       |----------|----------|-------------------|
       | `minimal_starter` | Learning, POCs | 1 Lakehouse, 1 Notebook |
       | `basic_etl` | **Most projects** - standard ETL | 3 Lakehouses, Warehouse, Notebooks, Pipelines |
       | `realtime_streaming` | IoT, event processing | Eventstream, KQL Database, Reflex |
       | `compliance_regulated` | Healthcare, Finance, Gov | Full audit, RBAC, encryption |
-      
+
       ### Step 2: Generate Configuration
-      
+
       ```bash
       # Syntax: python -m usf_fabric_cli.scripts.dev.generate_project "OrgName" "ProjectName" --template <template>
       python -m usf_fabric_cli.scripts.dev.generate_project "YourOrg" "YourProject" --template basic_etl
       ```
-      
+
       **Output Location:** `config/projects/yourorg/yourproject.yaml`
-      
+
       > **Note:** Org and Project names are converted to lowercase, spaces become underscores
-      
+
       ### Step 3: Key Customization Points
-      
+
       After generation, edit these critical fields in your YAML:
-      
+
       ```yaml
       workspace:
         name: "yourorg-yourproject"           # ← Workspace display name
         capacity_id: "${FABRIC_CAPACITY_ID}"  # ← From .env or hardcode
         git_repo: "${GIT_REPO_URL}"           # ← Optional: Azure DevOps/GitHub URL
         git_branch: "main"                    # ← Default branch
-      
+
       principals:                              # ← Who gets workspace access
         - email: "admin@yourorg.com"
           role: "Admin"
         - email: "dev-team@yourorg.com"
           role: "Contributor"
       ```
-      
+
       **Common Customizations:**
       - **Add Lakehouses:** Copy existing lakehouse block, change `name` and `folder`
       - **Add Notebooks:** Reference files from `src/usf_fabric_cli/templates/notebooks/`
       - **Change Capacity:** Override per environment in `environments:` section
-      
+
       ### Step 4: Validate Configuration
-      
+
       ```bash
       make validate config=config/projects/yourorg/yourproject.yaml
       ```
-      
+
       This checks:
       - ✅ YAML syntax is valid
       - ✅ All required fields present
       - ✅ Environment variables are resolvable
       - ✅ Referenced files exist
-      
+
       📖 **Detailed Guide:** [Project Generation](#project-generation) - Full template catalog and YAML reference
     code:
       language: bash
       content: |
         # Example: Generate a basic ETL project for Acme Corp
         python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "Sales Analytics" --template basic_etl
-        
+
         # Output: config/projects/acme_corp/sales_analytics.yaml
-        
+
         # View the generated config
         cat config/projects/acme_corp/sales_analytics.yaml
-        
+
         # Validate before deploying
         make validate config=config/projects/acme_corp/sales_analytics.yaml
     expected_output: |
       ✓ Configuration generated: config/projects/acme_corp/sales_analytics.yaml
-      
+
       # Validation output:
       ✅ Configuration is valid!
       Workspace: acme-corp-sales-analytics
@@ -267,36 +267,36 @@ steps:
     type: command
     content: |
       ## 🚀 Deploy Your Workspace
-      
+
       Deploy the same configuration to different environments.
-      
+
       ### Development Deployment
-      
+
       ```bash
       make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
       ```
-      
+
       ### Verify Deployment
-      
+
       ```bash
       # Check items were created
       python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items --workspace "acme-corp-sales-analytics-dev"
-      
+
       # Or open in browser
       # URL shown in deployment output
       ```
-      
+
       ### Staging & Production (when ready)
-      
+
       ```bash
       # Staging
       make deploy config=config/projects/acme_corp/sales_analytics.yaml env=staging
-      
+
       # Production (after approval)
       make deploy config=config/projects/acme_corp/sales_analytics.yaml env=prod
       ```
-      
-      📖 **Detailed Guides:** 
+
+      📖 **Detailed Guides:**
       - [Local Deployment](#local-deployment)
       - [Docker Deployment](#docker-deployment) (for CI/CD)
       - [Environment Promotion](#environment-promotion)
@@ -305,7 +305,7 @@ steps:
       content: |
         # Deploy to dev
         make deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev
-        
+
         # Verify
         python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items --workspace "acme-corp-sales-analytics-dev"
     expected_output: |
@@ -314,7 +314,7 @@ steps:
       ✓ Lakehouses created: 3
       ✓ Notebooks created: 3
       ✅ Deployment completed successfully!
-      
+
       Workspace URL: https://app.fabric.microsoft.com/groups/...
 
   - id: phase5-operations
@@ -322,39 +322,39 @@ steps:
     type: info
     content: |
       ## 🔄 Day-to-Day Operations
-      
+
       After initial deployment, you'll use these operations regularly:
-      
+
       ### Feature Branch Development
-      
+
       ```bash
       # Create isolated workspace for feature work
       make docker-feature-deploy config=config/projects/acme_corp/sales.yaml env=dev branch=feature/new-report
-      
+
       # Clean up when done
       make destroy config=config/projects/acme_corp/sales.yaml
       ```
-      
+
       ### Git Integration
-      
+
       ```bash
       # Initialize ADO repo for Fabric Git sync
       python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo --organization "your-org" --project "your-project" --repository "repo-name"
       ```
-      
+
       ### Monitoring & Troubleshooting
-      
+
       ```bash
       # Check audit logs
       cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl | jq
-      
+
       # Run diagnostics
       make diagnose
-      
+
       # Debug ADO access
       python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access --organization "your-org" --project "your-project"
       ```
-      
+
       📖 **Detailed Guides:**
       - [Feature Branch Workflows](#feature-branch-workflows)
       - [Git Integration](#git-integration)
@@ -369,56 +369,56 @@ steps:
     type: info
     content: |
       ## Essential Commands (Copy-Paste Ready)
-      
+
       ### Environment Activation (ALWAYS FIRST!)
       ```bash
       conda activate fabric-cli-cicd
       ```
-      
+
       ### Configuration
       ```bash
       # Generate new project
       python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Project" --template basic_etl
-      
+
       # Validate config
       make validate config=config/projects/org/project.yaml
       ```
-      
+
       ### Deployment
       ```bash
       # Deploy to environment
       make deploy config=config/projects/org/project.yaml env=dev
-      
+
       # Verify deployment
       python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items --workspace "workspace-name"
-      
+
       # Destroy workspace
       make destroy config=config/projects/org/project.yaml
       ```
-      
+
       ### Docker (for CI/CD)
       ```bash
       # Build image
       make docker-build
-      
+
       # Deploy via Docker
       make docker-deploy config=config/projects/org/project.yaml env=dev ENVFILE=.env
       ```
-      
+
       ### Troubleshooting
       ```bash
       # Preflight check
       make diagnose
-      
+
       # List workspaces
       python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
-      
+
       # View audit logs
       cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl | jq
       ```
-      
+
       ## Scenario Guide Links
-      
+
       | Topic | Scenario | Key Steps |
       |-------|----------|-----------|
       | Azure Setup | [Getting Started](#getting-started) | **Step 2**: Azure Prerequisites |

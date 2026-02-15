@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { 
-  Search, 
-  FileText, 
-  Code, 
+import {
+  Search,
+  FileText,
+  Code,
   BookOpen,
   ChevronRight,
   Filter,
@@ -27,7 +27,7 @@ export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialQuery = searchParams.get('q') || ''
   const initialCategory = searchParams.get('category') || ''
-  
+
   const [query, setQuery] = useState(initialQuery)
   const [selectedCategory, setSelectedCategory] = useState(initialCategory)
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery)
@@ -154,12 +154,12 @@ export default function SearchPage() {
             <p className="text-sm text-muted-foreground mb-4">
               Found {results.length} result{results.length !== 1 ? 's' : ''} for "{debouncedQuery}"
             </p>
-            
+
             {results.map((result, index) => {
               const MatchIcon = matchTypeIcons[result.match_type] || FileText
-              
+
               return (
-                <Link 
+                <Link
                   key={`${result.scenario_id}-${result.step_id}-${index}`}
                   to={`/scenario/${result.scenario_id}`}
                 >
@@ -193,7 +193,7 @@ export default function SearchPage() {
                           {/* Relevance Score */}
                           <div className="flex items-center gap-2 mt-2">
                             <div className="h-1.5 w-24 bg-muted rounded-full overflow-hidden">
-                              <div 
+                              <div
                                 className="h-full bg-primary rounded-full"
                                 style={{ width: `${result.relevance_score * 100}%` }}
                               />

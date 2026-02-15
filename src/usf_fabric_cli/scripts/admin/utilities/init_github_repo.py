@@ -18,12 +18,12 @@ Requires:
 
 import logging
 import os
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 import requests
 import typer
-from rich.console import Console
 from dotenv import load_dotenv
+from rich.console import Console
 
 # Load .env so GITHUB_TOKEN (and any other vars) are available when
 # running this script directly (consistent with the rest of the project).

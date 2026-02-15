@@ -9,7 +9,7 @@ workspace:
   description: "Enterprise-grade platform with compliance controls and audit trails"
   capacity_id: "${FABRIC_CAPACITY_ID}"
   domain: "${FABRIC_DOMAIN_NAME}"  # Assign to compliance-governed domain
-  
+
   # Git Integration (REQUIRED for audit trail)
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
@@ -28,11 +28,11 @@ lakehouses:
   - name: "restricted_data_vault"
     folder: "Restricted"
     description: "PII, PHI, financial records - strictest access controls"
-  
+
   - name: "confidential_data_zone"
     folder: "Confidential"
     description: "Internal business data - standard access controls"
-  
+
   - name: "audit_log_repository"
     folder: "Audit"
     description: "Immutable audit logs for compliance reporting"
@@ -48,15 +48,15 @@ notebooks:
   - name: "data_quality_validator"
     folder: "Governance"
     description: "Automated data quality checks per compliance standards"
-  
+
   - name: "pii_detection_scanner"
     folder: "Governance"
     description: "Scan datasets for PII/PHI and enforce masking"
-  
+
   - name: "access_audit_reporter"
     folder: "Audit"
     description: "Generate access audit reports for compliance reviews"
-  
+
   - name: "data_lineage_tracker"
     folder: "Governance"
     description: "Track data lineage for regulatory reporting"
@@ -66,7 +66,7 @@ pipelines:
   - name: "secure_data_ingestion"
     folder: "Governance"
     description: "Ingestion pipeline with encryption and validation"
-  
+
   - name: "audit_log_aggregator"
     folder: "Audit"
     description: "Aggregate and archive audit logs for retention policy"
@@ -83,7 +83,7 @@ resources:
   # (POST /workspaces/{id}/managedPrivateEndpoints), NOT the standard items
   # endpoint. Configure private endpoints manually or via Azure CLI after deploy.
   # See: https://learn.microsoft.com/en-us/fabric/security/security-managed-private-endpoints-overview
-  
+
   # Data Classification (Purview integration placeholder)
   # Note: Actual Purview integration requires Azure Purview setup
   - type: "Environment"
@@ -98,32 +98,32 @@ principals:
   - id: "${SECURITY_ADMIN_GROUP_OID}"
     role: "Admin"
     description: "MANDATORY: Information Security team - full admin rights"
-  
+
   # Compliance Officers (Admin - Read/Audit)
   - id: "${COMPLIANCE_OFFICER_GROUP_OID}"
     role: "Admin"
     description: "MANDATORY: Compliance officers - audit and reporting access"
-  
+
   # Data Governance Team (Contributor)
   - id: "${DATA_GOVERNANCE_GROUP_OID}"
     role: "Contributor"
     description: "Data governance team - manage policies and lineage"
-  
+
   # Data Engineers (Contributor - Restricted)
   - id: "${DATA_ENGINEER_GROUP_OID}"
     role: "Contributor"
     description: "Data engineers - access to Confidential and Internal only"
-  
+
   # Analysts (Viewer - Highly Restricted)
   - id: "${ANALYST_GROUP_OID}"
     role: "Viewer"
     description: "Business analysts - read-only access to approved datasets"
-  
+
   # Automation Service Principal
   - id: "${AZURE_CLIENT_ID}"
     role: "Contributor"
     description: "CI/CD automation - deployment only, no data access"
-  
+
   # Audit Service Account
   - id: "${AUDIT_SERVICE_PRINCIPAL_OID}"
     role: "Admin"
@@ -133,7 +133,7 @@ principals:
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "MANDATORY: Enterprise security admin principal"
-  
+
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "MANDATORY: Enterprise contributor principal"
