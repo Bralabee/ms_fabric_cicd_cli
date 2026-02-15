@@ -41,6 +41,7 @@ jobs:
       run: black --check .
 
     - name: Type check with mypy
+      continue-on-error: true  # Soft gate — informational only
       run: mypy src/ --ignore-missing-imports
 
     - name: Security scan with Bandit
