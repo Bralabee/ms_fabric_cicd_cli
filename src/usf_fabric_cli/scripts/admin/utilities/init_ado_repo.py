@@ -57,7 +57,7 @@ def get_repo_id(
     )
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=30)
     if response.status_code == 200:
         return response.json()["id"]
     elif response.status_code == 404:
@@ -81,7 +81,7 @@ def create_repo(
     body = {"name": repository_name}
 
     console.print(f"[blue]Creating repository '{repository_name}'...[/blue]")
-    response = requests.post(url, headers=headers, json=body)
+    response = requests.post(url, headers=headers, json=body, timeout=30)
 
     if response.status_code == 201:
         return response.json()
@@ -159,7 +159,7 @@ def main(
         }
 
         console.print(f"[blue]Pushing initial commit to '{branch}'...[/blue]")
-        response = requests.post(url, headers=headers, json=body)
+        response = requests.post(url, headers=headers, json=body, timeout=30)
 
         if response.status_code == 201:
             console.print(
