@@ -113,6 +113,15 @@ class FabricAPIBase:
                     json=json,
                     timeout=timeout,
                 )
+                # Log non-2xx response bodies at DEBUG for diagnostics
+                if not response.ok:
+                    logger.debug(
+                        "%s %s returned %d: %s",
+                        method,
+                        url,
+                        response.status_code,
+                        response.text[:500] if response.text else "(empty)",
+                    )
                 response.raise_for_status()
                 return response
 

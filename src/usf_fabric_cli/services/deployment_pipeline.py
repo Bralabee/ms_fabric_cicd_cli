@@ -267,8 +267,27 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             )
             return {"success": True}
         except requests.RequestException as e:
-            logger.error("Failed to assign workspace to stage: %s", e)
-            return {"success": False, "error": str(e)}
+            # Capture the API response body for better error classification
+            error_detail = ""
+            status_code = None
+            if hasattr(e, "response") and e.response is not None:
+                status_code = e.response.status_code
+                try:
+                    error_detail = e.response.text
+                except Exception:
+                    error_detail = ""
+
+            logger.error(
+                "Failed to assign workspace to stage: %s (detail: %s)",
+                e,
+                error_detail,
+            )
+            return {
+                "success": False,
+                "error": str(e),
+                "error_detail": error_detail,
+                "status_code": status_code,
+            }
 
     def unassign_workspace_from_stage(
         self, pipeline_id: str, stage_id: str

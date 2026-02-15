@@ -67,9 +67,10 @@ def is_retryable_http_status(status_code: int) -> bool:
         status_code: HTTP status code
 
     Returns:
-        True if status code is retryable (429, 503, 502, 504)
+        True if status code is retryable (401, 429, 502, 503, 504).
+        401 is included because token refresh between retries may resolve it.
     """
-    return status_code in (429, 502, 503, 504)
+    return status_code in (401, 429, 502, 503, 504)
 
 
 def is_retryable_exception(exception: Exception) -> bool:
