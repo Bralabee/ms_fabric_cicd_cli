@@ -7,7 +7,7 @@ import argparse
 import ast
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 
 class CustomSolutionAnalyzer:
@@ -172,8 +172,14 @@ class CustomSolutionAnalyzer:
                 {
                     "priority": "HIGH",
                     "action": "Consider migration to thin wrapper approach",
-                    "reason": f"Large codebase ({total_loc} LOC) has high maintenance burden",
-                    "target_reduction": "Potential reduction to ~270 LOC (85% reduction)",
+                    "reason": (
+                        f"Large codebase ({total_loc} LOC)"
+                        " has high maintenance burden"
+                    ),
+                    "target_reduction": (
+                        "Potential reduction to ~270 LOC"
+                        " (85% reduction)"
+                    ),
                 }
             )
 
@@ -181,7 +187,10 @@ class CustomSolutionAnalyzer:
             recommendations.append(
                 {
                     "priority": "MEDIUM",
-                    "action": f"Replace {len(cli_replaceable)} components with Fabric CLI",
+                    "action": (
+                        f"Replace {len(cli_replaceable)}"
+                        " components with Fabric CLI"
+                    ),
                     "reason": "These components have direct CLI equivalents",
                     "components": [c["name"] for c in cli_replaceable],
                 }
@@ -192,7 +201,10 @@ class CustomSolutionAnalyzer:
                 {
                     "priority": "MEDIUM",
                     "action": "Replace direct API calls with CLI commands",
-                    "reason": f"Found {len(self.analysis['fabric_api_calls'])} direct API calls",
+                    "reason": (
+                        f"Found {len(self.analysis['fabric_api_calls'])}"
+                        " direct API calls"
+                    ),
                     "benefit": "Better error handling and Microsoft support",
                 }
             )
@@ -257,7 +269,8 @@ def main() -> int:
         print(f"   Total LOC: {analysis['total_loc']}")
         print(f"   Components found: {len(analysis['components_found'])}")
         print(
-            f"   CLI replaceable: {len([c for c in analysis['components_found'] if c['cli_replaceable']])}"
+            "   CLI replaceable:"
+            f" {len([c for c in analysis['components_found'] if c['cli_replaceable']])}"
         )
         print(f"   Migration complexity: {analysis['migration_complexity']}")
 

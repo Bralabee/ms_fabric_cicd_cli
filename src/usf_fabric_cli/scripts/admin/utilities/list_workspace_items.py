@@ -66,7 +66,11 @@ def list_workspace_items(workspace_name: str) -> None:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items <workspace_name>")
+        print(
+            "Usage: python -m usf_fabric_cli"
+            ".scripts.admin.utilities"
+            ".list_workspace_items <workspace_name>"
+        )
         print('   or: make list-items workspace="Name"')
         sys.exit(1)
 
