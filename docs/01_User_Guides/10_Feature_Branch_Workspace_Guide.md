@@ -1,6 +1,6 @@
 # Fabric CI/CD — Full End-to-End Lifecycle Guide
 
-> **Version**: 1.7.6 | **Last validated**: 12 February 2026
+> **Version**: 1.7.6 | **Last validated**: 15 February 2026
 
 This guide walks through the **complete lifecycle** of Microsoft Fabric workspace management — from initial environment setup (Dev/Test/Prod), through feature branch development in isolated workspaces, to automated promotion through a Fabric Deployment Pipeline.
 
@@ -66,10 +66,10 @@ This guide covers the **Microsoft-recommended Option 3** pattern for Fabric CI/C
  │                                                                          │
  │  workflow_dispatch → setup-base-workspaces.yml                           │
  │    → fabric-cicd deploy base_workspace.yaml --env dev                    │
- │      → Creates: fabric-cicd-demo-dev (Git-synced to main)               │
- │      → Auto-creates Deployment Pipeline: fabric-cicd-demo-pipeline      │
- │      → Auto-creates: fabric-cicd-demo-test → assigns to Test stage      │
- │      → Auto-creates: fabric-cicd-demo-prod → assigns to Prod stage      │
+ │      → Creates: <prefix>-dev (Git-synced to main)                       │
+ │      → Auto-creates Deployment Pipeline: <prefix>-pipeline              │
+ │      → Auto-creates: <prefix>-test → assigns to Test stage              │
+ │      → Auto-creates: <prefix>-prod → assigns to Prod stage              │
  │                                                                          │
  │  ✅ Fully automated — no manual Fabric portal steps required             │
  └──────────────────────────────────────────────────────────────────────────┘
@@ -79,7 +79,7 @@ This guide covers the **Microsoft-recommended Option 3** pattern for Fabric CI/C
  │                                                                          │
  │  git push feature/X → feature-workspace-create.yml                       │
  │    → fabric-cicd deploy --branch feature/X --force-branch-workspace      │
- │      → Creates: fabric-cicd-demo-feature-X (with folders, items, Git)   │
+ │      → Creates: <prefix>-feature-X (with folders, items, Git)           │
  │                                                                          │
  │  Developer works in isolated workspace (Fabric portal)                   │
  │                                                                          │
@@ -138,12 +138,16 @@ This guide covers the **Microsoft-recommended Option 3** pattern for Fabric CI/C
 
 ## 4. Repository Setup
 
-### Option A: Use the existing test repo
+### Option A: Fork the reference consumer repo
 
 ```bash
-git clone https://github.com/BralaBee-LEIT/fabric_cicd_test_repo.git
-cd fabric_cicd_test_repo
+# Fork via GitHub UI first, then clone your fork
+git clone https://github.com/<your-org>/<your-consumer-repo>.git
+cd <your-consumer-repo>
 ```
+
+> **Reference repo**: See the `fabric_cicd_test_repo` for a ready-to-use template
+> with all workflows and configs pre-configured.
 
 ### Option B: Create a new consumer repo
 
@@ -192,8 +196,8 @@ This config defines the **main Dev workspace** — the source of truth connected
 # ─────────────────────────────────────────────────────────────────
 
 workspace:
-  name: fabric-cicd-demo-dev
-  display_name: Fabric CICD Demo - Development
+  name: ${PROJECT_PREFIX}-dev
+  display_name: ${PROJECT_PREFIX} - Development
   description: Main Dev workspace synced to main branch
   capacity_id: ${FABRIC_CAPACITY_ID}
   git_repo: ${GIT_REPO_URL}
@@ -203,7 +207,7 @@ workspace:
 environments:
   dev:
     workspace:
-      name: fabric-cicd-demo-dev
+      name: ${PROJECT_PREFIX}-dev
       capacity_id: ${FABRIC_CAPACITY_ID}
 
 folders:
@@ -230,16 +234,16 @@ principals:
 # Deployment Pipeline — Dev → Test → Prod promotion
 # ─────────────────────────────────────────────────────────────────
 deployment_pipeline:
-  pipeline_name: fabric-cicd-demo-pipeline
+  pipeline_name: ${PROJECT_PREFIX}-pipeline
   stages:
     development:
-      workspace_name: fabric-cicd-demo-dev
+      workspace_name: ${PROJECT_PREFIX}-dev
       capacity_id: ${FABRIC_CAPACITY_ID}
     test:
-      workspace_name: fabric-cicd-demo-test
+      workspace_name: ${PROJECT_PREFIX}-test
       capacity_id: ${FABRIC_CAPACITY_ID}
     production:
-      workspace_name: fabric-cicd-demo-prod
+      workspace_name: ${PROJECT_PREFIX}-prod
       capacity_id: ${FABRIC_CAPACITY_ID}
 ```
 
@@ -255,8 +259,8 @@ This config defines what each **feature branch workspace** looks like — isolat
 # ─────────────────────────────────────────────────────────────────
 
 workspace:
-  name: fabric-cicd-demo              # Base name (branch suffix appended automatically)
-  display_name: Fabric CICD Demo
+  name: ${PROJECT_PREFIX}              # Base name (branch suffix appended automatically)
+  display_name: ${PROJECT_PREFIX}
   description: Feature branch workspace for isolated development
   capacity_id: ${FABRIC_CAPACITY_ID}
   git_repo: ${GIT_REPO_URL}           # Set by GitHub Actions or .env
@@ -267,7 +271,7 @@ workspace:
 environments:
   dev:
     workspace:
-      name: fabric-cicd-demo
+      name: ${PROJECT_PREFIX}
       capacity_id: ${FABRIC_CAPACITY_ID}
 
 # Folder structure
@@ -297,7 +301,7 @@ principals:
 
 ### Key points
 
-- **`workspace.name`** is the **base name**. When `--force-branch-workspace` is used, the CLI appends the branch name as a suffix (e.g., `fabric-cicd-demo-feature-my-feature`)
+- **`workspace.name`** is the **base name**. When `--force-branch-workspace` is used, the CLI appends the branch name as a suffix (e.g., `<prefix>-feature-my-feature`)
 - **`${VAR_NAME}`** placeholders are resolved from environment variables or `.env`
 - **`environments:`** block (v1.7.6+) allows inline per-environment overrides — these take priority over external files in `config/environments/`
 - The deploying Service Principal automatically gets Admin access; you don't need to list it
@@ -310,24 +314,37 @@ Six workflows cover the full lifecycle. All live in `.github/workflows/`.
 
 | # | Workflow File | Trigger | Purpose |
 |:--|:---|:---|:---|
-| 1 | `setup-base-workspaces.yml` | `workflow_dispatch` | One-time: provision Dev workspace |
-| 2 | `feature-workspace-create.yml` | Push to `feature/**` | Create feature workspace |
-| 3 | `feature-workspace-cleanup.yml` | PR merge / branch delete | Destroy feature workspace |
-| 4 | `promote-dev-to-test.yml` | Push to `main` | Auto-promote Dev → Test |
-| 5 | `promote-test-to-prod.yml` | `workflow_dispatch` + confirm | Manual promote Test → Prod |
+| 1 | `ci.yml` | Push/PR to `main` | Validate YAML syntax and check for hardcoded secrets |
+| 2 | `setup-base-workspaces.yml` | `workflow_dispatch` | One-time: provision Dev workspace + Deployment Pipeline |
+| 3 | `feature-workspace-create.yml` | Push to `feature/**` | Create feature workspace |
+| 4 | `feature-workspace-cleanup.yml` | PR merge / `workflow_dispatch` | Destroy feature workspace |
+| 5 | `promote-dev-to-test.yml` | Push to `main` | Auto-promote Dev → Test |
+| 6 | `promote-test-to-prod.yml` | `workflow_dispatch` + confirm | Manual promote Test → Prod |
+
+> **Note**: All workflows use **parameterised variables** with fallback defaults.
+> Set `PROJECT_PREFIX`, `CLI_REPO_URL`, `CLI_REPO_REF`, and `FABRIC_CLI_VERSION`
+> as **repository variables** (Settings → Variables) to customise for your project.
+> See the [REPLICATION_GUIDE](../../../fabric_cicd_test_repo/docs/REPLICATION_GUIDE.md) for full setup instructions.
 
 ### 7a. Setup Workflow (`setup-base-workspaces.yml`)
 
-Run once to provision the Dev workspace. Test and Prod workspaces are created via the Fabric Deployment Pipeline in the portal.
+Run once to provision the Dev workspace. The deployer **automatically** creates the Deployment Pipeline, Test, and Prod workspaces.
 
 ```yaml
 name: Setup Base Workspaces
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options: [dev]
 
 jobs:
-  setup-dev-workspace:
+  setup-base-workspaces:
     runs-on: ubuntu-latest
     env:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -335,38 +352,35 @@ jobs:
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       FABRIC_CAPACITY_ID: ${{ secrets.FABRIC_CAPACITY_ID }}
       GITHUB_TOKEN_FABRIC: ${{ secrets.FABRIC_GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.FABRIC_GITHUB_TOKEN }}
       GIT_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
       DEV_ADMIN_OBJECT_ID: ${{ secrets.DEV_ADMIN_OBJECT_ID }}
+      PROJECT_PREFIX: ${{ vars.PROJECT_PREFIX || 'fabric-cicd-demo' }}
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
       - name: Install CLI
         run: |
-          pip install --upgrade pip ms-fabric-cli
-          pip install git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@github.com/BralaBee-LEIT/usf_fabric_cli_cicd_codebase.git
+          pip install --upgrade pip
+          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'main' }}"
+
+      - name: Verify credentials
+        run: |
+          for var in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET FABRIC_CAPACITY_ID GITHUB_TOKEN_FABRIC DEV_ADMIN_OBJECT_ID; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Required secret $var is not configured"
+              exit 1
+            fi
+          done
 
       - name: Deploy Dev workspace
         run: |
-          fabric-cicd deploy config/projects/demo/base_workspace.yaml --env dev
-
-      - name: Report setup complete
-        if: success()
-        run: |
-          echo "## ✅ Base Workspace Setup Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### What was deployed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Dev workspace created and Git-synced to main" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Deployment Pipeline created" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Test and Prod workspaces created and assigned" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "1. Create a feature/* branch to test the lifecycle" >> $GITHUB_STEP_SUMMARY
-          echo "2. Merge a PR to main to trigger Dev → Test promotion" >> $GITHUB_STEP_SUMMARY
-          echo "3. Manually trigger Promote Test → Prod when ready" >> $GITHUB_STEP_SUMMARY
+          fabric-cicd deploy config/projects/demo/base_workspace.yaml --env ${{ inputs.environment }}
 ```
 
 ### 7b. Create Workflow (`feature-workspace-create.yml`)
@@ -377,7 +391,6 @@ jobs:
 name: Create Feature Workspace
 
 on:
-  create:
   push:
     branches:
       - 'feature/**'
@@ -388,9 +401,7 @@ concurrency:
 
 jobs:
   create-feature-workspace:
-    if: >
-      github.event_name == 'create' && github.ref_type == 'branch' && startsWith(github.ref, 'refs/heads/feature/') ||
-      github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
+    if: startsWith(github.ref, 'refs/heads/feature/')
     runs-on: ubuntu-latest
 
     env:
@@ -402,21 +413,22 @@ jobs:
       FABRIC_CAPACITY_ID: ${{ secrets.FABRIC_CAPACITY_ID }}
       DEV_ADMIN_OBJECT_ID: ${{ secrets.DEV_ADMIN_OBJECT_ID }}
       GIT_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+      PROJECT_PREFIX: ${{ vars.PROJECT_PREFIX || 'fabric-cicd-demo' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.ref }}
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
       - name: Install CLI tool
         run: |
           pip install --upgrade pip
-          pip install ms-fabric-cli
-          pip install git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@github.com/BralaBee-LEIT/usf_fabric_cli_cicd_codebase.git
+          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'main' }}"
 
       - name: Extract branch info
         id: branch
@@ -437,8 +449,15 @@ jobs:
           done
 
       - name: Deploy feature workspace
+        env:
+          CONFIG_OVERRIDE: ${{ vars.FEATURE_WORKSPACE_CONFIG || '' }}
         run: |
-          CONFIG_FILE=$(find config/projects -name "*.yaml" -type f | head -1)
+          if [ -n "$CONFIG_OVERRIDE" ]; then
+            CONFIG_FILE="$CONFIG_OVERRIDE"
+          else
+            CONFIG_FILE=$(find config/projects -name "feature_*.yaml" -type f | head -1)
+          fi
+
           fabric-cicd deploy \
             "$CONFIG_FILE" \
             --env dev \
@@ -457,34 +476,43 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
-  delete:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Feature branch name (e.g., feature/my-feature)'
+        required: true
+        type: string
+
+concurrency:
+  group: cleanup-${{ github.event.pull_request.head.ref || inputs.branch_name || 'manual' }}
+  cancel-in-progress: false
 
 jobs:
   cleanup-feature-workspace:
     if: >
       (github.event_name == 'pull_request' && github.event.pull_request.merged == true &&
        startsWith(github.event.pull_request.head.ref, 'feature/')) ||
-      (github.event_name == 'delete' && github.event.ref_type == 'branch' &&
-       startsWith(github.event.ref, 'feature/'))
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     env:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      PROJECT_PREFIX: ${{ vars.PROJECT_PREFIX || 'fabric-cicd-demo' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
       - name: Install CLI tool
         run: |
           pip install --upgrade pip
-          pip install ms-fabric-cli
-          pip install git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@github.com/BralaBee-LEIT/usf_fabric_cli_cicd_codebase.git
+          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'main' }}"
 
       - name: Extract branch info
         id: branch
@@ -492,13 +520,20 @@ jobs:
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
           else
-            BRANCH_NAME="${{ github.event.ref }}"
+            BRANCH_NAME="${{ inputs.branch_name }}"
           fi
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
       - name: Destroy feature workspace
+        env:
+          CONFIG_OVERRIDE: ${{ vars.FEATURE_WORKSPACE_CONFIG || '' }}
         run: |
-          CONFIG_FILE=$(find config/projects -name "*.yaml" -type f | head -1)
+          if [ -n "$CONFIG_OVERRIDE" ]; then
+            CONFIG_FILE="$CONFIG_OVERRIDE"
+          else
+            CONFIG_FILE=$(find config/projects -name "feature_*.yaml" -type f | head -1)
+          fi
+
           BRANCH="${{ steps.branch.outputs.branch_name }}"
           WS_SUFFIX=$(echo "${BRANCH}" | tr '/' '-' | tr '_' '-' | tr '[:upper:]' '[:lower:]')
           BASE_NAME=$(python -c "import yaml; print(yaml.safe_load(open('$CONFIG_FILE'))['workspace']['name'])")
@@ -524,57 +559,68 @@ on:
     branches: [main]
     paths-ignore:
       - '**.md'
+      - '.github/CODEOWNERS'
+      - '.github/dependabot.yml'
+      - '.github/copilot-instructions.md'
       - '.github/PULL_REQUEST_TEMPLATE.md'
+  workflow_dispatch:
 
 concurrency:
-  group: promote-dev-test
-  cancel-in-progress: true
+  group: promote-dev-to-test
+  cancel-in-progress: false
 
 jobs:
-  promote:
+  promote-dev-to-test:
     runs-on: ubuntu-latest
     env:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      FABRIC_CAPACITY_ID: ${{ secrets.FABRIC_CAPACITY_ID }}
+      PROJECT_PREFIX: ${{ vars.PROJECT_PREFIX || 'fabric-cicd-demo' }}
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
       - name: Install CLI
         run: |
-          pip install --upgrade pip ms-fabric-cli
-          pip install git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@github.com/BralaBee-LEIT/usf_fabric_cli_cicd_codebase.git
+          pip install --upgrade pip
+          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'main' }}"
 
       - name: Wait for Fabric Git Sync
         run: |
-          echo "⏳ Waiting 30s for Fabric to sync main branch..."
-          sleep 30
-
-      - name: Read pipeline name from config
-        id: config
-        run: |
-          PIPELINE_NAME=$(python3 -c "
-          import yaml
-          with open('config/projects/demo/base_workspace.yaml') as f:
-              cfg = yaml.safe_load(f)
-          print(cfg['deployment_pipeline']['pipeline_name'])
-          ")
-          echo "pipeline_name=$PIPELINE_NAME" >> $GITHUB_OUTPUT
+          echo "⏳ Waiting 60s for Fabric to sync main branch to Dev workspace..."
+          for i in $(seq 1 6); do
+            echo "  ⏱️  Waiting... (${i}0s / 60s)"
+            sleep 10
+          done
 
       - name: Promote Dev → Test
         run: |
+          # Read pipeline name from config, resolving ${VAR} patterns
+          PIPELINE_NAME=$(python -c "
+          import os, re, yaml
+          config = yaml.safe_load(open('config/projects/demo/base_workspace.yaml'))
+          name = config.get('deployment_pipeline', {}).get('pipeline_name', '')
+          name = re.sub(r'\\\$\{(\w+)\}', lambda m: os.environ.get(m.group(1), m.group(0)), name)
+          print(name)
+          ")
+
+          echo "🚀 Promoting via pipeline: $PIPELINE_NAME"
           fabric-cicd promote \
-            --pipeline-name "${{ steps.config.outputs.pipeline_name }}" \
+            --pipeline-name "$PIPELINE_NAME" \
             --source-stage Development \
             --target-stage Test \
-            --note "Auto-promoted from commit ${{ github.sha }}" \
-            --wait
+            --note "Auto-promoted from commit ${{ github.sha }}"
 ```
+
+> **How the `re.sub` regex works**: The YAML config contains `${PROJECT_PREFIX}-pipeline`.
+> The Python snippet reads this string and replaces `${VAR}` patterns with the
+> corresponding environment variable values. Since `PROJECT_PREFIX` is set as an
+> env var in the workflow, the pipeline name resolves correctly at runtime.
 
 ### 7e. Test → Prod Promotion Workflow (`promote-test-to-prod.yml`)
 
@@ -601,6 +647,14 @@ jobs:
           echo "::error::Production promotion rejected. You must type PROMOTE to confirm."
           exit 1
 
+  rejected:
+    needs: safety-gate
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rejection notice
+        run: echo "❌ Production promotion was rejected — 'PROMOTE' not entered."
+
   promote:
     needs: safety-gate
     runs-on: ubuntu-latest
@@ -608,39 +662,42 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      FABRIC_CAPACITY_ID: ${{ secrets.FABRIC_CAPACITY_ID }}
+      PROJECT_PREFIX: ${{ vars.PROJECT_PREFIX || 'fabric-cicd-demo' }}
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
       - name: Install CLI
         run: |
-          pip install --upgrade pip ms-fabric-cli
-          pip install git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@github.com/BralaBee-LEIT/usf_fabric_cli_cicd_codebase.git
-
-      - name: Read pipeline name from config
-        id: config
-        run: |
-          PIPELINE_NAME=$(python3 -c "
-          import yaml
-          with open('config/projects/demo/base_workspace.yaml') as f:
-              cfg = yaml.safe_load(f)
-          print(cfg['deployment_pipeline']['pipeline_name'])
-          ")
-          echo "pipeline_name=$PIPELINE_NAME" >> $GITHUB_OUTPUT
+          pip install --upgrade pip
+          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'main' }}"
 
       - name: Promote Test → Production
+        env:
+          DEPLOY_NOTE: "Production promotion by ${{ github.actor }} at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
         run: |
+          PIPELINE_NAME=$(python3 -c "
+          import os, re, yaml
+          cfg = yaml.safe_load(open('config/projects/demo/base_workspace.yaml'))
+          name = cfg['deployment_pipeline']['pipeline_name']
+          name = re.sub(r'\\\$\{(\w+)\}', lambda m: os.environ.get(m.group(1), m.group(0)), name)
+          print(name)
+          ")
+
+          echo "🚀 Promoting $PIPELINE_NAME: Test → Production"
           fabric-cicd promote \
-            --pipeline-name "${{ steps.config.outputs.pipeline_name }}" \
+            --pipeline-name "$PIPELINE_NAME" \
             --source-stage Test \
             --target-stage Production \
-            --note "Manual production promotion by ${{ github.actor }}" \
-            --wait
+            --note "$DEPLOY_NOTE"
 ```
+
+> **Safety**: The `rejected` job provides a clear message when the safety gate fails.
+> The promote job only runs if the safety gate succeeds (`needs: safety-gate`).
 
 ---
 
@@ -659,9 +716,9 @@ GitHub → Actions → Setup Base Workspaces → Run workflow
 The workflow deploys `base_workspace.yaml` which triggers the following automated sequence:
 
 1. **Dev workspace** created with folders, lakehouse, notebook, and Git connection to `main`
-2. **Deployment Pipeline** `fabric-cicd-demo-pipeline` auto-created (or reused if it exists)
-3. **Test workspace** `fabric-cicd-demo-test` auto-created with capacity assigned
-4. **Prod workspace** `fabric-cicd-demo-prod` auto-created with capacity assigned
+2. **Deployment Pipeline** `<prefix>-pipeline` auto-created (or reused if it exists)
+3. **Test workspace** `<prefix>-test` auto-created with capacity assigned
+4. **Prod workspace** `<prefix>-prod` auto-created with capacity assigned
 5. **All workspaces assigned** to their respective pipeline stages (Development / Test / Production)
 
 > **Timing**: The full setup completes in approximately **3 minutes** (validated E2E: 3m 6s).
@@ -673,7 +730,7 @@ After the workflow completes successfully, verify in the Fabric portal:
 | Check | Expected |
 |:---|:---|
 | Dev workspace | Folders (Bronze/Silver/Gold), lakehouse, notebook, Git-synced to `main` |
-| Deployment Pipeline | `fabric-cicd-demo-pipeline` with 3 stages |
+| Deployment Pipeline | `<prefix>-pipeline` with 3 stages |
 | Test workspace | Exists, assigned to Test stage (empty — awaiting first promotion) |
 | Prod workspace | Exists, assigned to Production stage (empty — awaiting promotion) |
 | SP admin access | Service Principal is Admin on all three workspaces |
@@ -717,7 +774,7 @@ gh run view <run-id> --web
 ```
 
 **Expected output**: The workflow runs for ~2 minutes (validated: 2m 14s) and creates:
-- Workspace: `fabric-cicd-demo-feature-my-data-product`
+- Workspace: `<prefix>-feature-my-data-product`
 - Folders: Bronze, Silver, Gold
 - Lakehouse: `lh_bronze` in Bronze
 - Notebook: `demo_notebook` in Bronze
@@ -727,7 +784,7 @@ gh run view <run-id> --web
 ### Step 3: Develop in the feature workspace
 
 Open the workspace in the [Fabric portal](https://app.fabric.microsoft.com):
-1. Navigate to your workspace (`fabric-cicd-demo-feature-my-data-product`)
+1. Navigate to your workspace (`<prefix>-feature-my-data-product`)
 2. Edit notebooks, create pipelines, build semantic models
 3. Changes are tracked in the Git-connected feature branch
 
@@ -765,7 +822,7 @@ gh run list --limit 1
 gh run watch <run-id>
 ```
 
-**Expected**: Workspace `fabric-cicd-demo-feature-my-data-product` is destroyed, capacity freed.
+**Expected**: Workspace `<prefix>-feature-my-data-product` is destroyed, capacity freed.
 
 ---
 
@@ -827,14 +884,14 @@ make deploy \
 ### Step 4: Verify in Fabric portal
 
 1. Open [app.fabric.microsoft.com](https://app.fabric.microsoft.com)
-2. Search for workspace `fabric-cicd-demo-feature-my-feature`
+2. Search for workspace `<prefix>-feature-my-feature`
 3. Confirm folders, lakehouse, notebook, and Git connection are present
 
 ### Step 5: Destroy the feature workspace
 
 ```bash
-# Derive the workspace name
-WS_NAME="fabric-cicd-demo-feature-my-feature"
+# Derive the workspace name (replace <prefix> with your PROJECT_PREFIX value)
+WS_NAME="<prefix>-feature-my-feature"
 
 # Destroy
 fabric-cicd destroy \
@@ -866,7 +923,7 @@ gh run watch <run-id>
 
 ### Verify in Fabric portal
 
-1. Open the **Deployment Pipeline** (`fabric-cicd-demo-pipeline`)
+1. Open the **Deployment Pipeline** (`<prefix>-pipeline`)
 2. Confirm the **Test** stage shows the promoted content
 3. Verify items (lakehouses, notebooks) match the Dev workspace
 
@@ -876,11 +933,10 @@ If the workflow fails or you need to promote manually:
 
 ```bash
 fabric-cicd promote \
-  --pipeline-name "fabric-cicd-demo-pipeline" \
+  --pipeline-name "<prefix>-pipeline" \
   --source-stage Development \
   --target-stage Test \
-  --note "Manual promotion" \
-  --wait
+  --note "Manual promotion"
 ```
 
 ---
@@ -921,11 +977,10 @@ gh run watch <run-id>
 
 ```bash
 fabric-cicd promote \
-  --pipeline-name "fabric-cicd-demo-pipeline" \
+  --pipeline-name "<prefix>-pipeline" \
   --source-stage Test \
   --target-stage Production \
-  --note "Production release by $(whoami)" \
-  --wait
+  --note "Production release by $(whoami)"
 ```
 
 > **Warning**: Production promotion cannot be undone through the Deployment Pipeline. To revert, promote the previous content from Test again.
@@ -1049,8 +1104,8 @@ Where:
 
 | Branch | Base Name | Workspace Name |
 |:---|:---|:---|
-| `feature/my-data-product` | `fabric-cicd-demo` | `fabric-cicd-demo-feature-my-data-product` |
-| `feature/JIRA-123` | `fabric-cicd-demo` | `fabric-cicd-demo-feature-jira-123` |
+| `feature/my-data-product` | `<prefix>` | `<prefix>-feature-my-data-product` |
+| `feature/JIRA-123` | `<prefix>` | `<prefix>-feature-jira-123` |
 | `feature/add_kql_support` | `analytics-hub` | `analytics-hub-feature-add-kql-support` |
 
 ### Workflow Triggers
@@ -1079,6 +1134,10 @@ Where:
 
 ---
 
-*Document created: 12 February 2026 | Updated: 13 February 2026 | CLI version: 1.7.6*
+*Document created: 12 February 2026 | Updated: 15 February 2026 | CLI version: 1.7.6*
 
-*E2E lifecycle validated: 13 February 2026 — all 3 phases passed (setup, feature branch, promotion).*
+*E2E lifecycle validated: 15 February 2026 — all 3 phases passed (setup, feature branch, promotion).*
+
+> **`<prefix>` notation**: Throughout this document, `<prefix>` refers to the value of the
+> `PROJECT_PREFIX` repository variable (default: `fabric-cicd-demo`). Set this variable in
+> GitHub → Settings → Secrets and variables → Actions → Variables.

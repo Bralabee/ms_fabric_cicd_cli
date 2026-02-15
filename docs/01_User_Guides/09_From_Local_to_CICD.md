@@ -314,7 +314,7 @@ The `usf_fabric_cli_cicd` repository is a **library/tool**. It should not deploy
 
 ```
 ┌──────────────────────────┐     ┌──────────────────────────────┐
-│  usf_fabric_cli_cicd     │     │  fabric_cicd_test_repo       │
+│  usf_fabric_cli_cicd     │     │  your-consumer-repo          │
 │  (LIBRARY)               │     │  (CONSUMER)                  │
 │                          │     │                              │
 │  ✅ pytest.yml           │     │  ✅ feature-workspace-        │
@@ -330,16 +330,19 @@ The `usf_fabric_cli_cicd` repository is a **library/tool**. It should not deploy
 ### How It Was Fixed
 
 1. **Removed all deployment workflows** from the library repo (`490b3bd`)
-2. **Moved workflows to the consumer repo** (`fabric_cicd_test_repo/.github/workflows/`)
+2. **Moved workflows to the consumer repo** (`your-consumer-repo/.github/workflows/`)
 3. Consumer workflow installs the CLI library as a pip dependency:
 
 ```yaml
-# In fabric_cicd_test_repo/.github/workflows/feature-workspace-create.yml
+# In your-consumer-repo/.github/workflows/feature-workspace-create.yml
 - name: Install CLI tool
   run: |
-    pip install ms-fabric-cli
-    pip install git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@github.com/BralaBee-LEIT/usf_fabric_cli_cicd_codebase.git
+    pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+    pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'main' }}"
 ```
+
+> **Note**: The `CLI_REPO_URL`, `CLI_REPO_REF`, and `FABRIC_CLI_VERSION` are configurable via
+> GitHub repository variables. See the [Replication Guide](../../../fabric_cicd_test_repo/docs/REPLICATION_GUIDE.md) for details.
 
 **Commit**: `490b3bd` — *chore: remove deployment workflows from library repo*
 
@@ -558,10 +561,10 @@ The final milestone addressed a subtle but impactful schema validation bug: proj
 2. Updated `ConfigManager.load_config()` to extract inline environments *before* schema validation
 3. Inline `environments:` blocks now take priority over external `config/environments/*.yaml` files
 
-**E2E Validation:** Full feature branch workspace lifecycle tested via `fabric_cicd_test_repo`:
+**E2E Validation:** Full feature branch workspace lifecycle tested via consumer repo:
 - Create workflow: workspace provisioned with folders, lakehouse, notebook, principals, and Git connection (2m 26s)
 - Cleanup workflow: workspace destroyed on branch delete (28s)
-- 355 unit tests passing (backward-compatible change)
+- 369 unit tests passing (backward-compatible change)
 
 ---
 
