@@ -74,7 +74,7 @@ graph LR
 
 ### Phase 1: Main-Centric Dev Workspace
 
-**Files changed:** `scripts/dev/onboard.py`, `Makefile`
+**Files changed:** `src/usf_fabric_cli/scripts/dev/onboard.py`, `Makefile`
 
 Separated the onboarding script into two distinct modes:
 

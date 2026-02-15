@@ -1002,7 +1002,7 @@ which fabric-cicd
 python -c "from usf_fabric_cli.utils.secrets import FabricSecrets; s=FabricSecrets(); print(f'Tenant: {s.tenant_id[:8]}...')"
 
 # Run preflight diagnostics
-python scripts/admin/preflight_check.py
+python -m usf_fabric_cli.scripts.admin.preflight_check
 ```
 
 ### Promotion issues

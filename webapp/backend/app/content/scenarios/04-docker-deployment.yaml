@@ -243,7 +243,7 @@ steps:
         docker run --rm \
           --env-file .env \
           fabric-cli-cicd \
-          python scripts/admin/preflight_check.py
+          python -m usf_fabric_cli.scripts.admin.preflight_check
     expected_output: |
       ╔══════════════════════════════════════════════════════════════╗
       ║            Fabric CLI CI/CD Preflight Check                  ║
@@ -415,8 +415,8 @@ steps:
         
         # Inside the container, you can run:
         # fab --version
-        # python scripts/admin/preflight_check.py
-        # python scripts/admin/utilities/list_workspaces.py
+        # python -m usf_fabric_cli.scripts.admin.preflight_check
+        # python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
         # fabric-cicd diagnose
     expected_output: |
       # You'll get a bash prompt inside the container:
@@ -426,7 +426,7 @@ steps:
       appuser@abc123:/app$ fab --version
       fab version 0.1.5
       
-      appuser@abc123:/app$ python scripts/admin/utilities/list_workspaces.py
+      appuser@abc123:/app$ python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
       Found 3 workspaces:
       - sales-analytics-dev
       - sales-analytics-prod
@@ -453,7 +453,7 @@ steps:
         docker run --rm \
           -v "$(pwd)/config:/app/config" \
           fabric-cli-cicd \
-          python scripts/dev/generate_project.py "Contoso Inc" "Finance Analytics" --template basic_etl
+          python -m usf_fabric_cli.scripts.dev.generate_project "Contoso Inc" "Finance Analytics" --template basic_etl
         
         # Verify the generated file
         ls config/projects/contoso_inc/
@@ -486,7 +486,7 @@ steps:
         docker run --rm \
           --env-file .env \
           fabric-cli-cicd \
-          python scripts/admin/utilities/init_ado_repo.py \
+          python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
             --organization "acme-org" \
             --project "FabricProjects" \
             --repository "sales-analytics"

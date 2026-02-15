@@ -18,8 +18,6 @@ Requires:
 
 import logging
 import os
-import sys
-from pathlib import Path
 from typing import Optional, Dict, Any
 
 import requests
@@ -30,10 +28,6 @@ from dotenv import load_dotenv
 # Load .env so GITHUB_TOKEN (and any other vars) are available when
 # running this script directly (consistent with the rest of the project).
 load_dotenv()
-
-# Add project root for sibling imports
-project_root = Path(__file__).resolve().parent.parent.parent.parent
-sys.path.append(str(project_root))
 
 # ---------------------------------------------------------------------------
 # Logging / UI

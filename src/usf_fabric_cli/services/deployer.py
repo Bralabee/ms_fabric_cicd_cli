@@ -25,6 +25,7 @@ from usf_fabric_cli.services.fabric_git_api import FabricGitAPI, GitProviderType
 from usf_fabric_cli.services.deployment_pipeline import FabricDeploymentPipelineAPI
 from usf_fabric_cli.utils.secrets import FabricSecrets
 from usf_fabric_cli.utils.templating import ArtifactTemplateEngine
+from usf_fabric_cli.services.token_manager import create_token_manager_from_env
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -82,10 +83,25 @@ class FabricDeployer:
             env_vars = get_environment_variables()
             self.secrets = None
 
-        self.fabric = FabricCLIWrapper(env_vars["FABRIC_TOKEN"])
+        # Create token manager for proactive token refresh during
+        # long-running deployments (Azure AD tokens expire after ~60 min)
+        self._token_manager = create_token_manager_from_env()
+        if self._token_manager:
+            logger.info("TokenManager active — tokens will auto-refresh")
+
+        self.fabric = FabricCLIWrapper(
+            env_vars["FABRIC_TOKEN"],
+            token_manager=self._token_manager,
+        )
         self.git = GitFabricIntegration(self.fabric)
-        self.git_api = FabricGitAPI(env_vars["FABRIC_TOKEN"])
-        self.pipeline_api = FabricDeploymentPipelineAPI(env_vars["FABRIC_TOKEN"])
+        self.git_api = FabricGitAPI(
+            env_vars["FABRIC_TOKEN"],
+            token_manager=self._token_manager,
+        )
+        self.pipeline_api = FabricDeploymentPipelineAPI(
+            env_vars["FABRIC_TOKEN"],
+            token_manager=self._token_manager,
+        )
         self.audit = AuditLogger()
 
         self.workspace_id = None
@@ -344,6 +360,11 @@ class FabricDeployer:
                 result = self.fabric.create_folder(workspace_name, folder)
                 if result["success"]:
                     console.print(f"  Created folder: {folder}")
+                    self.deployment_state.record(
+                        ItemType.FOLDER,
+                        folder,
+                        workspace_name,
+                    )
 
     def _create_items(self):
         """Create all configured items"""
@@ -384,6 +405,13 @@ class FabricDeployer:
                 )
                 if not result.get("reused"):
                     self.items_created += 1
+                    self.deployment_state.record(
+                        ItemType.LAKEHOUSE,
+                        lakehouse["name"],
+                        workspace_name,
+                        item_id=result.get("item_id"),
+                        folder_name=lakehouse.get("folder"),
+                    )
 
         # Create warehouses
         for warehouse in self.config.warehouses:
@@ -409,6 +437,13 @@ class FabricDeployer:
                 )
                 if not result.get("reused"):
                     self.items_created += 1
+                    self.deployment_state.record(
+                        ItemType.WAREHOUSE,
+                        warehouse["name"],
+                        workspace_name,
+                        item_id=result.get("item_id"),
+                        folder_name=warehouse.get("folder"),
+                    )
 
         # Create notebooks
         for notebook in self.config.notebooks:
@@ -471,6 +506,13 @@ class FabricDeployer:
                 )
                 if not result.get("reused"):
                     self.items_created += 1
+                    self.deployment_state.record(
+                        ItemType.NOTEBOOK,
+                        notebook["name"],
+                        workspace_name,
+                        item_id=result.get("item_id"),
+                        folder_name=notebook.get("folder"),
+                    )
 
         # Create pipelines
         for pipeline in self.config.pipelines:
@@ -496,6 +538,13 @@ class FabricDeployer:
                 )
                 if not result.get("reused"):
                     self.items_created += 1
+                    self.deployment_state.record(
+                        ItemType.PIPELINE,
+                        pipeline["name"],
+                        workspace_name,
+                        item_id=result.get("item_id"),
+                        folder_name=pipeline.get("folder"),
+                    )
 
         # Create semantic models
         for model in self.config.semantic_models:
@@ -521,6 +570,13 @@ class FabricDeployer:
                 )
                 if not result.get("reused"):
                     self.items_created += 1
+                    self.deployment_state.record(
+                        ItemType.SEMANTIC_MODEL,
+                        model["name"],
+                        workspace_name,
+                        item_id=result.get("item_id"),
+                        folder_name=model.get("folder"),
+                    )
 
         # Create generic resources (Future-proof)
         for resource in self.config.resources:
@@ -546,6 +602,29 @@ class FabricDeployer:
                 )
                 if not result.get("reused"):
                     self.items_created += 1
+                    # Map resource type string to ItemType enum, falling
+                    # back to the generic resource type name for metadata
+                    resource_type_map = {
+                        "Eventstream": ItemType.EVENTSTREAM,
+                        "KQLDatabase": ItemType.KQL_DATABASE,
+                        "SparkJobDefinition": ItemType.SPARK_JOB_DEFINITION,
+                        "Environment": ItemType.ENVIRONMENT,
+                        "Reflex": ItemType.REFLEX,
+                        "MLModel": ItemType.ML_MODEL,
+                        "MLExperiment": ItemType.ML_EXPERIMENT,
+                        "DataflowGen2": ItemType.DATAFLOW_GEN2,
+                        "KQLQueryset": ItemType.KQL_QUERYSET,
+                        "Eventhouse": ItemType.EVENTHOUSE,
+                    }
+                    item_type = resource_type_map.get(resource["type"], ItemType.REPORT)
+                    self.deployment_state.record(
+                        item_type,
+                        resource["name"],
+                        workspace_name,
+                        item_id=result.get("item_id"),
+                        folder_name=resource.get("folder"),
+                        fabric_type=resource["type"],
+                    )
 
     def _add_principals(self):
         """Add principals to workspace"""

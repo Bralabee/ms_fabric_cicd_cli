@@ -1,0 +1,1 @@
+"""Packaged template resources."""

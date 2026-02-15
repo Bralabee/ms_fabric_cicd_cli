@@ -44,7 +44,7 @@ conda activate fabric-cli-cicd
 make install
 
 # Verify Fabric CLI installation and dependencies
-python scripts/admin/preflight_check.py --auto-install
+python -m usf_fabric_cli.scripts.admin.preflight_check --auto-install
 
 # Configure authentication credentials
 cp .env.template .env
@@ -80,13 +80,13 @@ Use the template generator to create a standardized configuration file. Choose f
 
 ```bash
 # Standard ETL (Medallion architecture)
-python scripts/dev/generate_project.py "Contoso Inc" "Finance Analytics" --template basic_etl
+python -m usf_fabric_cli.scripts.dev.generate_project "Contoso Inc" "Finance Analytics" --template basic_etl
 
 # Real-time streaming (IoT, events, Eventstreams + KQL)
-python scripts/dev/generate_project.py "TechCorp" "IoT Platform" --template realtime_streaming
+python -m usf_fabric_cli.scripts.dev.generate_project "TechCorp" "IoT Platform" --template realtime_streaming
 
 # Compliance-heavy (Healthcare, Finance, Government)
-python scripts/dev/generate_project.py "HealthCo" "Patient Platform" --template compliance_regulated
+python -m usf_fabric_cli.scripts.dev.generate_project "HealthCo" "Patient Platform" --template compliance_regulated
 
 # See all 11 templates: docs/01_User_Guides/07_Blueprint_Catalog.md
 # Output: config/projects/{org_name}/{project_name}.yaml
@@ -129,7 +129,7 @@ Or use the standalone repo init commands directly:
 make init-github-repo git_owner="MyGitHubOrg" repo="contoso-finance"
 
 # Azure DevOps
-python scripts/admin/utilities/init_ado_repo.py \
+python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
   --organization "your-ado-org" \
   --project "your-ado-project" \
   --repository "contoso-finance" \
@@ -343,14 +343,14 @@ See [webapp/README.md](webapp/README.md) for detailed documentation.
 
 ## Utility Tools
 
-The framework includes several utility scripts in `scripts/admin/utilities/` to assist with setup and troubleshooting. These scripts automatically load credentials from your `.env` file.
+The framework includes several utility scripts in `src/usf_fabric_cli/scripts/admin/utilities/` to assist with setup and troubleshooting. These scripts automatically load credentials from your `.env` file.
 
 ### Initialize Azure DevOps Repository
 
 Initializes an empty Azure DevOps repository with a `main` branch. This is required because Fabric Git integration fails if the target repository is completely empty (0 branches).
 
 ```bash
-python scripts/admin/utilities/init_ado_repo.py \
+python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
   --organization "your-org-name" \
   --project "your-project-name" \
   --repository "your-repo-name"
@@ -361,7 +361,7 @@ python scripts/admin/utilities/init_ado_repo.py \
 Verifies that your Service Principal has the correct permissions to access Azure DevOps.
 
 ```bash
-python scripts/admin/utilities/debug_ado_access.py \
+python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
   --organization "your-org-name" \
   --project "your-project-name"
 ```
@@ -371,7 +371,7 @@ python scripts/admin/utilities/debug_ado_access.py \
 Tests the connection to a Git repository using the configured credentials.
 
 ```bash
-python scripts/admin/utilities/debug_connection.py \
+python -m usf_fabric_cli.scripts.admin.utilities.debug_connection \
   --organization "your-org-name" \
   --project "your-project-name" \
   --repository "your-repo-name"
@@ -382,7 +382,7 @@ python scripts/admin/utilities/debug_connection.py \
 Lists all items in a specified Fabric workspace to verify deployment.
 
 ```bash
-python scripts/admin/utilities/list_workspace_items.py "Workspace Name"
+python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items "Workspace Name"
 # Or via Make:
 make list-items workspace="Workspace Name"
 ```
@@ -426,36 +426,13 @@ config/
     ├── test.yaml
     ├── prod.yaml
     └── feature_workspace.json  # Feature workspace recipe & lifecycle policies
-
-templates/
-└── blueprints/            # 11 production-ready templates
-    ├── advanced_analytics.yaml
-    ├── basic_etl.yaml
-    ├── compliance_regulated.yaml
-    ├── data_mesh_domain.yaml
-    ├── data_science.yaml
-    ├── extensive_example.yaml
-    ├── medallion.yaml
-    ├── migration_hybrid.yaml
-    ├── minimal_starter.yaml
-    ├── realtime_streaming.yaml
-    └── specialized_timeseries.yaml
-
-scripts/
-├── admin/                 # Administrative/operational scripts
-│   ├── bulk_destroy.py    # Bulk cleanup utility
-│   ├── preflight_check.py # Environment validation
-│   └── utilities/         # Helper utilities
-├── dev/                   # Developer workflow scripts
-│   ├── generate_project.py  # Project scaffolding
-│   └── onboard.py           # Unified onboarding (main-centric + feature)
 ```
 
-## Total LOC: ~6,200 (src/) + ~2,600 (scripts/) + ~3,500 (tests/) — modular architecture
+## Total LOC: ~8,800 (src/) + ~3,500 (tests/) — modular architecture
 
 ## Configuration Examples
 
-See `templates/blueprints/` for organization-agnostic templates that can be customized for any project.
+See `src/usf_fabric_cli/templates/blueprints/` for organization-agnostic templates that can be customized for any project.
 
 ## Testing
 
@@ -548,7 +525,7 @@ This project incorporates key learnings from the original implementation:
 
 If migrating from a custom Fabric API solution:
 
-1. **Assessment** - Use `scripts/admin/utilities/analyze_migration.py` to identify what can be replaced with CLI
+1. **Assessment** - Use `python -m usf_fabric_cli.scripts.admin.utilities.analyze_migration` to identify what can be replaced with CLI
 2. **Migration** - Incremental replacement of custom components
 3. **Validation** - Side-by-side testing during transition
 4. **Deprecation** - Sunset plan for custom components

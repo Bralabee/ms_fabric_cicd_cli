@@ -59,9 +59,9 @@ usf_fabric_cli_cicd/
 │       ├── advanced_analytics.yaml # ML/AI workspace
 │       └── data_science.yaml      # Research workspace
 │
-├── 📁 scripts/
-│   ├── generate_project.py        # Project generator
-│   └── analyze_migration.py       # Migration analyzer
+├── 📁 src/usf_fabric_cli/scripts/  # All scripts live inside the package
+│   ├── dev/generate_project.py     # Project generator
+│   └── admin/utilities/analyze_migration.py  # Migration analyzer
 │
 ├── 📁 tests/
 │   ├── test_config.py             # Configuration tests
@@ -82,7 +82,7 @@ conda activate fabric-cli-cicd
 
 ### 2. Generate Your Project (30 seconds)
 ```bash
-python scripts/dev/generate_project.py \
+python -m usf_fabric_cli.scripts.dev.generate_project \
   "Your Company" \
   "Analytics Project" \
   --template basic_etl \
@@ -149,7 +149,7 @@ principals:
 ### ✅ **Migration Tools**
 ```bash
 # Analyze existing custom solution
-python scripts/admin/utilities/analyze_migration.py /path/to/old/solution
+python -m usf_fabric_cli.scripts.admin.utilities.analyze_migration /path/to/old/solution
 ```
 
 ### ✅ **Audit Compliance**
@@ -178,7 +178,7 @@ python scripts/admin/utilities/analyze_migration.py /path/to/old/solution
 
 ### Manufacturing Company
 ```bash
-python scripts/dev/generate_project.py \
+python -m usf_fabric_cli.scripts.dev.generate_project \
   "Acme Manufacturing" \
   "Production Analytics" \
   --template basic_etl \
@@ -187,7 +187,7 @@ python scripts/dev/generate_project.py \
 
 ### Healthcare Organization
 ```bash
-python scripts/dev/generate_project.py \
+python -m usf_fabric_cli.scripts.dev.generate_project \
   "HealthTech Solutions" \
   "Patient Outcomes" \
   --template advanced_analytics \
@@ -196,7 +196,7 @@ python scripts/dev/generate_project.py \
 
 ### Financial Services
 ```bash
-python scripts/dev/generate_project.py \
+python -m usf_fabric_cli.scripts.dev.generate_project \
   "Global Bank Corp" \
   "Risk Analytics" \
   --template advanced_analytics \
@@ -253,7 +253,7 @@ python scripts/dev/generate_project.py \
 
 2. **Generate Config** (1 minute)
    ```bash
-   python scripts/dev/generate_project.py "Your Org" "Your Project" --template basic_etl --capacity-id YOUR_CAPACITY
+   python -m usf_fabric_cli.scripts.dev.generate_project "Your Org" "Your Project" --template basic_etl --capacity-id YOUR_CAPACITY
    ```
 
 3. **Deploy Dev** (2 minutes)

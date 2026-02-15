@@ -18,8 +18,8 @@ learning_outcomes:
   - "Install and configure the conda environment with `conda env create` and `make install`"
   - Understand all available entry points (Make, CLI, Python scripts)
   - "Configure Azure Service Principal credentials in `.env` file"
-  - "Run `make diagnose` and `python scripts/admin/preflight_check.py` to verify setup"
-  - "Use `python scripts/admin/utilities/list_workspaces.py` to confirm API connectivity"
+  - "Run `make diagnose` and `python -m usf_fabric_cli.scripts.admin.preflight_check` to verify setup"
+  - "Use `python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces` to confirm API connectivity"
   - Know when to use Make vs CLI vs Python script commands
 
 tags:
@@ -63,7 +63,7 @@ steps:
       |--------|-------------|---------|
       | **Make Commands** | Recommended - simple, discoverable | `make deploy config=path.yaml env=dev` |
       | **CLI Entry Point** | Direct CLI access after `pip install -e .` | `fabric-cicd deploy path.yaml --env dev` |
-      | **Python Scripts** | Utilities and advanced operations | `python scripts/dev/generate_project.py "Org" "Proj"` |
+      | **Python Scripts** | Utilities and advanced operations | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj"` |
       
       This guide walks you through setting up all three methods.
     tips:
@@ -236,8 +236,8 @@ steps:
       drwxrwxr-x  3 user user  4096 Jan 15 10:00 templates
     tips:
       - "The `Makefile` contains all available Make commands"
-      - "The `scripts/` directory contains Python utility scripts"
-      - "The `templates/blueprints/` directory contains the 10 blueprint templates"
+      - "The `src/usf_fabric_cli/scripts/` directory contains Python utility scripts"
+      - "The `src/usf_fabric_cli/templates/blueprints/` directory contains the 10 blueprint templates"
 
   - id: create-environment
     title: "Step 4: Create Conda Environment"
@@ -401,7 +401,7 @@ steps:
         make diagnose
         
         # Validate a sample template
-        make validate config=templates/blueprints/basic_etl.yaml
+        make validate config=src/usf_fabric_cli/templates/blueprints/basic_etl.yaml
     expected_output: |
       # make help output:
       Available targets:
@@ -502,18 +502,18 @@ steps:
     title: "Step 8: Understand Python Utility Scripts"
     type: info
     content: |
-      The `scripts/` directory contains Python utilities for advanced operations
+      The `src/usf_fabric_cli/scripts/` directory contains Python utilities for advanced operations
       not covered by Make commands or CLI.
       
       ## Main Scripts
       
       | Script | Purpose | Example |
       |--------|---------|---------|
-      | `generate_project.py` | Create config from template | `python scripts/dev/generate_project.py "Org" "Project" --template basic_etl` |
-      | `preflight_check.py` | Validate environment | `python scripts/admin/preflight_check.py` |
-      | `bulk_destroy.py` | Destroy multiple workspaces | `python scripts/admin/bulk_destroy.py workspaces.txt` |
+      | `generate_project.py` | Create config from template | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Project" --template basic_etl` |
+      | `preflight_check.py` | Validate environment | `python -m usf_fabric_cli.scripts.admin.preflight_check` |
+      | `bulk_destroy.py` | Destroy multiple workspaces | `python -m usf_fabric_cli.scripts.admin.bulk_destroy workspaces.txt` |
       
-      ## Utility Scripts (in `scripts/admin/utilities/`)
+      ## Utility Scripts (in `src/usf_fabric_cli/scripts/admin/utilities/`)
       
       | Script | Purpose |
       |--------|---------|
@@ -527,36 +527,36 @@ steps:
       language: bash
       content: |
         # Generate a new project configuration
-        python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" \
+        python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "Sales Analytics" \
           --template basic_etl \
           --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
         # Output: config/projects/acme_corp/sales_analytics.yaml
         
         # Run preflight check
-        python scripts/admin/preflight_check.py
+        python -m usf_fabric_cli.scripts.admin.preflight_check
         
         # Run preflight check
-        python scripts/admin/preflight_check.py
+        python -m usf_fabric_cli.scripts.admin.preflight_check
         
         # List your accessible workspaces
-        python scripts/admin/utilities/list_workspaces.py
+        python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
         
         # List items in a specific workspace
-        python scripts/admin/utilities/list_workspace_items.py --workspace "my-workspace-name"
+        python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items --workspace "my-workspace-name"
         
         # Initialize Azure DevOps repository
-        python scripts/admin/utilities/init_ado_repo.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
           --organization "your-ado-org" \
           --project "FabricProjects" \
           --repository "new-repo-name"
         
         # Debug ADO access issues
-        python scripts/admin/utilities/debug_ado_access.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
           --organization "your-ado-org" \
           --project "FabricProjects"
     tips:
       - "Always run `conda activate fabric-cli-cicd` before running Python scripts"
-      - "Use `python scripts/dev/generate_project.py --help` to see all template options"
+      - "Use `python -m usf_fabric_cli.scripts.dev.generate_project --help` to see all template options"
       - The utility scripts are invaluable for debugging permission issues
 
   - id: configure-credentials
@@ -762,19 +762,19 @@ steps:
       language: bash
       content: |
         # Generate a basic ETL project configuration
-        python scripts/dev/generate_project.py "YourOrg" "YourProject" --template basic_etl
+        python -m usf_fabric_cli.scripts.dev.generate_project "YourOrg" "YourProject" --template basic_etl
         
         # Example with real names
-        python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" --template basic_etl
+        python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "Sales Analytics" --template basic_etl
         # Output: config/projects/acme_corp/sales_analytics.yaml
         
         # Generate with Git repository URL
-        python scripts/dev/generate_project.py "Acme Corp" "Sales Analytics" \
+        python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "Sales Analytics" \
           --template basic_etl \
           --git-repo "https://dev.azure.com/acme/FabricProjects/_git/sales"
         
         # View all available templates and options
-        python scripts/dev/generate_project.py --help
+        python -m usf_fabric_cli.scripts.dev.generate_project --help
     expected_output: |
       ╔══════════════════════════════════════════════════════════════╗
       ║              Fabric CLI Project Generator                    ║
@@ -795,7 +795,7 @@ steps:
     tips:
       - "Start with `minimal_starter` template for learning"
       - "Use `basic_etl` for most production projects"
-      - "Run `python scripts/dev/generate_project.py --help` to see all options"
+      - "Run `python -m usf_fabric_cli.scripts.dev.generate_project --help` to see all options"
       - Customize the generated YAML file to match your specific requirements
     warnings:
       - Remember to update placeholder values in the generated file
@@ -823,9 +823,9 @@ steps:
         make diagnose
         
         # OR run the Python script directly
-        python scripts/admin/preflight_check.py
+        python -m usf_fabric_cli.scripts.admin.preflight_check
         
-        python scripts/admin/preflight_check.py
+        python -m usf_fabric_cli.scripts.admin.preflight_check
         
         # OR using the CLI
         fabric-cicd diagnose
@@ -876,7 +876,7 @@ steps:
       language: bash
       content: |
         # List all workspaces accessible to your Service Principal
-        python scripts/admin/utilities/list_workspaces.py
+        python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
         
         # You should see a list of workspaces (may be empty if none exist yet)
     expected_output: |
@@ -950,12 +950,12 @@ steps:
       
       | Task | Make Command | CLI Command | Script |
       |------|--------------|-------------|--------|
-      | **Diagnose** | `make diagnose` | `fabric-cicd diagnose` | `python scripts/admin/preflight_check.py` |
-      | **Generate Project** | - | - | `python scripts/dev/generate_project.py "Org" "Proj" --template basic_etl` |
+      | **Diagnose** | `make diagnose` | `fabric-cicd diagnose` | `python -m usf_fabric_cli.scripts.admin.preflight_check` |
+      | **Generate Project** | - | - | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template basic_etl` |
       | **Validate Config** | `make validate config=...` | `fabric-cicd validate ...` | - |
       | **Deploy** | `make deploy config=... env=dev` | `fabric-cicd deploy ... --env dev` | - |
       | **Destroy** | `make destroy config=...` | `fabric-cicd destroy ... --env dev` | - |
-      | **List Workspaces** | - | - | `python scripts/admin/utilities/list_workspaces.py` |
+      | **List Workspaces** | - | - | `python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces` |
       
       ## Recommended Learning Path
       
@@ -967,10 +967,10 @@ steps:
       language: bash
       content: |
         # Quick test: Validate a sample template
-        make validate config=templates/blueprints/basic_etl.yaml
+        make validate config=src/usf_fabric_cli/templates/blueprints/basic_etl.yaml
         
         # Generate your first project configuration
-        python scripts/dev/generate_project.py "My Company" "First Project" --template minimal_starter
+        python -m usf_fabric_cli.scripts.dev.generate_project "My Company" "First Project" --template minimal_starter
         
         # See what was created
         cat config/projects/my_company/first_project.yaml

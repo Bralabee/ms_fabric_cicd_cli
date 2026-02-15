@@ -36,7 +36,7 @@ fi
 mkdir -p audit_logs
 
 echo "🔍 Running Fabric CLI preflight checks..."
-conda run -n fabric-cli-cicd python scripts/admin/preflight_check.py --auto-install --skip-env-check
+conda run -n fabric-cli-cicd python -m usf_fabric_cli.scripts.admin.preflight_check --auto-install --skip-env-check
 
 echo ""
 echo "🎉 Setup complete! Next steps:"
@@ -53,9 +53,9 @@ echo "4. Validate your setup:"
 echo "   make diagnose"
 echo ""
 echo "5. Test with a configuration:"
-echo "   make validate config=config/templates/basic_etl.yaml"
+echo "   make validate config=src/usf_fabric_cli/templates/blueprints/basic_etl.yaml"
 echo ""
 echo "6. Deploy to development:"
-echo "   make deploy config=config/templates/basic_etl.yaml env=dev"
+echo "   make deploy config=src/usf_fabric_cli/templates/blueprints/basic_etl.yaml env=dev"
 echo ""
 echo "Happy deploying! 🚀"

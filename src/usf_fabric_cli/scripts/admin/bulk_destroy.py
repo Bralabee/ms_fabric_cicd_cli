@@ -5,12 +5,7 @@ Bulk destroy workspaces from a list file.
 
 import argparse
 import sys
-import os
-import time
 from pathlib import Path
-
-# Add src to path
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
 from usf_fabric_cli.utils.config import get_environment_variables
@@ -90,7 +85,7 @@ def bulk_destroy(file_path, dry_run=False, force=False):
     print(f"\nSummary: {success_count} deleted, {fail_count} failed.")
 
 
-if __name__ == "__main__":
+def main() -> int:
     parser = argparse.ArgumentParser(description="Bulk destroy workspaces")
     parser.add_argument("file", help="Path to file containing workspace list")
     parser.add_argument(
@@ -104,6 +99,11 @@ if __name__ == "__main__":
 
     if not Path(args.file).exists():
         print(f"Error: File {args.file} not found")
-        sys.exit(1)
+        return 1
 
     bulk_destroy(args.file, args.dry_run, args.force)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

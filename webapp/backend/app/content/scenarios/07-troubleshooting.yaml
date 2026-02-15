@@ -5,7 +5,7 @@ id: troubleshooting
 title: Troubleshooting Guide
 description: |
   Master debugging with the framework's diagnostic tools. Learn to use 
-  `make diagnose` for preflight checks, `python scripts/admin/preflight_check.py` 
+  `make diagnose` for preflight checks, `python -m usf_fabric_cli.scripts.admin.preflight_check` 
   for detailed diagnostics, review audit logs in `audit_logs/`, and debug 
   ADO connectivity with `debug_ado_access.py`. Covers all common error scenarios.
 difficulty: intermediate
@@ -17,11 +17,11 @@ prerequisites: []
 
 learning_outcomes:
   - "Run preflight diagnostics with `make diagnose`"
-  - "Use `python scripts/admin/preflight_check.py` for comprehensive checks"
+  - "Use `python -m usf_fabric_cli.scripts.admin.preflight_check` for comprehensive checks"
   - "Examine audit logs in `audit_logs/fabric_operations_*.jsonl`"
-  - "Debug ADO access with `python scripts/admin/utilities/debug_ado_access.py`"
-  - "List workspaces with `python scripts/admin/utilities/list_workspaces.py`"
-  - "List workspace items with `python scripts/admin/utilities/list_workspace_items.py`"
+  - "Debug ADO access with `python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access`"
+  - "List workspaces with `python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces`"
+  - "List workspace items with `python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items`"
   - Resolve authentication, permission, and configuration errors
 
 tags:
@@ -61,12 +61,12 @@ steps:
       | Purpose | Command |
       |---------|---------|
       | **Preflight check** | `make diagnose` |
-      | **Detailed diagnostics** | `python scripts/admin/preflight_check.py` |
+      | **Detailed diagnostics** | `python -m usf_fabric_cli.scripts.admin.preflight_check` |
       | **Docker diagnostics** | `make docker-diagnose ENVFILE=.env` |
       | **Validate config** | `make validate config=...` |
-      | **Debug ADO access** | `python scripts/admin/utilities/debug_ado_access.py` |
-      | **List workspaces** | `python scripts/admin/utilities/list_workspaces.py` |
-      | **List workspace items** | `python scripts/admin/utilities/list_workspace_items.py --workspace "..."` |
+      | **Debug ADO access** | `python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access` |
+      | **List workspaces** | `python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces` |
+      | **List workspace items** | `python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items --workspace "..."` |
       
       ## Common Issue Categories
       
@@ -79,7 +79,7 @@ steps:
       | **Docker** | Build failures, mount issues, env-file missing |
       | **Git** | Empty repo, wrong branch, PAT expired |
     tips:
-      - "ALWAYS start with `make diagnose` or `python scripts/admin/preflight_check.py`"
+      - "ALWAYS start with `make diagnose` or `python -m usf_fabric_cli.scripts.admin.preflight_check`"
       - Check audit logs for detailed error messages
 
   - id: preflight-check
@@ -106,7 +106,7 @@ steps:
         make diagnose
         
         # Run detailed diagnostics
-        python scripts/admin/preflight_check.py
+        python -m usf_fabric_cli.scripts.admin.preflight_check
         
         # Docker environment check
         make docker-diagnose ENVFILE=.env
@@ -485,15 +485,15 @@ steps:
       language: bash
       content: |
         # Check if you can list workspaces (basic connectivity test)
-        python scripts/admin/utilities/list_workspaces.py
+        python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
         
         # Debug Azure DevOps access
-        python scripts/admin/utilities/debug_ado_access.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
           --organization "your-org" \
           --project "your-project"
         
         # List items in a workspace (verifies read access)
-        python scripts/admin/utilities/list_workspace_items.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items \
           --workspace "your-workspace-name"
     expected_output: |
       # list_workspaces.py (good):
@@ -542,7 +542,7 @@ steps:
         grep FABRIC_CAPACITY_ID .env
         
         # 2. List existing workspaces (shows capacity usage)
-        python scripts/admin/utilities/list_workspaces.py
+        python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
         
         # 3. Check capacity in Azure Portal:
         #    - Go to portal.azure.com
@@ -699,12 +699,12 @@ steps:
       language: bash
       content: |
         # 1. Debug ADO access first
-        python scripts/admin/utilities/debug_ado_access.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
           --organization "your-org" \
           --project "your-project"
         
         # 2. Initialize empty repository
-        python scripts/admin/utilities/init_ado_repo.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
           --organization "your-org" \
           --project "your-project" \
           --repository "your-repo"
@@ -737,56 +737,56 @@ steps:
       
       | Script | Purpose |
       |--------|---------|
-      | `scripts/admin/preflight_check.py` | Comprehensive environment validation |
-      | `scripts/admin/utilities/debug_ado_access.py` | Test Azure DevOps connectivity |
-      | `scripts/admin/utilities/list_workspaces.py` | List all accessible workspaces |
-      | `scripts/admin/utilities/list_workspace_items.py` | List items in a workspace |
+      | `src/usf_fabric_cli/scripts/admin/preflight_check.py` | Comprehensive environment validation |
+      | `src/usf_fabric_cli/scripts/admin/utilities/debug_ado_access.py` | Test Azure DevOps connectivity |
+      | `src/usf_fabric_cli/scripts/admin/utilities/list_workspaces.py` | List all accessible workspaces |
+      | `src/usf_fabric_cli/scripts/admin/utilities/list_workspace_items.py` | List items in a workspace |
       
       ## Repository Scripts
       
       | Script | Purpose |
       |--------|---------|
-      | `scripts/admin/utilities/init_ado_repo.py` | Initialize empty ADO repository |
+      | `src/usf_fabric_cli/scripts/admin/utilities/init_ado_repo.py` | Initialize empty ADO repository |
       
       ## Deployment Scripts
       
       | Script | Purpose |
       |--------|---------|
-      | `scripts/dev/generate_project.py` | Generate project config from template |
-      | `scripts/admin/bulk_destroy.py` | Bulk delete workspaces from list |
+      | `src/usf_fabric_cli/scripts/dev/generate_project.py` | Generate project config from template |
+      | `src/usf_fabric_cli/scripts/admin/bulk_destroy.py` | Bulk delete workspaces from list |
     code:
       language: bash
       content: |
         # Full syntax for each script:
         
         # Preflight check
-        python scripts/admin/preflight_check.py
+        python -m usf_fabric_cli.scripts.admin.preflight_check
         
         # Debug ADO access
-        python scripts/admin/utilities/debug_ado_access.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access \
           --organization "org" \
           --project "project"
         
         # List workspaces
-        python scripts/admin/utilities/list_workspaces.py
+        python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
         
         # List workspace items
-        python scripts/admin/utilities/list_workspace_items.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items \
           --workspace "workspace-name"
         
         # Initialize ADO repo
-        python scripts/admin/utilities/init_ado_repo.py \
+        python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
           --organization "org" \
           --project "project" \
           --repository "repo" \
           --branch "main"
         
         # Generate project
-        python scripts/dev/generate_project.py "Org Name" "Project Name" \
+        python -m usf_fabric_cli.scripts.dev.generate_project "Org Name" "Project Name" \
           --template basic_etl
         
         # Bulk destroy
-        python scripts/admin/bulk_destroy.py workspace_list.txt
+        python -m usf_fabric_cli.scripts.admin.bulk_destroy workspace_list.txt
     tips:
       - "All scripts have `--help` for additional options"
       - Scripts work in both local and Docker environments
@@ -818,7 +818,7 @@ steps:
       content: |
         # Collect all debug info to a file
         echo "=== Preflight Check ===" > debug_info.txt
-        python scripts/admin/preflight_check.py >> debug_info.txt 2>&1
+        python -m usf_fabric_cli.scripts.admin.preflight_check >> debug_info.txt 2>&1
         
         echo "\n=== Version Info ===" >> debug_info.txt
         python --version >> debug_info.txt
@@ -862,10 +862,10 @@ steps:
       | Command | Purpose |
       |---------|---------|
       | `make diagnose` | Quick preflight check |
-      | `python scripts/admin/preflight_check.py` | Detailed environment check |
+      | `python -m usf_fabric_cli.scripts.admin.preflight_check` | Detailed environment check |
       | `make docker-diagnose ENVFILE=.env` | Docker environment check |
-      | `python scripts/admin/utilities/debug_ado_access.py` | ADO connectivity test |
-      | `python scripts/admin/utilities/list_workspaces.py` | Verify workspace access |
+      | `python -m usf_fabric_cli.scripts.admin.utilities.debug_ado_access` | ADO connectivity test |
+      | `python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces` | Verify workspace access |
       | `make validate config=...` | Validate config file |
       
       ## Return to Previous Scenarios

@@ -108,12 +108,12 @@ validate: ## Validate a configuration file (Usage: make validate config=path/to/
 	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli validate $(config)
 
 diagnose: ## Run pre-flight system diagnostics
-	$(PYTHON) scripts/admin/preflight_check.py
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.preflight_check
 
 generate: ## Generate project config (Usage: make generate org="Org" project="Proj" [template="medallion"])
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
-	$(PYTHON) scripts/dev/generate_project.py "$(org)" "$(project)" --template $(or $(template),medallion)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.generate_project "$(org)" "$(project)" --template $(or $(template),medallion)
 
 deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env=dev [branch=feature/x])
 	@if [ -z "$(config)" ]; then \
@@ -151,19 +151,19 @@ onboard-isolated: ## Bootstrap with auto-created project repo (Usage: make onboa
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
 	@if [ -z "$(git_owner)" ]; then echo "Error: 'git_owner' argument is missing."; exit 1; fi
-	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
 		--create-repo --git-provider $(or $(git_provider),github) --git-owner "$(git_owner)" \
 		$(if $(ado_project),--ado-project "$(ado_project)",) $(if $(stages),--stages $(stages),)
 
 init-github-repo: ## Create & initialize a GitHub repo (Usage: make init-github-repo git_owner="Owner" repo="Repo")
 	@if [ -z "$(git_owner)" ]; then echo "Error: 'git_owner' argument is missing."; exit 1; fi
 	@if [ -z "$(repo)" ]; then echo "Error: 'repo' argument is missing."; exit 1; fi
-	$(PYTHON) scripts/admin/utilities/init_github_repo.py --owner "$(git_owner)" --repo "$(repo)" $(if $(branch),--branch $(branch),)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.init_github_repo --owner "$(git_owner)" --repo "$(repo)" $(if $(branch),--branch $(branch),)
 
 feature-workspace: ## Create isolated feature workspace (Usage: make feature-workspace org="Org" project="Proj")
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
-	$(PYTHON) scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
 
 destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override="Name"])
 	@if [ -z "$(config)" ]; then \
@@ -178,20 +178,20 @@ destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml 
 
 bulk-destroy: ## Bulk destroy workspaces from list (Usage: make bulk-destroy file=list.txt)
 	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make bulk-destroy file=list.txt"; exit 1; fi
-	$(PYTHON) scripts/admin/bulk_destroy.py $(file)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.bulk_destroy $(file)
 
 
 ##@ Admin Utilities
 
 list-workspaces: ## List all Fabric workspaces
-	$(PYTHON) scripts/admin/utilities/list_workspaces.py
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
 
 list-items: ## List items in a workspace (Usage: make list-items workspace="Name")
 	@if [ -z "$(workspace)" ]; then echo "Error: 'workspace' argument is missing."; exit 1; fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) scripts/admin/utilities/list_workspace_items.py "$(workspace)"
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items "$(workspace)"
 
 analyze-migration: ## Analyze what can be replaced with Fabric CLI (Usage: make analyze-migration)
-	$(PYTHON) scripts/admin/utilities/analyze_migration.py
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.analyze_migration
 
 
 ##@ Webapp (Interactive Guide)
@@ -243,14 +243,14 @@ docker-generate: ## Generate project config in Docker (Usage: make docker-genera
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
 	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
-	scripts/dev/generate_project.py "$(org)" "$(project)" --template $(or $(template),basic_etl)
+	-m usf_fabric_cli.scripts.dev.generate_project "$(org)" "$(project)" --template $(or $(template),basic_etl)
 
 docker-init-repo: ## Initialize ADO repo in Docker (Usage: make docker-init-repo org="Org" project="Proj" repo="Repo")
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
 	@if [ -z "$(repo)" ]; then echo "Error: repo argument required"; exit 1; fi
 	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
-	scripts/admin/utilities/init_ado_repo.py --organization "$(org)" --project "$(project)" --repository "$(repo)"
+	-m usf_fabric_cli.scripts.admin.utilities.init_ado_repo --organization "$(org)" --project "$(project)" --repository "$(repo)"
 
 docker-feature-deploy: ## Deploy feature workspace using Docker (Usage: make docker-feature-deploy config=... env=dev branch=feature/x)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
@@ -263,14 +263,14 @@ docker-onboard: ## Full bootstrap using Docker (Usage: make docker-onboard org="
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
 	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
-	scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) $(if $(stages),--stages $(stages),)
+	-m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) $(if $(stages),--stages $(stages),)
 
 docker-onboard-isolated: ## Bootstrap with auto-created repo using Docker (Usage: make docker-onboard-isolated org="Org" project="Proj" git_owner="Owner" ENVFILE=.env)
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
 	@if [ -z "$(git_owner)" ]; then echo "Error: git_owner argument required"; exit 1; fi
 	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
-	scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
+	-m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
 	--create-repo --git-provider $(or $(git_provider),github) --git-owner "$(git_owner)" \
 	$(if $(ado_project),--ado-project "$(ado_project)",) $(if $(stages),--stages $(stages),)
 
@@ -278,18 +278,18 @@ docker-feature-workspace: ## Create isolated feature workspace using Docker (Usa
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
 	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
-	scripts/dev/onboard.py --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
+	-m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
 
 docker-bulk-destroy: ## Bulk destroy workspaces using Docker (Usage: make docker-bulk-destroy file=list.txt ENVFILE=.env)
 	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make docker-bulk-destroy file=list.txt"; exit 1; fi
 	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/$(file):/app/$(file) $(DOCKER_IMAGE) \
-	scripts/admin/bulk_destroy.py $(file)
+	-m usf_fabric_cli.scripts.admin.bulk_destroy $(file)
 
 docker-list-workspaces: ## List all Fabric workspaces using Docker (Usage: make docker-list-workspaces ENVFILE=.env)
 	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
-	scripts/admin/utilities/list_workspaces.py
+	-m usf_fabric_cli.scripts.admin.utilities.list_workspaces
 
 docker-list-items: ## List items in a workspace using Docker (Usage: make docker-list-items workspace="Name" ENVFILE=.env)
 	@if [ -z "$(workspace)" ]; then echo "Error: workspace argument required"; exit 1; fi
 	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
-	scripts/admin/utilities/list_workspace_items.py "$(workspace)"
+	-m usf_fabric_cli.scripts.admin.utilities.list_workspace_items "$(workspace)"

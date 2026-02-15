@@ -15,6 +15,12 @@ from rich.console import Console
 from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper, FabricDiagnostics
 from usf_fabric_cli.services.deployer import FabricDeployer
+from usf_fabric_cli.scripts.admin.bulk_destroy import bulk_destroy as bulk_destroy_fn
+from usf_fabric_cli.scripts.admin.utilities.init_github_repo import (
+    init_github_repo as init_github_repo_fn,
+)
+from usf_fabric_cli.scripts.dev.generate_project import generate_project_config
+from usf_fabric_cli.scripts.dev.onboard import onboard_project
 
 # Ensure .env vars are loaded for all CLI commands, including those that
 # read env vars directly (e.g., init-github-repo reads GITHUB_TOKEN).
@@ -357,16 +363,7 @@ def onboard(
     ),
 ):
     """Onboard a new Fabric Data Product (full bootstrap: Dev+Test+Prod+Pipeline)"""
-    import sys as _sys
-    from pathlib import Path as _Path
-
-    # Add scripts to path for onboard imports
-    scripts_dir = _Path(__file__).resolve().parent.parent.parent / "scripts" / "dev"
-    _sys.path.insert(0, str(scripts_dir))
-
     try:
-        from onboard import onboard_project  # type: ignore[import]
-
         requested_stages = {s.strip().lower() for s in stages.split(",")}
         valid_stages = {"dev", "test", "prod"}
         invalid = requested_stages - valid_stages
@@ -419,15 +416,7 @@ def generate(
     ),
 ):
     """Generate project configuration from a blueprint template"""
-    import sys as _sys
-    from pathlib import Path as _Path
-
-    scripts_dir = _Path(__file__).resolve().parent.parent.parent / "scripts" / "dev"
-    _sys.path.insert(0, str(scripts_dir))
-
     try:
-        from generate_project import generate_project_config  # type: ignore[import]
-
         generate_project_config(org_name, project_name, template, capacity_id, git_repo)
     except Exception as e:
         console.print(f"[red]❌ Generate failed: {e}[/red]")
@@ -524,17 +513,7 @@ def bulk_destroy(
         raise typer.Exit(1)
 
     try:
-        import sys as _sys
-        from pathlib import Path as _Path
-
-        scripts_dir = (
-            _Path(__file__).resolve().parent.parent.parent / "scripts" / "admin"
-        )
-        _sys.path.insert(0, str(scripts_dir))
-
-        from bulk_destroy import bulk_destroy as _bulk_destroy  # type: ignore[import]
-
-        _bulk_destroy(file, dry_run, force)
+        bulk_destroy_fn(file, dry_run, force)
     except typer.Exit:
         raise
     except Exception as e:
@@ -555,27 +534,12 @@ def init_github_repo(
     import os
 
     try:
-        import sys as _sys
-        from pathlib import Path as _Path
-
-        scripts_dir = (
-            _Path(__file__).resolve().parent.parent.parent
-            / "scripts"
-            / "admin"
-            / "utilities"
-        )
-        _sys.path.insert(0, str(scripts_dir))
-
-        from init_github_repo import (  # type: ignore[import]
-            init_github_repo as _init_repo,
-        )
-
         token = os.getenv("GITHUB_TOKEN")
         if not token:
             console.print("[red]❌ GITHUB_TOKEN is not set[/red]")
             raise typer.Exit(1)
 
-        clone_url = _init_repo(
+        clone_url = init_github_repo_fn(
             owner=owner,
             repo_name=repo,
             token=token,

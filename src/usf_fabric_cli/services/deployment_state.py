@@ -359,7 +359,9 @@ class DeploymentState:
         else:
             # For non-workspace items, we need to construct the path
             # Format: workspace.Workspace/name.Type
-            type_suffix = self._get_type_suffix(item.item_type)
+            type_suffix = item.metadata.get("fabric_type") or self._get_type_suffix(
+                item.item_type
+            )
             path = f"{item.workspace_name}.Workspace/{item.name}.{type_suffix}"
 
             # Use rm command via _execute_command
@@ -381,6 +383,13 @@ class DeploymentState:
             ItemType.EVENTSTREAM: "Eventstream",
             ItemType.KQL_DATABASE: "KQLDatabase",
             ItemType.SPARK_JOB_DEFINITION: "SparkJobDefinition",
+            ItemType.ENVIRONMENT: "Environment",
+            ItemType.REFLEX: "Reflex",
+            ItemType.ML_MODEL: "MLModel",
+            ItemType.ML_EXPERIMENT: "MLExperiment",
+            ItemType.DATAFLOW_GEN2: "DataflowGen2",
+            ItemType.KQL_QUERYSET: "KQLQueryset",
+            ItemType.EVENTHOUSE: "Eventhouse",
         }
         return type_map.get(item_type, item_type.value)
 

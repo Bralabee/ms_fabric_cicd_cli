@@ -40,7 +40,7 @@ where = ["src"]
 include = ["usf_fabric_cli*"]
 
 [tool.setuptools.package-data]
-usf_fabric_cli = ["schemas/*.json"]
+usf_fabric_cli = ["schemas/*.json", "templates/blueprints/*.yaml"]
 
 [tool.black]
 line-length = 88

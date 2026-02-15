@@ -14,14 +14,14 @@
 
 ### New File
 
-- [init_github_repo.py](file:///home/sanmi/Documents/J'TOYE_DIGITAL/LEIT_TEKSYSTEMS/1_Project_Rhico/usf_fabric_cli_cicd/scripts/admin/utilities/init_github_repo.py) — GitHub repo init (mirrors ADO script). Idempotent create + branch ensure via GitHub REST API. CLI + programmatic `init_github_repo()` entry-point.
+- [init_github_repo.py](file:///home/sanmi/Documents/J'TOYE_DIGITAL/LEIT_TEKSYSTEMS/1_Project_Rhico/usf_fabric_cli_cicd/src/usf_fabric_cli/scripts/admin/utilities/init_github_repo.py) — GitHub repo init (mirrors ADO script). Idempotent create + branch ensure via GitHub REST API. CLI + programmatic `init_github_repo()` entry-point.
 
 ### Modified Files
 
 | File | Change |
 |------|--------|
-| [init_ado_repo.py](file:///home/sanmi/Documents/J'TOYE_DIGITAL/LEIT_TEKSYSTEMS/1_Project_Rhico/usf_fabric_cli_cicd/scripts/admin/utilities/init_ado_repo.py) | Added `init_ado_repo()` orchestration function returning clone URL |
-| [onboard.py](file:///home/sanmi/Documents/J'TOYE_DIGITAL/LEIT_TEKSYSTEMS/1_Project_Rhico/usf_fabric_cli_cicd/scripts/dev/onboard.py) | Phase 0 repo provisioning, `_provision_repo()`, `--create-repo/--git-provider/--git-owner/--ado-project` args |
+| [init_ado_repo.py](file:///home/sanmi/Documents/J'TOYE_DIGITAL/LEIT_TEKSYSTEMS/1_Project_Rhico/usf_fabric_cli_cicd/src/usf_fabric_cli/scripts/admin/utilities/init_ado_repo.py) | Added `init_ado_repo()` orchestration function returning clone URL |
+| [onboard.py](file:///home/sanmi/Documents/J'TOYE_DIGITAL/LEIT_TEKSYSTEMS/1_Project_Rhico/usf_fabric_cli_cicd/src/usf_fabric_cli/scripts/dev/onboard.py) | Phase 0 repo provisioning, `_provision_repo()`, `--create-repo/--git-provider/--git-owner/--ado-project` args |
 | [Makefile](file:///home/sanmi/Documents/J'TOYE_DIGITAL/LEIT_TEKSYSTEMS/1_Project_Rhico/usf_fabric_cli_cicd/Makefile) | `onboard-isolated` + `init-github-repo` targets |
 | [README.md](file:///home/sanmi/Documents/J'TOYE_DIGITAL/LEIT_TEKSYSTEMS/1_Project_Rhico/usf_fabric_cli_cicd/README.md) | Git Integration Modes section (Shared vs Isolated) |
 | [CHANGELOG.md](file:///home/sanmi/Documents/J'TOYE_DIGITAL/LEIT_TEKSYSTEMS/1_Project_Rhico/usf_fabric_cli_cicd/CHANGELOG.md) | Git Repo Isolation + pipeline fix entries |

@@ -94,7 +94,7 @@ Configuration is resolved in this strict order (managed by `ConfigManager`):
 
 ### 3. Medallion Architecture
 
-**Template**: `templates/blueprints/medallion.yaml`
+**Template**: `src/usf_fabric_cli/templates/blueprints/medallion.yaml`
 **Standard**:
 
 * `Bronze` (Raw)
@@ -111,8 +111,8 @@ Configuration is resolved in this strict order (managed by `ConfigManager`):
 
 * `src/usf_fabric_cli`: Core package.
   * `services/deployment_pipeline.py`: Fabric Deployment Pipelines REST API client.
-* `scripts/dev`: Developer tools (`generate_project.py`, `onboard.py`).
-* `scripts/admin`: Admin tools (`preflight_check.py`, `init_github_repo.py`, `init_ado_repo.py`).
+* `src/usf_fabric_cli/scripts/dev`: Developer tools (`generate_project.py`, `onboard.py`).
+* `src/usf_fabric_cli/scripts/admin`: Admin tools (`preflight_check.py`, `init_github_repo.py`, `init_ado_repo.py`).
 * `config/`: Usage configurations (ignored by git except templates).
 * `.github/workflows/`: CI/CD workflows (feature lifecycle, deployment pipeline promotion).
 * `webapp/`: Documentation/Dashboard frontend.

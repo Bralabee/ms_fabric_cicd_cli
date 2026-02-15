@@ -24,9 +24,8 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 import requests
 
+from usf_fabric_cli.services.fabric_api_base import FabricAPIBase
 from usf_fabric_cli.utils.retry import (
-    is_retryable_exception,
-    calculate_backoff,
     DEFAULT_MAX_RETRIES,
     DEFAULT_BASE_DELAY,
     DEFAULT_MAX_DELAY,
@@ -57,7 +56,7 @@ class DeploymentStage:
             return None
 
 
-class FabricDeploymentPipelineAPI:
+class FabricDeploymentPipelineAPI(FabricAPIBase):
     """
     Client for the Fabric Deployment Pipelines REST API.
 
@@ -85,81 +84,14 @@ class FabricDeploymentPipelineAPI:
             base_delay: Initial backoff delay in seconds.
             max_delay: Maximum backoff delay in seconds.
         """
-        self.base_url = base_url
-        self._access_token = access_token
-        self._token_manager = token_manager
-        self._max_retries = max_retries
-        self._base_delay = base_delay
-        self._max_delay = max_delay
-        self.headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {access_token}",
-        }
-
-    # ── token helpers ──────────────────────────────────────────────
-
-    def _refresh_token_if_needed(self) -> None:
-        """Refresh the bearer token via TokenManager when available."""
-        if self._token_manager:
-            try:
-                new_token = self._token_manager.get_token()
-                if new_token != self._access_token:
-                    self._access_token = new_token
-                    self.headers["Authorization"] = f"Bearer {new_token}"
-                    logger.debug("Token refreshed for Deployment Pipeline API")
-            except Exception as e:
-                logger.warning("Token refresh failed: %s", e)
-
-    # ── HTTP helper ────────────────────────────────────────────────
-
-    def _make_request(
-        self,
-        method: str,
-        url: str,
-        json: Optional[Dict[str, Any]] = None,
-        timeout: int = 30,
-    ) -> requests.Response:
-        """
-        Execute an HTTP request with retry + exponential backoff.
-
-        Follows the same pattern as ``FabricGitAPI._make_request``.
-        """
-        last_exception: Optional[Exception] = None
-
-        for attempt in range(self._max_retries + 1):
-            self._refresh_token_if_needed()
-
-            try:
-                response = requests.request(
-                    method,
-                    url,
-                    headers=self.headers,
-                    json=json,
-                    timeout=timeout,
-                )
-                response.raise_for_status()
-                return response
-
-            except requests.RequestException as e:
-                last_exception = e
-
-                if not is_retryable_exception(e) or attempt >= self._max_retries:
-                    raise
-
-                delay = calculate_backoff(attempt, self._base_delay, self._max_delay)
-                logger.warning(
-                    "Deployment Pipeline API request failed (attempt %d/%d): %s. "
-                    "Retrying in %.2fs…",
-                    attempt + 1,
-                    self._max_retries + 1,
-                    str(e),
-                    delay,
-                )
-                time.sleep(delay)
-
-        if last_exception:
-            raise last_exception
-        raise RuntimeError("Retry loop completed without returning or raising")
+        super().__init__(
+            access_token=access_token,
+            base_url=base_url,
+            token_manager=token_manager,
+            max_retries=max_retries,
+            base_delay=base_delay,
+            max_delay=max_delay,
+        )
 
     # ── Pipeline CRUD ──────────────────────────────────────────────
 

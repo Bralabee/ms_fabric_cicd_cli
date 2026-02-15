@@ -121,7 +121,7 @@ Use the provided script to generate a new project configuration. This script pro
 **Command Syntax:**
 
 ```bash
-python scripts/dev/generate_project.py "Client Name" "Project Name" --template basic_etl --capacity-id "YOUR_CAPACITY_ID"
+python -m usf_fabric_cli.scripts.dev.generate_project "Client Name" "Project Name" --template basic_etl --capacity-id "YOUR_CAPACITY_ID"
 ```
 
 **Example:**
@@ -130,7 +130,7 @@ To create a "Sales" project for client "Contoso" using the `medallion` template 
 1. Execute the command:
 
     ```bash
-    python scripts/dev/generate_project.py "Contoso" "Sales" --template medallion --capacity-id "F64-12345"
+    python -m usf_fabric_cli.scripts.dev.generate_project "Contoso" "Sales" --template medallion --capacity-id "F64-12345"
     ```
 
 2. **Outcome:**
@@ -196,7 +196,7 @@ make diagnose
 Analyze existing manual setups for migration to the automated tool:
 
 ```bash
-python scripts/admin/utilities/analyze_migration.py /path/to/your/code
+python -m usf_fabric_cli.scripts.admin.utilities.analyze_migration /path/to/your/code
 ```
 
 *This provides an assessment of automation potential for current setups.*

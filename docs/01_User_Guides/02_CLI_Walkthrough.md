@@ -27,7 +27,7 @@ Instead of writing YAML from scratch, use the generator script to scaffold your 
 
 ```bash
 # Run the generator
-python scripts/dev/generate_project.py \
+python -m usf_fabric_cli.scripts.dev.generate_project \
   "Acme Corp" \
   "Supply Chain" \
   --template basic_etl
@@ -146,7 +146,7 @@ python -m usf_fabric_cli.cli deploy config/projects/acme_corp/supply_chain.yaml 
 List your workspaces to find the one to delete.
 
 ```bash
-python scripts/admin/utilities/list_workspaces.py > workspaces.txt
+python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces > workspaces.txt
 grep "feature-inventory-opt" workspaces.txt
 ```
 
@@ -159,7 +159,7 @@ Create a file with the workspaces to delete and run the bulk destroy script.
 echo "acme-supply-chain-feature-inventory-opt" > delete_list.txt
 
 # Run bulk destroy
-python scripts/admin/bulk_destroy.py delete_list.txt
+python -m usf_fabric_cli.scripts.admin.bulk_destroy delete_list.txt
 ```
 
 **Result:** The feature workspace is removed, freeing up capacity.
@@ -246,7 +246,7 @@ This auto-creates a GitHub repo (`acme-corp/acme-corp-supply-chain`) before boot
 
 | Task | Makefile Command | Direct CLI / Script |
 |------|------------------|---------------------|
-| **Scaffold** | `make generate org="Org" project="Proj" template=basic_etl` | `python scripts/dev/generate_project.py "Org" "Proj" --template basic_etl` |
+| **Scaffold** | `make generate org="Org" project="Proj" template=basic_etl` | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template basic_etl` |
 | **Validate** | `make validate config=<config>` | `python -m usf_fabric_cli.cli validate <config>` |
 | **Diagnose** | `make diagnose` | `python -m usf_fabric_cli.cli diagnose` |
 | **Deploy (Dev)** | `make deploy config=<config> env=dev` | `python -m usf_fabric_cli.cli deploy <config> --env dev` |
@@ -254,11 +254,11 @@ This auto-creates a GitHub repo (`acme-corp/acme-corp-supply-chain`) before boot
 | **Deploy (Prod)** | `make deploy config=<config> env=prod` | `python -m usf_fabric_cli.cli deploy <config> --env prod` |
 | **Promote** | `make promote pipeline="Name" source=Development target=Test` | `python -m usf_fabric_cli.cli promote --pipeline-name "Name" --source-stage Development` |
 | **Destroy** | `make destroy config=<config>` | `python -m usf_fabric_cli.cli destroy <config> --force` |
-| **Onboard (Full)** | `make onboard org="Org" project="Proj"` | `python scripts/dev/onboard.py --org "Org" --project "Proj"` |
-| **Cleanup** | `make bulk-destroy file=<list_file>` | `python scripts/admin/bulk_destroy.py <list_file>` |
-| **List Workspaces** | `make list-workspaces` | `python scripts/admin/utilities/list_workspaces.py` |
-| **List Items** | `make list-items workspace="Name"` | `python scripts/admin/utilities/list_workspace_items.py --workspace "Name"` |
-| **Init Repo** | `make init-github-repo git_owner="Owner" repo="Name"` | `python scripts/admin/utilities/init_github_repo.py --owner "Owner" --repo "Name"` |
+| **Onboard (Full)** | `make onboard org="Org" project="Proj"` | `python -m usf_fabric_cli.scripts.dev.onboard --org "Org" --project "Proj"` |
+| **Cleanup** | `make bulk-destroy file=<list_file>` | `python -m usf_fabric_cli.scripts.admin.bulk_destroy <list_file>` |
+| **List Workspaces** | `make list-workspaces` | `python -m usf_fabric_cli.scripts.admin.utilities.list_workspaces` |
+| **List Items** | `make list-items workspace="Name"` | `python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items --workspace "Name"` |
+| **Init Repo** | `make init-github-repo git_owner="Owner" repo="Name"` | `python -m usf_fabric_cli.scripts.admin.utilities.init_github_repo --owner "Owner" --repo "Name"` |
 
 ## Makefile Quick Reference (Local & Docker)
 

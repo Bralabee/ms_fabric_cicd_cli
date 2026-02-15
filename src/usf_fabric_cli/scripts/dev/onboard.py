@@ -27,27 +27,19 @@ Orchestrates:
 
 import argparse
 import subprocess
-import sys
 import logging
 import os
 from pathlib import Path
 from typing import Optional, Set
 
 from dotenv import load_dotenv
+from usf_fabric_cli.scripts.dev.generate_project import generate_project_config
+from usf_fabric_cli.scripts.admin.utilities.init_ado_repo import init_ado_repo
+from usf_fabric_cli.scripts.admin.utilities.init_github_repo import init_github_repo
 
 # Load .env so all env-var reads (GITHUB_TOKEN, FABRIC_CAPACITY_ID, etc.) work
 # consistently with the rest of the project.
 load_dotenv()
-
-# Add src to path for imports if needed
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent / "src"))
-
-try:
-    from generate_project import generate_project_config
-except ImportError:
-    # Handle import if running from different cwd
-    sys.path.append(str(Path(__file__).resolve().parent))
-    from generate_project import generate_project_config
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -402,12 +394,6 @@ def _provision_repo(
             )
             return None
 
-        # Lazy import to avoid hard dep when unused
-        sys.path.append(
-            str(Path(__file__).resolve().parent.parent / "admin" / "utilities")
-        )
-        from init_github_repo import init_github_repo
-
         return init_github_repo(
             owner,
             repo_name,
@@ -420,14 +406,7 @@ def _provision_repo(
             logger.error("--ado-project is required when " "--git-provider ado")
             return None
 
-        sys.path.append(
-            str(Path(__file__).resolve().parent.parent / "admin" / "utilities")
-        )
-        from init_ado_repo import (
-            init_ado_repo as _init_ado,
-        )
-
-        return _init_ado(
+        return init_ado_repo(
             owner,
             ado_project,
             repo_name,
@@ -650,13 +629,7 @@ def onboard_project(
             logger.info(f"  (Dry Run) Would execute: {' '.join(deploy_cmd)}")
         else:
             try:
-                env = {
-                    "PYTHONPATH": str(
-                        Path(__file__).resolve().parent.parent.parent / "src"
-                    )
-                }
-                env.update(os.environ)
-                subprocess.run(deploy_cmd, env=env, check=True)
+                subprocess.run(deploy_cmd, check=True)
                 logger.info("  ✅ Dev workspace deployed")
 
                 # Capture workspace ID for pipeline assignment
@@ -715,13 +688,7 @@ def onboard_project(
             return True
         else:
             try:
-                env = {
-                    "PYTHONPATH": str(
-                        Path(__file__).resolve().parent.parent.parent / "src"
-                    )
-                }
-                env.update(os.environ)
-                subprocess.run(deploy_cmd, env=env, check=True)
+                subprocess.run(deploy_cmd, check=True)
             except subprocess.CalledProcessError:
                 logger.error("  ❌ Feature workspace deployment failed.")
                 return False

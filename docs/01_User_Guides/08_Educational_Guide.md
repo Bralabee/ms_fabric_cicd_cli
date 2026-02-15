@@ -321,7 +321,7 @@ The codebase is structured around **specialist responsibility zones**. Each "age
 | **Git Agent** | GitHub/ADO REST API integration, workspace-to-repo connection | `fabric_git_api.py`, `git_integration.py` |
 | **Pipeline Agent** | Deployment Pipeline creation, stage assignment, promotion | `deployment_pipeline.py` |
 | **Quality Agent** | Formatting, linting, type-checking, testing, security scanning | `Makefile` targets: `format`, `lint`, `typecheck`, `test`, `security`, `ci` |
-| **Onboard Agent** | Full 6-phase bootstrap orchestration | `onboard.py` (scripts/dev) |
+| **Onboard Agent** | Full 6-phase bootstrap orchestration | `onboard.py` (src/usf_fabric_cli/scripts/dev) |
 
 ### How They Interact (Onboarding Flow)
 

@@ -18,7 +18,7 @@ bin/setup.sh
 make setup
 
 # Optionally rerun the Python preflight if Fabric CLI/secrets change
-python scripts/admin/preflight_check.py
+python -m usf_fabric_cli.scripts.admin.preflight_check
 
 # Activate environment
 conda activate fabric-cli-cicd
@@ -34,7 +34,7 @@ vim .env  # Edit with your values
 
 ```bash
 # Generate configuration for your organization
-python scripts/dev/generate_project.py \
+python -m usf_fabric_cli.scripts.dev.generate_project \
   "Contoso Inc" \
   "Customer Analytics" \
   --template basic_etl \
@@ -149,7 +149,7 @@ The `ConfigManager` looks at the file you passed (`config/projects/ProductA/conf
 
 ```bash
 # Generate configuration
-python scripts/dev/generate_project.py \
+python -m usf_fabric_cli.scripts.dev.generate_project \
   "Acme Manufacturing" \
   "Production Analytics" \
   --template basic_etl \
@@ -204,7 +204,7 @@ principals:
 
 ```bash
 # Generate healthcare analytics workspace
-python scripts/dev/generate_project.py \
+python -m usf_fabric_cli.scripts.dev.generate_project \
   "HealthTech Solutions" \
   "Patient Outcomes Analytics" \
   --template advanced_analytics \
@@ -240,7 +240,7 @@ principals:
 
 ```bash
 # Generate financial analytics workspace
-python scripts/dev/generate_project.py \
+python -m usf_fabric_cli.scripts.dev.generate_project \
   "Global Bank Corp" \
   "Risk Analytics Platform" \
   --template advanced_analytics \
@@ -413,7 +413,7 @@ principals:
 
 ```bash
 # Analyze your current custom Fabric solution
-python scripts/admin/utilities/analyze_migration.py /path/to/your/custom/solution --output migration-report.json
+python -m usf_fabric_cli.scripts.admin.utilities.analyze_migration /path/to/your/custom/solution --output migration-report.json
 
 # This generates:
 # - LOC analysis
@@ -468,10 +468,10 @@ workspace:
 
 ### Custom Templates
 
-Create your own template in `templates/blueprints/`:
+Create your own template in `src/usf_fabric_cli/templates/blueprints/`:
 
 ```yaml
-# templates/blueprints/retail_analytics.yaml
+# src/usf_fabric_cli/templates/blueprints/retail_analytics.yaml
 workspace:
   name: "retail-analytics-template"
   description: "Template for retail analytics projects"
@@ -542,10 +542,10 @@ If you need to delete multiple workspaces (e.g., for cleanup), use the bulk dest
 
    ```bash
    # Dry run (preview)
-   python scripts/admin/bulk_destroy.py workspaces_to_delete.txt --dry-run
+   python -m usf_fabric_cli.scripts.admin.bulk_destroy workspaces_to_delete.txt --dry-run
 
    # Execute
-   python scripts/admin/bulk_destroy.py workspaces_to_delete.txt
+   python -m usf_fabric_cli.scripts.admin.bulk_destroy workspaces_to_delete.txt
    ```
 
 ### Audit Trail

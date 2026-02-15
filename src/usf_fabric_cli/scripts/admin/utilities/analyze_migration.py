@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """
-Migration helper - analyze existing custom Fabric solutions and suggest migration paths
+Migration helper - analyze existing custom Fabric solutions and suggest migration paths.
 """
 
 import argparse
 import ast
-import os
-from pathlib import Path
-from typing import Dict, List, Any
 import json
+from pathlib import Path
+from typing import Any, Dict, List
 
 
 class CustomSolutionAnalyzer:
-    """Analyze existing custom Fabric solutions"""
+    """Analyze existing custom Fabric solutions."""
 
     def __init__(self, source_directory: str):
         self.source_dir = Path(source_directory)
-        self.analysis = {
+        self.analysis: Dict[str, Any] = {
             "total_files": 0,
             "total_loc": 0,
             "components_found": [],
@@ -27,8 +26,7 @@ class CustomSolutionAnalyzer:
         }
 
     def analyze(self) -> Dict[str, Any]:
-        """Perform analysis of custom solution"""
-
+        """Perform analysis of custom solution."""
         print(f"🔍 Analyzing custom solution in {self.source_dir}")
 
         python_files = list(self.source_dir.rglob("*.py"))
@@ -42,14 +40,12 @@ class CustomSolutionAnalyzer:
 
         return self.analysis
 
-    def _analyze_file(self, file_path: Path):
-        """Analyze individual Python file"""
-
+    def _analyze_file(self, file_path: Path) -> None:
+        """Analyze individual Python file."""
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            # Count lines of code (excluding empty lines and comments)
             lines = content.split("\n")
             loc = len(
                 [
@@ -60,7 +56,6 @@ class CustomSolutionAnalyzer:
             )
             self.analysis["total_loc"] += loc
 
-            # Parse AST to find function calls
             try:
                 tree = ast.parse(content)
                 self._analyze_ast(tree, file_path)
@@ -70,21 +65,18 @@ class CustomSolutionAnalyzer:
         except Exception as e:
             print(f"⚠️  Error analyzing {file_path}: {e}")
 
-    def _analyze_ast(self, tree: ast.AST, file_path: Path):
-        """Analyze AST for Fabric-related patterns"""
-
+    def _analyze_ast(self, tree: ast.AST, file_path: Path) -> None:
+        """Analyze AST for Fabric-related patterns."""
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
                 self._analyze_function(node, file_path)
             elif isinstance(node, ast.Call):
                 self._analyze_call(node, file_path)
 
-    def _analyze_function(self, node: ast.FunctionDef, file_path: Path):
-        """Analyze function definitions"""
-
+    def _analyze_function(self, node: ast.FunctionDef, file_path: Path) -> None:
+        """Analyze function definitions."""
         func_name = node.name.lower()
 
-        # Identify common Fabric operation patterns
         fabric_patterns = [
             "workspace",
             "lakehouse",
@@ -110,15 +102,12 @@ class CustomSolutionAnalyzer:
                 self.analysis["components_found"].append(component)
                 break
 
-    def _analyze_call(self, node: ast.Call, file_path: Path):
-        """Analyze function/method calls"""
-
+    def _analyze_call(self, node: ast.Call, file_path: Path) -> None:
+        """Analyze function/method calls."""
         if isinstance(node.func, ast.Attribute):
             method_name = node.func.attr.lower()
 
-            # Check for requests.post/get/put (direct API calls)
             if method_name in ["post", "get", "put", "patch", "delete"]:
-                # Check if it's a requests call to Fabric API
                 if hasattr(node, "args") and len(node.args) > 0:
                     if isinstance(node.args[0], ast.Constant):
                         url = node.args[0].value
@@ -131,8 +120,7 @@ class CustomSolutionAnalyzer:
                             self.analysis["fabric_api_calls"].append(api_call)
 
     def _is_cli_replaceable(self, pattern: str) -> bool:
-        """Determine if pattern can be replaced with Fabric CLI"""
-
+        """Determine if pattern can be replaced with Fabric CLI."""
         cli_supported = [
             "workspace",
             "lakehouse",
@@ -142,12 +130,10 @@ class CustomSolutionAnalyzer:
             "item",
             "git",
         ]
-
         return pattern in cli_supported
 
-    def _determine_migration_complexity(self):
-        """Determine overall migration complexity"""
-
+    def _determine_migration_complexity(self) -> None:
+        """Determine overall migration complexity."""
         total_loc = self.analysis["total_loc"]
         cli_replaceable_count = len(
             [c for c in self.analysis["components_found"] if c["cli_replaceable"]]
@@ -172,9 +158,8 @@ class CustomSolutionAnalyzer:
 
         self.analysis["migration_complexity"] = complexity
 
-    def _generate_recommendations(self):
-        """Generate migration recommendations"""
-
+    def _generate_recommendations(self) -> None:
+        """Generate migration recommendations."""
         total_loc = self.analysis["total_loc"]
         cli_replaceable = [
             c for c in self.analysis["components_found"] if c["cli_replaceable"]
@@ -188,7 +173,7 @@ class CustomSolutionAnalyzer:
                     "priority": "HIGH",
                     "action": "Consider migration to thin wrapper approach",
                     "reason": f"Large codebase ({total_loc} LOC) has high maintenance burden",
-                    "target_reduction": f"Potential reduction to ~270 LOC (85% reduction)",
+                    "target_reduction": "Potential reduction to ~270 LOC (85% reduction)",
                 }
             )
 
@@ -214,9 +199,8 @@ class CustomSolutionAnalyzer:
 
         self.analysis["recommendations"] = recommendations
 
-    def generate_report(self, output_file: str = None):
-        """Generate migration analysis report"""
-
+    def generate_report(self, output_file: str = None) -> Dict[str, Any]:
+        """Generate migration analysis report."""
         report = {
             "analysis_summary": {
                 "total_files": self.analysis["total_files"],
@@ -251,7 +235,7 @@ class CustomSolutionAnalyzer:
         return report
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Analyze custom Fabric solution for migration"
     )
@@ -268,7 +252,6 @@ def main():
         analyzer = CustomSolutionAnalyzer(args.source_directory)
         analysis = analyzer.analyze()
 
-        # Print summary
         print("\n📊 Migration Analysis Summary:")
         print(f"   Total files: {analysis['total_files']}")
         print(f"   Total LOC: {analysis['total_loc']}")
@@ -284,7 +267,6 @@ def main():
                 print(f"   {rec['priority']}: {rec['action']}")
                 print(f"      Reason: {rec['reason']}")
 
-        # Generate detailed report
         if args.output:
             analyzer.generate_report(args.output)
 
