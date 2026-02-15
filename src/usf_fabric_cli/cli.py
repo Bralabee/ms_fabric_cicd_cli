@@ -193,6 +193,7 @@ def destroy(
 ):
     """Destroy Fabric workspace based on configuration"""
 
+    workspace_name = workspace_name_override  # Pre-initialize for error handler
     try:
         config_manager = ConfigManager(config)
         workspace_config = config_manager.load_config(environment)
@@ -235,8 +236,9 @@ def destroy(
         error_str = str(e)
         # Treat "not found" as success — workspace already cleaned up (idempotent)
         if "NotFound" in error_str or "could not be found" in error_str.lower():
+            ws_display = workspace_name or "<unknown>"
             console.print(
-                f"[yellow]⚠️  Workspace '{workspace_name}'"
+                f"[yellow]⚠️  Workspace '{ws_display}'"
                 " not found — already cleaned up[/yellow]"
             )
         else:
@@ -280,10 +282,19 @@ def promote(
             FabricDeploymentPipelineAPI,
             DeploymentStage,
         )
+        from usf_fabric_cli.services.token_manager import (
+            create_token_manager_from_env,
+        )
 
         env_vars = get_environment_variables(validate_vars=True)
 
-        api = FabricDeploymentPipelineAPI(access_token=env_vars["FABRIC_TOKEN"])
+        # Use TokenManager so long-running promotions can refresh tokens
+        token_manager = create_token_manager_from_env()
+
+        api = FabricDeploymentPipelineAPI(
+            access_token=env_vars["FABRIC_TOKEN"],
+            token_manager=token_manager,
+        )
 
         pipeline = api.get_pipeline_by_name(pipeline_name)
         if not pipeline:

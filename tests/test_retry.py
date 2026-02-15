@@ -75,12 +75,12 @@ class TestIsRetryableError:
 class TestIsRetryableHttpStatus:
     """Tests for HTTP status code classification."""
 
-    @pytest.mark.parametrize("code", [429, 502, 503, 504])
+    @pytest.mark.parametrize("code", [401, 429, 502, 503, 504])
     def test_retryable_status_codes(self, code):
-        """429, 502, 503, 504 should be retryable."""
+        """401 (token refresh), 429, 502, 503, 504 should be retryable."""
         assert is_retryable_http_status(code) is True
 
-    @pytest.mark.parametrize("code", [200, 201, 400, 401, 403, 404, 500])
+    @pytest.mark.parametrize("code", [200, 201, 400, 403, 404, 500])
     def test_non_retryable_status_codes(self, code):
         """Other status codes should NOT be retryable."""
         assert is_retryable_http_status(code) is False
@@ -97,11 +97,11 @@ class TestIsRetryableException:
         assert is_retryable_exception(exc) is True
 
     def test_http_error_401(self):
-        """HTTPError with 401 should NOT be retryable."""
+        """HTTPError with 401 should be retryable (token refresh)."""
         response = MagicMock()
         response.status_code = 401
         exc = requests.exceptions.HTTPError(response=response)
-        assert is_retryable_exception(exc) is False
+        assert is_retryable_exception(exc) is True
 
     def test_connection_error(self):
         """ConnectionError should be retryable."""
@@ -330,9 +330,9 @@ class TestRetryRequest:
 
     @patch("usf_fabric_cli.utils.retry.requests.request")
     def test_non_retryable_raises_immediately(self, mock_request):
-        """Should raise immediately on non-retryable errors."""
+        """Should raise immediately on non-retryable errors (e.g. 403)."""
         error_response = MagicMock()
-        error_response.status_code = 401
+        error_response.status_code = 403
         error_exc = requests.exceptions.HTTPError(response=error_response)
 
         mock_request.side_effect = error_exc

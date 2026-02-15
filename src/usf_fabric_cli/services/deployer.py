@@ -250,10 +250,24 @@ class FabricDeployer:
                     task = progress.add_task(
                         "Setting up Deployment Pipeline...", total=None
                     )
-                    self._setup_deployment_pipeline(workspace_name)
-                    progress.update(
-                        task, description="✅ Deployment Pipeline configured"
-                    )
+                    pipeline_ok = self._setup_deployment_pipeline(workspace_name)
+                    if pipeline_ok:
+                        progress.update(
+                            task,
+                            description="✅ Deployment Pipeline configured",
+                        )
+                    else:
+                        progress.update(
+                            task,
+                            description=(
+                                "⚠️ Deployment Pipeline setup had errors"
+                            ),
+                        )
+                        logger.warning(
+                            "Deployment Pipeline setup failed — "
+                            "workspace was deployed but pipeline may "
+                            "need manual configuration"
+                        )
 
             # Log completion
             duration = time.time() - start_time
@@ -449,6 +463,7 @@ class FabricDeployer:
         for notebook in self.config.notebooks:
             # Render file_path through Jinja2 template engine if present
             effective_file_path = notebook.get("file_path")
+            temp_file_path = None  # Track for cleanup
             if effective_file_path:
                 try:
                     from pathlib import Path
@@ -472,6 +487,7 @@ class FabricDeployer:
                         tmp.write(rendered)
                         tmp.close()
                         effective_file_path = tmp.name
+                        temp_file_path = tmp.name
                         logger.debug(
                             "Rendered notebook template %s → %s",
                             notebook.get("file_path"),
@@ -490,6 +506,15 @@ class FabricDeployer:
                 effective_file_path,
                 folder=notebook.get("folder"),
             )
+
+            # Clean up temp file from Jinja2 rendering
+            if temp_file_path:
+                try:
+                    import os
+
+                    os.unlink(temp_file_path)
+                except OSError:
+                    pass
 
             if result["success"]:
                 reused = "exists" if result.get("reused") else "created"
@@ -1033,24 +1058,27 @@ class FabricDeployer:
         logger.warning(f"Could not parse Git URL: {git_url}")
         return None
 
-    def _setup_deployment_pipeline(self, dev_workspace_name: str):
+    def _setup_deployment_pipeline(self, dev_workspace_name: str) -> bool:
         """Set up Deployment Pipeline and assign workspaces to stages.
 
         Creates the pipeline if it doesn't exist, creates Test/Prod workspaces
         if needed, and assigns each workspace to its pipeline stage.
 
         Only called for base workspace deployments (not feature branches).
+
+        Returns:
+            True if pipeline was configured successfully, False on failure.
         """
         dp_config = self.config.deployment_pipeline
         if not dp_config:
-            return
+            return True
 
         pipeline_name = dp_config.get("pipeline_name")
         stages_config = dp_config.get("stages", {})
 
         if not pipeline_name:
             logger.warning("deployment_pipeline.pipeline_name not set, skipping")
-            return
+            return True
 
         console.print(f"\n[blue]Setting up Deployment Pipeline: {pipeline_name}[/blue]")
 
@@ -1070,7 +1098,7 @@ class FabricDeployer:
                     f"  [red]✗ Failed to create pipeline: "
                     f"{result.get('error')}[/red]"
                 )
-                return
+                return False
             pipeline_id = result["pipeline"]["id"]
             console.print(f"  ✓ Pipeline created: {pipeline_id[:8]}...")
 
@@ -1083,7 +1111,7 @@ class FabricDeployer:
             console.print(
                 f"  [red]✗ Failed to get stages: {stages_result.get('error')}[/red]"
             )
-            return
+            return False
 
         # Build a map: stage display name (lowercase) → stage id
         stage_map = {}
@@ -1163,15 +1191,36 @@ class FabricDeployer:
                 console.print(f"    → Assigned to {fabric_stage_name} stage")
             else:
                 error = assign_result.get("error", "")
-                # Already assigned is OK (idempotent)
-                if "already" in str(error).lower():
+                error_detail = assign_result.get("error_detail", "")
+                status_code = assign_result.get("status_code")
+                combined = f"{error} {error_detail}".lower()
+                # Already assigned is OK (idempotent) — check both the
+                # HTTP status code (400) with the Fabric error body, and
+                # the legacy substring match for backward compatibility.
+                is_already_assigned = (
+                    "already" in combined
+                    or "workspacealreadyassigned" in combined.replace(" ", "")
+                    or (
+                        status_code == 400
+                        and (
+                            "assigned" in combined
+                            or "ItemAlreadyExists" in error_detail
+                        )
+                    )
+                )
+                if is_already_assigned:
                     console.print(
                         f"    · Already assigned to {fabric_stage_name} stage"
                     )
                 else:
                     console.print(f"    [red]✗ Assignment failed: {error}[/red]")
+                    if error_detail:
+                        logger.debug(
+                            "Assignment error detail: %s", error_detail
+                        )
 
         console.print(f"  [green]Pipeline '{pipeline_name}' configured.[/green]")
+        return True
 
     def _show_deployment_summary(self, workspace_name: str, duration: float):
         """Show deployment summary"""
