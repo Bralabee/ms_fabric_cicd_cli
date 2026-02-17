@@ -773,3 +773,90 @@ class TestDeploymentPipelineSetup:
 
         # Should not raise
         deployer._setup_deployment_pipeline("ws-dev")
+
+    def test_setup_propagates_principals_to_stage_workspaces(self):
+        """Principals from config are added to Test/Prod workspaces."""
+        principals = [
+            {"id": "user-admin-1", "role": "Admin"},
+            {"id": "user-contrib-1", "role": "Contributor"},
+        ]
+        config = _make_config(
+            principals=principals,
+            deployment_pipeline=self._make_pipeline_config(),
+        )
+        deployer = _build_deployer(config=config)
+        deployer.workspace_id = "ws-dev-id"
+
+        deployer.pipeline_api.get_pipeline_by_name.return_value = {"id": "pipe-1"}
+        deployer.pipeline_api.get_pipeline_stages.return_value = {
+            "success": True,
+            "stages": [
+                {"displayName": "development", "id": "s1"},
+                {"displayName": "test", "id": "s2"},
+                {"displayName": "production", "id": "s3"},
+            ],
+        }
+        deployer.fabric.create_workspace.return_value = {
+            "success": True,
+            "workspace_id": "ws-new-id",
+        }
+        deployer.fabric.add_workspace_principal.return_value = {"success": True}
+        deployer.pipeline_api.assign_workspace_to_stage.return_value = {
+            "success": True,
+        }
+
+        deployer._setup_deployment_pipeline("ws-dev")
+
+        # Each principal added to Test AND Prod = 2 principals × 2 stages = 4
+        assert deployer.fabric.add_workspace_principal.call_count == 4
+
+        # Verify the workspace names passed include test and prod
+        call_args = [
+            c[0][0] for c in deployer.fabric.add_workspace_principal.call_args_list
+        ]
+        assert "ws-test" in call_args
+        assert "ws-prod" in call_args
+
+    def test_setup_skips_unresolved_env_var_principals(self):
+        """Principals with unresolved ${VAR} ids are skipped for stages."""
+        principals = [
+            {"id": "${AZURE_CLIENT_ID}", "role": "Contributor"},
+            {"id": "real-user-id", "role": "Admin"},
+        ]
+        config = _make_config(
+            principals=principals,
+            deployment_pipeline={
+                "pipeline_name": "p1",
+                "stages": {
+                    "development": {"workspace_name": "ws-dev"},
+                    "test": {"workspace_name": "ws-test", "capacity_id": "c1"},
+                },
+            },
+        )
+        deployer = _build_deployer(config=config)
+        deployer.workspace_id = "ws-dev-id"
+
+        deployer.pipeline_api.get_pipeline_by_name.return_value = {"id": "pipe-1"}
+        deployer.pipeline_api.get_pipeline_stages.return_value = {
+            "success": True,
+            "stages": [
+                {"displayName": "development", "id": "s1"},
+                {"displayName": "test", "id": "s2"},
+            ],
+        }
+        deployer.fabric.create_workspace.return_value = {
+            "success": True,
+            "workspace_id": "ws-test-id",
+        }
+        deployer.fabric.add_workspace_principal.return_value = {"success": True}
+        deployer.pipeline_api.assign_workspace_to_stage.return_value = {
+            "success": True,
+        }
+
+        deployer._setup_deployment_pipeline("ws-dev")
+
+        # Only "real-user-id" should be added (${AZURE_CLIENT_ID} skipped)
+        assert deployer.fabric.add_workspace_principal.call_count == 1
+        deployer.fabric.add_workspace_principal.assert_called_with(
+            "ws-test", "real-user-id", "Admin"
+        )

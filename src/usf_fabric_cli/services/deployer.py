@@ -1181,6 +1181,40 @@ class FabricDeployer:
                     f"{ws_name} ({action})"
                 )
 
+                # Propagate principals to non-dev stage workspaces
+                if self.config.principals:
+                    console.print(f"    Adding principals to {ws_name}...")
+                    for principal in self.config.principals:
+                        principal_id_raw = principal.get("id", "")
+                        if not principal_id_raw or principal_id_raw.startswith("${"):
+                            continue
+
+                        principal_ids = (
+                            [pid.strip() for pid in principal_id_raw.split(",")]
+                            if "," in principal_id_raw
+                            else [principal_id_raw]
+                        )
+
+                        role = principal.get("role", "Member")
+                        for pid in principal_ids:
+                            if not pid:
+                                continue
+                            p_result = self.fabric.add_workspace_principal(
+                                ws_name, pid, role
+                            )
+                            if p_result.get("success"):
+                                if not p_result.get("reused"):
+                                    console.print(
+                                        f"      ✓ Added {pid[:12]}... as {role}"
+                                    )
+                            else:
+                                console.print(
+                                    f"      [yellow]⚠ Could not add "
+                                    f"{pid[:12]}...: "
+                                    f"{p_result.get('error', 'unknown')}"
+                                    f"[/yellow]"
+                                )
+
             # Assign workspace to pipeline stage
             assign_result = self.pipeline_api.assign_workspace_to_stage(
                 pipeline_id, stage_id, ws_id
