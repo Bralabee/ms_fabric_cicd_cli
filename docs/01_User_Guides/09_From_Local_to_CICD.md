@@ -338,7 +338,7 @@ The `usf_fabric_cli_cicd` repository is a **library/tool**. It should not deploy
 - name: Install CLI tool
   run: |
     pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
-    pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.7.6' }}"
+    pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.7.7' }}"
 ```
 
 > **Note**: The `CLI_REPO_URL`, `CLI_REPO_REF`, and `FABRIC_CLI_VERSION` are configurable via

@@ -243,7 +243,7 @@ Service Principal must have:
 
 ## 📦 Packaging & Distribution
 
-- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.7.6-py3-none-any.whl`
+- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.7.7-py3-none-any.whl`
 - **Entry Point**: `pyproject.toml` defines `fabric-cicd` command → `usf_fabric_cli.cli:app`
 - **Docker Image**: `Dockerfile` installs wheel + Fabric CLI, runs as non-root user
 
@@ -408,14 +408,16 @@ Every version bump **must** complete ALL of the following steps in order:
 
 1. **Bump `pyproject.toml`** — update `version = "X.Y.Z"` in `[project]` section
 2. **Update `CHANGELOG.md`** — add release notes under the new version heading
-3. **Update `.github/copilot-instructions.md`** — change `Current Version` at the top of this file
-4. **Create PR to `main`** → CI validates → merge (squash)
-5. **Create annotated Git tag**: `git tag -a vX.Y.Z -m "vX.Y.Z: <summary>"`
-6. **Push tag + main to ALL remotes**: `git push <remote> main --tags` for `origin`, `mirror`, `abba-replc`, `bralabee`
-7. **Update consumer repo variable**: set `CLI_REPO_REF` in downstream repos (e.g. `EDPFabric`) to the new tag:
+3. **Update `.github/copilot-instructions.md`** — change `Current Version` at the top of this file and the wheel filename in "Packaging & Distribution"
+4. **Update `README.md`** — change the version in the "February 2026 Update" banner
+5. **Create PR to `main`** → CI validates → merge (squash)
+6. **Create annotated Git tag**: `git tag -a vX.Y.Z -m "vX.Y.Z: <summary>"`
+7. **Push tag + main to ALL remotes**: `git push <remote> main --tags` for `origin`, `mirror`, `abba-replc`, `bralabee`
+8. **Update consumer repo variable**: set `CLI_REPO_REF` in downstream repos (e.g. `EDPFabric`) to the new tag:
    ```bash
    gh variable set CLI_REPO_REF --body "vX.Y.Z" --repo <org>/<consumer-repo>
    ```
-8. **Verify** — confirm the consumer workflow can install the new version successfully
+9. **Update consumer repo workflow defaults**: bump the hardcoded fallback version in all workflow `pip install` lines
+10. **Verify** — confirm the consumer workflow can install the new version successfully
 
 > **Why this matters**: Consumer repos install the CLI via `pip install git+...@vX.Y.Z`. If `pyproject.toml` version or the Git tag is missing, deployments will fail.
