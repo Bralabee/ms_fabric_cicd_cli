@@ -38,10 +38,18 @@ def get_ado_token(secrets: FabricSecrets) -> str:
         )
 
     console.print("[blue]Acquiring Azure DevOps access token...[/blue]")
+    tenant_id = secrets.get_tenant_id()
+    client_id = secrets.azure_client_id
+    client_secret = secrets.azure_client_secret
+    if not tenant_id or not client_id or not client_secret:
+        raise ValueError(
+            "AZURE_TENANT_ID, AZURE_CLIENT_ID, and "
+            "AZURE_CLIENT_SECRET must all be set."
+        )
     credential = ClientSecretCredential(
-        tenant_id=secrets.get_tenant_id(),
-        client_id=secrets.azure_client_id,
-        client_secret=secrets.azure_client_secret,
+        tenant_id=tenant_id,
+        client_id=client_id,
+        client_secret=client_secret,
     )
     # Scope for Azure DevOps
     return credential.get_token("499b84ac-1321-427f-aa17-267ca6975798/.default").token
@@ -114,7 +122,8 @@ def main(
                 f"[yellow]Repository '{repository}' not found. "
                 f"Attempting to create it...[/yellow]"
             )
-            repo_id = create_repo(organization, project, repository, token)
+            repo_data = create_repo(organization, project, repository, token)
+            repo_id = repo_data.get("id")
             console.print(f"[green]Created Repository ID: {repo_id}[/green]")
         else:
             console.print(f"[green]Found Repository ID: {repo_id}[/green]")
@@ -198,7 +207,7 @@ def init_ado_repo(
     organization: str,
     project: str,
     repo_name: str,
-    token: str = None,
+    token: Optional[str] = None,
     *,
     branch: str = "main",
 ) -> Optional[str]:
