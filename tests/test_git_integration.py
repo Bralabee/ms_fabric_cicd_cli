@@ -60,18 +60,18 @@ class TestGetWorkspaceNameFromBranch:
     # ── Display-style names (contain spaces) → bracket notation ──
 
     def test_display_name_uses_bracket_notation(self):
-        """Display names: use [FEATURE-<desc>] bracket notation."""
+        """Display names: use ⚡ prefix + [FEATURE-<desc>] bracket notation."""
         result = self.git.get_workspace_name_from_branch(
             "Sales Report", "feature/fix-bug"
         )
-        assert result == "Sales Report [FEATURE-fix-bug]"
+        assert result == "⚡ Sales Report [FEATURE-fix-bug]"
 
     def test_display_name_strips_existing_env_tag(self):
         """Display names: strip existing [DEV] tag before appending."""
         result = self.git.get_workspace_name_from_branch(
             "Sales Report [DEV]", "feature/add-chart"
         )
-        assert result == "Sales Report [FEATURE-add-chart]"
+        assert result == "⚡ Sales Report [FEATURE-add-chart]"
 
     def test_display_name_nested_feature_branch(self):
         """Display names: nested feature branch uses dashes (no slashes)."""
@@ -80,7 +80,7 @@ class TestGetWorkspaceNameFromBranch:
             "feature/re_sales_direct/dev-setup",
         )
         assert result == (
-            "RE Sales - Direct Sales Helicopter View "
+            "⚡ RE Sales - Direct Sales Helicopter View "
             "[FEATURE-re_sales_direct-dev-setup]"
         )
 
@@ -89,7 +89,30 @@ class TestGetWorkspaceNameFromBranch:
         result = self.git.get_workspace_name_from_branch(
             "My Project Workspace", "hotfix/urgent-fix"
         )
-        assert result == "My Project Workspace [FEATURE-hotfix-urgent-fix]"
+        assert result == "⚡ My Project Workspace [FEATURE-hotfix-urgent-fix]"
+
+    # ── Feature prefix customization ──
+
+    def test_custom_feature_prefix(self):
+        """Display names: custom prefix replaces default ⚡."""
+        result = self.git.get_workspace_name_from_branch(
+            "Sales Report", "feature/fix-bug", feature_prefix="◈"
+        )
+        assert result == "◈ Sales Report [FEATURE-fix-bug]"
+
+    def test_empty_feature_prefix_disables_prefix(self):
+        """Display names: empty string disables the prefix entirely."""
+        result = self.git.get_workspace_name_from_branch(
+            "Sales Report", "feature/fix-bug", feature_prefix=""
+        )
+        assert result == "Sales Report [FEATURE-fix-bug]"
+
+    def test_slug_names_never_get_prefix(self):
+        """Slug-style names: never get a Unicode prefix."""
+        result = self.git.get_workspace_name_from_branch(
+            "my-workspace", "feature/add-auth", feature_prefix="⚡"
+        )
+        assert result == "my-workspace-feature-add-auth"
 
 
 class TestInitializeRepo:

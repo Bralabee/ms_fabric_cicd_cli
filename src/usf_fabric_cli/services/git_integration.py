@@ -166,15 +166,25 @@ class GitFabricIntegration:
         return result
 
     def get_workspace_name_from_branch(
-        self, base_workspace_name: str, branch: str
+        self,
+        base_workspace_name: str,
+        branch: str,
+        feature_prefix: str = "⚡",
     ) -> str:
         """Generate workspace name for feature branch.
 
         Naming convention:
-          - Display names (contain spaces): append [FEATURE-<desc>]
-            e.g. "Sales Report" + feature/fix-bug → "Sales Report [FEATURE-fix-bug]"
+          - Display names (contain spaces): prepend feature_prefix + append
+            [FEATURE-<desc>]
+            e.g. "Sales Report" + feature/fix-bug
+              → "⚡ Sales Report [FEATURE-fix-bug]"
           - Slug names (no spaces): append -feature-<desc>
-            e.g. "my-project" + feature/fix-bug → "my-project-feature-fix-bug"
+            e.g. "my-project" + feature/fix-bug
+              → "my-project-feature-fix-bug"
+
+        The feature_prefix (default "⚡") provides instant visual
+        identification of feature workspaces in the Fabric portal
+        sidebar.  Set to empty string "" to disable.
 
         Slashes are replaced with hyphens inside bracket notation because
         the Fabric CLI interprets '/' as a path separator, which breaks
@@ -200,9 +210,10 @@ class GitFabricIntegration:
         # Replace '/' with '-' — Fabric CLI treats '/' as a path separator
         if " " in base_clean:
             safe_desc = branch_desc.replace("/", "-")
-            return f"{base_clean} [FEATURE-{safe_desc}]"
+            prefix = f"{feature_prefix} " if feature_prefix else ""
+            return f"{prefix}{base_clean} [FEATURE-{safe_desc}]"
 
-        # Slug names → hyphen notation (legacy behavior)
+        # Slug names → hyphen notation (legacy behavior, no prefix)
         sanitized_branch = branch.replace("/", "-").replace("_", "-").lower()
         return f"{base_clean}-{sanitized_branch}"
 
