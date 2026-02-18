@@ -171,10 +171,14 @@ class GitFabricIntegration:
         """Generate workspace name for feature branch.
 
         Naming convention:
-          - Display names (contain spaces): append [FEATURE/<desc>]
-            e.g. "Sales Report" + feature/fix-bug → "Sales Report [FEATURE/fix-bug]"
+          - Display names (contain spaces): append [FEATURE-<desc>]
+            e.g. "Sales Report" + feature/fix-bug → "Sales Report [FEATURE-fix-bug]"
           - Slug names (no spaces): append -feature-<desc>
             e.g. "my-project" + feature/fix-bug → "my-project-feature-fix-bug"
+
+        Slashes are replaced with hyphens inside bracket notation because
+        the Fabric CLI interprets '/' as a path separator, which breaks
+        ``fab get`` and ``fab acl set`` operations.
 
         This keeps feature workspaces visually aligned with their
         parent [DEV]/[TEST]/[PROD] workspaces.
@@ -192,9 +196,11 @@ class GitFabricIntegration:
         if branch.startswith("feature/"):
             branch_desc = branch[len("feature/") :]
 
-        # Display names (contain spaces) → bracket notation [FEATURE/<desc>]
+        # Display names (contain spaces) → bracket notation [FEATURE-<desc>]
+        # Replace '/' with '-' — Fabric CLI treats '/' as a path separator
         if " " in base_clean:
-            return f"{base_clean} [FEATURE/{branch_desc}]"
+            safe_desc = branch_desc.replace("/", "-")
+            return f"{base_clean} [FEATURE-{safe_desc}]"
 
         # Slug names → hyphen notation (legacy behavior)
         sanitized_branch = branch.replace("/", "-").replace("_", "-").lower()

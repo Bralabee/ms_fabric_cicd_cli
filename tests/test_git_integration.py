@@ -60,36 +60,36 @@ class TestGetWorkspaceNameFromBranch:
     # ── Display-style names (contain spaces) → bracket notation ──
 
     def test_display_name_uses_bracket_notation(self):
-        """Display names: use [FEATURE/<desc>] bracket notation."""
+        """Display names: use [FEATURE-<desc>] bracket notation."""
         result = self.git.get_workspace_name_from_branch(
             "Sales Report", "feature/fix-bug"
         )
-        assert result == "Sales Report [FEATURE/fix-bug]"
+        assert result == "Sales Report [FEATURE-fix-bug]"
 
     def test_display_name_strips_existing_env_tag(self):
         """Display names: strip existing [DEV] tag before appending."""
         result = self.git.get_workspace_name_from_branch(
             "Sales Report [DEV]", "feature/add-chart"
         )
-        assert result == "Sales Report [FEATURE/add-chart]"
+        assert result == "Sales Report [FEATURE-add-chart]"
 
     def test_display_name_nested_feature_branch(self):
-        """Display names: nested feature branch preserves project/desc."""
+        """Display names: nested feature branch uses dashes (no slashes)."""
         result = self.git.get_workspace_name_from_branch(
             "RE Sales - Direct Sales Helicopter View",
             "feature/re_sales_direct/dev-setup",
         )
         assert result == (
             "RE Sales - Direct Sales Helicopter View "
-            "[FEATURE/re_sales_direct/dev-setup]"
+            "[FEATURE-re_sales_direct-dev-setup]"
         )
 
     def test_display_name_non_feature_branch(self):
-        """Display names: non-feature branches use full branch name."""
+        """Display names: non-feature branches use dashes in bracket."""
         result = self.git.get_workspace_name_from_branch(
             "My Project Workspace", "hotfix/urgent-fix"
         )
-        assert result == "My Project Workspace [FEATURE/hotfix/urgent-fix]"
+        assert result == "My Project Workspace [FEATURE-hotfix-urgent-fix]"
 
 
 class TestInitializeRepo:
