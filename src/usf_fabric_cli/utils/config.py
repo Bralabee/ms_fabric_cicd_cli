@@ -260,9 +260,7 @@ class ConfigManager:
             git_repo=workspace_data.get("git_repo"),
             git_branch=workspace_data.get("git_branch", "main"),
             git_directory=workspace_data.get("git_directory", "/"),
-            folders=data.get(
-                "folders", ["Bronze", "Silver", "Gold", "Notebooks", "Pipelines"]
-            ),
+            folders=data.get("folders", []),
             lakehouses=data.get("lakehouses", []),
             warehouses=data.get("warehouses", []),
             notebooks=data.get("notebooks", []),

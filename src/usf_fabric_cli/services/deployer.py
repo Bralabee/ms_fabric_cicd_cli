@@ -1100,7 +1100,87 @@ class FabricDeployer:
             pipeline_id = result["pipeline"]["id"]
             console.print(f"  ✓ Pipeline created: {pipeline_id[:8]}...")
 
-        # Step 2: Get pipeline stage IDs
+        # Step 2: Grant pipeline access to admin principals
+        #
+        # Pipeline visibility requires explicit user/group assignment via the
+        # Deployment Pipelines Users API.  Workspace-level Admin/Member roles
+        # do NOT automatically grant pipeline visibility.
+        if self.config.principals:
+            admin_principals = [
+                p
+                for p in self.config.principals
+                if p.get("role", "").lower() == "admin"
+                and p.get("id")
+                and not p["id"].startswith("${")
+            ]
+            if admin_principals:
+                console.print("  Adding admin principals to pipeline...")
+                for principal in admin_principals:
+                    principal_id_raw = principal["id"]
+                    # Support comma-separated GUIDs
+                    principal_ids = (
+                        [pid.strip() for pid in principal_id_raw.split(",")]
+                        if "," in principal_id_raw
+                        else [principal_id_raw]
+                    )
+                    p_type = principal.get("type", "Group")
+                    for pid in principal_ids:
+                        if not pid:
+                            continue
+                        result = self.pipeline_api.add_pipeline_user(
+                            pipeline_id,
+                            identifier=pid,
+                            principal_type=p_type,
+                            pipeline_role="Admin",
+                        )
+                        if result.get("success"):
+                            if result.get("reused"):
+                                console.print(
+                                    f"    · {pid[:12]}... already has pipeline access"
+                                )
+                            else:
+                                console.print(
+                                    f"    ✓ Added {pid[:12]}... to pipeline as Admin"
+                                )
+                        else:
+                            console.print(
+                                f"    [yellow]⚠ Could not add {pid[:12]}... "
+                                f"to pipeline: {result.get('error', 'unknown')}"
+                                f"[/yellow]"
+                            )
+
+            # Also add the Service Principal (caller) so it retains pipeline
+            # access for future promote operations.  The SP may be configured
+            # as a Contributor rather than Admin, so we add it explicitly.
+            sp_client_id = None
+            for p in self.config.principals:
+                pid = p.get("id", "")
+                if (
+                    pid
+                    and not pid.startswith("${")
+                    and p.get("role", "").lower()
+                    in (
+                        "contributor",
+                        "admin",
+                    )
+                ):
+                    # The first Contributor that looks like the automation SP
+                    desc = (p.get("description") or "").lower()
+                    if "automation" in desc or "ci/cd" in desc or "sp" in desc:
+                        sp_client_id = pid
+                        break
+
+            if sp_client_id:
+                sp_result = self.pipeline_api.add_pipeline_user(
+                    pipeline_id,
+                    identifier=sp_client_id,
+                    principal_type="ServicePrincipal",
+                    pipeline_role="Admin",
+                )
+                if sp_result.get("success") and not sp_result.get("reused"):
+                    console.print("    ✓ Added automation SP to pipeline as Admin")
+
+        # Step 3: Get pipeline stage IDs
         stages_result = self.pipeline_api.get_pipeline_stages(pipeline_id)
         if not stages_result["success"]:
             logger.error(
@@ -1116,7 +1196,7 @@ class FabricDeployer:
         for stage in stages_result["stages"]:
             stage_map[stage["displayName"].lower()] = stage["id"]
 
-        # Step 3: For each configured stage, ensure workspace exists and assign
+        # Step 4: For each configured stage, ensure workspace exists and assign
         stage_order = ["development", "test", "production"]
         for stage_key in stage_order:
             stage_cfg = stages_config.get(stage_key)
