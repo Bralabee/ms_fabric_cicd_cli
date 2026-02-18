@@ -1,5 +1,6 @@
 {
     "naming_pattern": "{workspace_base_name}-{feature_name}",
+    "feature_prefix": "⚡",
     "capacity_name": "${FABRIC_CAPACITY_NAME}",
     "description": "Feature development workspace for branch: {branch_name}",
     "git_settings": {
