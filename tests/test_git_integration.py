@@ -33,27 +33,63 @@ class TestGetWorkspaceNameFromBranch:
         result = self.git.get_workspace_name_from_branch("my-workspace", "master")
         assert result == "my-workspace"
 
-    def test_feature_branch_appends_sanitized_suffix(self):
-        """Feature branches append a sanitized branch name."""
+    # ── Slug-style names (no spaces) → hyphen notation ──
+
+    def test_slug_feature_branch_appends_sanitized_suffix(self):
+        """Slug-style names: feature branches append a sanitized branch name."""
         result = self.git.get_workspace_name_from_branch(
             "my-workspace", "feature/add-auth"
         )
         assert result == "my-workspace-feature-add-auth"
 
-    def test_underscores_replaced_with_hyphens(self):
-        """Underscores in branch names should be replaced with hyphens."""
+    def test_slug_underscores_replaced_with_hyphens(self):
+        """Slug-style names: underscores replaced with hyphens."""
         result = self.git.get_workspace_name_from_branch("ws", "fix_bug_123")
         assert result == "ws-fix-bug-123"
 
-    def test_branch_name_lowercased(self):
-        """Branch names should be lowercased."""
+    def test_slug_branch_name_lowercased(self):
+        """Slug-style names: branch names should be lowercased."""
         result = self.git.get_workspace_name_from_branch("ws", "Feature/MyFeature")
         assert result == "ws-feature-myfeature"
 
-    def test_nested_branch_slashes_replaced(self):
-        """Nested branch paths should have slashes replaced with hyphens."""
+    def test_slug_nested_branch_slashes_replaced(self):
+        """Slug-style names: nested branch paths have slashes replaced."""
         result = self.git.get_workspace_name_from_branch("ws", "feature/team/auth")
         assert result == "ws-feature-team-auth"
+
+    # ── Display-style names (contain spaces) → bracket notation ──
+
+    def test_display_name_uses_bracket_notation(self):
+        """Display names: use [FEATURE/<desc>] bracket notation."""
+        result = self.git.get_workspace_name_from_branch(
+            "Sales Report", "feature/fix-bug"
+        )
+        assert result == "Sales Report [FEATURE/fix-bug]"
+
+    def test_display_name_strips_existing_env_tag(self):
+        """Display names: strip existing [DEV] tag before appending."""
+        result = self.git.get_workspace_name_from_branch(
+            "Sales Report [DEV]", "feature/add-chart"
+        )
+        assert result == "Sales Report [FEATURE/add-chart]"
+
+    def test_display_name_nested_feature_branch(self):
+        """Display names: nested feature branch preserves project/desc."""
+        result = self.git.get_workspace_name_from_branch(
+            "RE Sales - Direct Sales Helicopter View",
+            "feature/re_sales_direct/dev-setup",
+        )
+        assert result == (
+            "RE Sales - Direct Sales Helicopter View "
+            "[FEATURE/re_sales_direct/dev-setup]"
+        )
+
+    def test_display_name_non_feature_branch(self):
+        """Display names: non-feature branches use full branch name."""
+        result = self.git.get_workspace_name_from_branch(
+            "My Project Workspace", "hotfix/urgent-fix"
+        )
+        assert result == "My Project Workspace [FEATURE/hotfix/urgent-fix]"
 
 
 class TestInitializeRepo:

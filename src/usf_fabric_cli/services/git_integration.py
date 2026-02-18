@@ -168,13 +168,37 @@ class GitFabricIntegration:
     def get_workspace_name_from_branch(
         self, base_workspace_name: str, branch: str
     ) -> str:
-        """Generate workspace name for feature branch"""
+        """Generate workspace name for feature branch.
+
+        Naming convention:
+          - Display names (contain spaces): append [FEATURE/<desc>]
+            e.g. "Sales Report" + feature/fix-bug → "Sales Report [FEATURE/fix-bug]"
+          - Slug names (no spaces): append -feature-<desc>
+            e.g. "my-project" + feature/fix-bug → "my-project-feature-fix-bug"
+
+        This keeps feature workspaces visually aligned with their
+        parent [DEV]/[TEST]/[PROD] workspaces.
+        """
+        import re
+
         if branch == "main" or branch == "master":
             return base_workspace_name
 
-        # For feature branches, append branch name (sanitized)
+        # Strip any existing [ENV] tag from the base name
+        base_clean = re.sub(r"\s*\[.*?\]\s*$", "", base_workspace_name).strip()
+
+        # Extract description (strip feature/ prefix if present)
+        branch_desc = branch
+        if branch.startswith("feature/"):
+            branch_desc = branch[len("feature/") :]
+
+        # Display names (contain spaces) → bracket notation [FEATURE/<desc>]
+        if " " in base_clean:
+            return f"{base_clean} [FEATURE/{branch_desc}]"
+
+        # Slug names → hyphen notation (legacy behavior)
         sanitized_branch = branch.replace("/", "-").replace("_", "-").lower()
-        return f"{base_workspace_name}-{sanitized_branch}"
+        return f"{base_clean}-{sanitized_branch}"
 
     def sync_workspace_with_git(self, workspace_id: str) -> Dict[str, Any]:
         """Sync Fabric workspace with Git repository"""
