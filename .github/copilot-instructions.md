@@ -2,7 +2,7 @@
 
 Enterprise Microsoft Fabric deployment automation using a **modular architecture** around official Fabric CLI (~10,000 LOC across services, utils, and CLI layers).
 
-**Current Version**: 1.7.6 (February 2026)
+**Current Version**: 1.7.7 (February 2026)
 
 ## 📏 Development Standards
 
@@ -403,8 +403,19 @@ chore: update dependencies
 - Review and merge dependency PRs promptly
 - Pin major versions in `requirements.txt`
 
-### Release Process
-1. Update version in `pyproject.toml`
-2. Update `CHANGELOG.md` with release notes
-3. Create PR to `main` → CI validates
-4. Merge → Tag release → Build wheel/Docker image
+### Release Process (MANDATORY — do NOT skip any step)
+Every version bump **must** complete ALL of the following steps in order:
+
+1. **Bump `pyproject.toml`** — update `version = "X.Y.Z"` in `[project]` section
+2. **Update `CHANGELOG.md`** — add release notes under the new version heading
+3. **Update `.github/copilot-instructions.md`** — change `Current Version` at the top of this file
+4. **Create PR to `main`** → CI validates → merge (squash)
+5. **Create annotated Git tag**: `git tag -a vX.Y.Z -m "vX.Y.Z: <summary>"`
+6. **Push tag + main to ALL remotes**: `git push <remote> main --tags` for `origin`, `mirror`, `abba-replc`, `bralabee`
+7. **Update consumer repo variable**: set `CLI_REPO_REF` in downstream repos (e.g. `EDPFabric`) to the new tag:
+   ```bash
+   gh variable set CLI_REPO_REF --body "vX.Y.Z" --repo <org>/<consumer-repo>
+   ```
+8. **Verify** — confirm the consumer workflow can install the new version successfully
+
+> **Why this matters**: Consumer repos install the CLI via `pip install git+...@vX.Y.Z`. If `pyproject.toml` version or the Git tag is missing, deployments will fail.
