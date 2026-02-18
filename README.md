@@ -2,7 +2,7 @@
 
 Enterprise-grade Microsoft Fabric deployment automation leveraging the official Fabric CLI with 12-Factor App configuration management, Jinja2 artifact templating, and REST API Git integration. Designed for organization-agnostic operation with a clean, modular architecture.
 
-> **🎉 February 2026 Update:** Version **1.7.7** — Default folders fix, pipeline user access, inline environment overrides, and E2E feature branch workspace validation. See [CHANGELOG.md](CHANGELOG.md) for details.
+> **🎉 February 2026 Update:** Version **1.7.7** — Unicode feature prefix (⚡) for visual workspace identification, default folders fix, pipeline user access, inline environment overrides, and E2E feature branch workspace validation. See [CHANGELOG.md](CHANGELOG.md) for details.
 
 > **🔄 Modern Successor:** This project is the evolution of [usf-fabric-cicd](../usf-fabric-cicd), providing a full-featured enterprise CLI framework built around the official Fabric CLI with comprehensive CI/CD, Git integration, and deployment pipeline support.
 
@@ -164,6 +164,7 @@ The **`feature-workspace`** command additionally:
 
 1. Creates and checks out a standardized feature branch (e.g., `feature/iot-platform`).
 2. Creates an isolated workspace connected to that feature branch.
+3. Prepends a Unicode prefix (default `⚡`) to display-name workspaces for instant visual identification in the Fabric portal sidebar (e.g., `⚡ IoT Platform [FEATURE-iot-platform]`). Configure via `feature_prefix` in `config/environments/feature_workspace.json`.
 
 ### 4. Docker-Based Workflow
 

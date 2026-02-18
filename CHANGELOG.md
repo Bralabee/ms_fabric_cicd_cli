@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Unicode Feature Prefix (⚡)**: Feature workspaces with display names (containing spaces) now prepend a configurable Unicode prefix (default `⚡`) for instant visual identification in the Fabric portal sidebar. Configured via `feature_prefix` in `feature_workspace.json` or the `feature_prefix` parameter on `get_workspace_name_from_branch()`. Example: `⚡ Sales Audience [FEATURE-dev-setup]`. Slug-style names remain unaffected (backward compatible). Set `feature_prefix: ""` to disable.
 - **Deployment Pipeline User Access**: New `list_pipeline_users()` and `add_pipeline_user()` methods in `deployment_pipeline.py`. After creating a Deployment Pipeline, the deployer now automatically grants Admin principals pipeline-level access so they can see and manage it in the Fabric UI.
 - **Deployer Step 2 — Grant Pipeline Access**: `_setup_deployment_pipeline()` now includes a new Step 2 that iterates Admin principals (from config `principals` list) and the automation Service Principal, adding each as an Admin on the Deployment Pipeline. Supports comma-separated GUIDs. Idempotent — existing users are skipped with `reused: True`.
 
@@ -16,7 +17,8 @@ All notable changes to this project will be documented in this file.
 ### Tests
 
 - Updated `test_config.py` assertion from `"Bronze" in wc.folders` to `wc.folders == []` (matching new default)
-- All **371 unit tests passing** (7 integration tests deselected)
+- Added 3 new tests for feature prefix: custom prefix, empty prefix disables, slug names never get prefix
+- All **385 unit tests passing** (7 integration tests deselected)
 
 ---
 
