@@ -36,7 +36,7 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
 - `deployment_pipeline.py`: Fabric Deployment Pipelines REST API client (Dev→Test→Prod)
 - `deployment_state.py`: Atomic rollback state management for created items
 - `token_manager.py`: Thread-safe Azure AD token refresh for long deployments
-- `git_integration.py`: *(Deprecated)* Legacy Git sync logic — superseded by `fabric_git_api.py`
+- `git_integration.py`: Feature workspace naming logic — `get_workspace_name_from_branch()` with configurable Unicode prefix (`feature_prefix`, default `⚡`) for visual identification in Fabric portal
 
 *Utils* (`utils/`):
 - `config.py`: YAML config loader with env-specific overrides + Jinja2 variable substitution
@@ -314,7 +314,7 @@ Located in `config/environments/`:
 - `test.yaml` - Test/UAT settings (F8/F16 capacity, QA team access)
 - `staging.yaml` - Pre-production settings (production-like)
 - `prod.yaml` - Production settings (F32/F64 capacity, strict access)
-- `feature_workspace.json` - Feature workspace recipe & lifecycle policies
+- `feature_workspace.json` - Feature workspace recipe, lifecycle policies, and `feature_prefix` setting (default `⚡`)
 
 ### CI/CD Deployment Pipeline Promotion
 
