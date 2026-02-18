@@ -244,7 +244,7 @@ def test_to_workspace_config_defaults():
     assert wc.description == ""
     assert wc.git_branch == "main"  # Default branch
     assert wc.git_directory == "/"  # Default directory
-    assert "Bronze" in wc.folders  # Default folders
+    assert wc.folders == []  # No default folders (explicit opt-in only)
     assert wc.lakehouses == []
     assert wc.notebooks == []
     assert wc.resources == []

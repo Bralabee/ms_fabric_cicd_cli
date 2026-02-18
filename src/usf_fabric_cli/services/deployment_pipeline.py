@@ -213,6 +213,107 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             logger.error("Failed to delete pipeline %s: %s", pipeline_id, e)
             return {"success": False, "error": str(e)}
 
+    # ── Pipeline user / access management ──────────────────────────
+
+    def list_pipeline_users(self, pipeline_id: str) -> Dict[str, Any]:
+        """
+        List users (principals) who have access to a deployment pipeline.
+
+        Ref: https://learn.microsoft.com/en-us/rest/api/fabric/core/
+             deployment-pipelines/get-deployment-pipeline-users
+
+        Args:
+            pipeline_id: Deployment pipeline ID.
+
+        Returns:
+            ``{"success": True, "users": [...]}``
+        """
+        url = f"{self.base_url}/deploymentPipelines/{pipeline_id}/users"
+
+        try:
+            response = self._make_request("GET", url)
+            data = response.json()
+            users = data.get("value", [])
+            logger.info("Pipeline %s has %d users", pipeline_id, len(users))
+            return {"success": True, "users": users}
+        except requests.RequestException as e:
+            logger.error("Failed to list pipeline users for %s: %s", pipeline_id, e)
+            return {"success": False, "error": str(e)}
+
+    def add_pipeline_user(
+        self,
+        pipeline_id: str,
+        identifier: str,
+        principal_type: str = "Group",
+        pipeline_role: str = "Admin",
+    ) -> Dict[str, Any]:
+        """
+        Add a user / group / service principal to a deployment pipeline.
+
+        This grants visibility and the specified role on the pipeline itself
+        (separate from workspace-level access).
+
+        Ref: https://learn.microsoft.com/en-us/rest/api/fabric/core/
+             deployment-pipelines/add-user
+
+        Args:
+            pipeline_id: Deployment pipeline ID.
+            identifier: Object ID (GUID) of the user, group, or SP.
+            principal_type: ``"User"``, ``"Group"``, or
+                ``"ServicePrincipal"``.
+            pipeline_role: ``"Admin"`` (currently the only supported role).
+
+        Returns:
+            ``{"success": True}`` or ``{"success": False, "error": "..."}``
+        """
+        url = f"{self.base_url}/deploymentPipelines/{pipeline_id}/users"
+        body = {
+            "identifier": identifier,
+            "principalType": principal_type,
+            "pipelineRole": pipeline_role,
+        }
+
+        try:
+            self._make_request("POST", url, json=body)
+            logger.info(
+                "Added %s %s as %s to pipeline %s",
+                principal_type,
+                identifier[:12],
+                pipeline_role,
+                pipeline_id,
+            )
+            return {"success": True}
+        except requests.RequestException as e:
+            error_detail = ""
+            if hasattr(e, "response") and e.response is not None:
+                try:
+                    error_detail = e.response.text
+                except Exception:
+                    error_detail = ""
+
+            # Already exists is OK (idempotent)
+            combined = f"{e} {error_detail}".lower()
+            if "already" in combined or "exists" in combined:
+                logger.info(
+                    "Principal %s already has access to pipeline %s",
+                    identifier[:12],
+                    pipeline_id,
+                )
+                return {"success": True, "reused": True}
+
+            logger.error(
+                "Failed to add user %s to pipeline %s: %s (detail: %s)",
+                identifier[:12],
+                pipeline_id,
+                e,
+                error_detail,
+            )
+            return {
+                "success": False,
+                "error": str(e),
+                "error_detail": error_detail,
+            }
+
     # ── Stage management ───────────────────────────────────────────
 
     def get_pipeline_stages(self, pipeline_id: str) -> Dict[str, Any]:
