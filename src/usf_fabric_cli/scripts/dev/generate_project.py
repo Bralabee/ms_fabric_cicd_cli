@@ -6,6 +6,7 @@ Quick project generator - creates customized configuration for your organization
 import argparse
 from importlib.resources import files
 from pathlib import Path
+from typing import Optional
 
 import yaml
 
@@ -15,7 +16,7 @@ def generate_project_config(
     project_name: str,
     template: str,
     capacity_id: str,
-    git_repo: str = None,
+    git_repo: Optional[str] = None,
 ):
     """Generate customized project configuration"""
 

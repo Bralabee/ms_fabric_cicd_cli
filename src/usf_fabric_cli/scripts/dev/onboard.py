@@ -376,7 +376,7 @@ def _provision_repo(
     owner: str,
     repo_name: str,
     *,
-    ado_project: str = None,
+    ado_project: Optional[str] = None,
     branch: str = "main",
 ) -> Optional[str]:
     """Create a Git repo via GitHub or ADO API.
@@ -424,17 +424,17 @@ def onboard_project(
     project_name: str,
     template: str,
     capacity_id: str,
-    git_repo: str = None,
+    git_repo: Optional[str] = None,
     dry_run: bool = False,
     with_feature_branch: bool = False,
-    stages: Set[str] = None,
-    pipeline_name_override: str = None,
-    test_workspace_name: str = None,
-    prod_workspace_name: str = None,
+    stages: Optional[Set[str]] = None,
+    pipeline_name_override: Optional[str] = None,
+    test_workspace_name: Optional[str] = None,
+    prod_workspace_name: Optional[str] = None,
     create_repo: bool = False,
     git_provider: str = "github",
-    git_owner: str = None,
-    ado_project: str = None,
+    git_owner: Optional[str] = None,
+    ado_project: Optional[str] = None,
 ):
     """Execute end-to-end onboarding workflow.
 
@@ -539,7 +539,7 @@ def onboard_project(
                 project_name,
                 template,
                 capacity_id,
-                git_repo,
+                git_repo or "",
             )
     except Exception as e:
         logger.error(f"Failed to generate config: {e}")
@@ -666,6 +666,7 @@ def onboard_project(
 
     # ─── Feature branch deploy (alternative to full bootstrap) ────
     if with_feature_branch:
+        assert branch_name is not None, "branch_name must be set for feature mode"
         current_step += 1
         logger.info(f"\n[{current_step}/{total_steps}] Deploying Feature Workspace...")
 

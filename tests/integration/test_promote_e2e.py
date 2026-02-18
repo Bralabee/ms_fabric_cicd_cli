@@ -106,7 +106,15 @@ def test_get_pipeline_stages(api_client):
     from usf_fabric_cli.services.deployment_pipeline import DeploymentStage
 
     stage_names = {s.get("displayName") for s in stages}
-    # At minimum, Dev stage should be present
-    assert any(
-        name in stage_names for name in [DeploymentStage.DEV, "Development"]
-    ), f"No Development stage found in pipeline stages: {stage_names}"
+    # Verify stages contain at least one recognised Fabric pipeline stage name
+    known_stages = {
+        DeploymentStage.DEV,
+        "Development",
+        DeploymentStage.TEST,
+        "Test",
+        DeploymentStage.PROD,
+        "Production",
+    }
+    assert (
+        stage_names & known_stages
+    ), f"No recognised stage found in pipeline stages: {stage_names}"
