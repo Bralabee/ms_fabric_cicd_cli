@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.14] - 2026-02-19
+
+### Changed
+
+- **CI: isort gate added** — `isort --check-only` is now enforced in `ci.yml`. Added `[tool.isort]` with `profile = "black"` and `line_length = 88` to `pyproject.toml` to keep isort and black in sync.
+- **CI tooling bumps**: `black` 24.4.2→25.1.0, `flake8` 7.0.0→7.1.1. `bandit` moved from inline CI install to `requirements-dev.txt`.
+- **`services/__init__.py`**: Exports `FabricDeploymentPipelineAPI` and `DeploymentStage` for cleaner consumer imports (additive, backwards-compatible).
+- **Docs**: Stabilisation changelog renamed `10_` → `11_Stabilisation_Changelog_Feb2026.md`.
+
+### Tests
+
+- **+10 unit tests**: `TestCLIOrganizeFolders` (5 tests), `TestCLIBulkDestroy` (3 tests), `TestCLIGenerate` (2 tests) — closes coverage gap on three previously untested CLI commands.
+
+---
+
 ## [1.7.13] - 2026-02-19
 
 ### Added
