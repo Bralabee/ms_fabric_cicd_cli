@@ -840,20 +840,62 @@ class FabricDeployer:
                                 "DuplicateConnectionName" in response_body
                                 or "Conflict" in error_msg
                             ):
+                                conn_name = f"GitHub-{workspace_name}"
                                 console.print(
                                     "[yellow]Connection name already exists. "
-                                    "Trying to find existing "
+                                    "Recycling stale "
                                     "connection...[/yellow]"
                                 )
                                 existing_conn = self.git_api.get_connection_by_name(
-                                    f"GitHub-{workspace_name}"
+                                    conn_name
                                 )
                                 if existing_conn:
-                                    connection_id = existing_conn["id"]
-                                    console.print(
-                                        f"[green]✓ Found existing connection"
-                                        f": {connection_id}[/green]"
-                                    )
+                                    old_id = existing_conn["id"]
+                                    # Delete the stale connection and create
+                                    # a fresh one with current credentials
+                                    # to avoid ConnectionMismatch errors.
+                                    del_result = self.git_api.delete_connection(old_id)
+                                    if del_result["success"]:
+                                        console.print(
+                                            f"  · Deleted stale connection "
+                                            f"{old_id[:8]}..."
+                                        )
+                                        retry_result = (
+                                            self.git_api.create_git_connection(
+                                                display_name=conn_name,
+                                                provider_type=(GitProviderType.GITHUB),
+                                                credential_type="Key",
+                                                credential_value=(
+                                                    self.secrets.github_token
+                                                ),
+                                                repository_url=git_repo,
+                                            )
+                                        )
+                                        if retry_result["success"]:
+                                            connection_id = retry_result["connection"][
+                                                "id"
+                                            ]
+                                            console.print(
+                                                f"[green]✓ Created fresh "
+                                                f"connection: "
+                                                f"{connection_id}[/green]"
+                                            )
+                                        else:
+                                            console.print(
+                                                f"[yellow]Warning: Could not "
+                                                f"recreate connection: "
+                                                f"{retry_result.get('error')}"
+                                                f"[/yellow]"
+                                            )
+                                    else:
+                                        # Could not delete — fall back to
+                                        # reusing the existing connection
+                                        connection_id = old_id
+                                        console.print(
+                                            f"[yellow]Could not delete stale "
+                                            f"connection {old_id[:8]}..., "
+                                            f"reusing it[/yellow]"
+                                        )
                                 else:
                                     console.print(
                                         "[red]Could not find existing "
@@ -1173,6 +1215,10 @@ class FabricDeployer:
                 return False
             pipeline_id = result["pipeline"]["id"]
             console.print(f"  ✓ Pipeline created: {pipeline_id[:8]}...")
+            # Allow Fabric backend to propagate the new pipeline before
+            # attempting to add users — the /users endpoint may return
+            # 404 if called immediately after creation.
+            time.sleep(5)
 
         # Step 2: Grant pipeline access to admin principals
         #

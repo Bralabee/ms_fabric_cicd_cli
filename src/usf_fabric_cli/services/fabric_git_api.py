@@ -250,6 +250,29 @@ class FabricGitAPI(FabricAPIBase):
                     return conn
         return None
 
+    def delete_connection(self, connection_id: str) -> Dict[str, Any]:
+        """
+        Delete a Git connection by ID.
+
+        Useful for recycling stale connections that cause ConnectionMismatch
+        errors when reused with different credentials.
+
+        Args:
+            connection_id: The connection GUID to delete.
+
+        Returns:
+            ``{"success": True}`` or ``{"success": False, "error": "..."}``
+        """
+        url = f"{self.base_url}/connections/{connection_id}"
+
+        try:
+            self._make_request("DELETE", url)
+            logger.info("Deleted Git connection %s", connection_id)
+            return {"success": True}
+        except requests.exceptions.RequestException as e:
+            logger.error("Failed to delete connection %s: %s", connection_id, e)
+            return {"success": False, "error": str(e)}
+
     def connect_workspace_to_git(
         self,
         workspace_id: str,

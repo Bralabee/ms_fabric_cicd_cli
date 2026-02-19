@@ -422,7 +422,8 @@ class TestGitHubDuplicateConnectionRecovery:
 
     def test_github_duplicate_connection_recovers_existing(self):
         """When GitHub connection creation returns 409 DuplicateConnectionName,
-        deployer should look up existing connection and use its ID."""
+        deployer should delete the stale connection, create a fresh one,
+        and use the new connection ID."""
         config = _make_config(git_repo="https://github.com/test-org/test-repo")
         deployer = _build_deployer(config=config)
         deployer.workspace_id = "ws-123"
@@ -432,25 +433,34 @@ class TestGitHubDuplicateConnectionRecovery:
         deployer.secrets.github_token = "ghp_test_token"
         deployer.secrets.validate_git_auth.return_value = (True, "")
 
-        # Step 1: create_git_connection returns 409 conflict
-        deployer.git_api.create_git_connection.return_value = {
-            "success": False,
-            "duplicate": True,
-            "error": "409 Client Error: Conflict for url",
-            "response": (
-                '{"errorCode":"DuplicateConnectionName","message":'
-                '"The connection DisplayName input is already being '
-                'used by another connection"}'
-            ),
-        }
+        # Step 1: create_git_connection returns 409 first, then succeeds
+        deployer.git_api.create_git_connection.side_effect = [
+            {
+                "success": False,
+                "duplicate": True,
+                "error": "409 Client Error: Conflict for url",
+                "response": (
+                    '{"errorCode":"DuplicateConnectionName","message":'
+                    '"The connection DisplayName input is already being '
+                    'used by another connection"}'
+                ),
+            },
+            {
+                "success": True,
+                "connection": {"id": "fresh-conn-id-456"},
+            },
+        ]
 
-        # Step 2: get_connection_by_name finds existing connection
+        # Step 2: get_connection_by_name finds existing (stale) connection
         deployer.git_api.get_connection_by_name.return_value = {
             "id": "existing-conn-id-123",
             "displayName": "GitHub-test-workspace",
         }
 
-        # Step 3: connect_workspace_to_git succeeds with the found ID
+        # Step 3: delete the stale connection
+        deployer.git_api.delete_connection.return_value = {"success": True}
+
+        # Step 4: connect_workspace_to_git succeeds with the fresh ID
         deployer.git_api.connect_workspace_to_git.return_value = {
             "success": True,
             "message": "Workspace connected to Git",
@@ -462,14 +472,14 @@ class TestGitHubDuplicateConnectionRecovery:
 
         deployer._connect_git(branch="main")
 
-        # Verify it looked up the existing connection
-        deployer.git_api.get_connection_by_name.assert_called_once_with(
-            "GitHub-test-workspace"
+        # Verify stale connection was deleted
+        deployer.git_api.delete_connection.assert_called_once_with(
+            "existing-conn-id-123"
         )
 
-        # Verify connect_workspace_to_git was called with the recovered ID
+        # Verify connect_workspace_to_git was called with the FRESH ID
         call_kwargs = deployer.git_api.connect_workspace_to_git.call_args.kwargs
-        assert call_kwargs["connection_id"] == "existing-conn-id-123"
+        assert call_kwargs["connection_id"] == "fresh-conn-id-456"
 
     def test_github_duplicate_connection_not_found_continues(self):
         """When GitHub 409 occurs but lookup finds nothing, should continue
