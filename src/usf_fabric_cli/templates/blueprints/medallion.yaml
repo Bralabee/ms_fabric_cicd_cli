@@ -1,102 +1,142 @@
-# Medallion Architecture Blueprint
-# Standardizes data processing layers: Bronze (Raw) -> Silver (Enriched) -> Gold (Curated)
-# Designed for: Scalable data engineering, clear data lineage, auditability
+# ─────────────────────────────────────────────────────────────────────────────
+# Medallion Architecture Workspace Configuration Template
+# Optimized for: Bronze → Silver → Gold data pipelines with quality layers
+# Use Cases: Enterprise data lakes, data engineering teams, DWH modernization
+# Strategy: Git-sync-only — Fabric items managed through Git, not CLI
+# ─────────────────────────────────────────────────────────────────────────────
 
 workspace:
-  name: "Medallion_Project"
-  display_name: "Medallion Data Product"
-  description: "Data product implementing Medallion Architecture (Bronze/Silver/Gold)"
+  name: "medallion-workspace"         # ← CHANGE: Your project workspace name
+  display_name: "Medallion Data Platform"
+  description: "Multi-layer data platform with Bronze/Silver/Gold quality gates"
   capacity_id: "${FABRIC_CAPACITY_ID}"
-  domain: "${FABRIC_DOMAIN_NAME}" # Optional: assign to a governance domain
+  domain: "${FABRIC_DOMAIN_NAME}"
 
   # Git Integration
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
   git_directory: "/"
 
-# Folder Structure (Medallion Layers)
+environments:
+  dev:
+    workspace:
+      name: "medallion-workspace"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+  test:
+    workspace:
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+  prod:
+    workspace:
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+
+# ── Folder Structure (Numbered Convention) ───────────────────────────────────
 folders:
-  - "Bronze"    # Raw / Ingestion layer
-  - "Silver"    # Cleaned / Validated layer
-  - "Gold"      # Aggregated / Business-ready layer
-  - "Utilities" # Helper scripts and tools
-  - "Pipelines" # Orchestration logic
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
+  - "Archive"
 
-# Lakehouses (One per layer is a common pattern for isolation)
-lakehouses:
-  - name: "lh_bronze"
-    folder: "Bronze"
-    description: "Raw data ingestion landing zone. immutable, append-only."
+# ── Folder Rules (Post-Git-Sync Item Placement) ─────────────────────────────
+folder_rules:
+  - type: DataPipeline
+    folder: "000 Orchestrate"
+  - type: DataflowGen2
+    folder: "000 Orchestrate"
+  - type: Eventstream
+    folder: "100 Ingest"
+  - type: Lakehouse
+    folder: "200 Store"
+  - type: Notebook
+    folder: "300 Prepare"
+  - type: SparkJobDefinition
+    folder: "300 Prepare"
+  - type: Warehouse
+    folder: "400 Model"
+  - type: SemanticModel
+    folder: "400 Model"
+  - type: Report
+    folder: "500 Visualize"
+  - type: Dashboard
+    folder: "500 Visualize"
+  - type: Environment
+    folder: "999 Libraries"
 
-  - name: "lh_silver"
-    folder: "Silver"
-    description: "Cleaned, deduplicated, and validated data."
+# ── No Fabric Items — Content Managed Through Git Sync ───────────────────────
+# Typical Git-managed items for a medallion architecture:
+#   - Lakehouse: bronze_raw_data (200 Store) — raw data landing zone
+#   - Lakehouse: silver_validated_data (200 Store) — cleaned, deduplicated
+#   - Lakehouse: gold_curated_data (200 Store) — business-ready, certified
+#   - Warehouse: analytics_warehouse (400 Model) — star schema for reporting
+#   - Notebook: bronze_ingestion (300 Prepare) — raw data ingestion
+#   - Notebook: silver_transformation (300 Prepare) — quality checks, dedup
+#   - Notebook: gold_aggregation (300 Prepare) — business logic, aggregation
+#   - Pipeline: medallion_orchestrator (000 Orchestrate) — end-to-end flow
+#   - SemanticModel: sales_performance_model (400 Model)
+#   - Report: executive_dashboard (500 Visualize)
+# ─────────────────────────────────────────────────────────────────────────────
+lakehouses: []
+notebooks: []
+resources: []
 
-  - name: "lh_gold"
-    folder: "Gold"
-    description: "Star schema / dimensional models for reporting."
-
-# Warehouses (Serving Layer - Optional, often mapped to Gold)
-warehouses:
-  - name: "wh_serving"
-    folder: "Gold"
-    description: "SQL-accessible serving layer for BI tools."
-
-# Notebooks (Transformation Logic)
-notebooks:
-  - name: "ingest_to_bronze"
-    folder: "Bronze"
-    description: "Generic ingestion framwork for raw data."
-
-  - name: "bronze_to_silver_quality"
-    folder: "Silver"
-    description: "Quality checks and standardization (Bronze -> Silver)."
-
-  - name: "silver_to_gold_agg"
-    folder: "Gold"
-    description: "Business logic aggregation and dimensional modeling (Silver -> Gold)."
-
-# Pipelines (Orchestration)
-pipelines:
-  - name: "marketing_data_refresh"
-    folder: "Pipelines"
-    description: "Daily refresh pipeline: Ingest -> Silver -> Gold."
-
-# Principals (Security & Access Control)
+# ── Access Control ───────────────────────────────────────────────────────────
 principals:
-  # Project Owner / Lead Engineer
-  - id: "${DEV_ADMIN_OBJECT_ID}"
-    role: "Admin"
-    description: "Project Owner / Admin"
-
-  # Data Engineering Team
-  - id: "${DEV_CONTRIBUTOR_OBJECT_ID}"
-    role: "Contributor"
-    description: "Data Engineering Team"
-
-  # Business Analysts (Read-only)
-  - id: "${PROD_VIEWERS_GROUP_ID}"
-    role: "Viewer"
-    description: "Business Analysts (Consumption only)"
-
-  # Automation Service Principal (CI/CD)
+  # 1. Automation Service Principal (runs deployments)
   - id: "${AZURE_CLIENT_ID}"
-    role: "Contributor"
-    description: "Service Principal for CI/CD automation"
+    role: Contributor
+    description: "Automation SP — required for CI/CD deployments"
 
-  # Mandatory Enterprise Principals
+  # 2. Mandatory Admin security group (IT governance)
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
-    role: "Admin"
-    description: "Enterprise Admin"
+    role: Admin
+    description: "Mandatory governance admin group"
 
+  # 3. Mandatory Contributor security group (support team)
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
-    role: "Contributor"
-    description: "Enterprise Contributor"
+    role: Contributor
+    description: "Mandatory governance contributor group"
 
-# Environment Overrides
-# NOTE: Inline environments: blocks are NOT read by ConfigManager.
-# Use config/environments/{dev,test,prod}.yaml for per-environment overrides.
-# Example overrides (place in config/environments/dev.yaml):
-#   workspace:
-#     name: "Medallion_Dev"
-#     capacity_id: "${DEV_CAPACITY_ID}"
+  # ── Project-specific principals ────────────────────────────────────────────
+  - id: "${PROJECT_ADMIN_ID}"               # ← CHANGE
+    role: Admin
+    description: "Project admins — set via PROJECT_ADMIN_ID secret"
+
+  - id: "${PROJECT_MEMBERS_ID}"             # ← CHANGE
+    role: Member
+    description: "Data engineering team — set via PROJECT_MEMBERS_ID secret"
+
+  # Optional: Read-only access for analysts/report consumers
+  # - id: "${PROJECT_VIEWERS_ID}"
+  #   role: Viewer
+  #   description: "Report consumers — read-only access"
+
+# ── Deployment Pipeline ──────────────────────────────────────────────────────
+deployment_pipeline:
+  pipeline_name: "medallion-pipeline"    # ← CHANGE
+  stages:
+    development:
+      workspace_name: "medallion-workspace"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+    test:
+      workspace_name: "medallion-workspace [Test]"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+    production:
+      workspace_name: "medallion-workspace [Production]"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+
+# MEDALLION ARCHITECTURE GUIDANCE:
+# ─────────────────────────────────────────────────────────────────────────────
+# Bronze (100 Ingest + 200 Store):
+#   - Raw data, schema-on-read, append-only
+#   - Eventstreams for real-time, Pipelines for batch
+#
+# Silver (300 Prepare):
+#   - Deduplicated, validated, conformed schemas
+#   - Quality gates: completeness > 99%, uniqueness checks
+#
+# Gold (400 Model + 500 Visualize):
+#   - Star schema in Warehouse, certified Semantic Models
+#   - Reports and dashboards for end users

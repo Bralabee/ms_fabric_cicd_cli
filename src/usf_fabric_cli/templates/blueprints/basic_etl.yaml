@@ -1,102 +1,135 @@
+# ─────────────────────────────────────────────────────────────────────────────
 # Basic ETL Workspace Configuration Template
-# Organization-agnostic template - customize for your needs
+# Optimized for: Simple extract-transform-load data pipelines
+# Use Cases: Departmental analytics, straightforward data processing
+# Strategy: Git-sync-only — Fabric items managed through Git, not CLI
+# ─────────────────────────────────────────────────────────────────────────────
 
 workspace:
-  name: "analytics-workspace"  # Change this to your project name
+  name: "analytics-workspace"        # ← CHANGE: Your project workspace name
   display_name: "Analytics Workspace"
   description: "ETL workspace for data analytics"
-  capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
-  domain: "${FABRIC_DOMAIN_NAME}"       # Optional: Assign to a Fabric Domain
+  capacity_id: "${FABRIC_CAPACITY_ID}"
+  domain: "${FABRIC_DOMAIN_NAME}"
 
-  # Git integration (optional)
-  git_repo: "${GIT_REPO_URL}"  # Environment variable substitution
+  # Git Integration
+  git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
   git_directory: "/"
 
-# Folder structure (medallion architecture)
+environments:
+  dev:
+    workspace:
+      name: "analytics-workspace"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+
+# ── Folder Structure (Numbered Convention) ───────────────────────────────────
+# Consistent across all workspaces for easy navigation and governance.
+# ─────────────────────────────────────────────────────────────────────────────
 folders:
-  - "Bronze"    # Raw data landing
-  - "Silver"    # Cleaned/processed data
-  - "Gold"      # Business-ready analytics
-  - "Notebooks" # Data processing notebooks
-  - "Pipelines" # Data pipelines
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
+  - "Archive"
 
-# Lakehouses for data storage
-lakehouses:
-  - name: "raw_data_lakehouse"
-    folder: "Bronze"
-    description: "Raw data from source systems"
+# ── Folder Rules (Post-Git-Sync Item Placement) ─────────────────────────────
+# Fabric Git Sync always places items at the workspace root. After sync
+# completes, these rules move items into their designated folders.
+# ─────────────────────────────────────────────────────────────────────────────
+folder_rules:
+  - type: DataPipeline
+    folder: "000 Orchestrate"
+  - type: DataflowGen2
+    folder: "000 Orchestrate"
+  - type: Eventstream
+    folder: "100 Ingest"
+  - type: Lakehouse
+    folder: "200 Store"
+  - type: Notebook
+    folder: "300 Prepare"
+  - type: SparkJobDefinition
+    folder: "300 Prepare"
+  - type: Warehouse
+    folder: "400 Model"
+  - type: SemanticModel
+    folder: "400 Model"
+  - type: Report
+    folder: "500 Visualize"
+  - type: Dashboard
+    folder: "500 Visualize"
+  - type: Environment
+    folder: "999 Libraries"
 
-  - name: "processed_data_lakehouse"
-    folder: "Silver"
-    description: "Cleaned and validated data"
+# ── No Fabric Items — Content Managed Through Git Sync ───────────────────────
+# Items (lakehouses, notebooks, pipelines, etc.) are committed to Git and
+# synced into the workspace automatically. The CLI only manages workspace
+# structure, folders, principals, and deployment pipelines.
+#
+# Typical Git-managed items for a basic ETL project:
+#   - Lakehouse: raw_data_lakehouse (200 Store)
+#   - Lakehouse: processed_data_lakehouse (200 Store)
+#   - Lakehouse: analytics_lakehouse (200 Store)
+#   - Warehouse: analytics_warehouse (400 Model)
+#   - Notebook: data_ingestion (300 Prepare)
+#   - Notebook: data_transformation (300 Prepare)
+#   - Pipeline: daily_etl_orchestrator (000 Orchestrate)
+# ─────────────────────────────────────────────────────────────────────────────
+lakehouses: []
+notebooks: []
+resources: []
 
-  - name: "analytics_lakehouse"
-    folder: "Gold"
-    description: "Business-ready analytics data"
-
-# Data warehouses for analytics
-warehouses:
-  - name: "analytics_warehouse"
-    folder: "Gold"
-    description: "Primary analytics warehouse"
-
-# Notebooks for data processing
-notebooks:
-  - name: "data_ingestion"
-    folder: "Notebooks"
-    description: "Data ingestion from source systems"
-    # file_path: "notebooks/data_ingestion.py"  # Optional: import from file
-
-  - name: "data_transformation"
-
-# Security & Access Control
-# Security & Access Control
-# Principals (users/service principals) to add to workspace
-# NOTE: Use Object IDs (GUIDs) for all principals. Email addresses are not supported.
-# PRO TIP: The 'id' field supports comma-separated lists (e.g., "id1,id2,id3")
-# allowing you to inject a group of users via a single environment variable.
+# ── Access Control ───────────────────────────────────────────────────────────
 principals:
-  - id: "${DEV_ADMIN_OBJECT_ID}"  # User/Group Object ID
-    role: "Admin"
+  # 1. Automation Service Principal (runs deployments)
+  - id: "${AZURE_CLIENT_ID}"
+    role: Contributor
+    description: "Automation SP — required for CI/CD deployments"
 
-  - id: "${DEV_CONTRIBUTOR_OBJECT_ID}"  # User/Group Object ID
-    role: "Contributor"
-
-  # Service principal for automation
-  - id: "${AZURE_CLIENT_ID}"  # Service Principal Object ID (Required)
-    role: "Contributor"
-
-  # Mandatory Security Principals (Injected via Environment Variables)
+  # 2. Mandatory Admin security group (IT governance)
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
-    role: "Admin"
-    description: "Mandatory Additional Admin"
+    role: Admin
+    description: "Mandatory governance admin group"
 
+  # 3. Mandatory Contributor security group (support team)
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
-    role: "Contributor"
-    description: "Mandatory Additional Contributor"
+    role: Contributor
+    description: "Mandatory governance contributor group"
 
-  # Example of manual entry (Service Principal):
-  # - id: "88e55555-5555-5555-5555-555555555555"
-  #   role: "Contributor"
-  #   folder: "Notebooks"
-  #   description: "Data cleaning and transformation"
+  # ── Project-specific principals (runtime-configurable via env vars) ────────
+  # Replace with your project's secret names. Supports comma-separated GUIDs.
+  - id: "${PROJECT_ADMIN_ID}"               # ← CHANGE: Your admin secret name
+    role: Admin
+    description: "Project admins — set via PROJECT_ADMIN_ID secret"
 
-# Deployment Pipeline (Fabric Deployment Pipelines)
+  - id: "${PROJECT_MEMBERS_ID}"             # ← CHANGE: Your member secret name
+    role: Member
+    description: "Project team members — set via PROJECT_MEMBERS_ID secret"
+
+# ── Deployment Pipeline ──────────────────────────────────────────────────────
+# Connects Dev → Test → Prod workspaces. Created automatically by
+# `fabric-cicd deploy` during initial setup.
+# ─────────────────────────────────────────────────────────────────────────────
 deployment_pipeline:
-  pipeline_name: "analytics-pipeline"
+  pipeline_name: "analytics-pipeline"    # ← CHANGE: Your pipeline name
   stages:
     development:
       workspace_name: "analytics-workspace"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
     test:
-      workspace_name: "analytics-workspace-test"
+      workspace_name: "analytics-workspace [Test]"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
     production:
-      workspace_name: "analytics-workspace-prod"
+      workspace_name: "analytics-workspace [Production]"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
 
-# Configuration notes:
-# 1. Replace all placeholder values with your organization's details
-# 2. Capacity ID should match your Fabric capacity
-# 3. Git repository should be accessible with your credentials
-# 4. Principal IDs: Use emails for Users, but Object IDs (GUIDs) for Groups and Service Principals
-# 5. Remove sections you don't need (e.g., if no Git integration needed)
-# 6. deployment_pipeline stages should match your workspace naming convention
+# Configuration Notes:
+# 1. Replace all ← CHANGE markers with your project-specific values
+# 2. Set required secrets: FABRIC_CAPACITY_ID, AZURE_CLIENT_ID, GIT_REPO_URL
+# 3. Set project secrets: PROJECT_ADMIN_ID, PROJECT_MEMBERS_ID
+# 4. Items are managed via Fabric Git Sync, not defined in this file
+# 5. folder_rules automatically organize items after Git sync
+# 6. Use `generate_project.py` to auto-customize this template

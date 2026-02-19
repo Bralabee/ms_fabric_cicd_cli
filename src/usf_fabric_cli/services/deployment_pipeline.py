@@ -542,6 +542,333 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
         )
         return {"success": False, "error": "Operation timed out", "status": "Timeout"}
 
+    # ── Stage items ───────────────────────────────────────────────
+
+    def list_stage_items(
+        self,
+        pipeline_id: str,
+        stage_id: str,
+    ) -> Dict[str, Any]:
+        """
+        List all items in a deployment pipeline stage.
+
+        Args:
+            pipeline_id: Pipeline ID.
+            stage_id: Stage ID.
+
+        Returns:
+            ``{"success": True, "items": [...]}``
+        """
+        url = (
+            f"{self.base_url}/deploymentPipelines/{pipeline_id}"
+            f"/stages/{stage_id}/items"
+        )
+
+        try:
+            response = self._make_request("GET", url)
+            data = response.json()
+            items = data.get("value", [])
+            logger.info("Stage %s has %d items", stage_id, len(items))
+            return {"success": True, "items": items}
+        except requests.RequestException as e:
+            logger.error("Failed to list stage items: %s", e)
+            return {"success": False, "error": str(e)}
+
+    # ── Selective deployment ───────────────────────────────────────
+
+    # Item types that cannot be deployed via Service Principal
+    UNSUPPORTED_SP_TYPES = {"Warehouse", "SQLEndpoint"}
+
+    def _build_selective_items(
+        self,
+        source_items: List[Dict],
+        target_items: List[Dict],
+        exclude_types: Optional[set] = None,
+    ) -> Dict[str, Any]:
+        """
+        Build the selective deploy payload.
+
+        Excludes items whose type is in *exclude_types* and pairs source
+        items with target items by display name to avoid
+        ``TargetArtifactNameConflict`` errors.
+
+        Returns:
+            ``{"deployable": [...], "excluded": [...], "paired": int}``
+        """
+        if exclude_types is None:
+            exclude_types = self.UNSUPPORTED_SP_TYPES
+
+        # Target lookup: (name, type) → target item ID
+        target_by_name: Dict = {}
+        for t in target_items:
+            key = (t.get("itemDisplayName"), t.get("itemType"))
+            target_by_name[key] = t.get("itemId")
+
+        deployable: List[Dict] = []
+        excluded: List[Dict] = []
+        paired = 0
+
+        for item in source_items:
+            item_type = item.get("itemType", "")
+            item_name = item.get("itemDisplayName", "")
+
+            if item_type in exclude_types:
+                excluded.append(item)
+                continue
+
+            entry: Dict[str, str] = {
+                "sourceItemId": item["itemId"],
+                "itemType": item_type,
+            }
+
+            # Pair with existing target item to avoid name conflicts
+            target_id = target_by_name.get((item_name, item_type))
+            if target_id:
+                entry["targetItemId"] = target_id
+                paired += 1
+
+            deployable.append(entry)
+
+        return {"deployable": deployable, "excluded": excluded, "paired": paired}
+
+    @staticmethod
+    def _extract_failing_item_ids(result: Dict) -> set:
+        """
+        Extract item IDs that caused deployment failure from the
+        operation error response.
+        """
+        failing_ids: set = set()
+        error = result.get("result", result).get("error", {})
+        for detail in error.get("moreDetails", []):
+            resource = detail.get("relatedResource", {})
+            resource_id = resource.get("resourceId")
+            if resource_id:
+                failing_ids.add(resource_id)
+        return failing_ids
+
+    def selective_promote(
+        self,
+        pipeline_id: str,
+        source_stage_name: str,
+        target_stage_name: Optional[str] = None,
+        note: str = "",
+        exclude_types: Optional[set] = None,
+        max_retries: int = 3,
+    ) -> Dict[str, Any]:
+        """
+        Promote content selectively, excluding unsupported item types
+        and retrying with auto-exclusion of items that fail.
+
+        This replicates the logic of the standalone ``selective_promote.py``
+        script inside the CLI so workflows can use a single command.
+
+        Args:
+            pipeline_id: Pipeline ID.
+            source_stage_name: Source stage display name.
+            target_stage_name: Target stage display name (auto-inferred
+                               if omitted).
+            note: Deployment note.
+            exclude_types: Item types to exclude. Defaults to
+                           ``UNSUPPORTED_SP_TYPES`` (Warehouse,
+                           SQLEndpoint).
+            max_retries: Maximum deploy attempts, auto-excluding
+                         failing items between retries.
+
+        Returns:
+            ``{"success": True/False, ...}``
+            A result with ``"no_items": True`` when there is nothing
+            deployable (analogous to exit code 2 of the script).
+        """
+        if target_stage_name is None:
+            target_stage_name = DeploymentStage.next_stage(source_stage_name)
+            if target_stage_name is None:
+                return {
+                    "success": False,
+                    "error": f"No next stage after '{source_stage_name}'",
+                }
+
+        effective_excludes = (
+            exclude_types
+            if exclude_types is not None
+            else set(self.UNSUPPORTED_SP_TYPES)
+        )
+
+        # Resolve stage IDs
+        stages_result = self.get_pipeline_stages(pipeline_id)
+        if not stages_result["success"]:
+            return stages_result
+
+        source_id: Optional[str] = None
+        target_id: Optional[str] = None
+        for stage in stages_result["stages"]:
+            if stage.get("displayName") == source_stage_name:
+                source_id = stage["id"]
+            if stage.get("displayName") == target_stage_name:
+                target_id = stage["id"]
+
+        if not source_id:
+            return {
+                "success": False,
+                "error": (f"Source stage '{source_stage_name}' not found"),
+            }
+        if not target_id:
+            return {
+                "success": False,
+                "error": (f"Target stage '{target_stage_name}' not found"),
+            }
+
+        # List items in both stages
+        source_result = self.list_stage_items(pipeline_id, source_id)
+        if not source_result["success"]:
+            return source_result
+        source_items = source_result["items"]
+
+        target_result = self.list_stage_items(pipeline_id, target_id)
+        if not target_result["success"]:
+            return target_result
+        target_items = target_result["items"]
+
+        logger.info(
+            "Source stage has %d items, target has %d items",
+            len(source_items),
+            len(target_items),
+        )
+
+        if not source_items:
+            return {
+                "success": True,
+                "no_items": True,
+                "message": (f"No items in {source_stage_name} stage"),
+            }
+
+        # Build selective items
+        sel = self._build_selective_items(
+            source_items, target_items, effective_excludes
+        )
+        current_items = sel["deployable"]
+        type_excluded = sel["excluded"]
+
+        if type_excluded:
+            types_summary: Dict[str, list] = {}
+            for item in type_excluded:
+                t = item.get("itemType", "Unknown")
+                types_summary.setdefault(t, []).append(item.get("itemDisplayName", "?"))
+            for item_type, names in types_summary.items():
+                logger.warning(
+                    "Excluding %d %s item(s) (unsupported for SP " "promotion): %s",
+                    len(names),
+                    item_type,
+                    ", ".join(names),
+                )
+
+        if not current_items:
+            return {
+                "success": True,
+                "no_items": True,
+                "message": (
+                    f"All {len(source_items)} items are excluded "
+                    f"types — nothing to promote"
+                ),
+            }
+
+        logger.info(
+            "Deploying %d items (%d excluded, %d paired with target)",
+            len(current_items),
+            len(type_excluded),
+            sel["paired"],
+        )
+
+        # Deploy with retry + auto-exclusion of failing items
+        auto_excluded: List[Dict] = []
+
+        for attempt in range(1, max_retries + 1):
+            if attempt > 1:
+                logger.info(
+                    "Retry %d/%d: deploying %d items "
+                    "(%d auto-excluded due to errors)",
+                    attempt,
+                    max_retries,
+                    len(current_items),
+                    len(auto_excluded),
+                )
+
+            deploy_result = self.deploy_to_stage(
+                pipeline_id=pipeline_id,
+                source_stage_id=source_id,
+                target_stage_id=target_id,
+                items=current_items,
+                note=note or f"Promote {source_stage_name} → {target_stage_name}",
+            )
+
+            if not deploy_result["success"]:
+                return deploy_result
+
+            # Poll completion
+            poll_result = self.poll_operation(
+                deploy_result["operation_id"],
+                retry_after=deploy_result.get("retry_after", 10),
+            )
+
+            if poll_result["success"]:
+                total_excluded = len(type_excluded) + len(auto_excluded)
+                msg = (
+                    f"Promotion succeeded: "
+                    f"{source_stage_name} → {target_stage_name}"
+                )
+                if total_excluded:
+                    msg += (
+                        f" ({len(type_excluded)} type-excluded + "
+                        f"{len(auto_excluded)} error-excluded)"
+                    )
+                return {
+                    "success": True,
+                    "message": msg,
+                    "type_excluded": len(type_excluded),
+                    "auto_excluded": len(auto_excluded),
+                    "deployed": len(current_items),
+                }
+
+            # Deployment failed — try to auto-exclude failing items
+            failing_ids = self._extract_failing_item_ids(poll_result)
+            if not failing_ids or attempt == max_retries:
+                break
+
+            new_items = []
+            for item in current_items:
+                if item["sourceItemId"] in failing_ids:
+                    auto_excluded.append(item)
+                    logger.warning(
+                        "Auto-excluding failing item: %s (%s)",
+                        item.get("itemType", "?"),
+                        item["sourceItemId"][:12],
+                    )
+                else:
+                    new_items.append(item)
+
+            if len(new_items) == len(current_items):
+                logger.warning("Could not identify specific failing items to exclude")
+                break
+
+            if not new_items:
+                return {
+                    "success": True,
+                    "no_items": True,
+                    "message": "All remaining items failed",
+                }
+
+            current_items = new_items
+            # Brief wait before retry
+            import time as _time
+
+            _time.sleep(30)
+
+        # All retries exhausted
+        return {
+            "success": False,
+            "error": f"Promotion failed after {max_retries} attempts",
+            "result": poll_result.get("result", {}),
+        }
+
     # ── Convenience: full promotion ────────────────────────────────
 
     def promote(

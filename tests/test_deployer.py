@@ -27,6 +27,7 @@ def _make_config(**overrides):
         "git_branch": "main",
         "git_directory": "/",
         "folders": ["Bronze", "Silver"],
+        "folder_rules": [],
         "lakehouses": [{"name": "raw", "folder": "Bronze", "description": "Raw"}],
         "warehouses": [],
         "notebooks": [{"name": "nb1", "folder": "Silver"}],
