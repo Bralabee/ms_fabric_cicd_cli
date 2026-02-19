@@ -242,8 +242,18 @@ class FabricDeployer:
                 if self.config.git_repo:
                     task = progress.add_task("Connecting Git...", total=None)
                     git_branch = branch or self.config.git_branch
-                    self._connect_git(git_branch)
-                    progress.update(task, description="✅ Git connected")
+                    git_ok = self._connect_git(git_branch)
+                    if git_ok:
+                        progress.update(task, description="✅ Git connected")
+                    else:
+                        progress.update(
+                            task,
+                            description="⚠️ Git connection failed",
+                        )
+                        logger.warning(
+                            "Git connection failed — workspace was deployed "
+                            "but Git sync may need manual configuration"
+                        )
 
                 # Step 6b: Organize items into folders (after Git Sync)
                 # Fabric Git Sync places all items at the workspace root.
@@ -762,15 +772,18 @@ class FabricDeployer:
                     "Contributor or Fabric Admin.[/yellow]"
                 )
 
-    def _connect_git(self, branch: str):
+    def _connect_git(self, branch: str) -> bool:
         """
         Connect workspace to Git repository using Fabric Git REST APIs.
 
         This implements Gap Closing Enhancement: Automatic Git Connection
+
+        Returns:
+            True if Git was connected successfully, False on failure.
         """
         if not self.workspace_id:
             console.print("[red]Cannot connect Git: Workspace ID not available[/red]")
-            return
+            return False
 
         workspace_name = self._effective_workspace_name
         git_repo = self.config.git_repo
@@ -789,7 +802,7 @@ class FabricDeployer:
                 "[yellow]Warning: Could not parse Git URL. Skipping Git "
                 "connection.[/yellow]"
             )
-            return
+            return False
 
         provider_type = git_details["provider_type"]
 
@@ -954,7 +967,7 @@ class FabricDeployer:
                 console.print(
                     f"[yellow]Details: {result.get('details', 'N/A')}[/yellow]"
                 )
-                return
+                return False
 
             if result.get("already_connected"):
                 console.print(
@@ -991,14 +1004,14 @@ class FabricDeployer:
                     f"[yellow]Warning: Could not initialize Git connection: "
                     f"{init_result.get('error')}[/yellow]"
                 )
-                return
+                return False
 
             if init_result.get("already_initialized"):
                 console.print(
                     "[green]\u2713 Git connection already initialized "
                     "(idempotent)[/green]"
                 )
-                return
+                return True
 
             required_action = init_result.get("required_action", "None")
             console.print(f"[blue]Required action: {required_action}[/blue]")
@@ -1041,12 +1054,14 @@ class FabricDeployer:
             self.audit.log_git_connection(
                 git_repo, branch, self.workspace_id, workspace_name
             )
+            return True
 
         except Exception as e:
             console.print(f"[red]Error connecting to Git: {e}[/red]")
             import traceback
 
             console.print(f"[red]{traceback.format_exc()}[/red]")
+            return False
 
     def _parse_git_repo_url(self, git_url: str) -> Optional[Dict[str, str]]:
         """
@@ -1120,6 +1135,30 @@ class FabricDeployer:
         if pipeline:
             pipeline_id = pipeline["id"]
             console.print(f"  · Pipeline exists: {pipeline_id[:8]}...")
+
+            # Pre-check: verify the caller (SP) can actually manage this
+            # pipeline.  The list_pipelines() endpoint returns ALL visible
+            # pipelines, but mutating a pipeline (adding users, assigning
+            # stages) requires explicit pipeline-level Admin access.
+            access_check = self.pipeline_api.get_pipeline(pipeline_id)
+            if not access_check["success"]:
+                console.print(
+                    f"  [red]✗ Pipeline '{pipeline_name}' exists but the "
+                    f"automation SP does not have manage access.[/red]"
+                )
+                console.print(
+                    "  [yellow]Resolution: Delete the stale pipeline in the "
+                    "Fabric portal and re-run, or manually grant the SP "
+                    "Admin access on the pipeline.[/yellow]"
+                )
+                logger.error(
+                    "Pipeline %s found via list but SP lacks access "
+                    "(get_pipeline returned %s). "
+                    "Delete and recreate, or grant SP Admin.",
+                    pipeline_id,
+                    access_check.get("error"),
+                )
+                return False
         else:
             result = self.pipeline_api.create_pipeline(
                 display_name=pipeline_name,
@@ -1140,6 +1179,8 @@ class FabricDeployer:
         # Pipeline visibility requires explicit user/group assignment via the
         # Deployment Pipelines Users API.  Workspace-level Admin/Member roles
         # do NOT automatically grant pipeline visibility.
+        user_add_attempts = 0
+        user_add_404s = 0
         if self.config.principals:
             admin_principals = [
                 p
@@ -1162,6 +1203,7 @@ class FabricDeployer:
                     for pid in principal_ids:
                         if not pid:
                             continue
+                        user_add_attempts += 1
                         result = self.pipeline_api.add_pipeline_user(
                             pipeline_id,
                             identifier=pid,
@@ -1178,6 +1220,11 @@ class FabricDeployer:
                                     f"    ✓ Added {pid[:12]}... to pipeline as Admin"
                                 )
                         else:
+                            error_str = result.get("error", "")
+                            if "404" in error_str or "EntityNotFound" in str(
+                                result.get("error_detail", "")
+                            ):
+                                user_add_404s += 1
                             console.print(
                                 f"    [yellow]⚠ Could not add {pid[:12]}... "
                                 f"to pipeline: {result.get('error', 'unknown')}"
@@ -1214,6 +1261,27 @@ class FabricDeployer:
                 )
                 if sp_result.get("success") and not sp_result.get("reused"):
                     console.print("    ✓ Added automation SP to pipeline as Admin")
+
+        # Fail-fast: if ALL user additions returned 404 (EntityNotFound),
+        # the pipeline exists but is inaccessible to the current SP.
+        # Skip stage assignment since it will also fail.
+        if user_add_attempts > 0 and user_add_404s == user_add_attempts:
+            console.print(
+                f"  [red]✗ All {user_add_404s} pipeline user additions "
+                f"returned 404 (EntityNotFound).[/red]"
+            )
+            console.print(
+                "  [yellow]The pipeline exists but the automation SP cannot "
+                "manage it. Delete the pipeline in the Fabric portal and "
+                "re-run, or manually grant the SP Admin access.[/yellow]"
+            )
+            logger.error(
+                "Pipeline %s: all %d add_pipeline_user calls returned 404. "
+                "SP lacks pipeline-level access. Skipping stage assignment.",
+                pipeline_id,
+                user_add_404s,
+            )
+            return False
 
         # Step 3: Get pipeline stage IDs
         stages_result = self.pipeline_api.get_pipeline_stages(pipeline_id)
