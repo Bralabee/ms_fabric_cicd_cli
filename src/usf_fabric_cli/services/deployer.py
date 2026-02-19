@@ -1215,10 +1215,6 @@ class FabricDeployer:
                 return False
             pipeline_id = result["pipeline"]["id"]
             console.print(f"  ✓ Pipeline created: {pipeline_id[:8]}...")
-            # Allow Fabric backend to propagate the new pipeline before
-            # attempting to add users — the /users endpoint may return
-            # 404 if called immediately after creation.
-            time.sleep(5)
 
         # Step 2: Grant pipeline access to admin principals
         #
@@ -1308,26 +1304,25 @@ class FabricDeployer:
                 if sp_result.get("success") and not sp_result.get("reused"):
                     console.print("    ✓ Added automation SP to pipeline as Admin")
 
-        # Fail-fast: if ALL user additions returned 404 (EntityNotFound),
-        # the pipeline exists but is inaccessible to the current SP.
-        # Skip stage assignment since it will also fail.
+        # If ALL user additions returned 404 (EntityNotFound), the
+        # /users endpoint is inaccessible to the current SP.  This is a
+        # known Fabric API limitation for Service Principals — the /stages
+        # endpoint still works, so we continue to stage assignment.
         if user_add_attempts > 0 and user_add_404s == user_add_attempts:
             console.print(
-                f"  [red]✗ All {user_add_404s} pipeline user additions "
-                f"returned 404 (EntityNotFound).[/red]"
+                f"  [yellow]⚠ All {user_add_404s} pipeline user additions "
+                f"returned 404 — /users endpoint inaccessible to SP.[/yellow]"
             )
             console.print(
-                "  [yellow]The pipeline exists but the automation SP cannot "
-                "manage it. Delete the pipeline in the Fabric portal and "
-                "re-run, or manually grant the SP Admin access.[/yellow]"
+                "  [dim]Pipeline users can be added manually in the "
+                "Fabric portal. Continuing to stage assignment...[/dim]"
             )
-            logger.error(
+            logger.warning(
                 "Pipeline %s: all %d add_pipeline_user calls returned 404. "
-                "SP lacks pipeline-level access. Skipping stage assignment.",
+                "Known Fabric limitation for SPs. Proceeding to stages.",
                 pipeline_id,
                 user_add_404s,
             )
-            return False
 
         # Step 3: Get pipeline stage IDs
         stages_result = self.pipeline_api.get_pipeline_stages(pipeline_id)
