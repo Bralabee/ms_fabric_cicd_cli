@@ -6,10 +6,17 @@ pool:
 
 variables:
   - group: fabric-credentials # Variable group in ADO Library containing CLIENT_ID, SECRET, etc.
+
+  # ── REQUIRED: Override these in the ADO Pipeline UI ──────────────────────
+  # Go to: Pipelines → Edit → Variables → Override at queue time
+  # CONFIG_PATH: path to your project YAML under config/projects/
+  #   Example: config/projects/acme_corp/sales_analytics.yaml
+  # DEPLOY_ENV: target environment (dev, test, prod)
+  #   Tip: create separate pipeline definitions per environment
   - name: CONFIG_PATH
-    value: 'config/projects/YOUR_ORG/YOUR_PROJECT.yaml'  # Override in pipeline UI
+    value: 'config/projects/YOUR_ORG/YOUR_PROJECT.yaml'
   - name: DEPLOY_ENV
-    value: 'dev'  # Override per environment (dev, test, prod)
+    value: 'dev'
 
 steps:
 - task: UsePythonVersion@0

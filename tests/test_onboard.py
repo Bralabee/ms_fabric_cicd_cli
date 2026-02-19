@@ -13,7 +13,6 @@ Verifies:
 """
 
 import os
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 

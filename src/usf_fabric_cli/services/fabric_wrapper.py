@@ -20,8 +20,8 @@ from usf_fabric_cli.exceptions import (
 )
 
 # Re-export retry utilities for backwards compatibility
+from usf_fabric_cli.utils.retry import calculate_backoff  # noqa: F401
 from usf_fabric_cli.utils.retry import (  # noqa: F401
-    calculate_backoff,
     is_retryable_error,
     retry_with_backoff,
 )
