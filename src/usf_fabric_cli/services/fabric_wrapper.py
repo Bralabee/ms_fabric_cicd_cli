@@ -511,8 +511,58 @@ class FabricCLIWrapper:
 
             return result
 
-    def delete_workspace(self, name: str) -> Dict[str, Any]:
-        """Delete workspace"""
+    def get_workspace_item_summary(self, workspace_name: str) -> Dict[str, Any]:
+        """Get a summary of items in a workspace for safety checks.
+
+        Returns:
+            dict with keys:
+                - item_count: total number of items
+                - items_by_type: dict mapping item type → count
+                - has_items: bool (True if workspace is non-empty)
+                - items: list of item dicts (id, displayName, type)
+        """
+        items = self.list_workspace_items_api(workspace_name)
+        items_by_type: Dict[str, int] = {}
+        for item in items:
+            item_type = item.get("type", "Unknown")
+            items_by_type[item_type] = items_by_type.get(item_type, 0) + 1
+
+        return {
+            "item_count": len(items),
+            "items_by_type": items_by_type,
+            "has_items": len(items) > 0,
+            "items": items,
+        }
+
+    def delete_workspace(self, name: str, safe: bool = False) -> Dict[str, Any]:
+        """Delete workspace.
+
+        Args:
+            name: Workspace display name.
+            safe: If True, refuse to delete workspaces that contain
+                  Fabric items (lakehouses, notebooks, pipelines, etc.).
+                  This protects populated workspaces from accidental
+                  deletion.  Use ``safe=False`` (default) or the CLI
+                  ``--force-destroy-populated`` flag to override.
+        """
+        if safe:
+            summary = self.get_workspace_item_summary(name)
+            if summary["has_items"]:
+                type_list = ", ".join(
+                    f"{v}x {k}" for k, v in summary["items_by_type"].items()
+                )
+                return {
+                    "success": False,
+                    "error": (
+                        f"SAFETY: Workspace '{name}' contains "
+                        f"{summary['item_count']} item(s) ({type_list}). "
+                        "Refusing to delete a populated workspace. "
+                        "Use --force-destroy-populated to override."
+                    ),
+                    "blocked_by_safety": True,
+                    "item_summary": summary,
+                }
+
         command = ["rm", f"{name}.Workspace", "--force"]
         return self._execute_command(command)
 

@@ -247,8 +247,30 @@ def destroy(
         "--feature-prefix",
         help="Feature workspace name prefix (use '' to disable)",
     ),
+    safe: bool = typer.Option(
+        True,
+        "--safe/--no-safe",
+        help=(
+            "Safety mode: refuse to delete workspaces that contain "
+            "Fabric items (default: enabled). Prevents accidental "
+            "deletion of populated workspaces."
+        ),
+    ),
+    force_destroy_populated: bool = typer.Option(
+        False,
+        "--force-destroy-populated",
+        help=(
+            "Override safety mode — delete workspace even if it "
+            "contains Fabric items. Use with caution."
+        ),
+    ),
 ):
-    """Destroy Fabric workspace based on configuration"""
+    """Destroy Fabric workspace based on configuration.
+
+    By default, safety mode is ON: workspaces containing Fabric items
+    (lakehouses, notebooks, pipelines, etc.) will NOT be deleted.
+    Use --force-destroy-populated to override this protection.
+    """
 
     workspace_name = workspace_name_override  # Pre-initialize for error handler
     try:
@@ -283,12 +305,34 @@ def destroy(
                 console.print("[yellow]Aborted.[/yellow]")
                 raise typer.Exit(0)
 
+        # Determine effective safe mode: --force-destroy-populated overrides --safe
+        effective_safe = safe and not force_destroy_populated
+
         console.print(f"[red]Destroying workspace: {workspace_name}[/red]")
+        if effective_safe:
+            console.print(
+                "[blue]🛡️  Safety mode ON — populated workspaces "
+                "will be protected[/blue]"
+            )
 
         env_vars = get_environment_variables(validate_vars=True)
         fabric = FabricCLIWrapper(env_vars["FABRIC_TOKEN"])
 
-        result = fabric.delete_workspace(workspace_name)
+        result = fabric.delete_workspace(workspace_name, safe=effective_safe)
+
+        if result.get("blocked_by_safety"):
+            summary = result.get("item_summary", {})
+            console.print(
+                f"[yellow]🛡️  SAFETY BLOCK: Workspace '{workspace_name}' "
+                f"contains {summary.get('item_count', '?')} item(s):[/yellow]"
+            )
+            for item_type, count in summary.get("items_by_type", {}).items():
+                console.print(f"  [yellow]• {count}x {item_type}[/yellow]")
+            console.print(
+                "[yellow]Use --force-destroy-populated to override, "
+                "or clean up items manually first.[/yellow]"
+            )
+            raise typer.Exit(2)  # Exit code 2 = blocked by safety
 
         if result["success"]:
             console.print(f"[green]✅ Workspace '{workspace_name}' destroyed[/green]")
@@ -315,6 +359,8 @@ def destroy(
                 console.print(f"[red]❌ Failed to destroy workspace: {error_msg}[/red]")
                 raise typer.Exit(1)
 
+    except (typer.Exit, SystemExit):
+        raise  # Re-raise exit codes (including safety block exit code 2)
     except Exception as e:
         error_str = str(e)
         # Treat "not found" as success — workspace already cleaned up (idempotent)

@@ -276,18 +276,85 @@ workspace:
     def test_destroy_real_error_still_fails(
         self, mock_wrapper_cls, mock_env, runner, config_file
     ):
-        """Test that destroy still fails on genuine errors (not NotFound)."""
+        """Test that destroy still fails on genuine errors (not NotFound/InsufficientPrivileges)."""
         mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
         mock_wrapper = mock_wrapper_cls.return_value
         mock_wrapper.delete_workspace.return_value = {
             "success": False,
-            "error": "Permission denied: insufficient privileges",
+            "error": "Internal server error: unexpected failure",
         }
 
         result = runner.invoke(app, ["destroy", config_file, "--force"])
 
         assert result.exit_code == 1
         assert "Failed to destroy" in result.output
+
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    @patch("usf_fabric_cli.cli.FabricCLIWrapper")
+    def test_destroy_safety_blocks_populated_workspace(
+        self, mock_wrapper_cls, mock_env, runner, config_file
+    ):
+        """Test that --safe blocks deletion of workspaces with items (exit code 2)."""
+        mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
+        mock_wrapper = mock_wrapper_cls.return_value
+        mock_wrapper.delete_workspace.return_value = {
+            "success": False,
+            "blocked_by_safety": True,
+            "message": "SAFETY: Workspace contains 3 item(s)",
+            "item_summary": {
+                "item_count": 3,
+                "items_by_type": {"Notebook": 2, "Lakehouse": 1},
+                "has_items": True,
+            },
+        }
+
+        result = runner.invoke(app, ["destroy", config_file, "--force"])
+
+        assert result.exit_code == 2
+        assert "SAFETY BLOCK" in result.output
+        assert "Notebook" in result.output
+
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    @patch("usf_fabric_cli.cli.FabricCLIWrapper")
+    def test_destroy_force_destroy_populated_overrides_safe(
+        self, mock_wrapper_cls, mock_env, runner, config_file
+    ):
+        """Test --force-destroy-populated overrides --safe and deletes normally."""
+        mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
+        mock_wrapper = mock_wrapper_cls.return_value
+        mock_wrapper.delete_workspace.return_value = {"success": True}
+
+        result = runner.invoke(
+            app,
+            ["destroy", config_file, "--force", "--force-destroy-populated"],
+        )
+
+        assert result.exit_code == 0
+        assert "destroyed" in result.output
+        # Verify delete_workspace was called with safe=False
+        mock_wrapper.delete_workspace.assert_called_once()
+        call_kwargs = mock_wrapper.delete_workspace.call_args
+        assert call_kwargs[1].get("safe") is False or (
+            len(call_kwargs[0]) > 1 and call_kwargs[0][1] is False
+        )
+
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    @patch("usf_fabric_cli.cli.FabricCLIWrapper")
+    def test_destroy_insufficient_privileges_exits_clean(
+        self, mock_wrapper_cls, mock_env, runner, config_file
+    ):
+        """Test InsufficientPrivileges is treated as a non-fatal warning."""
+        mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
+        mock_wrapper = mock_wrapper_cls.return_value
+        mock_wrapper.delete_workspace.return_value = {
+            "success": False,
+            "error": "InsufficientPrivileges: cannot delete workspace",
+        }
+
+        result = runner.invoke(app, ["destroy", config_file, "--force"])
+
+        assert result.exit_code == 0
+        assert "insufficient privileges" in result.output.lower()
 
 
 class TestFabricDeployerDeploy:
