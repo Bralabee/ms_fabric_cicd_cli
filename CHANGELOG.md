@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.11] - 2026-02-19
+
+### Fixed
+
+- **Deployer: Continue to Stage Assignment on User 404**: Pipeline user additions that return 404 (a known Fabric API limitation for Service Principals accessing the `/users` endpoint) no longer block stage assignment. Previously, all-404 user additions caused `return False`, skipping workspace-to-stage assignment. Now the deployer logs a warning and proceeds to assign workspaces to pipeline stages, which uses the `/stages` endpoint that SPs can access.
+- **Deployer: Removed Unnecessary 5s Propagation Delay**: Removed the `time.sleep(5)` after `create_pipeline()` since diagnostic testing confirmed the pipeline 404 is a permissions issue (SP cannot access `/users` endpoint), not a propagation delay.
+
+---
+
 ## [1.7.10] - 2026-02-19
 
 ### Fixed
