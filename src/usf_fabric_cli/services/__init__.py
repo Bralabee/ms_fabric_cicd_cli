@@ -1,6 +1,10 @@
 """Services package - Business logic and API integrations."""
 
 from usf_fabric_cli.services.deployer import FabricDeployer
+from usf_fabric_cli.services.deployment_pipeline import (
+    DeploymentStage,
+    FabricDeploymentPipelineAPI,
+)
 from usf_fabric_cli.services.deployment_state import (
     CreatedItem,
     DeploymentState,
@@ -20,6 +24,8 @@ from usf_fabric_cli.services.token_manager import (
 __all__ = [
     "FabricCLIWrapper",
     "FabricDiagnostics",
+    "FabricDeploymentPipelineAPI",
+    "DeploymentStage",
     "FabricGitAPI",
     "GitProviderType",
     "GitConnectionSource",

@@ -44,10 +44,11 @@ jobs:
       continue-on-error: true  # Soft gate — informational only
       run: mypy src/ --ignore-missing-imports
 
+    - name: Check import ordering with isort
+      run: isort --check-only --diff src/
+
     - name: Security scan with Bandit
-      run: |
-        pip install bandit
-        bandit -r src/ -ll
+      run: bandit -r src/ -ll
 
     - name: Validate blueprint configs
       run: |

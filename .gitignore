@@ -72,7 +72,7 @@ config/projects/*/secrets.yaml
 
 # OS
 Thumbs.db
-.DS_Store
+tatus
 
 # Webapp
 webapp/frontend/node_modules/

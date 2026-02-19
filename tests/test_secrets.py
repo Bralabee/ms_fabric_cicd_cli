@@ -324,7 +324,6 @@ class TestKeyVaultIntegration:
             "github-token": "kv-gh",
             "azure-devops-pat": "kv-pat",
         }
-        mock_kv_secret = MagicMock()
 
         def mock_get_secret(name):
             s = MagicMock()

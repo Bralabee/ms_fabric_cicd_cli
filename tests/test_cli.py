@@ -263,7 +263,10 @@ workspace:
         mock_wrapper = mock_wrapper_cls.return_value
         mock_wrapper.delete_workspace.return_value = {
             "success": False,
-            "error": "x rm: [NotFound] The Workspace 'test-to-destroy.Workspace' could not be found",
+            "error": (
+                "x rm: [NotFound] The Workspace"
+                " 'test-to-destroy.Workspace' could not be found"
+            ),
         }
 
         result = runner.invoke(app, ["destroy", config_file, "--force"])
@@ -276,7 +279,7 @@ workspace:
     def test_destroy_real_error_still_fails(
         self, mock_wrapper_cls, mock_env, runner, config_file
     ):
-        """Test that destroy still fails on genuine errors (not NotFound/InsufficientPrivileges)."""
+        """Test that destroy still fails on genuine errors."""
         mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
         mock_wrapper = mock_wrapper_cls.return_value
         mock_wrapper.delete_workspace.return_value = {
@@ -593,3 +596,210 @@ workspace:
             result = deployer._parse_git_repo_url("https://invalid.com/repo")
 
             assert result is None
+
+
+class TestCLIOrganizeFolders:
+    """Tests for the organize-folders CLI command."""
+
+    @pytest.fixture
+    def runner(self):
+        """Create a CLI test runner."""
+        return CliRunner()
+
+    @pytest.fixture
+    def config_with_rules(self, tmp_path):
+        """Create a config with folder_rules."""
+        config_content = """
+workspace:
+  name: test-organize
+  capacity_id: "12345678-1234-1234-1234-123456789012"
+folders:
+  - "200 Store"
+  - "300 Prepare"
+folder_rules:
+  - type: Lakehouse
+    folder: "200 Store"
+  - type: Notebook
+    folder: "300 Prepare"
+"""
+        config_file = tmp_path / "organize_config.yaml"
+        config_file.write_text(config_content)
+        return str(config_file)
+
+    @pytest.fixture
+    def config_without_rules(self, tmp_path):
+        """Create a config without folder_rules."""
+        config_content = """
+workspace:
+  name: test-no-rules
+  capacity_id: "12345678-1234-1234-1234-123456789012"
+"""
+        config_file = tmp_path / "no_rules_config.yaml"
+        config_file.write_text(config_content)
+        return str(config_file)
+
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    def test_organize_folders_no_rules_exits_clean(
+        self, mock_env, runner, config_without_rules
+    ):
+        """Config without folder_rules prints warning and exits 0."""
+        mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
+
+        result = runner.invoke(app, ["organize-folders", config_without_rules])
+
+        assert result.exit_code == 0
+        assert "nothing to organize" in result.output.lower()
+
+    @patch("usf_fabric_cli.cli.FabricCLIWrapper")
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    def test_organize_folders_dry_run_shows_plan(
+        self, mock_env, mock_wrapper_cls, runner, config_with_rules
+    ):
+        """Dry run lists items that would be moved."""
+        mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
+        mock_wrapper = mock_wrapper_cls.return_value
+        mock_wrapper.list_workspace_items_api.return_value = [
+            {
+                "id": "lh-1",
+                "type": "Lakehouse",
+                "displayName": "my_lakehouse",
+            },
+            {
+                "id": "nb-1",
+                "type": "Notebook",
+                "displayName": "transform",
+                "folderId": None,
+            },
+        ]
+
+        result = runner.invoke(
+            app, ["organize-folders", config_with_rules, "--dry-run"]
+        )
+
+        assert result.exit_code == 0
+        assert "DRY RUN" in result.output
+        assert "Would move" in result.output
+
+    @patch("usf_fabric_cli.cli.FabricCLIWrapper")
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    def test_organize_folders_executes_move(
+        self, mock_env, mock_wrapper_cls, runner, config_with_rules
+    ):
+        """Calls organize_items_into_folders correctly."""
+        mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
+        mock_wrapper = mock_wrapper_cls.return_value
+        mock_wrapper.organize_items_into_folders.return_value = {
+            "moved": 2,
+            "skipped": 0,
+            "failed": 0,
+            "details": [
+                {
+                    "item": "my_lakehouse",
+                    "type": "Lakehouse",
+                    "folder": "200 Store",
+                    "status": "moved",
+                },
+            ],
+        }
+
+        result = runner.invoke(app, ["organize-folders", config_with_rules])
+
+        assert result.exit_code == 0
+        assert "Organize complete" in result.output
+        mock_wrapper.organize_items_into_folders.assert_called_once()
+
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    def test_organize_folders_missing_token(self, mock_env, runner, config_with_rules):
+        """Exits 1 when FABRIC_TOKEN is missing."""
+        mock_env.return_value = {"FABRIC_TOKEN": ""}
+
+        result = runner.invoke(app, ["organize-folders", config_with_rules])
+
+        assert result.exit_code == 1
+        assert "FABRIC_TOKEN" in result.output
+
+    def test_organize_folders_nonexistent_config(self, runner):
+        """Exits non-zero for missing config file."""
+        result = runner.invoke(app, ["organize-folders", "/nonexistent/config.yaml"])
+
+        assert result.exit_code != 0
+
+
+class TestCLIBulkDestroy:
+    """Tests for the bulk-destroy CLI command."""
+
+    @pytest.fixture
+    def runner(self):
+        """Create a CLI test runner."""
+        return CliRunner()
+
+    def test_bulk_destroy_missing_file(self, runner):
+        """Exits 1 for nonexistent file."""
+        result = runner.invoke(app, ["bulk-destroy", "/nonexistent/workspaces.txt"])
+
+        assert result.exit_code == 1
+        assert "not found" in result.output.lower()
+
+    @patch("usf_fabric_cli.cli.bulk_destroy_fn")
+    def test_bulk_destroy_calls_function(self, mock_fn, runner, tmp_path):
+        """Verifies it delegates to bulk_destroy_fn."""
+        ws_file = tmp_path / "workspaces.txt"
+        ws_file.write_text("ws-1\nws-2\n")
+
+        result = runner.invoke(app, ["bulk-destroy", str(ws_file), "--force"])
+
+        assert result.exit_code == 0
+        mock_fn.assert_called_once_with(str(ws_file), False, True)
+
+    @patch("usf_fabric_cli.cli.bulk_destroy_fn")
+    def test_bulk_destroy_dry_run(self, mock_fn, runner, tmp_path):
+        """Passes dry_run=True when --dry-run is given."""
+        ws_file = tmp_path / "workspaces.txt"
+        ws_file.write_text("ws-1\n")
+
+        result = runner.invoke(app, ["bulk-destroy", str(ws_file), "--dry-run"])
+
+        assert result.exit_code == 0
+        mock_fn.assert_called_once_with(str(ws_file), True, False)
+
+
+class TestCLIGenerate:
+    """Tests for the generate CLI command."""
+
+    @pytest.fixture
+    def runner(self):
+        """Create a CLI test runner."""
+        return CliRunner()
+
+    @patch("usf_fabric_cli.cli.generate_project_config")
+    def test_generate_calls_function(self, mock_fn, runner):
+        """Delegates to generate_project_config with correct args."""
+        result = runner.invoke(
+            app,
+            [
+                "generate",
+                "Contoso Inc",
+                "Sales Analytics",
+                "--template",
+                "medallion",
+            ],
+        )
+
+        assert result.exit_code == 0
+        mock_fn.assert_called_once_with(
+            "Contoso Inc",
+            "Sales Analytics",
+            "medallion",
+            "${FABRIC_CAPACITY_ID}",
+            "${GIT_REPO_URL}",
+        )
+
+    @patch("usf_fabric_cli.cli.generate_project_config")
+    def test_generate_failure_exits_1(self, mock_fn, runner):
+        """Exception from generate_project_config → exit code 1."""
+        mock_fn.side_effect = RuntimeError("Template not found")
+
+        result = runner.invoke(app, ["generate", "Org", "Proj"])
+
+        assert result.exit_code == 1
+        assert "Generate failed" in result.output
