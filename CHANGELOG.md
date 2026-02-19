@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.10] - 2026-02-19
+
+### Fixed
+
+- **Deployer: Stale Git Connection Recycling**: On `DuplicateConnectionName` (409) during Git connection, the deployer now deletes the stale connection and creates a fresh one with current credentials, instead of reusing the stale connection ID. Previously, reusing a stale connection caused `ConnectionMismatch` (400) when the stored GITHUB_TOKEN had been rotated or the connection metadata was incompatible. Falls back to reusing the old ID if deletion fails.
+- **Deployer: Pipeline Propagation Delay**: Added a 5-second delay after `create_pipeline()` before attempting to add pipeline users. Previously, the `/users` endpoint returned 404 (EntityNotFound) when called milliseconds after pipeline creation, because the Fabric backend had not yet propagated the new resource.
+
+### Added
+
+- **Git API: `delete_connection()` Method**: New method in `FabricGitAPI` to delete a Git connection by ID via the Fabric REST API. Used by the stale connection recycling logic.
+
+---
+
 ## [1.7.9] - 2026-02-18
 
 ### Fixed
