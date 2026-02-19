@@ -216,6 +216,28 @@
         "type": "object"
       }
     },
+    "folder_rules": {
+      "description": "Rules that map Fabric item types to workspace folders. Used by organize-folders command to auto-sort items after deployment or Git Sync.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The Fabric item type to match (e.g. Notebook, Lakehouse, DataPipeline)"
+          },
+          "folder": {
+            "type": "string",
+            "description": "Target folder path within the workspace"
+          }
+        },
+        "required": [
+          "type",
+          "folder"
+        ],
+        "additionalProperties": false
+      }
+    },
     "deployment_pipeline": {
       "description": "Fabric Deployment Pipeline configuration for stage promotion (Dev → Test → Prod)",
       "type": "object",
