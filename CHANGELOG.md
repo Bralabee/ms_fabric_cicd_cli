@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.8] - 2026-02-18
+
+### Fixed
+
+- **Schema: Allow `folder_rules` Property**: Added `folder_rules` to the JSON schema (`workspace_config.json`) as a valid top-level property. Previously, configs with `folder_rules:` blocks (used by `organize-folders` command and several blueprint templates) failed validation with `Additional properties are not allowed ('folder_rules')`. The schema now describes `folder_rules` as an array of `{type, folder}` objects with proper validation.
+
+---
+
 ## [1.7.7] - 2026-02-17
 
 ### Added
