@@ -1422,6 +1422,277 @@ class FabricCLIWrapper:
         command = ["ls", f"{workspace_name}.Workspace"]
         return self._execute_command(command)
 
+    def list_workspace_items_api(self, workspace_name: str) -> List[Dict[str, Any]]:
+        """List all items in workspace via REST API (structured JSON).
+
+        Returns a list of item dicts with keys: id, displayName, type,
+        folderId (if the item is inside a folder, else absent).
+        """
+        workspace_id = self.get_workspace_id(workspace_name)
+        if not workspace_id:
+            logger.warning("Could not resolve workspace ID for %s", workspace_name)
+            return []
+
+        items: List[Dict[str, Any]] = []
+        url = f"workspaces/{workspace_id}/items"
+        while url:
+            command = ["api", url]
+            result = self._execute_command(command)
+            if not result.get("success"):
+                logger.warning(
+                    "Failed to list items for %s: %s",
+                    workspace_name,
+                    result.get("error"),
+                )
+                break
+            data = result.get("data")
+
+            # Handle string response from fab api
+            if isinstance(data, str):
+                try:
+                    data = json.loads(data)
+                except json.JSONDecodeError:
+                    break
+
+            # Handle nested "text" field from fab api wrapper
+            if (
+                isinstance(data, dict)
+                and "text" in data
+                and isinstance(data["text"], dict)
+            ):
+                data = data["text"]
+
+            if isinstance(data, dict):
+                items.extend(data.get("value", []))
+                # Handle pagination — prefer continuationToken (just the
+                # token) over continuationUri (full URL that needs path
+                # extraction).  The Fabric CLI `api` command expects a
+                # relative path, not a full URL.
+                continuation_token = data.get("continuationToken", "")
+                continuation_uri = data.get("continuationUri", "")
+                if continuation_token:
+                    url = (
+                        f"workspaces/{workspace_id}/items"
+                        f"?continuationToken={continuation_token}"
+                    )
+                elif continuation_uri:
+                    # Extract relative path from full URL
+                    # e.g. https://api.fabric.microsoft.com/v1/workspaces/…
+                    if "/v1/" in continuation_uri:
+                        url = continuation_uri.split("/v1/", 1)[1]
+                    else:
+                        logger.warning(
+                            "Unexpected continuationUri format: %s",
+                            continuation_uri,
+                        )
+                        url = ""
+                else:
+                    url = ""
+            else:
+                break
+        return items
+
+    def move_item_to_folder(
+        self,
+        workspace_name: str,
+        item_id: str,
+        folder_id: str,
+        item_name: str = "",
+    ) -> Dict[str, Any]:
+        """Move a workspace item into a folder using the Items - Update API.
+
+        Uses: PATCH /workspaces/{workspaceId}/items/{itemId}
+        Body: { "folderId": "<folder-guid>" }
+
+        Args:
+            workspace_name: Workspace display name.
+            item_id: GUID of the item to move.
+            folder_id: GUID of the target folder.
+            item_name: Optional display name for logging.
+
+        Returns:
+            Standard result dict with success/error keys.
+        """
+        workspace_id = self.get_workspace_id(workspace_name)
+        if not workspace_id:
+            return {
+                "success": False,
+                "error": f"Could not resolve workspace ID for {workspace_name}",
+            }
+
+        payload = json.dumps({"folderId": folder_id})
+        command = [
+            "api",
+            f"workspaces/{workspace_id}/items/{item_id}",
+            "-X",
+            "patch",
+            "-i",
+            payload,
+        ]
+        display = item_name or item_id[:12]
+        logger.info("Moving item '%s' into folder %s", display, folder_id[:12])
+        return self._execute_command(command)
+
+    def organize_items_into_folders(
+        self,
+        workspace_name: str,
+        folder_rules: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Move items at workspace root into designated folders.
+
+        This is the post-Git-Sync folder organiser (Fixes TF-001).
+        Fabric Git Sync always places items at the workspace root because
+        folder assignments are not stored in Git metadata. This method
+        reads the workspace items, identifies those at root, and moves
+        them to the folder specified by the rules.
+
+        Args:
+            workspace_name: Workspace display name.
+            folder_rules: List of dicts, each with:
+                - ``type``: Fabric item type (e.g. "Lakehouse", "Notebook")
+                - ``name``: Item display name (optional — omit to match all
+                  items of the given type)
+                - ``folder``: Target folder display name
+
+        Returns:
+            Dict with ``moved``, ``skipped``, ``failed`` counts and
+            ``details`` list.
+        """
+        result: Dict[str, Any] = {
+            "moved": 0,
+            "skipped": 0,
+            "failed": 0,
+            "details": [],
+        }
+
+        if not folder_rules:
+            return result
+
+        # Step 1: List all items via REST API
+        items = self.list_workspace_items_api(workspace_name)
+        if not items:
+            logger.info("No items found in workspace %s", workspace_name)
+            return result
+
+        # Step 2: Build folder-name → folder-id lookup
+        workspace_id = self.get_workspace_id(workspace_name)
+        if not workspace_id:
+            result["failed"] = len(folder_rules)
+            return result
+
+        folder_lookup: Dict[str, str] = {}
+        list_cmd = ["api", f"workspaces/{workspace_id}/folders"]
+        folder_resp = self._execute_command(list_cmd)
+        if folder_resp.get("success"):
+            data = folder_resp.get("data")
+            # Handle string response from fab api
+            if isinstance(data, str):
+                try:
+                    data = json.loads(data)
+                except json.JSONDecodeError:
+                    data = {}
+            # Handle nested "text" field from fab api wrapper
+            if (
+                isinstance(data, dict)
+                and "text" in data
+                and isinstance(data["text"], dict)
+            ):
+                data = data["text"]
+            if isinstance(data, dict):
+                for f in data.get("value", []):
+                    folder_lookup[f["displayName"]] = f["id"]
+
+        # Step 3: For each rule, find matching items at root and move them.
+        # Sort rules so name-specific rules execute before wildcards of the
+        # same type.  This ensures "move Notebook 'X' to folder A" runs
+        # before "move all Notebooks to folder B".
+        sorted_rules = sorted(
+            folder_rules,
+            key=lambda r: (0 if r.get("name") else 1, r.get("type", "")),
+        )
+        # Track items already moved to prevent double-moves when multiple
+        # rules match (e.g. name-specific + wildcard for the same type).
+        moved_item_ids: set = set()
+
+        for rule in sorted_rules:
+            target_type = rule.get("type", "")
+            target_name = rule.get("name")  # None means "all of this type"
+            target_folder = rule.get("folder", "")
+
+            folder_id = folder_lookup.get(target_folder)
+            if not folder_id:
+                logger.warning(
+                    "Folder '%s' not found in workspace %s — skipping rule",
+                    target_folder,
+                    workspace_name,
+                )
+                result["failed"] += 1
+                result["details"].append(
+                    {
+                        "item": target_name or f"all {target_type}",
+                        "folder": target_folder,
+                        "status": "folder_not_found",
+                    }
+                )
+                continue
+
+            for item in items:
+                item_type = item.get("type", "")
+                item_name = item.get("displayName", "")
+                item_id = item.get("id", "")
+                item_folder = item.get("folderId")
+
+                # Skip items already in a folder
+                if item_folder:
+                    continue
+
+                # Skip items already moved by a previous rule
+                if item_id in moved_item_ids:
+                    continue
+
+                # Match by type (case-insensitive)
+                if item_type.lower() != target_type.lower():
+                    continue
+
+                # If a specific name is given, match it
+                if target_name and item_name != target_name:
+                    continue
+
+                # Move the item
+                move_result = self.move_item_to_folder(
+                    workspace_name, item_id, folder_id, item_name
+                )
+                if move_result.get("success"):
+                    result["moved"] += 1
+                    moved_item_ids.add(item_id)
+                    result["details"].append(
+                        {
+                            "item": item_name,
+                            "type": item_type,
+                            "folder": target_folder,
+                            "status": "moved",
+                        }
+                    )
+                    logger.info(
+                        "Moved %s '%s' → folder '%s'",
+                        item_type,
+                        item_name,
+                        target_folder,
+                    )
+                else:
+                    result["failed"] += 1
+                    result["details"].append(
+                        {
+                            "item": item_name,
+                            "type": item_type,
+                            "folder": target_folder,
+                            "status": "failed",
+                            "error": move_result.get("error", "unknown"),
+                        }
+                    )
+
+        return result
+
     def wait_for_operation(
         self, operation_id: str, max_wait_seconds: int = 300
     ) -> bool:

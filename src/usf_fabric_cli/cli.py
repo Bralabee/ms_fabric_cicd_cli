@@ -127,6 +127,48 @@ def validate(
         console.print(f"Warehouses: {len(workspace_config.warehouses or [])}")
         console.print(f"Notebooks: {len(workspace_config.notebooks or [])}")
 
+        # Validate folder references — check that items and folder_rules
+        # reference folders that actually exist in the folders list
+        defined_folders = set(workspace_config.folders or [])
+        warnings = []
+
+        # Check item folder references
+        for section_name, items in [
+            ("lakehouses", workspace_config.lakehouses or []),
+            ("warehouses", workspace_config.warehouses or []),
+            ("notebooks", workspace_config.notebooks or []),
+            ("pipelines", workspace_config.pipelines or []),
+            ("semantic_models", workspace_config.semantic_models or []),
+            ("resources", workspace_config.resources or []),
+        ]:
+            for item in items:
+                folder_ref = item.get("folder", "")
+                if folder_ref and folder_ref not in defined_folders:
+                    item_name = item.get("name", "unnamed")
+                    warnings.append(
+                        f"{section_name}.{item_name} references folder "
+                        f"'{folder_ref}' which is not in folders list"
+                    )
+
+        # Check folder_rules references
+        for rule in workspace_config.folder_rules or []:
+            folder_ref = rule.get("folder", "")
+            rule_type = rule.get("type", "unknown")
+            if folder_ref and folder_ref not in defined_folders:
+                warnings.append(
+                    f"folder_rules[type={rule_type}] references folder "
+                    f"'{folder_ref}' which is not in folders list"
+                )
+
+        if warnings:
+            console.print(
+                f"\n[yellow]⚠️  {len(warnings)} folder reference warning(s):[/yellow]"
+            )
+            for w in warnings:
+                console.print(f"  [yellow]• {w}[/yellow]")
+        else:
+            console.print("[green]✅ All folder references are valid[/green]")
+
     except Exception as e:
         console.print(f"[red]❌ Configuration validation failed: {e}[/red]")
         raise typer.Exit(1)
@@ -190,6 +232,21 @@ def destroy(
         "--workspace-name-override",
         help="Override workspace name (e.g. for branch-specific feature workspaces)",
     ),
+    branch: Optional[str] = typer.Option(
+        None,
+        "--branch",
+        "-b",
+        help=(
+            "Git branch name — derives workspace name using "
+            "get_workspace_name_from_branch() (overrides "
+            "--workspace-name-override)"
+        ),
+    ),
+    feature_prefix: str = typer.Option(
+        "⚡",
+        "--feature-prefix",
+        help="Feature workspace name prefix (use '' to disable)",
+    ),
 ):
     """Destroy Fabric workspace based on configuration"""
 
@@ -198,7 +255,25 @@ def destroy(
         config_manager = ConfigManager(config)
         workspace_config = config_manager.load_config(environment)
 
-        workspace_name = workspace_name_override or workspace_config.name
+        # Derive workspace name priority:
+        # --branch → --workspace-name-override → config default
+        if branch:
+            from usf_fabric_cli.services.git_integration import GitFabricIntegration
+
+            base_name = workspace_config.name
+            git = GitFabricIntegration.__new__(GitFabricIntegration)
+            workspace_name = git.get_workspace_name_from_branch(
+                base_workspace_name=base_name,
+                branch=branch,
+                feature_prefix=feature_prefix,
+            )
+            console.print(
+                f"[blue]Branch '{branch}' → workspace: {workspace_name}[/blue]"
+            )
+        elif workspace_name_override:
+            workspace_name = workspace_name_override
+        else:
+            workspace_name = workspace_config.name
 
         if not force:
             confirm = typer.confirm(
@@ -219,14 +294,22 @@ def destroy(
             console.print(f"[green]✅ Workspace '{workspace_name}' destroyed[/green]")
         else:
             error_msg = result.get("error", "")
+            error_str = str(error_msg)
             # Treat "not found" as success — workspace already cleaned up (idempotent)
-            if (
-                "NotFound" in str(error_msg)
-                or "could not be found" in str(error_msg).lower()
-            ):
+            if "NotFound" in error_str or "could not be found" in error_str.lower():
                 console.print(
                     f"[yellow]⚠️  Workspace '{workspace_name}'"
                     " not found — already cleaned up[/yellow]"
+                )
+            # Treat InsufficientPrivileges as a non-fatal warning
+            elif (
+                "InsufficientPrivileges" in error_str
+                or "insufficient" in error_str.lower()
+            ):
+                console.print(
+                    f"[yellow]⚠️  Workspace '{workspace_name}' — "
+                    "insufficient privileges to delete. "
+                    "Manual cleanup may be required.[/yellow]"
                 )
             else:
                 console.print(f"[red]❌ Failed to destroy workspace: {error_msg}[/red]")
@@ -240,6 +323,16 @@ def destroy(
             console.print(
                 f"[yellow]⚠️  Workspace '{ws_display}'"
                 " not found — already cleaned up[/yellow]"
+            )
+        # Treat InsufficientPrivileges as a non-fatal warning
+        elif (
+            "InsufficientPrivileges" in error_str or "insufficient" in error_str.lower()
+        ):
+            ws_display = workspace_name or "<unknown>"
+            console.print(
+                f"[yellow]⚠️  Workspace '{ws_display}' — "
+                "insufficient privileges to delete. "
+                "Manual cleanup may be required.[/yellow]"
             )
         else:
             console.print(f"[red]Destroy failed: {e}[/red]")
@@ -274,10 +367,33 @@ def promote(
         "--wait/--no-wait",
         help="Wait for promotion to complete (default: wait)",
     ),
+    selective: bool = typer.Option(
+        False,
+        "--selective",
+        help=(
+            "Use selective promotion — excludes unsupported item types "
+            "and retries with auto-exclusion of failing items"
+        ),
+    ),
+    exclude_types: Optional[str] = typer.Option(
+        None,
+        "--exclude-types",
+        help=(
+            "Comma-separated item types to exclude when using --selective "
+            "(default: Warehouse,SQLEndpoint)"
+        ),
+    ),
+    wait_for_git_sync: int = typer.Option(
+        0,
+        "--wait-for-git-sync",
+        help="Wait N seconds for Fabric Git Sync before promoting (0=skip)",
+    ),
 ):
     """Promote content through Fabric Deployment Pipeline stages (Dev → Test → Prod)"""
 
     try:
+        import time as _time
+
         from usf_fabric_cli.services.deployment_pipeline import (
             DeploymentStage,
             FabricDeploymentPipelineAPI,
@@ -302,24 +418,67 @@ def promote(
         display_target = target_stage or DeploymentStage.next_stage(source_stage)
         console.print(f"[blue]🚀 Promoting: {source_stage} → {display_target}[/blue]")
 
-        result = api.promote(
-            pipeline_id=pipeline["id"],
-            source_stage_name=source_stage,
-            target_stage_name=target_stage,
-            note=note,
-            wait=wait,
-        )
+        # Wait for Fabric Git Sync if requested
+        if wait_for_git_sync > 0:
+            console.print(
+                f"[blue]⏳ Waiting {wait_for_git_sync}s for Fabric "
+                "Git Sync to complete...[/blue]"
+            )
+            _time.sleep(wait_for_git_sync)
 
-        if result["success"]:
-            console.print(
-                f"[green]✅ Promotion succeeded: {source_stage} → "
-                f"{display_target}[/green]"
+        if selective:
+            # Parse exclude types
+            effective_excludes = None  # use default UNSUPPORTED_SP_TYPES
+            if exclude_types:
+                effective_excludes = {
+                    t.strip() for t in exclude_types.split(",") if t.strip()
+                }
+                console.print(
+                    f"[blue]Excluding item types: "
+                    f"{', '.join(effective_excludes)}[/blue]"
+                )
+
+            result = api.selective_promote(
+                pipeline_id=pipeline["id"],
+                source_stage_name=source_stage,
+                target_stage_name=target_stage,
+                note=note,
+                exclude_types=effective_excludes,
             )
+
+            if result.get("no_items"):
+                console.print(
+                    f"[yellow]⚠️  {result.get('message', 'No items')}[/yellow]"
+                )
+            elif result["success"]:
+                msg = result.get("message", "Promotion succeeded")
+                console.print(f"[green]✅ {msg}[/green]")
+            else:
+                console.print(
+                    f"[red]❌ Promotion failed: "
+                    f"{result.get('error', 'unknown')}[/red]"
+                )
+                raise typer.Exit(1)
         else:
-            console.print(
-                f"[red]❌ Promotion failed: {result.get('error', 'unknown')}[/red]"
+            result = api.promote(
+                pipeline_id=pipeline["id"],
+                source_stage_name=source_stage,
+                target_stage_name=target_stage,
+                note=note,
+                wait=wait,
             )
-            raise typer.Exit(1)
+
+            if result["success"]:
+                console.print(
+                    f"[green]✅ Promotion succeeded: {source_stage} → "
+                    f"{display_target}[/green]"
+                )
+            else:
+                console.print(
+                    f"[red]❌ Promotion failed: "
+                    f"{result.get('error', 'unknown')}[/red]"
+                )
+                raise typer.Exit(1)
 
     except Exception as e:
         console.print(f"[red]Promote failed: {e}[/red]")
@@ -527,6 +686,114 @@ def bulk_destroy(
         raise
     except Exception as e:
         console.print(f"[red]Bulk destroy failed: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command("organize-folders")
+def organize_folders(
+    config: str = typer.Argument(..., help="Path to configuration file"),
+    workspace: Optional[str] = typer.Option(
+        None,
+        "--workspace",
+        "-w",
+        help="Override workspace name (default: read from config)",
+    ),
+    environment: Optional[str] = typer.Option(
+        None, "--env", "-e", help="Environment (dev/staging/prod)"
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Show what would be moved without actually moving items",
+    ),
+):
+    """Organize workspace items into folders after Git Sync.
+
+    Fabric Git Sync always places items at the workspace root. This command
+    reads the folder_rules from the config and moves items into their
+    designated folders using the Fabric REST API.
+
+    Example config entry (folder_rules):
+
+        folder_rules:
+          - type: Lakehouse
+            folder: "200 Store"
+          - type: Notebook
+            name: nb_transform
+            folder: "300 Prepare"
+    """
+    try:
+        env_vars = get_environment_variables()
+        token = env_vars.get("FABRIC_TOKEN") or ""
+        if not token:
+            console.print("[red]❌ FABRIC_TOKEN is not set[/red]")
+            raise typer.Exit(1)
+
+        config_mgr = ConfigManager(config)
+        cfg = config_mgr.load_config(environment)
+        ws_name = workspace or cfg.name
+
+        folder_rules = cfg.folder_rules or []
+        if not folder_rules:
+            console.print(
+                "[yellow]No folder_rules defined in config "
+                "— nothing to organize.[/yellow]"
+            )
+            raise typer.Exit(0)
+
+        fabric = FabricCLIWrapper(token)
+        console.print(f"[blue]Organizing items in workspace '{ws_name}'...[/blue]")
+
+        if dry_run:
+            console.print("[yellow]DRY RUN — no items will be moved.[/yellow]\n")
+            items = fabric.list_workspace_items_api(ws_name)
+            root_items = [it for it in items if not it.get("folderId")]
+            console.print(f"  Items at root: {len(root_items)}")
+            # Sort rules: name-specific first, then wildcards (matches
+            # the ordering used by organize_items_into_folders)
+            sorted_rules = sorted(
+                folder_rules,
+                key=lambda r: (0 if r.get("name") else 1, r.get("type", "")),
+            )
+            matched_ids: set = set()
+            for rule in sorted_rules:
+                target_type = rule.get("type", "")
+                target_name = rule.get("name")
+                target_folder = rule.get("folder", "")
+                matched = [
+                    it
+                    for it in root_items
+                    if it.get("id", "") not in matched_ids
+                    and it.get("type", "").lower() == target_type.lower()
+                    and (not target_name or it.get("displayName") == target_name)
+                ]
+                for item in matched:
+                    matched_ids.add(item.get("id", ""))
+                    console.print(
+                        f"  Would move {item['type']} '{item['displayName']}' "
+                        f"→ folder '{target_folder}'"
+                    )
+            raise typer.Exit(0)
+
+        result = fabric.organize_items_into_folders(ws_name, folder_rules)
+        console.print(
+            f"\n[green]✅ Organize complete: "
+            f"{result['moved']} moved, "
+            f"{result['skipped']} skipped, "
+            f"{result['failed']} failed[/green]"
+        )
+        for detail in result.get("details", []):
+            status_icon = "✓" if detail["status"] == "moved" else "✗"
+            console.print(
+                f"  {status_icon} {detail.get('type', '')} "
+                f"'{detail['item']}' → {detail['folder']} "
+                f"({detail['status']})"
+            )
+
+    except typer.Exit:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
 
 

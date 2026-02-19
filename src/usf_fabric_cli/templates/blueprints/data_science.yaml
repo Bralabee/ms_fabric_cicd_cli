@@ -1,72 +1,139 @@
-# Data Science Project Configuration
-# For pure data science and research projects
+# ─────────────────────────────────────────────────────────────────────────────
+# Data Science Workspace Configuration Template
+# Optimized for: ML research, experimentation, model development
+# Use Cases: Research teams, ML model development, experiment tracking
+# Strategy: Git-sync-only — Fabric items managed through Git, not CLI
+# ─────────────────────────────────────────────────────────────────────────────
 
 workspace:
-  name: "data-science-lab"
-  display_name: "Data Science Laboratory"
-  description: "Experimental workspace for data science research"
-  capacity_id: "${FABRIC_CAPACITY_ID}"  # Environment variable substitution
-  domain: "${FABRIC_DOMAIN_NAME}"       # Optional: Assign to a Fabric Domain
+  name: "data-science-lab"            # ← CHANGE: Your project workspace name
+  display_name: "Data Science Lab"
+  description: "Machine learning research and experimentation workspace"
+  capacity_id: "${FABRIC_CAPACITY_ID}"
+  domain: "${FABRIC_DOMAIN_NAME}"
 
+  # Git Integration
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
+  git_directory: "/"
 
-# Research-focused folder structure
+environments:
+  dev:
+    workspace:
+      name: "data-science-lab"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+  test:
+    workspace:
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+  prod:
+    workspace:
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+
+# ── Folder Structure (Numbered Convention) ───────────────────────────────────
 folders:
-  - "Raw Data"
-  - "Experiments"
-  - "Models"
-  - "Notebooks"
-  - "Datasets"
-  - "Publications"
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
+  - "Archive"
 
-# Minimal data infrastructure
-lakehouses:
-  - name: "research_data"
-    folder: "Raw Data"
-    description: "Research datasets and external data sources"
+# ── Folder Rules (Post-Git-Sync Item Placement) ─────────────────────────────
+folder_rules:
+  - type: DataPipeline
+    folder: "000 Orchestrate"
+  - type: DataflowGen2
+    folder: "000 Orchestrate"
+  - type: Eventstream
+    folder: "100 Ingest"
+  - type: Lakehouse
+    folder: "200 Store"
+  - type: Notebook
+    folder: "300 Prepare"
+  - type: SparkJobDefinition
+    folder: "300 Prepare"
+  - type: Warehouse
+    folder: "400 Model"
+  - type: SemanticModel
+    folder: "400 Model"
+  - type: Report
+    folder: "500 Visualize"
+  - type: Dashboard
+    folder: "500 Visualize"
+  - type: Environment
+    folder: "999 Libraries"
 
-  - name: "experiment_results"
-    folder: "Experiments"
-    description: "ML experiment results and metrics"
+# ── No Fabric Items — Content Managed Through Git Sync ───────────────────────
+# Typical Git-managed items for a data science project:
+#   - Lakehouse: research_data (200 Store) — training datasets, features
+#   - Lakehouse: experiment_artifacts (200 Store) — model outputs, metrics
+#   - Notebook: data_exploration (300 Prepare) — EDA and profiling
+#   - Notebook: feature_engineering (300 Prepare) — feature computation
+#   - Notebook: model_training (300 Prepare) — ML model training
+#   - Notebook: model_evaluation (300 Prepare) — metrics and comparisons
+#   - Pipeline: experiment_pipeline (000 Orchestrate) — automated ML runs
+#   - Environment: ml_environment (999 Libraries) — custom Spark/Python deps
+# ─────────────────────────────────────────────────────────────────────────────
+lakehouses: []
+notebooks: []
+resources: []
 
-# Research notebooks
-notebooks:
-  - name: "exploratory_analysis"
-    folder: "Notebooks"
-    description: "Initial data exploration and hypothesis formation"
-
-  - name: "statistical_analysis"
-    folder: "Notebooks"
-    description: "Statistical tests and significance analysis"
-
-  - name: "deep_learning_experiments"
-    folder: "Experiments"
-    description: "Neural network architecture experiments"
-
-  - name: "research_paper_analysis"
-    folder: "Publications"
-    description: "Analysis for research publication"
-
-# Research team access
-# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
+# ── Access Control ───────────────────────────────────────────────────────────
 principals:
-  - id: "${TEMPLATE_LEAD_DS_OID}"
-    role: "Admin"
-
-  - id: "${TEMPLATE_RESEARCH_TEAM_OID}"
-    role: "Contributor"
-
-  # Automation Service Principal (required for CI/CD deployments)
+  # 1. Automation Service Principal (runs deployments)
   - id: "${AZURE_CLIENT_ID}"
-    role: "Admin"
-    description: "Automation Service Principal for CI/CD"
+    role: Contributor
+    description: "Automation SP — required for CI/CD deployments"
 
-  # Mandatory Security Principals
+  # 2. Mandatory Admin security group (IT governance)
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
-    role: "Admin"
-    description: "Mandatory Additional Admin"
+    role: Admin
+    description: "Mandatory governance admin group"
 
+  # 3. Mandatory Contributor security group (support team)
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
-    role: "Contributor"
-    description: "Mandatory Additional Contributor"
+    role: Contributor
+    description: "Mandatory governance contributor group"
+
+  # ── Project-specific principals ────────────────────────────────────────────
+  - id: "${PROJECT_ADMIN_ID}"               # ← CHANGE
+    role: Admin
+    description: "Research lead / data science manager"
+
+  - id: "${PROJECT_MEMBERS_ID}"             # ← CHANGE
+    role: Member
+    description: "Data scientists and ML engineers"
+
+# ── Deployment Pipeline ──────────────────────────────────────────────────────
+deployment_pipeline:
+  pipeline_name: "data-science-pipeline"     # ← CHANGE
+  stages:
+    development:
+      workspace_name: "data-science-lab"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+    test:
+      workspace_name: "data-science-lab [Test]"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+    production:
+      workspace_name: "data-science-lab [Production]"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+
+# DATA SCIENCE WORKFLOW GUIDANCE:
+# ─────────────────────────────────────────────────────────────────────────────
+# Experiment Lifecycle:
+#   1. Explore data in exploration notebook (300 Prepare)
+#   2. Engineer features and store in feature lakehouse (200 Store)
+#   3. Train models in training notebook, log to MLflow
+#   4. Evaluate and compare in evaluation notebook
+#   5. Promote champion model to production pipeline
+#
+# MLflow Integration:
+#   - Fabric natively supports MLflow experiment tracking
+#   - Use `mlflow.autolog()` in training notebooks
+#   - Compare runs in Fabric experiment viewer
+#
+# Environment (999 Libraries):
+#   - Pin Spark/Python library versions for reproducibility
+#   - Use Fabric Environments to manage custom dependencies

@@ -245,6 +245,41 @@ class FabricDeployer:
                     self._connect_git(git_branch)
                     progress.update(task, description="✅ Git connected")
 
+                # Step 6b: Organize items into folders (after Git Sync)
+                # Fabric Git Sync places all items at the workspace root.
+                # If folder_rules are defined, move items into folders.
+                if self.config.folder_rules and self.config.git_repo:
+                    task = progress.add_task(
+                        "Organizing items into folders...", total=None
+                    )
+                    try:
+                        result = self.fabric.organize_items_into_folders(
+                            workspace_name, self.config.folder_rules
+                        )
+                        moved = result.get("moved", 0)
+                        failed = result.get("failed", 0)
+                        if failed:
+                            progress.update(
+                                task,
+                                description=(
+                                    f"⚠️ Folder organize: {moved} moved, "
+                                    f"{failed} failed"
+                                ),
+                            )
+                        else:
+                            progress.update(
+                                task,
+                                description=(
+                                    f"✅ Folder organize: {moved} items moved"
+                                ),
+                            )
+                    except Exception as e:
+                        logger.warning(f"Folder organization failed (non-fatal): {e}")
+                        progress.update(
+                            task,
+                            description="⚠️ Folder organize skipped (error)",
+                        )
+
                 # Step 7: Set up Deployment Pipeline (if configured)
                 if self.config.deployment_pipeline and not force_branch_workspace:
                     task = progress.add_task(
@@ -1294,6 +1329,29 @@ class FabricDeployer:
                                     f"{p_result.get('error', 'unknown')}"
                                     f"[/yellow]"
                                 )
+
+                # Propagate folder structure to non-dev stage workspaces
+                # (TF-002 fix: ensures Test/Prod have the same folders as Dev)
+                if self.config.folders:
+                    console.print(f"    Creating folders in {ws_name}...")
+                    for folder in self.config.folders:
+                        f_result = self.fabric.create_folder(ws_name, folder)
+                        if f_result.get("success"):
+                            if f_result.get("reused"):
+                                logger.debug(
+                                    "Folder '%s' already exists in %s",
+                                    folder,
+                                    ws_name,
+                                )
+                            else:
+                                console.print(f"      ✓ Created folder: {folder}")
+                        else:
+                            console.print(
+                                f"      [yellow]⚠ Could not create "
+                                f"folder '{folder}': "
+                                f"{f_result.get('error', 'unknown')}"
+                                f"[/yellow]"
+                            )
 
             # Assign workspace to pipeline stage
             assign_result = self.pipeline_api.assign_workspace_to_stage(

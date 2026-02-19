@@ -1,197 +1,171 @@
-# Data Mesh Domain-Oriented Blueprint
-# Optimized for: Domain-driven data ownership, federated governance, data products
-# Use Cases: Large enterprises, multi-team organizations, domain-bounded contexts
-# Architecture: Decentralized data ownership with centralized governance
+# ─────────────────────────────────────────────────────────────────────────────
+# Data Mesh Domain Workspace Configuration Template
+# Optimized for: Decentralized data ownership, domain-driven data products
+# Use Cases: Enterprise data mesh, domain teams, cross-domain data sharing
+# Strategy: Git-sync-only — Fabric items managed through Git, not CLI
+#
+# DATA MESH PRINCIPLES:
+#   1. Domain Ownership: Each domain team owns their workspace and data products
+#   2. Data as a Product: Published, discoverable, quality-guaranteed datasets
+#   3. Self-Serve Platform: Standardized workspace template, reusable patterns
+#   4. Federated Governance: Central audit access, domain-level control
+# ─────────────────────────────────────────────────────────────────────────────
 
 workspace:
-  name: "Sales_Domain_Data_Product"
-  display_name: "Sales Domain - Data Product"
-  description: "Domain-owned data product: Sales analytics and customer insights"
+  name: "domain-workspace"            # ← CHANGE: e.g., "sales-domain", "customer-domain"
+  display_name: "Domain Data Products"
+  description: "Domain-owned data product workspace with cross-domain sharing"
   capacity_id: "${FABRIC_CAPACITY_ID}"
-  domain: "${FABRIC_DOMAIN_NAME}"  # CRITICAL: Assign to Fabric Domain for governance
+  domain: "${FABRIC_DOMAIN_NAME}"     # Use Fabric Domains to group related workspaces
 
-  # Git Integration (Per-domain repository)
+  # Git Integration
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
-  git_directory: "/sales-data-product"
+  git_directory: "/"
 
-# Folder Structure (Data Product Layers)
-folders:
-  - "Source"  # Source-aligned datasets
-  - "Aggregate"  # Aggregate datasets (for consumers)
-  - "Consumer"  # Consumer-aligned datasets (published data products)
-  - "Internal"  # Internal domain logic (not published)
-  - "Contracts"  # Data contracts and SLAs
-
-# Lakehouses (Domain Data Storage)
-lakehouses:
-  - name: "sales_source_data"
-    folder: "Source"
-    description: "Raw sales data from operational systems (domain-owned)"
-
-  - name: "sales_aggregate_data"
-    folder: "Aggregate"
-    description: "Aggregated sales metrics (pre-joined for consumers)"
-
-  - name: "customer_insights_product"
-    folder: "Consumer"
-    description: "Published data product: Customer purchase patterns"
-
-# Warehouses (Analytical Data Products)
-warehouses:
-  - name: "sales_analytics_product"
-    folder: "Consumer"
-    description: "Published data product: Sales performance analytics"
-
-# Semantic Models (Self-Service Analytics)
-semantic_models:
-  - name: "sales_kpis_certified"
-    folder: "Consumer"
-    description: "Certified semantic model for sales KPIs (published)"
-
-# Notebooks (Domain Logic)
-notebooks:
-  - name: "sales_data_transformation"
-    folder: "Internal"
-    description: "Domain-specific transformation logic (not exposed)"
-
-  - name: "customer_segmentation"
-    folder: "Internal"
-    description: "ML-based customer segmentation (internal)"
-
-  - name: "data_product_quality_check"
-    folder: "Contracts"
-    description: "Validate data contracts before publishing"
-
-# Pipelines (Data Product Publishing)
-pipelines:
-  - name: "publish_sales_data_product"
-    folder: "Consumer"
-    description: "Orchestrate data product creation and validation"
-
-  - name: "domain_data_refresh"
-    folder: "Internal"
-    description: "Refresh domain-owned datasets from source systems"
-
-# Data Mesh-Specific Resources
-resources:
-  # GraphQL API (Data Product Access)
-  - type: "GraphQLApi"
-    name: "sales_data_product_api"
-    description: "GraphQL API for consuming Sales domain data products"
-    folder: "Consumer"
-
-  # Data Sharing (Cross-Domain Collaboration)
-  - type: "ExternalDataShare"
-    name: "share_customer_insights"
-    description: "Share customer insights with Marketing domain"
-    folder: "Consumer"
-
-  # Mirrored Databases (Cross-Domain Data Integration)
-  - type: "MirroredDatabase"
-    name: "mirrored_customer_master"
-    description: "Mirror Customer Master from Customer domain"
-    folder: "Source"
-
-# Principals (Domain Team Ownership)
-# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
-principals:
-  # Domain Owner (Product Manager)
-  - id: "${SALES_DOMAIN_OWNER_OID}"
-    role: "Admin"
-    description: "MANDATORY: Sales Domain Owner - accountable for data product"
-
-  # Domain Data Engineers
-  - id: "${SALES_DATA_TEAM_GROUP_OID}"
-    role: "Contributor"
-    description: "Sales domain data engineering team"
-
-  # Domain Analysts (Internal Consumers)
-  - id: "${SALES_ANALYST_GROUP_OID}"
-    role: "Viewer"
-    description: "Sales analysts - internal consumers"
-
-  # Cross-Domain Consumer Groups (External)
-  - id: "${MARKETING_CONSUMER_GROUP_OID}"
-    role: "Viewer"
-    description: "Marketing domain - consumer of Sales data products"
-
-  - id: "${FINANCE_CONSUMER_GROUP_OID}"
-    role: "Viewer"
-    description: "Finance domain - consumer of Sales data products"
-
-  # Central Governance (Read-Only Audit)
-  - id: "${CENTRAL_GOVERNANCE_GROUP_OID}"
-    role: "Viewer"
-    description: "Central data governance - audit and compliance oversight"
-
-  # Automation Service Principal
-  - id: "${AZURE_CLIENT_ID}"
-    role: "Contributor"
-    description: "Domain-specific CI/CD automation"
-
-  # Mandatory Security Principals (Enterprise-Wide)
-  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
-    role: "Admin"
-    description: "MANDATORY: Enterprise security admin principal"
-
-  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
-    role: "Contributor"
-    description: "MANDATORY: Enterprise contributor principal"
-
-# Environment-Specific Overrides
 environments:
   dev:
     workspace:
-      capacity_id: "F8"
-      name: "Sales_Domain_Dev"
-      domain: "Sales_Dev"
-
+      name: "domain-workspace"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
   test:
     workspace:
-      capacity_id: "F16"
-      name: "Sales_Domain_Test"
-      domain: "Sales_Test"
-
+      capacity_id: "${FABRIC_CAPACITY_ID}"
   prod:
     workspace:
-      capacity_id: "F64"
-      name: "Sales_Domain_Prod"
-      domain: "Sales"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
 
-# DATA MESH PRINCIPLES IMPLEMENTATION:
-# 1. Domain Ownership: Sales team owns this workspace and all data products
-# 2. Data as a Product: customer_insights_product and sales_analytics_product are discoverable
-# 3. Self-Serve Platform: GraphQL API enables self-service consumption
-# 4. Federated Governance: Central governance has Viewer access for audit
-# 5. Computational Governance: Data contracts enforced via data_product_quality_check notebook
+# ── Folder Structure (Numbered Convention) ───────────────────────────────────
+folders:
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
+  - "Archive"
 
-# DATA PRODUCT CATALOG (Register in Purview/Data Catalog):
-# Product Name: Customer Purchase Insights
-#   - Owner: Sales Domain Team
-#   - SLA: Daily refresh by 6 AM UTC
-#   - Contract: JSON schema in /Contracts folder
-#   - Consumers: Marketing, Finance
-#   - Quality: 99.5% completeness, <1% error rate
+# ── Folder Rules (Post-Git-Sync Item Placement) ─────────────────────────────
+folder_rules:
+  - type: DataPipeline
+    folder: "000 Orchestrate"
+  - type: DataflowGen2
+    folder: "000 Orchestrate"
+  - type: Eventstream
+    folder: "100 Ingest"
+  - type: Lakehouse
+    folder: "200 Store"
+  - type: Notebook
+    folder: "300 Prepare"
+  - type: SparkJobDefinition
+    folder: "300 Prepare"
+  - type: Warehouse
+    folder: "400 Model"
+  - type: SemanticModel
+    folder: "400 Model"
+  - type: Report
+    folder: "500 Visualize"
+  - type: Dashboard
+    folder: "500 Visualize"
+  - type: Environment
+    folder: "999 Libraries"
+
+# ── No Fabric Items — Content Managed Through Git Sync ───────────────────────
+# Typical Git-managed items for a data mesh domain workspace:
+#   - Lakehouse: source_data (200 Store) — raw domain data
+#   - Lakehouse: aggregated_products (200 Store) — published data products
+#   - Lakehouse: consumer_views (200 Store) — cross-domain shared datasets
+#   - Warehouse: domain_dw (400 Model) — domain star schema
+#   - Notebook: source_ingestion (300 Prepare) — ingest from domain sources
+#   - Notebook: product_builder (300 Prepare) — build data products
+#   - Notebook: quality_checks (300 Prepare) — enforce SLA/quality contracts
+#   - Pipeline: product_refresh (000 Orchestrate) — data product pipeline
+#   - Pipeline: cross_domain_publish (000 Orchestrate) — share to consumers
+#   - SemanticModel: domain_analytics (400 Model) — certified model
+#   - GraphQLApi: domain_data_api (400 Model) — self-service data access
+#   - MirroredDatabase: external_source (100 Ingest) — cross-domain mirror
+#   - ExternalDataShare: share_products (400 Model) — data sharing
+#   - Report: domain_dashboard (500 Visualize)
+# ─────────────────────────────────────────────────────────────────────────────
+lakehouses: []
+notebooks: []
+resources: []
+
+# ── Access Control (Domain Ownership) ────────────────────────────────────────
+principals:
+  # 1. Automation Service Principal (runs deployments)
+  - id: "${AZURE_CLIENT_ID}"
+    role: Contributor
+    description: "Automation SP — required for CI/CD deployments"
+
+  # 2. Mandatory Admin security group (IT governance)
+  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+    role: Admin
+    description: "Mandatory governance admin group"
+
+  # 3. Mandatory Contributor security group (support team)
+  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+    role: Contributor
+    description: "Mandatory governance contributor group"
+
+  # ── Domain-specific principals ─────────────────────────────────────────────
+  # Domain owner (product manager / data owner)
+  - id: "${PROJECT_ADMIN_ID}"               # ← CHANGE
+    role: Admin
+    description: "Domain owner — accountable for data products"
+
+  # Domain data engineers
+  - id: "${PROJECT_MEMBERS_ID}"             # ← CHANGE
+    role: Member
+    description: "Domain data engineering team"
+
+  # Cross-domain consumers (read-only access to published data products)
+  # - id: "${CONSUMER_DOMAIN_1_ID}"
+  #   role: Viewer
+  #   description: "Marketing domain — consumer of published data products"
+  # - id: "${CONSUMER_DOMAIN_2_ID}"
+  #   role: Viewer
+  #   description: "Finance domain — consumer of published data products"
+
+  # Central governance (audit access)
+  # - id: "${CENTRAL_GOVERNANCE_ID}"
+  #   role: Viewer
+  #   description: "Central data governance — audit and compliance oversight"
+
+# ── Deployment Pipeline ──────────────────────────────────────────────────────
+deployment_pipeline:
+  pipeline_name: "domain-pipeline"       # ← CHANGE: e.g., "sales-domain-pipeline"
+  stages:
+    development:
+      workspace_name: "domain-workspace"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+    test:
+      workspace_name: "domain-workspace [Test]"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+    production:
+      workspace_name: "domain-workspace [Production]"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+
+# DATA MESH IMPLEMENTATION GUIDANCE:
+# ─────────────────────────────────────────────────────────────────────────────
+# Domain Workspace Pattern:
+#   - Clone this template for each business domain (Sales, Customer, Finance)
+#   - Each domain owns its workspace, data, and data products
+#   - Use Fabric Domains to group related workspaces visually
 #
-# Product Name: Sales Performance Analytics
-#   - Owner: Sales Domain Team
-#   - SLA: Hourly refresh during business hours
-#   - Contract: Star schema documented
-#   - Consumers: Executive Dashboards, Finance
-#   - Quality: Certified by Finance team
-
-# CROSS-DOMAIN DEPENDENCIES:
-# - Consumes: Customer Master (from Customer domain)
-# - Publishes: Sales metrics, Customer insights
-# - Consumers: Marketing domain, Finance domain
-
-# Configuration Notes:
-# 1. Each domain should have its own workspace (clone this template per domain)
-# 2. Use Fabric Domains feature to group related workspaces
-# 3. GraphQL API enables decoupled consumption (REST-like)
-# 4. MirroredDatabase avoids direct cross-domain dependencies
-# 5. ExternalDataShare enables secure cross-domain data sharing
-# 6. Central governance team has read-only access (audit, not control)
-# 7. Domain owner is accountable for data product SLA and quality
-# 8. Replace "Sales" with your domain name (e.g., Customer, Product, Finance)
+# Data Product Publishing:
+#   - Build certified data products in "aggregated_products" lakehouse
+#   - Publish discoverable datasets via GraphQL API or External Data Share
+#   - Define quality contracts (SLA, freshness, completeness)
+#   - Register products in Microsoft Purview for discoverability
+#
+# Cross-Domain Integration:
+#   - Use MirroredDatabase to consume data from other domains
+#   - Avoids tight coupling between domain workspaces
+#   - GraphQL API enables REST-like self-service consumption
+#
+# Governance Model:
+#   - Domain teams own their data (Admin/Contributor roles)
+#   - Central governance has Viewer access for audit
+#   - Quality gates enforced via automated notebooks

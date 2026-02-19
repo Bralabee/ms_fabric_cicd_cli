@@ -41,6 +41,9 @@ class WorkspaceConfig:
     # Folder structure
     folders: Optional[List[str]] = None
 
+    # Folder organisation rules (for post-Git-Sync item placement)
+    folder_rules: Optional[List[Dict[str, Any]]] = None
+
     # Items to create
     lakehouses: Optional[List[Dict[str, Any]]] = None
     warehouses: Optional[List[Dict[str, Any]]] = None
@@ -261,6 +264,7 @@ class ConfigManager:
             git_branch=workspace_data.get("git_branch", "main"),
             git_directory=workspace_data.get("git_directory", "/"),
             folders=data.get("folders", []),
+            folder_rules=data.get("folder_rules", []),
             lakehouses=data.get("lakehouses", []),
             warehouses=data.get("warehouses", []),
             notebooks=data.get("notebooks", []),

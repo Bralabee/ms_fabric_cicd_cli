@@ -1,146 +1,146 @@
-# Real-Time Streaming Architecture Blueprint
-# Optimized for: IoT telemetry, event-driven architectures, real-time analytics
-# Use Cases: Sensor data, log aggregation, clickstream analysis, monitoring systems
+# ─────────────────────────────────────────────────────────────────────────────
+# Real-Time Streaming Workspace Configuration Template
+# Optimized for: IoT telemetry, real-time event processing, live dashboards
+# Use Cases: IoT platforms, clickstream analytics, fraud detection, alerting
+# Strategy: Git-sync-only — Fabric items managed through Git, not CLI
+# ─────────────────────────────────────────────────────────────────────────────
 
 workspace:
-  name: "Realtime_Streaming_Hub"
-  display_name: "Real-Time Streaming Hub"
-  description: "High-throughput streaming data platform with real-time analytics and alerting"
+  name: "streaming-workspace"         # ← CHANGE: Your project workspace name
+  display_name: "Real-Time Streaming Platform"
+  description: "Event-driven analytics with real-time ingestion and alerting"
   capacity_id: "${FABRIC_CAPACITY_ID}"
-  domain: "${FABRIC_DOMAIN_NAME}"  # Optional: Assign to specific domain
+  domain: "${FABRIC_DOMAIN_NAME}"
 
-  # Git Integration (Optional)
+  # Git Integration
   git_repo: "${GIT_REPO_URL}"
   git_branch: "main"
-  git_directory: "/streaming"
+  git_directory: "/"
 
-# Folder Structure (Streaming-Optimized)
+environments:
+  dev:
+    workspace:
+      name: "streaming-workspace"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+  test:
+    workspace:
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+  prod:
+    workspace:
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+
+# ── Folder Structure (Numbered Convention) ───────────────────────────────────
 folders:
-  - "Ingestion"
-  - "Processing"
-  - "Analytics"
-  - "Alerts"
-  - "Dashboards"
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
+  - "Archive"
 
-# Lakehouses (Landing zones for batch/historical data)
-lakehouses:
-  - name: "streaming_archive"
-    folder: "Ingestion"
-    description: "Long-term storage for streamed events (batch queries)"
+# ── Folder Rules (Post-Git-Sync Item Placement) ─────────────────────────────
+folder_rules:
+  - type: DataPipeline
+    folder: "000 Orchestrate"
+  - type: DataflowGen2
+    folder: "000 Orchestrate"
+  - type: Eventstream
+    folder: "100 Ingest"
+  - type: Lakehouse
+    folder: "200 Store"
+  - type: Notebook
+    folder: "300 Prepare"
+  - type: SparkJobDefinition
+    folder: "300 Prepare"
+  - type: Warehouse
+    folder: "400 Model"
+  - type: SemanticModel
+    folder: "400 Model"
+  - type: Report
+    folder: "500 Visualize"
+  - type: Dashboard
+    folder: "500 Visualize"
+  - type: Environment
+    folder: "999 Libraries"
 
-# Real-Time Streaming Resources
-resources:
-  # Eventstreams - Data ingestion
-  - type: "Eventstream"
-    name: "iot_sensor_stream"
-    description: "Ingest IoT device telemetry in real-time"
-    folder: "Ingestion"
+# ── No Fabric Items — Content Managed Through Git Sync ───────────────────────
+# Typical Git-managed items for a real-time streaming project:
+#   - Eventstream: iot_telemetry_stream (100 Ingest) — ingests from IoT Hub
+#   - Eventstream: clickstream_events (100 Ingest) — web/app event capture
+#   - KQLDatabase: realtime_analytics_db (200 Store) — hot-path queries
+#   - Lakehouse: streaming_archive (200 Store) — cold-path historical data
+#   - Notebook: stream_processor (300 Prepare) — real-time transformations
+#   - Notebook: anomaly_detector (300 Prepare) — ML anomaly detection
+#   - Pipeline: batch_reconciliation (000 Orchestrate) — batch vs stream check
+#   - Reflex: alert_high_latency (100 Ingest) — automated alerting
+#   - Reflex: alert_error_spike (100 Ingest) — error rate monitoring
+#   - Report: realtime_dashboard (500 Visualize) — live operational view
+# ─────────────────────────────────────────────────────────────────────────────
+lakehouses: []
+notebooks: []
+resources: []
 
-  - type: "Eventstream"
-    name: "application_logs_stream"
-    description: "Real-time application log ingestion"
-    folder: "Ingestion"
-
-  - type: "Eventstream"
-    name: "user_clickstream"
-    description: "Web/mobile user interaction events"
-    folder: "Ingestion"
-
-  # Eventhouse - Unified real-time analytics engine
-  - type: "Eventhouse"
-    name: "realtime_analytics_engine"
-    description: "High-performance analytics for streaming data"
-    folder: "Analytics"
-
-  # KQL Databases - Low-latency query engines
-  - type: "KQLDatabase"
-    name: "telemetry_analytics_db"
-    description: "KQL database for IoT telemetry analysis"
-    folder: "Analytics"
-
-  - type: "KQLDatabase"
-    name: "logs_analytics_db"
-    description: "KQL database for application log analysis"
-    folder: "Analytics"
-
-  # KQL Querysets - Reusable queries
-  - type: "KQLQueryset"
-    name: "streaming_queries"
-    description: "Common KQL queries for real-time dashboards"
-    folder: "Analytics"
-
-  # Reflex - Event-driven automation
-  - type: "Reflex"
-    name: "anomaly_detector"
-    description: "Automated anomaly detection and alerting"
-    folder: "Alerts"
-
-  - type: "Reflex"
-    name: "threshold_alert_processor"
-    description: "Process and route threshold-based alerts"
-    folder: "Alerts"
-
-  # KQL Dashboards - Real-time visualization
-  - type: "KQLDashboard"
-    name: "realtime_monitoring_dashboard"
-    description: "Live monitoring dashboard for streaming data"
-    folder: "Dashboards"
-
-# Notebooks (Stream processing logic)
-notebooks:
-  - name: "stream_data_quality_monitor"
-    folder: "Processing"
-    description: "Monitor data quality metrics in real-time streams"
-
-  - name: "historical_batch_processor"
-    folder: "Processing"
-    description: "Batch processing for archived streaming data"
-
-# Pipelines (Orchestration for hybrid batch/stream)
-pipelines:
-  - name: "stream_to_lakehouse_archiver"
-    folder: "Processing"
-    description: "Archive streaming data to lakehouse for long-term analysis"
-
-# Principals (Security & Access)
-# IMPORTANT: Use Object IDs (GUIDs). Supports comma-separated lists for bulk assignment.
+# ── Access Control ───────────────────────────────────────────────────────────
 principals:
-  - id: "${STREAMING_ADMIN_OID}"
-    role: "Admin"
-    description: "Streaming platform administrators"
+  # 1. Automation Service Principal (runs deployments)
+  - id: "${AZURE_CLIENT_ID}"
+    role: Contributor
+    description: "Automation SP — required for CI/CD deployments"
 
-  - id: "${DATA_ENGINEER_GROUP_OID}"
-    role: "Contributor"
-    description: "Data engineers managing stream pipelines"
-
-  - id: "${ANALYST_GROUP_OID}"
-    role: "Viewer"
-    description: "Analysts running KQL queries"
-
-  - id: "${AZURE_CLIENT_ID}"  # Service Principal for automation
-    role: "Contributor"
-    description: "CI/CD automation service principal"
-
-  # Mandatory Security Principals (Enterprise-Wide)
+  # 2. Mandatory Admin security group (IT governance)
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
-    role: "Admin"
-    description: "MANDATORY: Enterprise security admin principal"
+    role: Admin
+    description: "Mandatory governance admin group"
 
+  # 3. Mandatory Contributor security group (support team)
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
-    role: "Contributor"
-    description: "MANDATORY: Enterprise contributor principal"
+    role: Contributor
+    description: "Mandatory governance contributor group"
 
-# Environment-Specific Overrides
-# NOTE: Inline environments: blocks are NOT read by ConfigManager.
-# Use config/environments/{dev,test,prod}.yaml for per-environment overrides.
-# Example overrides (place in config/environments/dev.yaml):
-#   workspace:
-#     capacity_id: "F2"
+  # ── Project-specific principals ────────────────────────────────────────────
+  - id: "${PROJECT_ADMIN_ID}"               # ← CHANGE
+    role: Admin
+    description: "Streaming platform admins"
 
-# Configuration Notes:
-# 1. Eventstreams support multiple sources: Event Hub, IoT Hub, Kafka, custom endpoints
-# 2. KQL Databases provide sub-second query latency for time-series data
-# 3. Reflex enables serverless event processing without custom code
-# 4. Eventhouse unifies KQL databases under single analytics engine
-# 5. Use streaming_archive lakehouse for cost-effective long-term storage
-# 6. Replace all ${VARIABLE} placeholders with actual values or set in .env
+  - id: "${PROJECT_MEMBERS_ID}"             # ← CHANGE
+    role: Member
+    description: "Streaming engineers and DevOps team"
+
+# ── Deployment Pipeline ──────────────────────────────────────────────────────
+deployment_pipeline:
+  pipeline_name: "streaming-pipeline"    # ← CHANGE
+  stages:
+    development:
+      workspace_name: "streaming-workspace"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+    test:
+      workspace_name: "streaming-workspace [Test]"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+    production:
+      workspace_name: "streaming-workspace [Production]"
+      capacity_id: "${FABRIC_CAPACITY_ID}"
+
+# REAL-TIME STREAMING GUIDANCE:
+# ─────────────────────────────────────────────────────────────────────────────
+# Architecture Pattern (Lambda):
+#   Hot Path: Eventstream → KQL Database → Real-time Dashboards
+#   Cold Path: Eventstream → Lakehouse → Notebooks → Warehouse → Reports
+#
+# Eventstream Sources:
+#   - Azure IoT Hub, Event Hubs, Kafka, Custom Apps
+#   - Configure via Fabric portal after workspace deployment
+#
+# KQL Database (Real-Time Analytics):
+#   - Sub-second query latency on streaming data
+#   - Ideal for operational dashboards and alerting
+#
+# Reflex (Automated Response):
+#   - Configure alert rules on streaming data patterns
+#   - Actions: Email, Teams notification, Power Automate flow
+#
+# Capacity Considerations:
+#   - Streaming workloads consume CU continuously
+#   - Consider F8+ capacity for production streaming
+#   - Monitor CU usage and throttling metrics
