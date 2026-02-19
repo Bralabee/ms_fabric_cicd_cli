@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.9] - 2026-02-18
+
+### Fixed
+
+- **Deployer: Git Connection Status Reporting**: `_connect_git()` now returns a `bool` indicating success/failure. The caller in `deploy()` displays "⚠️ Git connection failed" when Git connection fails, instead of unconditionally showing "✅ Git connected". Previously, all failure paths (400 Bad Request, incompatible connection, parse errors) were silently swallowed with a false-positive success indicator.
+
+### Enhanced
+
+- **Deployer: Pipeline Access Pre-Check**: After `get_pipeline_by_name()` finds an existing pipeline, the deployer now calls `get_pipeline()` to verify the automation SP has management access before attempting to add users or assign stages. If the SP lacks access, a clear diagnostic message is shown with resolution steps (delete stale pipeline or grant SP Admin access), and the pipeline setup fails fast instead of cascading into 404/400 errors.
+- **Deployer: Pipeline User 404 Fail-Fast**: If ALL `add_pipeline_user()` calls return 404 (EntityNotFound), the deployer now skips stage assignment and returns a clear error instead of proceeding to assign workspaces (which would also fail with 400 UnknownError). This prevents confusing cascading errors when the SP can see the pipeline via `list_pipelines()` but lacks mutate access.
+
+---
+
 ## [1.7.8] - 2026-02-18
 
 ### Fixed
