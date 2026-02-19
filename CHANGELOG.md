@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.12] - 2026-02-19
+
+### Improved
+
+- **Deployer: Project-Specific Git Browse URL**: The deployment summary and "Open repo in browser" link now include the `git_directory` path. For GitHub repos, the URL points to `/tree/{branch}/{directory}` (e.g., `https://github.com/org/repo/tree/main/sales_audience`). For Azure DevOps, appends `?path=/{directory}`. The deployment summary table also shows a new "Git Directory" row when a non-root directory is configured.
+- **Deployer: Pipeline User 404 Guidance**: The warning message when all pipeline user additions return 404 now recommends granting the SP the "Fabric Admin" tenant role as an alternative to manual portal configuration.
+
+---
+
 ## [1.7.11] - 2026-02-19
 
 ### Fixed

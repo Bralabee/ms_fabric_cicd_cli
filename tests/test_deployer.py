@@ -412,6 +412,77 @@ class TestParseGitRepoUrl:
         assert result is None
 
 
+class TestBrowseUrlWithGitDirectory:
+    """Tests that _connect_git sets _git_browse_url including git_directory."""
+
+    def _run_connect(self, git_repo, git_directory="/"):
+        """Helper: run _connect_git and return the deployer."""
+        config = _make_config(
+            git_repo=git_repo,
+            git_directory=git_directory,
+        )
+        deployer = _build_deployer(config=config)
+        deployer.workspace_id = "ws-123"
+        deployer._effective_workspace_name = "test-workspace"
+
+        deployer.secrets.github_token = "ghp_test_token"
+        deployer.secrets.validate_git_auth.return_value = (True, "")
+
+        deployer.git_api.create_git_connection.return_value = {
+            "success": True,
+            "connection": {"id": "conn-1"},
+        }
+        deployer.git_api.connect_workspace_to_git.return_value = {
+            "success": True,
+            "message": "Connected",
+        }
+        deployer.git_api.initialize_git_connection.return_value = {
+            "success": True,
+            "required_action": "None",
+        }
+
+        deployer._connect_git(branch="main")
+        return deployer
+
+    def test_github_browse_url_with_directory(self):
+        """Browse URL includes /tree/branch/dir for git_directory."""
+        deployer = self._run_connect(
+            "https://github.com/ABBA-REPLC/EDPFabric",
+            git_directory="/sales_audience",
+        )
+        assert deployer._git_browse_url == (
+            "https://github.com/ABBA-REPLC/EDPFabric/tree/main/sales_audience"
+        )
+
+    def test_github_browse_url_root_directory(self):
+        """GitHub browse URL should NOT include /tree when git_directory is '/'."""
+        deployer = self._run_connect(
+            "https://github.com/ABBA-REPLC/EDPFabric",
+            git_directory="/",
+        )
+        assert deployer._git_browse_url == ("https://github.com/ABBA-REPLC/EDPFabric")
+
+    def test_ado_browse_url_with_directory(self):
+        """ADO browse URL should include ?path= when git_directory is set."""
+        deployer = self._run_connect(
+            "https://dev.azure.com/myorg/myproject/_git/myrepo",
+            git_directory="/my_project",
+        )
+        assert deployer._git_browse_url == (
+            "https://dev.azure.com/myorg/myproject/_git/myrepo?path=/my_project"
+        )
+
+    def test_ado_browse_url_root_directory(self):
+        """ADO browse URL should NOT include ?path= when git_directory is '/'."""
+        deployer = self._run_connect(
+            "https://dev.azure.com/myorg/myproject/_git/myrepo",
+            git_directory="/",
+        )
+        assert deployer._git_browse_url == (
+            "https://dev.azure.com/myorg/myproject/_git/myrepo"
+        )
+
+
 class TestGitHubDuplicateConnectionRecovery:
     """Tests for GitHub duplicate connection fallback in _connect_git.
 

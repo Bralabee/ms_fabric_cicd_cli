@@ -1032,6 +1032,16 @@ class FabricDeployer:
                     f"{git_details['project']}/"
                     f"_git/{git_details['repo']}"
                 )
+
+            # Append git_directory to browse URL so the link points
+            # directly to the project-specific sub-folder.
+            if git_directory and git_directory != "/":
+                dir_path = git_directory.strip("/")
+                if provider_type == GitProviderType.GITHUB:
+                    browse_url += f"/tree/{branch}/{dir_path}"
+                else:
+                    # ADO: path query param
+                    browse_url += f"?path=/{dir_path}"
             self._git_browse_url = browse_url
             console.print(
                 f"[bold cyan]🔗 Open repo in browser:[/bold cyan] " f"{browse_url}"
@@ -1315,7 +1325,8 @@ class FabricDeployer:
             )
             console.print(
                 "  [dim]Pipeline users can be added manually in the "
-                "Fabric portal. Continuing to stage assignment...[/dim]"
+                "Fabric portal, or grant the SP 'Fabric Admin' "
+                "tenant role. Continuing to stage assignment...[/dim]"
             )
             logger.warning(
                 "Pipeline %s: all %d add_pipeline_user calls returned 404. "
@@ -1512,6 +1523,9 @@ class FabricDeployer:
         summary_table.add_row("Environment", self.environment or "default")
         if self._git_browse_url:
             summary_table.add_row("Git Repository", self._git_browse_url)
+        git_dir = getattr(self.config, "git_directory", None)
+        if git_dir and git_dir != "/":
+            summary_table.add_row("Git Directory", git_dir)
 
         console.print(summary_table)
         console.print("\n[green]✅ Deployment completed successfully![/green]")
