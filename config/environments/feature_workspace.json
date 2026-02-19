@@ -39,5 +39,10 @@
         "destroy_on": "branch_merge",
         "max_age_days": 30,
         "notify_on_cleanup": true
+    },
+    "safety": {
+        "protect_populated": true,
+        "require_force_for_populated_destroy": true,
+        "exit_code_on_safety_block": 2
     }
 }

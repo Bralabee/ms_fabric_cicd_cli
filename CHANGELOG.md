@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.13] - 2026-02-19
+
+### Added
+
+- **Workspace Safety Guardrails**: New `--safe/--no-safe` flag (default: ON) on `destroy` command. Before deleting a workspace, the CLI inspects its contents via `get_workspace_item_summary()`. If the workspace contains Fabric items (notebooks, lakehouses, pipelines, etc.), deletion is blocked and the CLI exits with code **2** (distinct from error code 1). Use `--force-destroy-populated` to override when intentional.
+- **`get_workspace_item_summary()` Method**: New method on `FabricCLIWrapper` that calls the existing `list_workspace_items_api()` and returns a structured summary: `{item_count, items_by_type, has_items, items}`.
+- **Safety Configuration**: `config/environments/feature_workspace.json` now includes a `safety` section with `protect_populated`, `require_force_for_populated_destroy`, and `exit_code_on_safety_block` settings.
+
+### Improved
+
+- **Release Process**: Strengthened release checklist with explicit consumer repo sync steps (update copilot-instructions, grep for stale fallback versions). Documents known consumer repos: `ABBA-REPLC/EDPFabric`, `fabric_cicd_test_repo`.
+
+---
+
 ## [1.7.12] - 2026-02-19
 
 ### Improved
