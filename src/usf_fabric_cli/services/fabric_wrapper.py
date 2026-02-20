@@ -11,6 +11,8 @@ import subprocess
 import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+import requests
+
 from packaging import version
 
 from usf_fabric_cli.exceptions import (
@@ -44,6 +46,15 @@ IDEMPOTENT_ERROR_PATTERNS: tuple[str, ...] = (
     "already has a role assigned",
     "an item with the same name exists",
 )
+
+# ── Power BI API constants for workspace deletion fallback ─────────
+# The Fabric REST API (api.fabric.microsoft.com) and the `fab rm` CLI
+# command can return transient ``UnknownError`` responses when deleting
+# workspaces.  The Power BI REST API (api.powerbi.com) is more
+# reliable for workspace deletion (same pattern as pipeline user
+# management).
+PBI_API_BASE_URL = "https://api.powerbi.com/v1.0/myorg"
+PBI_TOKEN_SCOPE = "https://analysis.windows.net/powerbi/api/.default"
 
 
 class FabricCLIWrapper:
@@ -563,8 +574,118 @@ class FabricCLIWrapper:
                     "item_summary": summary,
                 }
 
+        # ── Primary: fab rm ────────────────────────────────────────
         command = ["rm", f"{name}.Workspace", "--force"]
-        return self._execute_command(command)
+        result = self._execute_command(command)
+
+        if result.get("success"):
+            return result
+
+        # ── Fallback: PBI REST API ─────────────────────────────────
+        # The Fabric CLI can return UnknownError on workspace deletion
+        # even though the workspace exists and the SP has admin access.
+        # The PBI API (DELETE /groups/{id}) is more reliable.
+        error_str = str(result.get("error", ""))
+        if "UnknownError" in error_str or "unexpected error" in error_str.lower():
+            logger.warning(
+                "fab rm failed with UnknownError for '%s'; "
+                "falling back to Power BI REST API",
+                name,
+            )
+            fallback = self._delete_workspace_pbi_api(name)
+            if fallback.get("success"):
+                return fallback
+            # If fallback also fails, return original error with
+            # fallback details appended
+            fallback_err = fallback.get("error", "unknown")
+            result["error"] = (
+                f"{error_str} | PBI API fallback also failed: {fallback_err}"
+            )
+
+        return result
+
+    def _get_pbi_token(self) -> str:
+        """Acquire a Power BI-scoped token for REST API calls.
+
+        Uses the TokenManager credential (same Service Principal,
+        different resource scope).  Falls back to the Fabric token.
+        """
+        if (
+            self._token_manager
+            and hasattr(self._token_manager, "_credential")
+            and self._token_manager._credential is not None
+        ):
+            try:
+                access_token = self._token_manager._credential.get_token(
+                    PBI_TOKEN_SCOPE
+                )
+                logger.debug("Acquired PBI token for workspace deletion fallback")
+                return access_token.token
+            except Exception as exc:
+                logger.warning(
+                    "Could not acquire PBI token (%s); "
+                    "falling back to Fabric token",
+                    exc,
+                )
+        return self.fabric_token
+
+    def _delete_workspace_pbi_api(self, name: str) -> Dict[str, Any]:
+        """Delete a workspace via the Power BI REST API.
+
+        ``DELETE https://api.powerbi.com/v1.0/myorg/groups/{workspaceId}``
+
+        Args:
+            name: Workspace display name (resolved to ID via cache or
+                  ``get_workspace_id``).
+
+        Returns:
+            Standard result dict (``success``, ``error``).
+        """
+        workspace_id = self.get_workspace_id(name)
+        if not workspace_id:
+            return {
+                "success": False,
+                "error": (
+                    f"Cannot resolve workspace ID for '{name}' — "
+                    "PBI API fallback requires a workspace ID"
+                ),
+            }
+
+        token = self._get_pbi_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+        }
+        url = f"{PBI_API_BASE_URL}/groups/{workspace_id}"
+
+        try:
+            response = requests.delete(url, headers=headers, timeout=30)
+            if response.status_code in (200, 204):
+                logger.info(
+                    "Workspace '%s' (%s) deleted via PBI API",
+                    name,
+                    workspace_id,
+                )
+                # Clear cache
+                self._workspace_id_cache.pop(name, None)
+                return {"success": True, "data": None, "method": "pbi_api"}
+            else:
+                body = response.text[:500]
+                logger.error(
+                    "PBI API delete failed for '%s': %s %s",
+                    name,
+                    response.status_code,
+                    body,
+                )
+                return {
+                    "success": False,
+                    "error": (
+                        f"PBI API DELETE /groups/{workspace_id} "
+                        f"returned {response.status_code}: {body}"
+                    ),
+                }
+        except requests.RequestException as exc:
+            logger.error("PBI API request failed for '%s': %s", name, exc)
+            return {"success": False, "error": f"PBI API request failed: {exc}"}
 
     def get_workspace(self, name: str) -> Dict[str, Any]:
         """Get workspace by name"""

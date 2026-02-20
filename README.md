@@ -2,7 +2,7 @@
 
 Enterprise-grade Microsoft Fabric deployment automation leveraging the official Fabric CLI with 12-Factor App configuration management, Jinja2 artifact templating, and REST API Git integration. Designed for organization-agnostic operation with a clean, modular architecture.
 
-> **🎉 February 2026 Update:** Version **1.7.14** — CI isort gate, +10 unit tests (organize-folders, bulk-destroy, generate), isort/black profile alignment, and additive services exports. See [CHANGELOG.md](CHANGELOG.md) for details.
+> **🎉 February 2026 Update:** Version **1.7.15** — Workspace deletion PBI API fallback on `UnknownError`. See [CHANGELOG.md](CHANGELOG.md) for details.
 
 > **🔄 Modern Successor:** This project is the evolution of [usf-fabric-cicd](../usf-fabric-cicd), providing a full-featured enterprise CLI framework built around the official Fabric CLI with comprehensive CI/CD, Git integration, and deployment pipeline support.
 

@@ -335,7 +335,13 @@ def destroy(
             raise typer.Exit(2)  # Exit code 2 = blocked by safety
 
         if result["success"]:
-            console.print(f"[green]✅ Workspace '{workspace_name}' destroyed[/green]")
+            method_note = ""
+            if result.get("method") == "pbi_api":
+                method_note = " (via PBI API fallback)"
+            console.print(
+                f"[green]✅ Workspace '{workspace_name}' "
+                f"destroyed{method_note}[/green]"
+            )
         else:
             error_msg = result.get("error", "")
             error_str = str(error_msg)

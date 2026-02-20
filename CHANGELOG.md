@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.15] - 2026-02-21
+
+### Fixed
+
+- **Workspace Deletion PBI API Fallback**: `delete_workspace()` now falls back to the Power BI REST API (`DELETE /v1.0/myorg/groups/{workspaceId}`) when the Fabric CLI (`fab rm`) returns an `UnknownError`. The Fabric API intermittently returns HTTP 400 `UnknownError` for workspace deletion, while the PBI API works reliably. Same pattern as the v1.7.8 pipeline user fix.
+- **CLI Destroy Output**: The `destroy` command now shows "(via PBI API fallback)" when the fallback path is used.
+
+### Tests
+
+- **+10 unit tests**: PBI fallback on UnknownError, 204 responses, non-UnknownError passthrough, both-fail error messages, workspace ID resolution, `_get_pbi_token()` with/without TokenManager and credential errors.
+
+---
+
 ## [1.7.14] - 2026-02-19
 
 ### Changed
