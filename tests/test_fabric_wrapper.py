@@ -262,9 +262,7 @@ class TestFabricCLIWrapper:
 
     @patch("usf_fabric_cli.services.fabric_wrapper.requests.delete")
     @patch("subprocess.run")
-    def test_delete_workspace_pbi_fallback_also_fails(
-        self, mock_run, mock_pbi_delete
-    ):
+    def test_delete_workspace_pbi_fallback_also_fails(self, mock_run, mock_pbi_delete):
         """Test error message when both fab rm and PBI API fail."""
         import subprocess
 
