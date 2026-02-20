@@ -181,6 +181,205 @@ class TestFabricCLIWrapper:
         args = mock_run.call_args[0][0]
         assert args == ["fab", "rm", "test-workspace.Workspace", "--force"]
 
+    @patch("usf_fabric_cli.services.fabric_wrapper.requests.delete")
+    @patch("subprocess.run")
+    def test_delete_workspace_pbi_fallback_on_unknown_error(
+        self, mock_run, mock_pbi_delete
+    ):
+        """Test PBI API fallback when fab rm returns UnknownError."""
+        import subprocess
+
+        def run_side_effect(*args, **kwargs):
+            cmd = args[0] if args else kwargs.get("args", [])
+            if "rm" in cmd:
+                raise subprocess.CalledProcessError(
+                    returncode=1,
+                    cmd=cmd,
+                    stderr="x rm: [UnknownError] An unexpected error occurred",
+                )
+            return Mock(
+                stdout='{"id": "ws-id-123", "displayName": "ws"}',
+                stderr="",
+                returncode=0,
+            )
+
+        mock_run.side_effect = run_side_effect
+
+        mock_pbi_response = Mock()
+        mock_pbi_response.status_code = 200
+        mock_pbi_delete.return_value = mock_pbi_response
+
+        result = self.fabric.delete_workspace("ws")
+
+        assert result["success"] is True
+        assert result.get("method") == "pbi_api"
+        mock_pbi_delete.assert_called_once()
+        call_url = mock_pbi_delete.call_args[0][0]
+        assert "groups/ws-id-123" in call_url
+
+    @patch("usf_fabric_cli.services.fabric_wrapper.requests.delete")
+    @patch("subprocess.run")
+    def test_delete_workspace_pbi_fallback_204(self, mock_run, mock_pbi_delete):
+        """Test PBI API fallback returns success on 204 (No Content)."""
+        import subprocess
+
+        def run_side_effect(*args, **kwargs):
+            cmd = args[0] if args else kwargs.get("args", [])
+            if "rm" in cmd:
+                raise subprocess.CalledProcessError(
+                    returncode=1,
+                    cmd=cmd,
+                    stderr="x rm: [UnknownError] An unexpected error occurred",
+                )
+            return Mock(stdout='{"id": "ws-id-456"}', stderr="", returncode=0)
+
+        mock_run.side_effect = run_side_effect
+
+        mock_pbi_response = Mock()
+        mock_pbi_response.status_code = 204
+        mock_pbi_delete.return_value = mock_pbi_response
+
+        result = self.fabric.delete_workspace("my-workspace")
+
+        assert result["success"] is True
+        assert result.get("method") == "pbi_api"
+
+    @patch("subprocess.run")
+    def test_delete_workspace_no_fallback_on_other_errors(self, mock_run):
+        """Test that non-UnknownError failures do NOT trigger PBI fallback."""
+        import subprocess
+
+        mock_run.side_effect = subprocess.CalledProcessError(
+            returncode=1,
+            cmd=["fab", "rm", "ws.Workspace", "--force"],
+            stderr="x rm: [NotFound] Workspace could not be found",
+        )
+
+        result = self.fabric.delete_workspace("ws")
+
+        assert result["success"] is False
+        assert "NotFound" in result.get("error", "")
+
+    @patch("usf_fabric_cli.services.fabric_wrapper.requests.delete")
+    @patch("subprocess.run")
+    def test_delete_workspace_pbi_fallback_also_fails(
+        self, mock_run, mock_pbi_delete
+    ):
+        """Test error message when both fab rm and PBI API fail."""
+        import subprocess
+
+        def run_side_effect(*args, **kwargs):
+            cmd = args[0] if args else kwargs.get("args", [])
+            if "rm" in cmd:
+                raise subprocess.CalledProcessError(
+                    returncode=1,
+                    cmd=cmd,
+                    stderr="x rm: [UnknownError] An unexpected error occurred",
+                )
+            return Mock(stdout='{"id": "ws-id-789"}', stderr="", returncode=0)
+
+        mock_run.side_effect = run_side_effect
+
+        mock_pbi_response = Mock()
+        mock_pbi_response.status_code = 403
+        mock_pbi_response.text = "Forbidden"
+        mock_pbi_delete.return_value = mock_pbi_response
+
+        result = self.fabric.delete_workspace("ws")
+
+        assert result["success"] is False
+        assert "UnknownError" in result.get("error", "")
+        assert "PBI API fallback also failed" in result.get("error", "")
+
+    @patch("usf_fabric_cli.services.fabric_wrapper.requests.delete")
+    @patch("subprocess.run")
+    def test_delete_workspace_pbi_fallback_no_workspace_id(
+        self, mock_run, mock_pbi_delete
+    ):
+        """Test PBI fallback fails gracefully when workspace ID not resolvable."""
+        import subprocess
+
+        def run_side_effect(*args, **kwargs):
+            cmd = args[0] if args else kwargs.get("args", [])
+            if "rm" in cmd:
+                raise subprocess.CalledProcessError(
+                    returncode=1,
+                    cmd=cmd,
+                    stderr="x rm: [UnknownError] An unexpected error occurred",
+                )
+            return Mock(stdout="{}", stderr="", returncode=0)
+
+        mock_run.side_effect = run_side_effect
+
+        result = self.fabric.delete_workspace("ghost-workspace")
+
+        assert result["success"] is False
+        assert "PBI API fallback also failed" in result.get("error", "")
+        mock_pbi_delete.assert_not_called()
+
+    @patch("subprocess.run")
+    def test_delete_workspace_pbi_fallback_uses_cached_id(self, mock_run):
+        """Test PBI fallback uses workspace ID from cache."""
+        import subprocess
+
+        self.fabric._workspace_id_cache["cached-ws"] = "cached-id-001"
+
+        def run_side_effect(*args, **kwargs):
+            cmd = args[0] if args else kwargs.get("args", [])
+            if "rm" in cmd:
+                raise subprocess.CalledProcessError(
+                    returncode=1,
+                    cmd=cmd,
+                    stderr="x rm: [UnknownError] An unexpected error occurred",
+                )
+            return Mock(stdout="{}", stderr="", returncode=0)
+
+        mock_run.side_effect = run_side_effect
+
+        with patch(
+            "usf_fabric_cli.services.fabric_wrapper.requests.delete"
+        ) as mock_del:
+            mock_del.return_value = Mock(status_code=200)
+            result = self.fabric.delete_workspace("cached-ws")
+
+        assert result["success"] is True
+        assert result.get("method") == "pbi_api"
+        call_url = mock_del.call_args[0][0]
+        assert "groups/cached-id-001" in call_url
+
+    def test_get_pbi_token_no_token_manager(self):
+        """Test _get_pbi_token falls back to fabric_token when no TokenManager."""
+        self.fabric._token_manager = None
+        token = self.fabric._get_pbi_token()
+        assert token == "fake-token"
+
+    def test_get_pbi_token_with_token_manager(self):
+        """Test _get_pbi_token acquires PBI-scoped token from TokenManager."""
+        from usf_fabric_cli.services.fabric_wrapper import PBI_TOKEN_SCOPE
+
+        mock_credential = MagicMock()
+        mock_credential.get_token.return_value = Mock(token="pbi-scoped-token")
+        mock_tm = MagicMock()
+        mock_tm._credential = mock_credential
+
+        self.fabric._token_manager = mock_tm
+        token = self.fabric._get_pbi_token()
+
+        assert token == "pbi-scoped-token"
+        mock_credential.get_token.assert_called_once_with(PBI_TOKEN_SCOPE)
+
+    def test_get_pbi_token_credential_error_falls_back(self):
+        """Test _get_pbi_token falls back to fabric_token on credential error."""
+        mock_credential = MagicMock()
+        mock_credential.get_token.side_effect = Exception("auth failure")
+        mock_tm = MagicMock()
+        mock_tm._credential = mock_credential
+
+        self.fabric._token_manager = mock_tm
+        token = self.fabric._get_pbi_token()
+
+        assert token == "fake-token"
+
     @patch("subprocess.run")
     def test_get_workspace_id_from_api(self, mock_run):
         """Test getting workspace ID from API response"""

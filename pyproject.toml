@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "usf-fabric-cli"
-version = "1.7.14"
+version = "1.7.15"
 description = "CLI tool for Microsoft Fabric CI/CD automation"
 readme = "README.md"
 requires-python = ">=3.9"
