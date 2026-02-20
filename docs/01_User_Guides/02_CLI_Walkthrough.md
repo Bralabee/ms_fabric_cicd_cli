@@ -1,5 +1,9 @@
 # CLI Scenario Walkthrough: From Zero to Production
 
+> **Audience**: CLI Power Users | **Time**: 30–45 min | **Deployment Path**: CLI commands
+> **Difficulty**: Intermediate | **Prerequisites**: CLI installed, `.env` configured, conda active
+> **See also**: [CLI Reference](CLI_REFERENCE.md) for all commands/flags | [00_START_HERE.md](00_START_HERE.md) for orientation
+
 This guide provides a hands-on, step-by-step walkthrough of the core workflows in the USF Fabric CI/CD framework. It demonstrates how to use the command-line tools to manage the full lifecycle of a Microsoft Fabric data product, from initialization to production deployment.
 
 ## Prerequisites
@@ -56,13 +60,17 @@ workspace:
   display_name: "Acme Supply Chain [{{ env }}]" # {{ env }} is auto-replaced
 
 folders:
-  - "Raw Data"
-  - "Transformation"
-  - "Gold Layer"
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
 
-items:
-  lakehouses:
-    - name: "supply_chain_lakehouse"
+# Items managed via Git Sync — arrays are intentionally empty
+lakehouses: []
+notebooks: []
 ```
 
 ### Step 3: Deploy to Development

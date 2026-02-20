@@ -92,15 +92,22 @@ Configuration is resolved in this strict order (managed by `ConfigManager`):
 **Process**: Promotes content through Fabric Deployment Pipeline stages (Dev→Test→Prod).
 **Automated**: GitHub Actions auto-promotes Dev→Test on push to `main`.
 
-### 3. Medallion Architecture
+### 3. Workspace Folder Convention
 
 **Template**: `src/usf_fabric_cli/templates/blueprints/medallion.yaml`
-**Standard**:
+**Standard numbered folders** (all templates):
 
-* `Bronze` (Raw)
-* `Silver` (Enriched)
-* `Gold` (Curated)
-**Agent Rule**: Future data engineering tasks should adhere to this separation.
+* `000 Orchestrate`
+* `100 Ingest`
+* `200 Store`
+* `300 Prepare`
+* `400 Model`
+* `500 Visualize`
+* `999 Libraries`
+* `Archive`
+
+**Git-Sync-Only Strategy**: Templates define workspace envelope (folders, folder_rules, principals, Git connection, deployment pipeline). Items managed through Git Sync — item arrays are intentionally empty.
+**Agent Rule**: Future data engineering tasks should adhere to this folder convention and Git-sync-only strategy.
 
 ## Deployment Logic
 

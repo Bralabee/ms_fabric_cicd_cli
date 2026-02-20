@@ -121,10 +121,10 @@ deployment_pipeline:
       capacity_id: "${FABRIC_CAPACITY_ID}"
     test:
       workspace_name: "analytics-workspace [Test]"
-      capacity_id: "${FABRIC_CAPACITY_ID}"
+      capacity_id: "${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}"
     production:
       workspace_name: "analytics-workspace [Production]"
-      capacity_id: "${FABRIC_CAPACITY_ID}"
+      capacity_id: "${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}"
 
 # Configuration Notes:
 # 1. Replace all ← CHANGE markers with your project-specific values

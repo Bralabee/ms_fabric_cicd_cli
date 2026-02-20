@@ -4,9 +4,10 @@
 id: medallion-onboarding
 title: Unified Onboarding with Medallion Architecture
 description: |
-  Master the "Unified Onboarding" workflow (`make onboard`) to deploy a production-ready Medallion Architecture
-  (Bronze/Silver/Gold) in minutes. This scenario covers the 1-click automation, Git feature branch integration,
-  and the critical security prerequisites for a seamless Developer Experience (DX).
+  Master the "Unified Onboarding" workflow (`make onboard`) to deploy a production-ready workspace
+  using the Medallion Architecture blueprint in minutes. The CLI creates the workspace envelope
+  (8 numbered folders, folder rules, principals, Git connection, deployment pipeline) and items
+  like Lakehouses and Notebooks are managed via Git Sync — not created directly by the CLI.
 difficulty: intermediate
 estimated_duration_minutes: 20
 category: advanced-workflows
@@ -19,10 +20,10 @@ prerequisites:
 
 learning_outcomes:
   - "Execute the `make onboard` command for 1-click project setup"
-  - "Understand the Medallion Architecture blueprint (Bronze/Silver/Gold)"
+  - "Understand the Medallion Architecture concept and how it maps to numbered folders"
   - "Configure Git credentials correctly (`GITHUB_TOKEN` vs PAT)"
   - "Manage Monorepo workflows with automated feature branching"
-  - "Troubleshoot common propagation latency issues"
+  - "Understand that items (Lakehouses, Notebooks) are managed via Git Sync, not direct CLI creation"
 
 tags:
   - onboarding
@@ -44,20 +45,22 @@ steps:
 
       ## The Three Layers
 
-      | Layer | Name | Purpose | Fabric Item |
+      | Layer | Name | Purpose | Managed Via |
       |-------|------|---------|-------------|
-      | **Bronze** | Raw Zone | Ingest raw data as-is (immutable) | Lakehouse (`lh_bronze`) |
-      | **Silver** | Enriched Zone | Clean, deduplicated, validated data | Lakehouse (`lh_silver`) |
-      | **Gold** | Curated Zone | Star schemas for reporting/BI | Lakehouse (`lh_gold`) |
+      | **Bronze** | Raw Zone | Ingest raw data as-is (immutable) | Git Sync (Lakehouse in `200 Store` folder) |
+      | **Silver** | Enriched Zone | Clean, deduplicated, validated data | Git Sync (Lakehouse in `200 Store` folder) |
+      | **Gold** | Curated Zone | Star schemas for reporting/BI | Git Sync (Lakehouse in `200 Store` folder) |
 
-      Our `medallion.yaml` blueprint automates the creation of all these layers, plus:
-      *   **Notebooks**: Transformation logic between layers (`ingest_to_bronze`, `bronze_to_silver`).
-      *   **Pipelines**: Orchestration (`marketing_data_refresh`).
+      The `medallion.yaml` blueprint creates the **workspace envelope** that supports this architecture:
+      *   **8 Numbered Folders**: `000 Orchestrate` through `Archive` — organizing all item types.
+      *   **11 Folder Rules**: Automatically route items (e.g., Lakehouse → `200 Store`, Notebook → `300 Prepare`).
+      *   **Deployment Pipeline**: 3-stage promotion (Dev → Test → Prod).
+      *   **Git Connection**: Items (Lakehouses, Notebooks, Pipelines) are defined in your repo and synced to Fabric.
       *   **Security**: Pre-configured admin/contributor access.
 
     tips:
       - "Using standard layers ensures data quality and auditability."
-      - "Each layer is isolated in its own Lakehouse (best practice)."
+      - "The CLI creates the workspace envelope; you define the actual Lakehouses in your Git repo."
 
   - id: prerequisites-check
     title: "Step 1: Critical Git Prerequisites"
@@ -162,4 +165,5 @@ steps:
       ### Successful State
       *   Workspace: `Acme-Sales-Data...`
       *   Git Status: **Synced**
-      *   Items: `lh_bronze`, `lh_silver`, `lh_gold` present.
+      *   Folders: 8 numbered folders (000 Orchestrate → Archive)
+      *   Items: Appear via Git Sync after workspace connects to branch

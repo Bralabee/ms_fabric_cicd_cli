@@ -1,5 +1,8 @@
 # Stabilisation Changelog: February 10–18, 2026
 
+> **📁 HISTORICAL DOCUMENT** — This is a technical changelog, not a user guide.
+> For current setup instructions, see [00_START_HERE.md](00_START_HERE.md).
+
 **Project**: USF Fabric CLI CI/CD (`usf_fabric_cli_cicd`)
 **Scope**: All changes across the CLI library, consumer repo (EDPFabric), and test repo (`fabric_cicd_test_repo`) to reach stable v1.7.7.
 **Total**: 152 commits across 3 repositories (66 CLI, 38 consumer, 48 test repo) — from v1.7.0 through v1.7.7.

@@ -103,6 +103,12 @@ class ConfigManager:
         # (it's a config convenience, not a deployment property)
         config_data.pop("environments", None)
 
+        # Warn about any unresolved ${VAR_NAME} patterns before validation
+        self._warn_unresolved_vars(
+            config_data,
+            context=f"[{self.config_path.name}]",
+        )
+
         # Validate against schema
         validate(instance=config_data, schema=self.schema)
 
@@ -110,12 +116,39 @@ class ConfigManager:
         return self._to_workspace_config(config_data)
 
     def _substitute_env_vars(self, content: str) -> str:
-        """Substitute environment variables in format ${VAR_NAME}"""
+        """Substitute environment variables in format ${VAR_NAME} or
+        ${VAR_NAME:-FALLBACK_VAR}.
+
+        Fallback syntax:
+            ${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}
+            → tries FABRIC_CAPACITY_ID_PROD first, then FABRIC_CAPACITY_ID.
+
+        If neither is set, the literal ${...} is left in place so that
+        downstream validation can surface the error.
+        """
         pattern = re.compile(r"\$\{([^}^{]+)\}")
 
         def replace(match):
-            var_name = match.group(1)
-            value = os.getenv(var_name)
+            expression = match.group(1)
+
+            # Fallback syntax: ${VAR:-FALLBACK_VAR}
+            if ":-" in expression:
+                var_name, fallback_var = expression.split(":-", 1)
+                var_name = var_name.strip()
+                fallback_var = fallback_var.strip()
+
+                value = os.getenv(var_name)
+                if value is None and fallback_var:
+                    value = os.getenv(fallback_var)
+                    if value is not None:
+                        logger.info(
+                            "Capacity fallback: %s not set, resolved via %s",
+                            var_name,
+                            fallback_var,
+                        )
+            else:
+                var_name = expression
+                value = os.getenv(var_name)
 
             # Sanitize env vars to remove inline comments
             if value and "#" in value:
@@ -127,6 +160,31 @@ class ConfigManager:
             return value
 
         return pattern.sub(replace, content)
+
+    @staticmethod
+    def _warn_unresolved_vars(config_data: dict, context: str = "") -> None:
+        """Walk the config dict and log warnings for any remaining
+        ${VAR_NAME} or ${VAR:-FALLBACK} literals — these indicate
+        environment variables that were not set at load time."""
+        unresolved_pattern = re.compile(r"\$\{[^}]+\}")
+
+        def _walk(obj: Any, path: str = "") -> None:
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    _walk(v, f"{path}.{k}" if path else k)
+            elif isinstance(obj, list):
+                for i, item in enumerate(obj):
+                    _walk(item, f"{path}[{i}]")
+            elif isinstance(obj, str) and unresolved_pattern.search(obj):
+                logger.warning(
+                    "Unresolved variable in %s%s: %s — "
+                    "check that the env var is set in .env or CI/CD secrets",
+                    f"{context} " if context else "",
+                    path,
+                    obj,
+                )
+
+        _walk(config_data)
 
     def _load_environment_config(self, environment: Optional[str]) -> Dict[str, Any]:
         """Load environment-specific overrides"""

@@ -34,6 +34,28 @@ from usf_fabric_cli.utils.retry import (
 if TYPE_CHECKING:
     from usf_fabric_cli.services.token_manager import TokenManager
 
+# ── Power BI API constants ─────────────────────────────────────────
+# The Fabric REST API (api.fabric.microsoft.com) does NOT expose a
+# /users endpoint for deployment pipelines.  Pipeline user management
+# is only available via the Power BI REST API (api.powerbi.com).
+# Reference: https://learn.microsoft.com/en-us/rest/api/power-bi/
+#            pipelines/update-user-as-admin
+PBI_API_BASE_URL = "https://api.powerbi.com/v1.0/myorg"
+PBI_TOKEN_SCOPE = "https://analysis.windows.net/powerbi/api/.default"
+
+# The Power BI API uses "App" for Service Principals, not
+# "ServicePrincipal" as used elsewhere in Microsoft APIs.
+PBI_PRINCIPAL_TYPE_MAP = {
+    "ServicePrincipal": "App",
+    "serviceprincipal": "App",
+    "App": "App",
+    "app": "App",
+    "User": "User",
+    "user": "User",
+    "Group": "Group",
+    "group": "Group",
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -92,6 +114,52 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             base_delay=base_delay,
             max_delay=max_delay,
         )
+        # Cache for Power BI API token (lazily acquired)
+        self._pbi_token: Optional[str] = None
+
+    # ── Power BI token helpers ─────────────────────────────────────
+
+    def _get_pbi_headers(self) -> Dict[str, str]:
+        """
+        Get HTTP headers for Power BI REST API calls.
+
+        Acquires a PBI-scoped token from the TokenManager's credential
+        (same Service Principal, different resource scope). Falls back
+        to the Fabric token if no TokenManager is available.
+        """
+        if self._pbi_token is None:
+            if (
+                self._token_manager
+                and hasattr(self._token_manager, "_credential")
+                and self._token_manager._credential is not None
+            ):
+                try:
+                    access_token = self._token_manager._credential.get_token(
+                        PBI_TOKEN_SCOPE
+                    )
+                    self._pbi_token = access_token.token
+                    logger.debug("Acquired Power BI API token for pipeline users")
+                except Exception as exc:
+                    logger.warning(
+                        "Could not acquire PBI token (%s); "
+                        "falling back to Fabric token",
+                        exc,
+                    )
+                    self._pbi_token = self._access_token
+            else:
+                # No credential available — try Fabric token (may work
+                # when Fabric and PBI share the same backend auth).
+                self._pbi_token = self._access_token
+
+        return {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._pbi_token}",
+        }
+
+    @staticmethod
+    def _map_principal_type(principal_type: str) -> str:
+        """Map standard principal types to Power BI API equivalents."""
+        return PBI_PRINCIPAL_TYPE_MAP.get(principal_type, principal_type)
 
     # ── Pipeline CRUD ──────────────────────────────────────────────
 
@@ -219,8 +287,12 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
         """
         List users (principals) who have access to a deployment pipeline.
 
-        Ref: https://learn.microsoft.com/en-us/rest/api/fabric/core/
-             deployment-pipelines/get-deployment-pipeline-users
+        Uses the **Power BI REST API** (``api.powerbi.com``) because the
+        Fabric REST API does not expose a ``/users`` endpoint for
+        deployment pipelines.
+
+        Ref: https://learn.microsoft.com/en-us/rest/api/power-bi/
+             pipelines/get-pipeline-users
 
         Args:
             pipeline_id: Deployment pipeline ID.
@@ -228,10 +300,12 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
         Returns:
             ``{"success": True, "users": [...]}``
         """
-        url = f"{self.base_url}/deploymentPipelines/{pipeline_id}/users"
+        url = f"{PBI_API_BASE_URL}/pipelines/{pipeline_id}/users"
+        pbi_headers = self._get_pbi_headers()
 
         try:
-            response = self._make_request("GET", url)
+            response = requests.get(url, headers=pbi_headers, timeout=30)
+            response.raise_for_status()
             data = response.json()
             users = data.get("value", [])
             logger.info("Pipeline %s has %d users", pipeline_id, len(users))
@@ -250,34 +324,49 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
         """
         Add a user / group / service principal to a deployment pipeline.
 
-        This grants visibility and the specified role on the pipeline itself
-        (separate from workspace-level access).
+        Uses the **Power BI REST API** (``api.powerbi.com``) because the
+        Fabric REST API does not expose a ``/users`` endpoint for
+        deployment pipelines.
 
-        Ref: https://learn.microsoft.com/en-us/rest/api/fabric/core/
-             deployment-pipelines/add-user
+        .. note::
+
+           - ``principalType`` is automatically mapped: ``"ServicePrincipal"``
+             becomes ``"App"`` as required by the Power BI API.
+           - ``accessRight`` (the PBI field) replaces ``pipelineRole``.
+           - Deployment pipelines only support ``"Admin"`` access.
+
+        Ref: https://learn.microsoft.com/en-us/rest/api/power-bi/
+             pipelines/update-user-as-admin
 
         Args:
             pipeline_id: Deployment pipeline ID.
             identifier: Object ID (GUID) of the user, group, or SP.
-            principal_type: ``"User"``, ``"Group"``, or
-                ``"ServicePrincipal"``.
+            principal_type: ``"User"``, ``"Group"``, ``"ServicePrincipal"``,
+                or ``"App"``.  SP types are mapped to ``"App"`` automatically.
             pipeline_role: ``"Admin"`` (currently the only supported role).
 
         Returns:
             ``{"success": True}`` or ``{"success": False, "error": "..."}``
         """
-        url = f"{self.base_url}/deploymentPipelines/{pipeline_id}/users"
+        url = f"{PBI_API_BASE_URL}/pipelines/{pipeline_id}/users"
+        pbi_headers = self._get_pbi_headers()
+
+        # Map principal type to PBI equivalent
+        pbi_principal_type = self._map_principal_type(principal_type)
+
         body = {
             "identifier": identifier,
-            "principalType": principal_type,
-            "pipelineRole": pipeline_role,
+            "principalType": pbi_principal_type,
+            "accessRight": pipeline_role,
         }
 
         try:
-            self._make_request("POST", url, json=body)
+            response = requests.post(url, headers=pbi_headers, json=body, timeout=30)
+            response.raise_for_status()
             logger.info(
-                "Added %s %s as %s to pipeline %s",
+                "Added %s (PBI: %s) %s as %s to pipeline %s",
                 principal_type,
+                pbi_principal_type,
                 identifier[:12],
                 pipeline_role,
                 pipeline_id,

@@ -1,10 +1,10 @@
 # Project Generation Scenario
-# Comprehensive guide to all 10 templates with exact commands and outputs
+# Comprehensive guide to all 11 templates with exact commands and outputs
 
 id: project-generation
 title: Generate Project Configurations from Templates
 description: |
-  Master the 10 production-ready blueprint templates. Learn the exact `python -m usf_fabric_cli.scripts.dev.generate_project`
+  Master the 11 production-ready blueprint templates. Learn the exact `python -m usf_fabric_cli.scripts.dev.generate_project`
   command syntax, understand when to use each template, and customize configurations for your organization's needs.
 difficulty: beginner
 estimated_duration_minutes: 30
@@ -16,7 +16,7 @@ prerequisites:
 
 learning_outcomes:
   - "Use `python -m usf_fabric_cli.scripts.dev.generate_project` with all available options"
-  - Choose the right template for your use case from all 10 blueprints
+  - Choose the right template for your use case from all 11 blueprints
   - Understand the generated YAML configuration structure
   - Customize configurations for your organization
   - Use environment variable substitution in configurations
@@ -41,15 +41,20 @@ steps:
     title: Blueprint Templates Overview
     type: info
     content: |
-      The framework includes **10 production-ready blueprint templates** located in `src/usf_fabric_cli/templates/blueprints/`.
+      The framework includes **11 production-ready blueprint templates** located in `src/usf_fabric_cli/templates/blueprints/`.
       Instead of writing YAML from scratch, you generate configurations using the `generate_project.py` script.
 
-      ## The 10 Available Templates
+      All templates follow the **Git-sync-only strategy**: the CLI manages the workspace envelope
+      (workspace, folders, principals, Git connection, deployment pipeline, folder_rules) while
+      Fabric items (lakehouses, notebooks, pipelines) are committed to Git and synced automatically.
+
+      ## The 11 Available Templates
 
       | Template | Complexity | Best For | Est. Monthly Cost |
       |----------|------------|----------|-------------------|
       | `minimal_starter` | ★☆☆☆☆ | Learning, POCs | $0 (F2 trial) |
       | `basic_etl` | ★★☆☆☆ | Standard ETL pipelines | $100-500 |
+      | `medallion` | ★★★☆☆ | Bronze/Silver/Gold data lakes | $200-1000 |
       | `data_science` | ★★☆☆☆ | Research, ML experiments | $200-800 |
       | `advanced_analytics` | ★★★☆☆ | ML/AI production | $500-1500 |
       | `realtime_streaming` | ★★★★☆ | IoT, event streaming | $800-2500 |
@@ -130,6 +135,7 @@ steps:
       data_mesh_domain.yaml
       data_science.yaml
       extensive_example.yaml
+      medallion.yaml
       migration_hybrid.yaml
       minimal_starter.yaml
       realtime_streaming.yaml
@@ -142,15 +148,20 @@ steps:
       **Best For:** Learning Fabric, POCs, Solo projects
 
       The absolute minimum viable configuration for quick prototyping.
+      All templates follow the **Git-sync-only strategy** — the CLI creates the workspace
+      envelope (workspace, folders, principals, Git connection) while Fabric items are
+      committed to Git and synced automatically.
 
-      ## What's Included
+      ## What the Template Configures
 
-      | Resource | Count | Purpose |
-      |----------|-------|---------|
-      | Lakehouse | 1 | All-in-one data storage |
-      | Notebook | 1 | Clear entry point for exploration |
-      | Pipeline | 1 | Basic ETL orchestration |
-      | Git Integration | No | Simplicity first |
+      | Component | Details |
+      |-----------|---------|
+      | Workspace | Named workspace with capacity assignment |
+      | Folders | 8 numbered folders (000 Orchestrate → Archive) |
+      | Folder Rules | 11 rules mapping item types to folders |
+      | Principals | Admin role assignment |
+      | Git Integration | Yes (Git-sync-only strategy) |
+      | Deployment Pipeline | 3 stages (dev → test → prod) |
 
       ## Use Cases
 
@@ -176,12 +187,14 @@ steps:
       Organization: My Company → my_company
       Project: Learning Project → learning_project
 
-      Resources:
-        - 1 Lakehouse
-        - 1 Notebook
-        - 1 Pipeline
+      Workspace Envelope:
+        - 8 Folders (000 Orchestrate → Archive)
+        - 11 Folder Rules
+        - 1 Principal (Admin)
+        - Deployment Pipeline (3 stages)
+        - Git Integration enabled
     tips:
-      - "Graduate to `basic_etl` when you need Git version control"
+      - "Graduate to `basic_etl` for more complex deployments"
       - Perfect for weekend learning sessions
 
   - id: basic-etl
@@ -191,18 +204,20 @@ steps:
       **Best For:** Standard ETL pipelines, Team collaboration
 
       The **recommended starting template** for most production projects.
-      Uses the industry-standard medallion architecture (Bronze → Silver → Gold).
+      Provides the workspace structure for industry-standard ETL workflows.
 
-      ## What's Included
+      ## What the Template Configures
 
-      | Resource | Count | Purpose |
-      |----------|-------|---------|
-      | Lakehouses | 3 | Bronze (raw), Silver (cleaned), Gold (curated) |
-      | Warehouse | 1 | Structured reporting layer |
-      | Notebooks | 3 | Ingestion, Transform, Reporting |
-      | Pipelines | 2 | ETL orchestration |
-      | Semantic Model | 1 | Power BI dataset |
-      | Git Integration | Yes | Version control |
+      | Component | Details |
+      |-----------|----------|
+      | Workspace | Named workspace with Git connection |
+      | Folders | 8 numbered folders (000 Orchestrate → Archive) |
+      | Folder Rules | 11 rules (e.g., DataPipeline→000, Lakehouse→200, Notebook→300) |
+      | Principals | Admin + Contributor roles |
+      | Git Integration | Yes (Git-sync-only strategy) |
+      | Deployment Pipeline | 3 stages (dev → test → prod) |
+
+      **Typical Git-managed items:** Lakehouses, Notebooks, Pipelines, Semantic Models
 
       **Est. Cost:** $100-500/month (F8-F16)
     code:
@@ -222,16 +237,15 @@ steps:
       Organization: Acme Corp → acme_corp
       Project: Sales Analytics → sales_analytics
 
-      Resources:
-        - 3 Lakehouses (Bronze, Silver, Gold)
-        - 1 Warehouse
-        - 3 Notebooks
-        - 2 Pipelines
-        - 1 Semantic Model
+      Workspace Envelope:
+        - 8 Folders (000 Orchestrate → Archive)
+        - 11 Folder Rules
+        - 2 Principals (Admin, Contributor)
+        - Deployment Pipeline (3 stages)
 
       Git Integration: https://dev.azure.com/acme/FabricProjects/_git/sales
     tips:
-      - The medallion architecture is industry standard for data lakes
+      - All items (lakehouses, notebooks, pipelines) are managed through Git sync
       - This template is the most commonly deployed
 
   - id: realtime-streaming
@@ -279,14 +293,12 @@ steps:
       Organization: TechCorp → techcorp
       Project: IoT Platform → iot_platform
 
-      Resources:
-        - 1 Lakehouse
-        - 3 Eventstreams
-        - 1 Eventhouse
-        - 2 KQL Databases
-        - 1 KQL Queryset
-        - 2 Reflex
-        - 1 KQL Dashboard
+      Workspace Envelope:
+        - 8 Folders (000 Orchestrate → Archive)
+        - 11 Folder Rules
+        - Deployment Pipeline (3 stages)
+
+      Capacity: F32
     tips:
       - Eventstreams support Azure Event Hubs, IoT Hub, Kafka connectors
       - KQL is optimized for time-series queries at scale
@@ -337,15 +349,14 @@ steps:
       Organization: HealthCo → healthco
       Project: Patient Platform → patient_platform
 
-      Resources:
-        - 4 Lakehouses (PHI, Business, Analytics, Audit)
-        - 2 Warehouses
-        - 6 Notebooks (including audit)
-        - 4 Pipelines
-        - 2 Semantic Models
+      Workspace Envelope:
+        - 8 Folders (000 Orchestrate → Archive)
+        - 11 Folder Rules
+        - 4 Principals (Admin, Contributor, Member, Viewer)
+        - Deployment Pipeline (3 stages)
 
       Compliance Features:
-        - PHI/PII isolation zones
+        - PHI/PII isolation zones (via Git-managed items)
         - Audit trail logging
         - Data classification tiers
     warnings:
@@ -354,10 +365,26 @@ steps:
       - This template requires proper role assignments for PHI access
 
   - id: other-templates
-    title: "Templates 5-10: Specialized Use Cases"
+    title: "Templates 5-11: Specialized Use Cases"
     type: info
     content: |
-      ## Template 5: data_science - Research & ML Experiments
+      All templates share the same Git-sync-only structure (8 folders, 11 folder_rules,
+      deployment pipeline, Git integration). They differ in descriptions, domain guidance,
+      and comments listing typical Git-managed items for the use case.
+
+      ## Template 5: medallion - Bronze/Silver/Gold Data Lakes
+
+      Multi-layer data platform with the medallion architecture pattern.
+
+      ```bash
+      python -m usf_fabric_cli.scripts.dev.generate_project "Data Corp" "Data Lake" --template medallion
+      ```
+
+      **Configures:** 8 numbered folders, 11 folder_rules. **Typical Git items:** Bronze/Silver/Gold Lakehouses, transformation Notebooks, orchestration Pipelines
+
+      ---
+
+      ## Template 6: data_science - Research & ML Experiments
 
       For data scientists needing experiment tracking and model development.
 
@@ -365,11 +392,11 @@ steps:
       python -m usf_fabric_cli.scripts.dev.generate_project "Research Lab" "ML Platform" --template data_science
       ```
 
-      **Includes:** 2 Lakehouses, MLflow integration, Experiment notebooks, Model registry setup
+      **Configures:** 8 numbered folders, 11 folder_rules. **Typical Git items:** Experiment Lakehouses, ML Notebooks, Model registry items
 
       ---
 
-      ## Template 6: advanced_analytics - ML/AI Production
+      ## Template 7: advanced_analytics - ML/AI Production
 
       For production ML pipelines with model serving and monitoring.
 
@@ -377,11 +404,11 @@ steps:
       python -m usf_fabric_cli.scripts.dev.generate_project "AI Corp" "Prediction Engine" --template advanced_analytics
       ```
 
-      **Includes:** 4 Lakehouses, ML pipelines, Model deployment configs, Feature store setup
+      **Configures:** 8 numbered folders, 11 folder_rules. **Typical Git items:** Feature store Lakehouses, ML Pipelines, Model serving configs
 
       ---
 
-      ## Template 7: data_mesh_domain - Domain-Driven Design
+      ## Template 8: data_mesh_domain - Domain-Driven Design
 
       For organizations adopting data mesh architecture with federated ownership.
 
@@ -389,11 +416,11 @@ steps:
       python -m usf_fabric_cli.scripts.dev.generate_project "Enterprise" "Finance Domain" --template data_mesh_domain
       ```
 
-      **Includes:** Domain-specific zones, Data products, Self-serve templates, Cross-domain sharing
+      **Configures:** 8 numbered folders, 11 folder_rules. **Typical Git items:** Domain-specific data products, cross-domain sharing configs
 
       ---
 
-      ## Template 8: migration_hybrid - Cloud Migration
+      ## Template 9: migration_hybrid - Cloud Migration
 
       For migrating existing on-premises data warehouses to Fabric.
 
@@ -401,11 +428,11 @@ steps:
       python -m usf_fabric_cli.scripts.dev.generate_project "Legacy Corp" "DW Migration" --template migration_hybrid
       ```
 
-      **Includes:** Staging zones, Migration notebooks, Data validation, Legacy connectors
+      **Configures:** 8 numbered folders, 11 folder_rules. **Typical Git items:** Migration Notebooks, validation Pipelines, staging Lakehouses
 
       ---
 
-      ## Template 9: specialized_timeseries - APM & Metrics
+      ## Template 10: specialized_timeseries - APM & Metrics
 
       For time-series data, application performance monitoring, and metrics.
 
@@ -413,11 +440,11 @@ steps:
       python -m usf_fabric_cli.scripts.dev.generate_project "Ops Team" "APM Platform" --template specialized_timeseries
       ```
 
-      **Includes:** KQL databases, Time-series optimized storage, Alerting, Dashboards
+      **Configures:** 8 numbered folders, 11 folder_rules. **Typical Git items:** KQL Databases, Eventstreams, KQL Dashboards, Reflex alerts
 
       ---
 
-      ## Template 10: extensive_example - Reference Architecture
+      ## Template 11: extensive_example - Reference Architecture
 
       Comprehensive example showing all framework capabilities. Use as learning reference.
 
@@ -425,7 +452,7 @@ steps:
       python -m usf_fabric_cli.scripts.dev.generate_project "Demo" "Reference" --template extensive_example
       ```
 
-      **Includes:** Every resource type, All features demonstrated, Documentation examples
+      **Configures:** 8 numbered folders, 11 folder_rules. **Typical Git items:** Every resource type documented in comments
     tips:
       - "View any template source: `cat src/usf_fabric_cli/templates/blueprints/<name>.yaml`"
       - All templates can be customized after generation
@@ -465,12 +492,10 @@ steps:
       Organization: Global Bank Corp → global_bank_corp
       Project: Risk Analytics Platform → risk_analytics_platform
 
-      Resources:
-        - 4 Lakehouses
-        - 2 Warehouses
-        - 6 Notebooks
-        - 4 Pipelines
-        - 2 Semantic Models
+      Workspace Envelope:
+        - 8 Folders (000 Orchestrate → Archive)
+        - 11 Folder Rules
+        - Deployment Pipeline (3 stages)
 
       Git Integration: https://dev.azure.com/globalbank/Fabric/_git/risk-analytics (branch: main)
       Capacity: F128
@@ -494,21 +519,20 @@ steps:
       | Section | Purpose |
       |---------|---------|
       | `workspace` | Workspace name, capacity, Git settings |
-      | `folders` | Folder structure within the workspace |
-      | `lakehouses` | Lakehouse definitions |
-      | `warehouses` | Warehouse definitions |
-      | `notebooks` | Notebook definitions |
-      | `pipelines` | Pipeline definitions |
-      | `semantic_models` | Power BI semantic models |
+      | `folders` | 8 numbered folders within the workspace |
+      | `folder_rules` | Maps item types to folders automatically |
       | `principals` | User/group access assignments |
-      | `resources` | Generic resources (any Fabric item type) |
+      | `deployment_pipeline` | 3-stage promotion pipeline (dev/test/prod) |
+      | `lakehouses` | Lakehouse definitions (empty — Git-sync-only) |
+      | `notebooks` | Notebook definitions (empty — Git-sync-only) |
+      | `resources` | Generic resources (empty — Git-sync-only) |
       | `environments` | Environment-specific overrides (dev/staging/prod) |
 
       ## Key Concepts
 
       - "**`${VAR_NAME}`** - Environment variable substitution (from `.env`)"
       - "**`{{ env }}`** - Jinja2 template variable (resolved at deploy time)"
-      - "**`folder:`** - Places items in a specific folder"
+      - "**Git-sync-only** - Items managed through Git, not CLI"
     code:
       language: yaml
       filename: config/projects/acme_corp/sales_analytics.yaml
@@ -526,32 +550,46 @@ steps:
             branch: "main"
             directory: "/"
 
-        # Folder structure
+        # 8 Numbered folder structure (all templates use these)
         folders:
-          - "01_Bronze"      # Raw data landing zone
-          - "02_Silver"      # Cleaned and transformed
-          - "03_Gold"        # Business-ready data
-          - "99_Notebooks"   # Analysis notebooks
+          - "000 Orchestrate"   # DataPipeline, DataflowGen2
+          - "100 Ingest"        # Eventstream
+          - "200 Store"         # Lakehouse
+          - "300 Prepare"       # Notebook, SparkJobDefinition
+          - "400 Model"         # Warehouse, SemanticModel
+          - "500 Visualize"     # Report, Dashboard
+          - "999 Libraries"     # Environment
+          - "Archive"           # Archived items
 
-        # Lakehouse definitions
-        lakehouses:
-          - name: "sales_raw"
-            folder: "01_Bronze"
-            description: "Raw sales data from source systems"
+        # Folder rules — auto-organize items by type
+        folder_rules:
+          DataPipeline: "000 Orchestrate"
+          DataflowGen2: "000 Orchestrate"
+          Eventstream: "100 Ingest"
+          Lakehouse: "200 Store"
+          Notebook: "300 Prepare"
+          SparkJobDefinition: "300 Prepare"
+          Warehouse: "400 Model"
+          SemanticModel: "400 Model"
+          Report: "500 Visualize"
+          Dashboard: "500 Visualize"
+          Environment: "999 Libraries"
 
-          - name: "sales_curated"
-            folder: "02_Silver"
-            description: "Cleaned and transformed sales data"
+        # Git-sync-only: items managed through Git, not CLI
+        lakehouses: []    # Typical: sales_raw, sales_curated, sales_gold
+        notebooks: []     # Typical: ingestion, transform, reporting
+        resources: []     # Typical: Pipelines, Semantic Models
 
-          - name: "sales_gold"
-            folder: "03_Gold"
-            description: "Business-ready aggregations"
-
-        # Warehouse definitions
-        warehouses:
-          - name: "sales_reporting"
-            folder: "03_Gold"
-            description: "Structured reporting layer for BI tools"
+        # Deployment pipeline
+        deployment_pipeline:
+          name: "acme-sales-analytics-pipeline"
+          stages:
+            - name: "development"
+              workspace: "acme-sales-analytics-dev"
+            - name: "test"
+              workspace: "acme-sales-analytics-test"
+            - name: "production"
+              workspace: "acme-sales-analytics-prod"
 
         # Access control
         principals:
@@ -582,11 +620,11 @@ steps:
 
       | Customization | Example |
       |---------------|---------|
-      | **Folder names** | Match your organization's naming conventions |
-      | **Lakehouse names** | Use domain-specific prefixes |
       | **Principal assignments** | Add your team's Object IDs or email addresses |
       | **Capacity settings** | Different capacities for dev vs prod |
       | **Git repository** | Your actual Azure DevOps or GitHub URL |
+      | **Deployment pipeline** | Customize stage names and workspace mappings |
+      | **Description** | Domain-specific workspace descriptions |
     code:
       language: yaml
       filename: config/projects/acme_corp/manufacturing_analytics.yaml
@@ -596,27 +634,40 @@ steps:
           display_name: "Acme Manufacturing Analytics [{{ env | upper }}]"
           capacity_id: "${FABRIC_CAPACITY_ID}"
 
-        # Custom folder structure for manufacturing domain
+          git:
+            repository_url: "${GIT_REPO_URL}"
+            branch: "main"
+            directory: "/"
+
+        # Standard 8 numbered folders (same across all templates)
         folders:
-          - "01_Sensors"         # IoT sensor data
-          - "02_Production"      # Production line metrics
-          - "03_Quality"         # Quality control data
-          - "04_Maintenance"     # Predictive maintenance
-          - "99_Analysis"        # Notebooks and reports
+          - "000 Orchestrate"
+          - "100 Ingest"
+          - "200 Store"
+          - "300 Prepare"
+          - "400 Model"
+          - "500 Visualize"
+          - "999 Libraries"
+          - "Archive"
 
-        # Domain-specific lakehouse naming
-        lakehouses:
-          - name: "mfg_sensor_raw"
-            folder: "01_Sensors"
-            description: "Raw IoT sensor data from production floor"
+        # Folder rules map item types to folders
+        folder_rules:
+          DataPipeline: "000 Orchestrate"
+          DataflowGen2: "000 Orchestrate"
+          Eventstream: "100 Ingest"
+          Lakehouse: "200 Store"
+          Notebook: "300 Prepare"
+          SparkJobDefinition: "300 Prepare"
+          Warehouse: "400 Model"
+          SemanticModel: "400 Model"
+          Report: "500 Visualize"
+          Dashboard: "500 Visualize"
+          Environment: "999 Libraries"
 
-          - name: "mfg_production_metrics"
-            folder: "02_Production"
-            description: "Aggregated production line KPIs"
-
-          - name: "mfg_quality_data"
-            folder: "03_Quality"
-            description: "Quality control measurements and results"
+        # Git-sync-only: items committed to Git, not created by CLI
+        lakehouses: []    # e.g., mfg_sensor_raw, mfg_production_metrics
+        notebooks: []     # e.g., sensor_ingestion, quality_analysis
+        resources: []     # e.g., Eventstreams, KQL Databases
 
         # Team-specific access control
         principals:
@@ -628,6 +679,17 @@ steps:
             role: "Member"
           - id: "plant-managers@acme.com"
             role: "Viewer"
+
+        # Deployment pipeline
+        deployment_pipeline:
+          name: "acme-manufacturing-pipeline"
+          stages:
+            - name: "development"
+              workspace: "acme-manufacturing-dev"
+            - name: "test"
+              workspace: "acme-manufacturing-test"
+            - name: "production"
+              workspace: "acme-manufacturing-prod"
 
         # Environment-specific overrides
         environments:
@@ -680,39 +742,34 @@ steps:
     code:
       language: yaml
       content: |
-        # Generic resource definitions for real-time IoT platform
+        # Generic resource definitions (for reference — templates use Git-sync-only)
+        # If you need to define items directly, use this syntax:
         resources:
           - type: "Eventstream"
             name: "iot_device_ingestion"
-            folder: "01_Sensors"
             description: "Real-time IoT device telemetry stream"
 
           - type: "Eventhouse"
             name: "sensor_analytics"
-            folder: "01_Sensors"
             description: "Real-time analytics engine"
 
           - type: "KQLDatabase"
             name: "sensor_logs"
-            folder: "01_Sensors"
             description: "Time-series sensor data"
 
           - type: "KQLQueryset"
             name: "sensor_queries"
-            folder: "01_Sensors"
             description: "Reusable KQL queries"
 
           - type: "Reflex"
             name: "maintenance_alerts"
-            folder: "04_Maintenance"
             description: "Predictive maintenance alerting"
 
           - type: "KQLDashboard"
             name: "plant_floor_monitor"
-            folder: "99_Analysis"
             description: "Live plant floor monitoring dashboard"
     tips:
-      - Check Microsoft Fabric documentation for exact type names
+      - "Recommended: use Git-sync-only (empty arrays) and manage items through Git"
       - Generic resources work with all current and future Fabric item types
 
   - id: edit-after-generate
@@ -752,9 +809,8 @@ steps:
       | **principals** | Add YOUR team's Object IDs | `"${DEV_ADMIN_OBJECT_ID}"` |
       | **capacity_id** | Match YOUR Fabric capacity | `"${FABRIC_CAPACITY_ID}"` |
       | **git_repo** | YOUR Azure DevOps/GitHub URL | `"${GIT_REPO_URL}"` |
-      | **folders** | Match YOUR naming conventions | `"01_Raw"` vs `"01_Bronze"` |
-      | **lakehouse names** | Match YOUR domain terms | `"customer_raw"` not `"sales_raw"` |
-      | **notebook content** | YOUR actual logic | Edit file_path or embedded content |
+      | **deployment_pipeline** | YOUR workspace names per stage | Custom stage mappings |
+      | **description** | YOUR domain-specific descriptions | Workspace + pipeline descriptions |
     code:
       language: bash
       content: |
@@ -853,9 +909,9 @@ steps:
 
       ## What You've Accomplished
 
-      - ✅ Understand all 10 blueprint templates
+      - ✅ Understand all 11 blueprint templates and the Git-sync-only strategy
       - "✅ Can use `python -m usf_fabric_cli.scripts.dev.generate_project` with all options"
-      - ✅ Know the YAML configuration structure
+      - ✅ Know the YAML configuration structure (workspace, folders, folder_rules, principals, pipeline)
       - ✅ Can customize configurations for your organization
       - "✅ Can validate configurations with `make validate`"
 
@@ -865,6 +921,7 @@ steps:
       |----------|---------|
       | Learning | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template minimal_starter` |
       | ETL | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template basic_etl` |
+      | Medallion | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template medallion` |
       | Streaming | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template realtime_streaming` |
       | Compliance | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template compliance_regulated` |
       | ML/AI | `python -m usf_fabric_cli.scripts.dev.generate_project "Org" "Proj" --template advanced_analytics` |

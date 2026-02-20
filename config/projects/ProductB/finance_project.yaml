@@ -67,8 +67,9 @@ principals:
     role: "Contributor"
 
   # Service principal for automation
+    type: Group
   - id: "${AZURE_CLIENT_ID}"  # Service Principal Object ID (Required)
-    role: "Contributor"
+    role: Admin
 
 # Configuration notes:
 # 1. Replace all placeholder values with your organization's details
@@ -76,3 +77,5 @@ principals:
 # 3. Git repository should be accessible with your credentials
 # 4. Principal IDs: Use Object IDs (GUIDs) for Users, Groups and Service Principals
 # 5. Remove sections you don't need (e.g., if no Git integration needed)
+
+    type: ServicePrincipal

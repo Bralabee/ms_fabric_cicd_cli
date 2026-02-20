@@ -12,6 +12,9 @@ principals:
     role: "Admin"
     description: "Mandatory Additional Admin"
 
+    type: Group
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "Mandatory Additional Contributor"
+
+    type: Group

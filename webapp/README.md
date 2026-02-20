@@ -151,7 +151,7 @@ The guide covers all 11 production-ready blueprints:
 | advanced_analytics | ML/AI workloads | ★★★☆☆ |
 | data_science | Research & experimentation | ★★☆☆☆ |
 | extensive_example | Enterprise reference | ★★★★☆ |
-| medallion | Medallion Architecture (Bronze/Silver/Gold) | ★★★☆☆ |
+| medallion | Medallion Architecture (numbered folders) | ★★★☆☆ |
 | realtime_streaming | IoT, events, real-time | ★★★★☆ |
 | compliance_regulated | Healthcare, Finance, Gov | ★★★★★ |
 | data_mesh_domain | Domain-driven orgs | ★★★★☆ |

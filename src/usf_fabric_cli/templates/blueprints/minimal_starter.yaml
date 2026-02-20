@@ -107,10 +107,10 @@ deployment_pipeline:
     # Uncomment when ready for a test environment:
     # test:
     #   workspace_name: "starter-workspace [Test]"
-    #   capacity_id: "${FABRIC_CAPACITY_ID}"
+    #   capacity_id: "${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}"
     production:
       workspace_name: "starter-workspace [Production]"
-      capacity_id: "${FABRIC_CAPACITY_ID}"
+      capacity_id: "${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}"
 
 # Getting Started:
 # 1. Run `generate_project.py` to customize this template

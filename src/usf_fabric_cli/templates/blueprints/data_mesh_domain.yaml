@@ -142,10 +142,10 @@ deployment_pipeline:
       capacity_id: "${FABRIC_CAPACITY_ID}"
     test:
       workspace_name: "domain-workspace [Test]"
-      capacity_id: "${FABRIC_CAPACITY_ID}"
+      capacity_id: "${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}"
     production:
       workspace_name: "domain-workspace [Production]"
-      capacity_id: "${FABRIC_CAPACITY_ID}"
+      capacity_id: "${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}"
 
 # DATA MESH IMPLEMENTATION GUIDANCE:
 # ─────────────────────────────────────────────────────────────────────────────

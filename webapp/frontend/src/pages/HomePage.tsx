@@ -233,9 +233,9 @@ export default function HomePage() {
             <div className="space-y-2 text-sm pl-8">
               <div className="text-muted-foreground">
                 ✓ Workspace created in Microsoft Fabric<br/>
-                ✓ Lakehouse with Bronze/Silver/Gold folders<br/>
-                ✓ Notebooks uploaded and configured<br/>
-                ✓ Git connection established (if configured)
+                ✓ 8 numbered folders (000 Orchestrate → Archive)<br/>
+                ✓ 11 folder rules configured<br/>
+                ✓ Git connection established & deployment pipeline created
               </div>
             </div>
           </div>

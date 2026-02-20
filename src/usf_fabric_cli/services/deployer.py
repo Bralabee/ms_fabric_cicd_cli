@@ -1231,8 +1231,77 @@ class FabricDeployer:
         # Pipeline visibility requires explicit user/group assignment via the
         # Deployment Pipelines Users API.  Workspace-level Admin/Member roles
         # do NOT automatically grant pipeline visibility.
+        #
+        # IMPORTANT: The Fabric API requires the correct principalType:
+        #   - "ServicePrincipal" for automation SPs
+        #   - "Group" for security groups
+        #   - "User" for individual users
+        # Sending the wrong type returns 404 or silent failure.
         user_add_attempts = 0
         user_add_404s = 0
+
+        # Resolve the SP's Object ID for pipeline user assignment.
+        # The Fabric Pipeline Users API requires the SP's Object ID
+        # (Enterprise App) — NOT the Application (Client) ID.
+        # Priority: SP_OBJECT_ID env var > AZURE_CLIENT_ID fallback
+        sp_id_from_env = (
+            os.getenv("SP_OBJECT_ID")
+            or (self.secrets.azure_client_id if self.secrets else None)
+            or os.getenv("AZURE_CLIENT_ID")
+        )
+        if os.getenv("SP_OBJECT_ID"):
+            logger.info(
+                "Using SP_OBJECT_ID (%s) for pipeline user assignment",
+                sp_id_from_env[:12] + "..." if sp_id_from_env else "None",
+            )
+        else:
+            logger.warning(
+                "SP_OBJECT_ID not set — falling back to AZURE_CLIENT_ID. "
+                "This may fail if AZURE_CLIENT_ID is the Application ID "
+                "rather than the Object ID."
+            )
+
+        # Track whether the SP was already added to the pipeline
+        sp_added_to_pipeline = False
+
+        # Add the calling SP to the pipeline FIRST — this is critical
+        # because the SP is the authenticated caller and must have pipeline
+        # Admin access before it can add other principals.
+        if sp_id_from_env:
+            console.print("  Adding automation SP to pipeline first...")
+            sp_result = self.pipeline_api.add_pipeline_user(
+                pipeline_id,
+                identifier=sp_id_from_env,
+                principal_type="ServicePrincipal",
+                pipeline_role="Admin",
+            )
+            if sp_result.get("success"):
+                sp_added_to_pipeline = True
+                if sp_result.get("reused"):
+                    console.print(
+                        f"    · SP {sp_id_from_env[:12]}... already has "
+                        f"pipeline access"
+                    )
+                else:
+                    console.print(
+                        f"    ✓ Added SP {sp_id_from_env[:12]}... to pipeline "
+                        f"as Admin"
+                    )
+            else:
+                error_str = sp_result.get("error", "")
+                error_detail = sp_result.get("error_detail", "")
+                console.print(
+                    f"    [yellow]⚠ Could not add SP to pipeline: "
+                    f"{error_str}[/yellow]"
+                )
+                if "404" in error_str or "EntityNotFound" in str(error_detail):
+                    console.print(
+                        "    [dim]Hint: The /users endpoint may require "
+                        "'Fabric Admin' tenant role for SPs. "
+                        "The SP Object ID (not Application ID) is "
+                        "required.[/dim]"
+                    )
+
         if self.config.principals:
             admin_principals = [
                 p
@@ -1251,10 +1320,47 @@ class FabricDeployer:
                         if "," in principal_id_raw
                         else [principal_id_raw]
                     )
-                    p_type = principal.get("type", "Group")
+
+                    # Determine the correct principalType:
+                    # 1. Explicit 'type' field in config (preferred)
+                    # 2. Auto-detect: if ID matches AZURE_CLIENT_ID → SP
+                    # 3. Auto-detect: if description contains SP keywords
+                    # 4. Default: "Group" (security groups are most common)
+                    p_type = principal.get("type")
+                    if not p_type:
+                        desc = (principal.get("description") or "").lower()
+                        if sp_id_from_env and principal_id_raw == sp_id_from_env:
+                            p_type = "ServicePrincipal"
+                        elif (
+                            "automation" in desc
+                            or "ci/cd" in desc
+                            or "service principal" in desc
+                            or desc.startswith("sp ")
+                            or " sp " in desc
+                        ):
+                            p_type = "ServicePrincipal"
+                        else:
+                            p_type = "Group"
+
                     for pid in principal_ids:
                         if not pid:
                             continue
+
+                        # Skip the SP — already added above.
+                        # Match by SP_OBJECT_ID or by AZURE_CLIENT_ID (which
+                        # is the App ID, not the Object ID needed by PBI API).
+                        if sp_added_to_pipeline and (
+                            pid == sp_id_from_env
+                            or pid == os.getenv("AZURE_CLIENT_ID")
+                            or (self.secrets and pid == self.secrets.azure_client_id)
+                        ):
+                            logger.debug(
+                                "Skipping %s in admin loop — SP already "
+                                "added to pipeline via SP_OBJECT_ID",
+                                pid[:12],
+                            )
+                            continue
+
                         user_add_attempts += 1
                         result = self.pipeline_api.add_pipeline_user(
                             pipeline_id,
@@ -1265,11 +1371,13 @@ class FabricDeployer:
                         if result.get("success"):
                             if result.get("reused"):
                                 console.print(
-                                    f"    · {pid[:12]}... already has pipeline access"
+                                    f"    · {pid[:12]}... already has "
+                                    f"pipeline access"
                                 )
                             else:
                                 console.print(
-                                    f"    ✓ Added {pid[:12]}... to pipeline as Admin"
+                                    f"    ✓ Added {pid[:12]}... ({p_type}) "
+                                    f"to pipeline as Admin"
                                 )
                         else:
                             error_str = result.get("error", "")
@@ -1279,40 +1387,10 @@ class FabricDeployer:
                                 user_add_404s += 1
                             console.print(
                                 f"    [yellow]⚠ Could not add {pid[:12]}... "
-                                f"to pipeline: {result.get('error', 'unknown')}"
+                                f"({p_type}) to pipeline: "
+                                f"{result.get('error', 'unknown')}"
                                 f"[/yellow]"
                             )
-
-            # Also add the Service Principal (caller) so it retains pipeline
-            # access for future promote operations.  The SP may be configured
-            # as a Contributor rather than Admin, so we add it explicitly.
-            sp_client_id = None
-            for p in self.config.principals:
-                pid = p.get("id", "")
-                if (
-                    pid
-                    and not pid.startswith("${")
-                    and p.get("role", "").lower()
-                    in (
-                        "contributor",
-                        "admin",
-                    )
-                ):
-                    # The first Contributor that looks like the automation SP
-                    desc = (p.get("description") or "").lower()
-                    if "automation" in desc or "ci/cd" in desc or "sp" in desc:
-                        sp_client_id = pid
-                        break
-
-            if sp_client_id:
-                sp_result = self.pipeline_api.add_pipeline_user(
-                    pipeline_id,
-                    identifier=sp_client_id,
-                    principal_type="ServicePrincipal",
-                    pipeline_role="Admin",
-                )
-                if sp_result.get("success") and not sp_result.get("reused"):
-                    console.print("    ✓ Added automation SP to pipeline as Admin")
 
         # If ALL user additions returned 404 (EntityNotFound), the
         # /users endpoint is inaccessible to the current SP.  This is a
@@ -1346,10 +1424,16 @@ class FabricDeployer:
             )
             return False
 
-        # Build a map: stage display name (lowercase) → stage id
+        # Build maps from fetched stages:
+        # - stage_map: display name → stage ID (for stage lookup)
+        # - stage_ws_map: stage ID → workspace ID (for pre-check)
         stage_map = {}
+        stage_ws_map = {}
         for stage in stages_result["stages"]:
             stage_map[stage["displayName"].lower()] = stage["id"]
+            existing_ws = stage.get("workspaceId")
+            if existing_ws and existing_ws != "00000000-0000-0000-0000-000000000000":
+                stage_ws_map[stage["id"]] = existing_ws
 
         # Step 4: For each configured stage, ensure workspace exists and assign
         stage_order = ["development", "test", "production"]
@@ -1473,6 +1557,16 @@ class FabricDeployer:
                                 f"[/yellow]"
                             )
 
+            # Pre-check: skip assignment if workspace is already
+            # assigned to this stage.  Fabric returns an opaque
+            # 400 "UnknownError" when re-assigning an already-
+            # assigned workspace (even to the same stage), so we
+            # avoid the API call entirely.
+            existing_ws_for_stage = stage_ws_map.get(stage_id)
+            if existing_ws_for_stage and existing_ws_for_stage == ws_id:
+                console.print(f"    · Already assigned to {fabric_stage_name} stage")
+                continue
+
             # Assign workspace to pipeline stage
             assign_result = self.pipeline_api.assign_workspace_to_stage(
                 pipeline_id, stage_id, ws_id
@@ -1497,6 +1591,9 @@ class FabricDeployer:
                             or "ItemAlreadyExists" in error_detail
                         )
                     )
+                    # Fabric returns 400 "UnknownError" when re-assigning
+                    # to the same pipeline — treat as idempotent.
+                    or (status_code == 400 and "UnknownError" in (error_detail or ""))
                 )
                 if is_already_assigned:
                     console.print(
@@ -1506,6 +1603,27 @@ class FabricDeployer:
                     console.print(f"    [red]✗ Assignment failed: {error}[/red]")
                     if error_detail:
                         logger.debug("Assignment error detail: %s", error_detail)
+                    # Surface actionable hints for opaque Fabric 400 errors
+                    if status_code == 400:
+                        console.print(
+                            "    [yellow]Hint: This usually means one of:[/yellow]"
+                        )
+                        console.print(
+                            "      1. The workspace is already assigned to "
+                            "a DIFFERENT pipeline"
+                        )
+                        console.print(
+                            "      2. The SP lacks Admin role on the target "
+                            "workspace (Contributor is not enough)"
+                        )
+                        console.print(
+                            "      3. The workspace capacity does not support "
+                            "deployment pipelines"
+                        )
+                        console.print(
+                            "    [dim]Check Fabric portal → Deployment Pipelines "
+                            "to inspect current assignments.[/dim]"
+                        )
 
         console.print(f"  [green]Pipeline '{pipeline_name}' configured.[/green]")
         return True

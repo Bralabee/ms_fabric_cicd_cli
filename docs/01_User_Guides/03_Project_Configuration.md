@@ -1,16 +1,33 @@
 # Project Configuration Guide
 
+> **Audience**: Config Authors, Platform Engineers | **Time**: 20–40 min | **Deployment Path**: All
+> **Difficulty**: Intermediate | **Prerequisites**: Understanding of Fabric resource types
+> **See also**: [Blueprint Catalog](07_Blueprint_Catalog.md) for templates | [CLI Reference](CLI_REFERENCE.md) for config format & commands | [00_START_HERE.md](00_START_HERE.md) for orientation
+
 This guide covers how to create and customize project configuration files for the USF Fabric CLI CI/CD toolkit.
 
 ## Overview
 
 Project configuration files are YAML documents that define what Fabric resources to deploy. They act as the "blueprint" for your deployment, specifying:
 
-- **Workspace settings** - Name, capacity, Git integration
-- **Resources** - Lakehouses, warehouses, notebooks, pipelines, and 54+ other Fabric item types
-- **Folder structure** - Medallion architecture (Bronze/Silver/Gold) organization
-- **Security principals** - Admin and contributor access assignments
-- **Environment overrides** - DEV/TEST/PROD-specific settings
+- **Workspace settings** — Name, display name, capacity, domain, Git integration
+- **Folder structure** — Numbered convention (`000 Orchestrate`, `100 Ingest`, … `999 Libraries`)
+- **Folder rules** — Post-Git-Sync item placement (moves items from workspace root into folders)
+- **Security principals** — Admin, Member, Contributor, Viewer access assignments
+- **Deployment pipeline** — Dev → Test → Prod promotion stage definitions
+- **Resources (optional)** — Lakehouses, warehouses, notebooks, pipelines, and 54+ other Fabric item types
+- **Environment overrides** — DEV/TEST/PROD-specific settings
+
+> **Current Standard — Git-Sync-Only**: All current blueprint templates use a "Git-sync-only"
+> strategy where the CLI manages the **workspace envelope** (workspace, folders, principals, Git
+> connection, deployment pipeline) while **Fabric items** (lakehouses, notebooks, pipelines) are
+> committed to Git and synced into the workspace by Fabric Git Sync. The `lakehouses:`,
+> `notebooks:`, and `resources:` arrays in blueprints are intentionally empty (`[]`). After Git
+> Sync places items at the workspace root, `fabric-cicd organize-folders` uses `folder_rules`
+> to move them into the correct folders.
+>
+> The CLI still supports populating item arrays for legacy configs or testing, but new projects
+> should follow the Git-sync-only pattern.
 
 Without a valid configuration file, the CLI cannot deploy resources. Configuration files enable:
 
@@ -68,19 +85,19 @@ code config/projects/my_org/my_project.yaml
 
 The toolkit includes 11 pre-built blueprint templates for common use cases:
 
-| Template Name | Use Case | Key Resources |
-|---------------|----------|---------------|
-| `minimal_starter` | Learning, POCs, solo projects | 1 Lakehouse, 1 Notebook, minimal configuration |
-| `basic_etl` | Simple data ingestion and transformation | 1 Lakehouse, 2 Notebooks, Bronze/Silver/Gold folders |
-| `advanced_analytics` | Complex analytics with ML capabilities | 2 Lakehouses, 1 Warehouse, Notebooks, Environments |
-| `data_science` | Research and experimentation | Notebooks, Environments, ML Models |
-| `extensive_example` | Enterprise reference architecture | Full suite of Fabric items (reference only) |
-| `medallion` | Medallion Architecture (Bronze/Silver/Gold) | 3 Lakehouses, 1 Warehouse, 3 Notebooks, 1 Pipeline |
-| `realtime_streaming` | IoT and event-driven architectures | Eventstream, KQL Database, Reflex, Lakehouse |
-| `compliance_regulated` | Healthcare, finance, government workloads | Enhanced audit logging, strict access controls |
-| `data_mesh_domain` | Domain-driven data product architecture | Multiple domains, data contracts, cross-domain sharing |
-| `migration_hybrid` | Cloud migration projects | Combined lakehouse + warehouse, migration tooling |
-| `specialized_timeseries` | Time-series, APM, and log analytics | KQL Database, Eventstream, time-series pipelines |
+| Template Name | Use Case | Key Features |
+|---------------|----------|--------------|
+| `minimal_starter` | Learning, POCs, solo projects | Minimal config, small folder set |
+| `basic_etl` | Simple data ingestion and transformation | Full numbered folders, folder_rules, deployment pipeline |
+| `advanced_analytics` | Complex analytics with ML capabilities | Extended folder_rules, multi-environment overrides |
+| `data_science` | Research and experimentation | Notebook-focused folder_rules, environments |
+| `extensive_example` | Enterprise reference architecture | All config sections populated (reference only) |
+| `medallion` | Medallion Architecture data product | 3-stage pipeline, comprehensive folder_rules |
+| `realtime_streaming` | IoT and event-driven architectures | Eventstream/KQL folder_rules, real-time patterns |
+| `compliance_regulated` | Healthcare, finance, government workloads | Enhanced audit config, strict principal controls |
+| `data_mesh_domain` | Domain-driven data product architecture | Multi-domain structure, cross-domain sharing |
+| `migration_hybrid` | Cloud migration projects | Combined lakehouse + warehouse patterns |
+| `specialized_timeseries` | Time-series, APM, and log analytics | KQL/Eventstream folder_rules, time-series patterns |
 
 > **Tip:** Review [07_Blueprint_Catalog.md](07_Blueprint_Catalog.md) for detailed descriptions of each template's resources and folder structures.
 
@@ -94,55 +111,134 @@ A project configuration file contains the following key sections:
 
 ```yaml
 workspace:
-  name: "acme-iot-analytics"          # Workspace display name
-  capacity_id: "${FABRIC_CAPACITY_ID}" # Fabric capacity (F2, F64, etc.)
-  git_repo: "${GIT_REPO_URL}"          # Optional: Azure DevOps or GitHub repo
-  git_branch: "main"                   # Branch for Git integration
-  git_directory: "/"                   # Root directory in repo
+  name: "acme-iot-analytics"            # DNS-safe workspace identifier
+  display_name: "Acme IoT Analytics"    # Human-readable name shown in Fabric portal
+  description: "IoT analytics workspace"
+  capacity_id: "${FABRIC_CAPACITY_ID}"  # Fabric capacity GUID
+  domain: "${FABRIC_DOMAIN_NAME}"       # Optional: Fabric domain for governance
+
+  # Git Integration (required for Git-sync-only strategy)
+  git_repo: "${GIT_REPO_URL}"           # Azure DevOps or GitHub repo URL
+  git_branch: "main"                    # Branch for Git integration
+  git_directory: "/"                    # Root directory in repo
 ```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | **Yes** | DNS-safe workspace name (lowercase, hyphens) |
+| `display_name` | No | Human-readable name for the Fabric portal |
+| `description` | No | Workspace description |
+| `capacity_id` | **Yes** | Fabric capacity GUID (supports `${VAR}` substitution) |
+| `domain` | No | Fabric domain name for governance grouping |
+| `git_repo` | No | Git repository clone URL |
+| `git_branch` | No | Git branch (default: `main`) |
+| `git_directory` | No | Directory within repo (default: `/`) |
 
 ### Folders Section
 
+All current blueprint templates use the **numbered folder convention** for consistent
+navigation and governance across workspaces:
+
 ```yaml
 folders:
-  - "Bronze"      # Raw data landing zone
-  - "Silver"      # Cleansed and conformed data
-  - "Gold"        # Business-ready aggregates
-  - "Notebooks"   # Transformation logic
-  - "Pipelines"   # Orchestration definitions
+  - "000 Orchestrate"   # Pipelines, DataflowGen2, scheduling
+  - "100 Ingest"        # Eventstreams, data connectors
+  - "200 Store"         # Lakehouses, warehouses
+  - "300 Prepare"       # Notebooks, data transformation
+  - "400 Model"         # Semantic models, KQL databases
+  - "500 Visualize"     # Reports, dashboards
+  - "999 Libraries"     # Shared libraries, environments
+  - "Archive"           # Retired items
 ```
 
+> **Note**: The numbered prefix ensures folders appear in pipeline-stage order in the
+> Fabric portal. This convention is enforced across all current blueprints and consumer
+> repo templates.
+
+### Folder Rules Section
+
+Fabric Git Sync places all items at the **workspace root**. After sync completes,
+`fabric-cicd organize-folders` uses these rules to move items into their designated folders:
+
+```yaml
+folder_rules:
+  - type: DataPipeline
+    folder: "000 Orchestrate"
+  - type: DataflowGen2
+    folder: "000 Orchestrate"
+  - type: Eventstream
+    folder: "100 Ingest"
+  - type: Lakehouse
+    folder: "200 Store"
+  - type: Warehouse
+    folder: "200 Store"
+  - type: Notebook
+    folder: "300 Prepare"
+  - type: SemanticModel
+    folder: "400 Model"
+  - type: Report
+    folder: "500 Visualize"
+  - type: Environment
+    folder: "999 Libraries"
+```
+
+You can also match by item name for fine-grained placement:
+
+```yaml
+folder_rules:
+  - type: Notebook
+    name: nb_orchestrate     # Specific notebook goes to Orchestrate
+    folder: "000 Orchestrate"
+  - type: Notebook            # All other notebooks go to Prepare
+    folder: "300 Prepare"
+```
+
+> **Usage**: After Git Sync or deployment, run:
+> ```bash
+> fabric-cicd organize-folders config/projects/acme_corp/sales.yaml --env dev
+> # Add --dry-run to preview moves without executing
+> ```
+
 ### Lakehouses Section
+
+> **Git-sync-only note**: In the current standard, lakehouses are committed to Git and
+> synced by Fabric. This array is `[]` in current blueprints. Use it only if your workflow
+> requires the CLI to create lakehouses directly.
 
 ```yaml
 lakehouses:
   - name: "raw_data_lakehouse"
-    folder: "Bronze"
+    folder: "200 Store"
     description: "Raw ingestion layer for all data sources"
   - name: "curated_lakehouse"
-    folder: "Silver"
+    folder: "200 Store"
     description: "Cleansed and validated data"
 ```
 
 ### Warehouses Section
 
+> **Git-sync-only note**: Same as lakehouses — this array is `[]` in current blueprints.
+
 ```yaml
 warehouses:
   - name: "reporting_warehouse"
-    folder: "Gold"
+    folder: "200 Store"
     description: "Star schema for BI reporting"
 ```
 
 ### Notebooks Section
 
+> **Git-sync-only note**: Same as lakehouses — this array is `[]` in current blueprints.
+> Notebooks are committed to Git and synced into the workspace.
+
 ```yaml
 notebooks:
   - name: "bronze_to_silver_transform"
-    folder: "Notebooks"
+    folder: "300 Prepare"
     file_path: "src/usf_fabric_cli/templates/notebooks/transform.py"  # Import from file
     description: "Data cleansing and validation"
   - name: "silver_to_gold_aggregate"
-    folder: "Notebooks"
+    folder: "300 Prepare"
     content: |
       # Inline notebook content
       lakehouse_name = "{{ environment }}_curated_lakehouse"
@@ -150,10 +246,12 @@ notebooks:
 
 ### Pipelines Section
 
+> **Git-sync-only note**: Same as lakehouses — this array is `[]` in current blueprints.
+
 ```yaml
 pipelines:
   - name: "daily_ingestion_pipeline"
-    folder: "Pipelines"
+    folder: "000 Orchestrate"
     description: "Orchestrates daily data refresh"
 ```
 
@@ -178,18 +276,59 @@ resources:
 
 ### Principals Section
 
+Define who gets access to the workspace. Only `id` and `role` are required:
+
 ```yaml
 principals:
   - id: "${AZURE_CLIENT_ID}"
-    type: "ServicePrincipal"
     role: "Admin"
+    description: "Deployment Service Principal"
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
-    type: "Group"
     role: "Admin"
+    description: "Platform team security group"
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
-    type: "Group"
     role: "Contributor"
+    description: "Project contributors"
 ```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | **Yes** | Object ID (GUID) of a user, group, or service principal in Entra ID |
+| `role` | **Yes** | One of: `Admin`, `Member`, `Contributor`, `Viewer` |
+| `description` | No | Human-readable label for documentation |
+
+> **Note**: The schema does **not** include a `type` field. The CLI auto-detects whether
+> the principal is a user, group, or service principal from the Entra ID object ID.
+
+### Deployment Pipeline Section
+
+Define a Fabric Deployment Pipeline for Dev → Test → Prod promotion:
+
+```yaml
+deployment_pipeline:
+  name: "Acme Sales Pipeline"
+  stages:
+    - name: "Development"
+      workspace: "acme-sales-dev"
+    - name: "Test"
+      workspace: "acme-sales-test"
+      capacity_id: "${FABRIC_TEST_CAPACITY_ID}"
+    - name: "Production"
+      workspace: "acme-sales-prod"
+      capacity_id: "${FABRIC_PROD_CAPACITY_ID}"
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | **Yes** | Deployment Pipeline display name in Fabric |
+| `stages[].name` | **Yes** | Stage name (e.g., `Development`, `Test`, `Production`) |
+| `stages[].workspace` | **Yes** | Workspace name for this stage |
+| `stages[].capacity_id` | No | Override capacity for this stage |
+
+> **Usage**: After deploy, promote content between stages:
+> ```bash
+> fabric-cicd promote --pipeline-name "Acme Sales Pipeline" --source-stage Development --target-stage Test
+> ```
 
 ### Environments Section
 
@@ -358,9 +497,11 @@ python -m usf_fabric_cli.scripts.admin.preflight_check
 Open the YAML file and verify:
 
 - [ ] Workspace name follows your naming conventions
-- [ ] Correct number of lakehouses/warehouses
-- [ ] Notebook file paths exist (if using `file_path`)
-- [ ] Folder structure matches your architecture
+- [ ] Folders use the numbered convention (`000 Orchestrate`, `100 Ingest`, etc.)
+- [ ] `folder_rules` map item types to the correct folders
+- [ ] Principals have correct Object IDs and roles
+- [ ] Deployment pipeline stages match your promotion strategy
+- [ ] Notebook file paths exist (if using `file_path` in non-Git-sync configs)
 
 ### 5. Customize Environment Overrides (Optional)
 
@@ -403,7 +544,7 @@ Append to the `lakehouses` array:
 ```yaml
 lakehouses:
   - name: "raw_data_lakehouse"
-    folder: "Bronze"
+    folder: "200 Store"
     description: "Existing lakehouse"
   # Add new lakehouse
   - name: "archive_lakehouse"
@@ -416,7 +557,7 @@ lakehouses:
 ```yaml
 warehouses:
   - name: "analytics_warehouse"
-    folder: "Gold"
+    folder: "200 Store"
     description: "Star schema for Power BI"
 ```
 
@@ -466,7 +607,7 @@ GITHUB_TOKEN=ghp_xxxxxxxxxxxx
 ```yaml
 notebooks:
   - name: "data_processing"
-    folder: "Notebooks"
+    folder: "300 Prepare"
     content: |
       # Environment-aware notebook
       env = "{{ environment }}"
@@ -486,7 +627,6 @@ environments:
       capacity_id: "F2"  # Trial/dev capacity
     principals:
       - id: "${DEV_TEAM_GROUP_ID}"
-        type: "Group"
         role: "Contributor"
   test:
     workspace:
@@ -498,7 +638,6 @@ environments:
       capacity_id: "F64"  # Production capacity
     principals:
       - id: "${PROD_ADMIN_GROUP_ID}"
-        type: "Group"
         role: "Admin"
 ```
 

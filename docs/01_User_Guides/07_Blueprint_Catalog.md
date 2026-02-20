@@ -1,6 +1,14 @@
 # Blueprint Template Catalog
 
+> **Audience**: Config Authors, Architects | **Time**: 10–15 min (reference) | **Deployment Path**: All
+> **Difficulty**: Beginner | **Prerequisites**: None — read this to choose a template before configuring
+> **See also**: [Project Configuration Guide](03_Project_Configuration.md) for YAML syntax | [00_START_HERE.md](00_START_HERE.md) for orientation
+
 This document provides a comprehensive guide to all available blueprint templates in the `usf_fabric_cli_cicd` framework. Each template is production-ready and optimized for specific use cases.
+
+> **Git-Sync-Only Strategy:** All templates define the **workspace envelope** — folders, folder_rules, principals, Git connection, deployment pipeline, and domain. Fabric items (lakehouses, notebooks, pipelines, etc.) are managed through **Git Sync**, not created directly by the CLI. Item arrays in templates are intentionally empty (`lakehouses: []`, `notebooks: []`, `resources: []`). The `folder_rules` section controls where Git-synced items are placed within the folder structure.
+>
+> The "Intended Architecture" sections below describe the **recommended workspace contents** once Git sync populates the workspace, not what the template YAML literally creates.
 
 ## Quick Reference Table
 
@@ -11,7 +19,7 @@ This document provides a comprehensive guide to all available blueprint template
 | [advanced_analytics](#3-advanced-analytics) | ML/AI workloads | ★★★☆☆ | $500-1500 | F16 |
 | [data_science](#4-data-science) | Research & experimentation | ★★☆☆☆ | $200-800 | F8 |
 | [extensive_example](#5-extensive-example) | Enterprise reference | ★★★★☆ | $1000-3000 | F32 |
-| [medallion](#6-medallion) | Medallion Architecture (Bronze/Silver/Gold) | ★★★☆☆ | $300-1200 | F8 |
+| [medallion](#6-medallion) | Medallion Architecture (numbered folders) | ★★★☆☆ | $300-1200 | F8 |
 | [realtime_streaming](#7-realtime-streaming) | IoT, events, real-time | ★★★★☆ | $800-2500 | F16 |
 | [compliance_regulated](#8-compliance-regulated) | Healthcare, Finance, Gov | ★★★★★ | $1500-5000 | F16 |
 | [data_mesh_domain](#9-data-mesh-domain) | Domain-driven orgs | ★★★★☆ | $500-2000 | F16 |
@@ -30,10 +38,10 @@ The absolute minimum viable Fabric workspace for quick prototyping and learning.
 
 ### Key Features
 
-- ✅ Single lakehouse (all-in-one data storage)
-- ✅ Single notebook (clear entry point)
-- ✅ Optional pipeline (basic ETL)
-- ✅ No Git integration (simplicity first)
+- ✅ 8 numbered workspace folders
+- ✅ Folder rules for item organization
+- ✅ Git integration ready
+- ✅ Deployment pipeline (Dev/Test/Prod)
 - ✅ Minimal principals (just deploying service principal)
 
 ### Use Cases
@@ -46,7 +54,8 @@ The absolute minimum viable Fabric workspace for quick prototyping and learning.
 
 ### Resource Footprint
 
-- **Items:** 1 lakehouse, 1 notebook, 1 pipeline
+- **Template defines:** 8 folders, 11 folder_rules, Git connection, deployment pipeline
+- **Intended items (via Git):** 1 lakehouse, 1 notebook, 1 pipeline
 - **Cost:** $0/month (F2 trial) or $50-100/month (F8)
 - **Capacity:** F2 minimum
 
@@ -65,9 +74,9 @@ make deploy config=config/projects/my_company/quick_poc.yaml env=dev
 
 Move to `basic_etl` when you need:
 
-- Git version control
-- Multiple data zones (Bronze/Silver/Gold)
+- Multiple data zones with layered processing
 - Team collaboration features
+- More complex folder_rules
 
 ---
 
@@ -77,14 +86,14 @@ Move to `basic_etl` when you need:
 
 ### Overview
 
-Standard medallion architecture (Bronze → Silver → Gold) for production ETL pipelines.
+Standard data pipeline workspace with numbered folder convention for ETL processing.
 
 ### Key Features
 
-- ✅ Medallion architecture (Bronze/Silver/Gold)
-- ✅ Lakehouses for each layer
-- ✅ Data warehouse for reporting
+- ✅ 8 numbered workspace folders (000-999)
+- ✅ 11 folder_rules for automatic item placement
 - ✅ Git integration for version control
+- ✅ Deployment pipeline (Dev/Test/Prod)
 - ✅ Team collaboration (RBAC)
 
 ### Use Cases
@@ -96,7 +105,8 @@ Standard medallion architecture (Bronze → Silver → Gold) for production ETL 
 
 ### Resource Footprint
 
-- **Items:** 3 lakehouses, 1 warehouse, 3 notebooks, 2 pipelines, 1 semantic model
+- **Template defines:** 8 folders, 11 folder_rules, Git connection, deployment pipeline
+- **Intended items (via Git):** 3 lakehouses, 1 warehouse, 3 notebooks, 2 pipelines, 1 semantic model
 - **Cost:** $100-500/month (F8-F16)
 - **Capacity:** F8 minimum
 
@@ -137,7 +147,8 @@ ML/AI-focused workspace with feature stores, model training, and MLOps.
 
 ### Resource Footprint
 
-- **Items:** 4 lakehouses, 1 warehouse, 8 notebooks, 3 pipelines
+- **Template defines:** 8 folders, 11 folder_rules, Git connection, deployment pipeline
+- **Intended items (via Git):** 4 lakehouses, 1 warehouse, 8 notebooks, 3 pipelines
 - **Cost:** $500-1500/month (F16-F32)
 - **Capacity:** F16 minimum
 
@@ -198,14 +209,13 @@ Comprehensive reference implementation showcasing all framework capabilities.
 
 ### Overview
 
-Industry-standard Medallion Architecture (Bronze → Silver → Gold) for scalable data engineering with clear data lineage and auditability.
+Industry-standard Medallion Architecture with numbered workspace folders for scalable data engineering with clear data lineage and auditability.
 
 ### Key Features
 
-- ✅ **Three-tier data architecture** (Bronze/Silver/Gold lakehouses)
-- ✅ **Serving warehouse** (SQL-accessible Gold layer)
-- ✅ **Transformation notebooks** (ingestion, quality checks, aggregation)
-- ✅ **Orchestration pipeline** (daily refresh)
+- ✅ **8 numbered workspace folders** (000 Orchestrate through Archive)
+- ✅ **11 folder_rules** for automatic item placement
+- ✅ **Deployment pipeline** (Dev/Test/Prod promotion)
 - ✅ **Full RBAC** (admin, contributor, viewer, CI/CD service principal)
 - ✅ **Environment overrides** (dev/test/prod with separate capacities)
 - ✅ **Git integration** ready
@@ -216,21 +226,22 @@ Industry-standard Medallion Architecture (Bronze → Silver → Gold) for scalab
 - Enterprise data lakehouse platforms
 - Clear data lineage and auditability requirements
 - Transform to medallion architecture
-- Standard Bronze/Silver/Gold processing pipelines
+- Standard ingest → prepare → model processing pipelines
 
 ### Resource Footprint
 
-- **Items:** 3 lakehouses, 1 warehouse, 3 notebooks, 1 pipeline, 6 principals
+- **Template defines:** 8 folders, 11 folder_rules, deployment pipeline, Git connection
+- **Intended items (via Git):** 3 lakehouses, 1 warehouse, 3 notebooks, 1 pipeline, 6 principals
 - **Cost:** $300-1200/month (F8-F16)
 - **Capacity:** F8 minimum
 
-### Layer Details
+### Intended Layer Architecture
 
-| Layer | Lakehouse | Purpose |
-|-------|-----------|---------|
-| **Bronze** | `lh_bronze` | Raw data landing zone (immutable, append-only) |
-| **Silver** | `lh_silver` | Cleaned, deduplicated, validated data |
-| **Gold** | `lh_gold` | Star schema / dimensional models for reporting |
+| Layer | Folder | Purpose |
+|-------|--------|---------|
+| **Ingest** | `100 Ingest` | Raw data landing zone (immutable, append-only) |
+| **Store** | `200 Store` | Cleaned, deduplicated, validated data |
+| **Model** | `400 Model` | Star schema / dimensional models for reporting |
 
 ### Getting Started
 
@@ -244,9 +255,8 @@ make deploy config=config/projects/acme_corp/sales_data.yaml env=dev
 
 ### Configuration Notes
 
-- Each layer is isolated in its own Lakehouse (best practice)
-- `wh_serving` provides a SQL-accessible endpoint for BI tools
-- Use the `marketing_data_refresh` pipeline as a starting point for custom orchestration
+- Each layer maps to a numbered folder with folder_rules for automatic placement
+- Use the deployment pipeline for Dev → Test → Prod promotion
 - Environment overrides set separate capacity IDs for dev/test/prod
 
 ---
@@ -279,7 +289,8 @@ High-throughput streaming platform with real-time analytics and alerting.
 
 ### Resource Footprint
 
-- **Items:** 1 lakehouse, 3 eventstreams, 1 eventhouse, 2 KQL databases, 1 KQL queryset, 2 reflex, 1 KQL dashboard, 2 notebooks, 1 pipeline
+- **Template defines:** 8 folders, 11 folder_rules, Git connection, deployment pipeline
+- **Intended items (via Git):** 1 lakehouse, 3 eventstreams, 1 eventhouse, 2 KQL databases, 1 KQL queryset, 2 reflex, 1 KQL dashboard, 2 notebooks, 1 pipeline
 - **Cost:** $800-2500/month (F16-F32)
 - **Capacity:** F16 minimum (streaming workloads)
 
@@ -336,7 +347,8 @@ Enterprise-grade platform with strict security controls for regulated industries
 
 ### Resource Footprint
 
-- **Items:** 3 lakehouses, 1 warehouse, 4 notebooks, 2 pipelines, 1 semantic model, 2 environments
+- **Template defines:** 8 folders, 11 folder_rules, Git connection, deployment pipeline
+- **Intended items (via Git):** 3 lakehouses, 1 warehouse, 4 notebooks, 2 pipelines, 1 semantic model, 2 environments
 - **Cost:** $1500-5000/month (F16-F64)
 - **Capacity:** F16 minimum (enterprise security features)
 
@@ -417,7 +429,8 @@ Domain-driven data ownership with federated governance architecture.
 
 ### Resource Footprint
 
-- **Items:** 3 lakehouses, 1 warehouse, 1 semantic model, 3 notebooks, 2 pipelines, 1 GraphQL API, 1 external share, 1 mirrored database
+- **Template defines:** 8 folders, 11 folder_rules, Git connection, deployment pipeline, domain config
+- **Intended items (via Git):** 3 lakehouses, 1 warehouse, 1 semantic model, 3 notebooks, 2 pipelines, 1 GraphQL API, 1 external share, 1 mirrored database
 - **Cost:** $500-2000/month per domain (F16-F32)
 - **Capacity:** F16 minimum
 
@@ -512,7 +525,8 @@ Facilitates cloud migration with minimal disruption using hybrid architecture.
 
 ### Resource Footprint
 
-- **Items:** 3 lakehouses, 2 warehouses, 5 notebooks, 4 pipelines, 1 semantic model, 4 mirrored databases, 1 gateway, 3 connections
+- **Template defines:** 8 folders, 11 folder_rules, Git connection, deployment pipeline
+- **Intended items (via Git):** 3 lakehouses, 2 warehouses, 5 notebooks, 4 pipelines, 1 semantic model, 4 mirrored databases, 1 gateway, 3 connections
 - **Cost:** $1000-5000/month during migration (dual environments), $500-2000/month post-migration
 - **Capacity:** F16 minimum
 
@@ -586,7 +600,8 @@ High-performance platform for time-series data, IoT at scale, and operational in
 
 ### Resource Footprint
 
-- **Items:** 1 lakehouse, 4 KQL databases, 1 eventhouse, 3 KQL querysets, 3 eventstreams, 3 KQL dashboards, 2 reflex, 4 notebooks, 3 pipelines, 2 metric sets
+- **Template defines:** 8 folders, 11 folder_rules, Git connection, deployment pipeline
+- **Intended items (via Git):** 1 lakehouse, 4 KQL databases, 1 eventhouse, 3 KQL querysets, 3 eventstreams, 3 KQL dashboards, 2 reflex, 4 notebooks, 3 pipelines, 2 metric sets
 - **Cost:** $1000-5000/month (F16-F64)
 - **Capacity:** F16 minimum (high-throughput workloads)
 
@@ -722,11 +737,15 @@ workspace:
   name: "hybrid_project"
   # ... basic_etl settings
 
-# Add real-time resources from realtime_streaming
-resources:
+# Combine folder_rules from multiple templates
+folder_rules:
   - type: "Eventstream"
-    name: "my_stream"
-  # ... more resources
+    folder: "100 Ingest"
+  - type: "Lakehouse"
+    folder: "200 Store"
+  - type: "KQLDatabase"
+    folder: "200 Store"
+  # ... more rules
 
 # Add compliance principals from compliance_regulated
 principals:
@@ -824,11 +843,14 @@ To contribute a new template:
 
 **Template Quality Checklist:**
 
-- ☐ All resources use `${VARIABLE}` placeholders
+- ☐ All configuration uses `${VARIABLE}` placeholders
+- ☐ 8 numbered folders included (000-999)
+- ☐ folder_rules defined for item placement
 - ☐ Environment-specific overrides provided
 - ☐ Principals use Object IDs (not emails)
 - ☐ Inline documentation explains use cases
 - ☐ Cost estimates included
 - ☐ Minimum capacity specified
-- ☐ Git integration optional (not required)
+- ☐ Git integration configured
+- ☐ Deployment pipeline defined
 - ☐ Tested successfully in dev environment

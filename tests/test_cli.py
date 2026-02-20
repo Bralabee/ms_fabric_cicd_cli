@@ -359,6 +359,25 @@ workspace:
         assert result.exit_code == 0
         assert "insufficient privileges" in result.output.lower()
 
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    @patch("usf_fabric_cli.cli.FabricCLIWrapper")
+    def test_destroy_pbi_api_fallback_message(
+        self, mock_wrapper_cls, mock_env, runner, config_file
+    ):
+        """Test that PBI API fallback success shows the fallback message."""
+        mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
+        mock_wrapper = mock_wrapper_cls.return_value
+        mock_wrapper.delete_workspace.return_value = {
+            "success": True,
+            "method": "pbi_api",
+        }
+
+        result = runner.invoke(app, ["destroy", config_file, "--force"])
+
+        assert result.exit_code == 0
+        assert "PBI API fallback" in result.output
+        assert "destroyed" in result.output
+
 
 class TestFabricDeployerDeploy:
     """Tests for FabricDeployer.deploy() method with mocked Fabric CLI."""

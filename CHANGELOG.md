@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.16] - 2026-02-21
+
+### Fixed
+
+- **Workspace Deletion PBI API Fallback**: `delete_workspace()` now falls back to the Power BI REST API (`DELETE /v1.0/myorg/groups/{workspaceId}`) when the Fabric CLI (`fab rm`) returns an `UnknownError`. This mirrors the v1.7.15 pattern used for pipeline user management — the Fabric API intermittently returns HTTP 400 `UnknownError` for workspace deletion, while the PBI API works reliably.
+- **CLI Destroy Output**: The `destroy` command now shows "(via PBI API fallback)" when the fallback path is used.
+
+### Tests
+
+- **+12 unit tests**: 11 new `test_fabric_wrapper.py` tests covering PBI fallback on UnknownError, 204 responses, non-UnknownError passthrough, both-fail error messages, workspace ID resolution (cache hit + API), `_get_pbi_token()` with/without TokenManager, credential errors, and safety blocks. 1 new CLI test for fallback message display.
+- **452/452 tests passing**.
+
+## [1.7.15] - 2026-02-20
+
+### Fixed
+
+- **Pipeline User Assignment Fix**: Switched from Fabric REST API (`api.fabric.microsoft.com`) to **Power BI REST API** (`api.powerbi.com`) for managing deployment pipeline users. The Fabric API does not expose the `/users` endpoint for pipelines.
+- **Service Principal Mapping**: Automatically maps `ServicePrincipal` type to `App` as required by the Power BI API.
+- **Access Right Mapping**: Maps `pipelineRole` parameter to request body `accessRight` for compatibility with Power BI API.
+- **YAML Configuration**: Corrected principal types in consumer `base_workspace.yaml` (updated logic to handle `User` type correctly for `EDP_ADMIN_ID` and `EDP_MEMBERS_ID`).
+
 ## [1.7.14] - 2026-02-19
 
 ### Changed
