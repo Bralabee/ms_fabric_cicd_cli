@@ -53,13 +53,18 @@ principals:
   - id: "${DEV_ADMIN_OBJECT_ID}"
     role: "Admin"
 
+    type: Group
   - id: "${AZURE_CLIENT_ID}"
-    role: "Contributor"
+    role: Admin
 
+    type: ServicePrincipal
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "Mandatory Additional Admin"
 
+    type: Group
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "Mandatory Additional Contributor"
+
+    type: Group

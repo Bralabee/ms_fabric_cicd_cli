@@ -1,0 +1,88 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# EDP Test v1.7.15 — Base Workspace Configuration (Dev / Test / Prod)
+#
+# TEMPORARY test config to validate v1.7.15 end-to-end:
+#   - Workspace creation with folders
+#   - Lakehouse provisioning
+#   - Git connection (GitHub)
+#   - Deployment Pipeline (Dev → Test → Prod)
+#   - Pipeline user access via PBI API
+#   - Folder propagation to Test/Prod workspaces
+#
+# After validation, destroy with:
+#   make destroy config=config/projects/edp_test_v17/base_workspace.yaml force=1
+# ─────────────────────────────────────────────────────────────────────────────
+
+workspace:
+  name: "edp-test-v17 [DEV]"
+  display_name: "edp-test-v17 [DEV]"
+  description: "E2E test workspace for CLI v1.7.15 validation"
+  capacity_id: ${FABRIC_CAPACITY_ID}
+  git_repo: ${GIT_REPO_URL}
+  git_branch: main
+  git_directory: /
+
+# Folder structure (lightweight — just enough to validate)
+folders:
+  - "Bronze"
+  - "Silver"
+  - "Gold"
+
+# One lakehouse to validate item creation
+lakehouses:
+  - name: "test_v17_lakehouse"
+    folder: "Bronze"
+    description: "Test lakehouse for v1.7.15 validation"
+
+# No notebooks, pipelines, or resources — keep it lightweight
+notebooks: []
+resources: []
+
+# Access control
+principals:
+  # Automation Service Principal
+  - id: "${AZURE_CLIENT_ID}"
+    type: ServicePrincipal
+    role: Admin
+    description: "Automation SP — runs deployments"
+
+  # Mandatory Admin group
+  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+    type: Group
+    role: Admin
+    description: "Mandatory governance admin group"
+
+  # Mandatory Contributor group
+  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+    type: Group
+    role: Contributor
+    description: "Mandatory governance contributor group"
+
+  # Project admins
+  - id: "${EDP_ADMIN_ID}"
+    type: User
+    role: Admin
+    description: "Project admins"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Deployment Pipeline — validates the PBI API fix (v1.7.15)
+#
+# This is the critical section: the deployer will:
+#   1. Create pipeline "edp-test-v17 - Pipeline"
+#   2. Create Test and Prod workspaces
+#   3. Assign the SP as pipeline Admin via Power BI REST API
+#   4. Assign workspaces to pipeline stages
+#   5. Propagate folders to Test/Prod workspaces
+# ─────────────────────────────────────────────────────────────────────────────
+deployment_pipeline:
+  pipeline_name: "edp-test-v17 - Pipeline"
+  stages:
+    development:
+      workspace_name: "edp-test-v17 [DEV]"
+      capacity_id: ${FABRIC_CAPACITY_ID}
+    test:
+      workspace_name: "edp-test-v17 [TEST]"
+      capacity_id: ${FABRIC_CAPACITY_ID}
+    production:
+      workspace_name: "edp-test-v17 [PROD]"
+      capacity_id: ${FABRIC_CAPACITY_ID}

@@ -169,20 +169,25 @@ steps:
 
       ✓ Authenticated as Service Principal
       ✓ Workspace 'acme-sales-analytics-feature-inventory-optimization-dev' created
-      ✓ Folder '01_Bronze' created
-      ✓ Folder '02_Silver' created
-      ✓ Folder '03_Gold' created
-      ✓ Lakehouse 'sales_raw' created
-      ✓ Lakehouse 'sales_curated' created
+      ✓ Folder '000 Orchestrate' created
+      ✓ Folder '100 Ingest' created
+      ✓ Folder '200 Store' created
+      ✓ Folder '300 Prepare' created
+      ✓ Folder '400 Model' created
+      ✓ Folder '500 Visualize' created
+      ✓ Folder '999 Libraries' created
+      ✓ Folder 'Archive' created
+      ✓ 11 folder rules configured
       ✓ Principal 'dev-team@acme.com' added with 'Member' role
+      ✓ Git branch connected: feature/inventory-optimization
 
       ════════════════════════════════════════════════════════════════
       ✅ Feature workspace deployment completed successfully!
       ════════════════════════════════════════════════════════════════
     tips:
       - The workspace name is automatically generated from your branch
-      - All items from the dev config are created in the new workspace
-      - Principals/permissions are copied to the feature workspace
+      - The workspace envelope (folders, folder rules, principals, Git connection) is created
+      - Items are managed via Git Sync after workspace creation
 
   - id: local-feature-deploy
     title: "Step 2 (Alternative): Local Feature Deploy"
@@ -301,17 +306,16 @@ steps:
 
       Items (8):
         📁 Folders:
-          - 01_Bronze
-          - 02_Silver
-          - 03_Gold
-        🏠 Lakehouses:
-          - sales_raw (folder: 01_Bronze)
-          - sales_curated (folder: 02_Silver)
-        📓 Notebooks:
-          - data_transformation
-          - reporting_notebook
-        🔗 Pipelines:
-          - daily_load_pipeline
+          - 000 Orchestrate
+          - 100 Ingest
+          - 200 Store
+          - 300 Prepare
+          - 400 Model
+          - 500 Visualize
+          - 999 Libraries
+          - Archive
+        📝 Folder Rules: 11 configured
+        🔗 Git: Connected (feature/inventory-optimization)
     tips:
       - The workspace URL will be in the Fabric portal
       - Share the workspace URL with reviewers
@@ -546,12 +550,12 @@ steps:
       Deploying to workspace: acme-sales-analytics-dev
 
       ✓ Workspace 'acme-sales-analytics-dev' already exists (reusing)
-      ✓ Folder '01_Bronze' verified
-      ✓ Dashboard 'new_sales_dashboard' created   # <-- Your new feature!
-      ✓ Pipeline 'refresh_dashboard' created
+      ✓ Folders verified (8 folders)
+      ✓ Folder rules verified (11 rules)
+      ✓ Git synced — new items from merged branch now visible
 
       ════════════════════════════════════════════════════════════════
-      ✅ Deployment completed! (2 items created, 0 errors)
+      ✅ Deployment completed! Workspace envelope verified.
       ════════════════════════════════════════════════════════════════
     tips:
       - Always redeploy after merge to propagate config changes

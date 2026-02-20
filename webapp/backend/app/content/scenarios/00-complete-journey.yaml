@@ -310,10 +310,11 @@ steps:
         python -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items --workspace "acme-corp-sales-analytics-dev"
     expected_output: |
       ✓ Workspace 'acme-corp-sales-analytics-dev' created
-      ✓ Folders created: Bronze, Silver, Gold, Notebooks
-      ✓ Lakehouses created: 3
-      ✓ Notebooks created: 3
-      ✅ Deployment completed successfully!
+      ✓ 8 folders created (000 Orchestrate → Archive)
+      ✓ 11 folder rules configured
+      ✓ Deployment pipeline created (3 stages)
+      ✓ Git integration connected
+      ✅ Workspace envelope deployed successfully!
 
       Workspace URL: https://app.fabric.microsoft.com/groups/...
 

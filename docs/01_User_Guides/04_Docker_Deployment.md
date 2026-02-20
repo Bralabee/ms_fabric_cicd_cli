@@ -1,11 +1,37 @@
 # Docker Deployment Guide for Fabric CI/CD
 
-This guide provides detailed instructions on how to use the Dockerized version of the Fabric CI/CD tool. This approach is recommended for third-party integrators and CI/CD pipelines as it ensures a consistent environment with all dependencies pre-installed.
+> **Audience**: DevOps Engineers, CI/CD Pipeline Authors | **Time**: 20–30 min | **Deployment Path**: Docker
+> **Difficulty**: Intermediate | **Prerequisites**: Docker installed, `.env` configured
+> **See also**: [00_START_HERE.md](00_START_HERE.md) for orientation | [LOCAL_DEPLOYMENT_GUIDE.md](LOCAL_DEPLOYMENT_GUIDE.md) for non-Docker path | [CLI Reference](CLI_REFERENCE.md) for all Docker Make targets
+
+This guide covers deploying Microsoft Fabric workspaces using the Dockerized CLI.
+No Python, conda, or local dependencies required — everything runs inside the container.
+
+### When to Use Docker vs Local Python
+
+| Criterion | Docker | Local Python |
+|-----------|--------|-------------|
+| **No Python/conda needed** | ✅ | ❌ |
+| **Consistent environment** | ✅ Identical everywhere | Varies by machine |
+| **Multi-tenant isolation** | ✅ Separate `.env` per client | Manual env switching |
+| **CI/CD pipeline use** | ✅ Recommended | Possible but messier |
+| **Iterating on CLI source code** | ❌ Rebuild image each change | ✅ Instant with `pip install -e .` |
+| **Interactive debugging** | Via `docker-shell` | Native tools |
+
+**Recommendation**: Use Docker for deployments and CI/CD. Use local Python for developing the CLI itself.
 
 ## Prerequisites
 
-- **Docker**: Ensure Docker is installed and running on your machine.
-- **Environment Variables**: You need a `.env` file with valid credentials.
+| Requirement | How to Verify | How to Install |
+|-------------|--------------|----------------|
+| **Docker Engine 20+** | `docker --version` | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
+| **Docker Compose v2** (optional) | `docker compose version` | Included with Docker Desktop |
+| **`.env` file** | `ls .env` | `cp .env.template .env && nano .env` |
+| **Service Principal** | — | Azure Portal → Entra ID → App registrations |
+| **Fabric Capacity** | — | Fabric Admin Portal → Capacity settings |
+
+> **Tip**: On Linux without Docker Desktop, install Docker Engine via your package manager:
+> `sudo apt install docker.io` (Ubuntu) or `sudo dnf install docker` (Fedora).
 
 ## 1. Configuration Setup
 
@@ -37,11 +63,23 @@ workspace:
   name: "My_Project_Workspace"
   capacity_id: "${FABRIC_CAPACITY_ID}"
 
+folders:
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
+  - "Archive"
+
 principals:
-  - id: "d0555555-5555-5555-5555-555555555555" # User Object ID
+  - id: "d0555555-5555-5555-5555-555555555555"
     role: "Admin"
-  - id: "88e55555-5555-5555-5555-555555555555" # Service Principal Object ID
+    description: "User Object ID"
+  - id: "88e55555-5555-5555-5555-555555555555"
     role: "Contributor"
+    description: "Service Principal Object ID"
 ```
 
 ## 2. Building the Docker Image
@@ -113,17 +151,67 @@ Adding users and service principals to your workspace is a critical step. Define
 
 ```yaml
 principals:
-  - id: "d0555555-5555-5555-5555-555555555555" # Admin User Object ID
+  - id: "d0555555-5555-5555-5555-555555555555"
     role: "Admin"
-  - id: "e0555555-5555-5555-5555-555555555555" # Member User Object ID
+    description: "Admin User Object ID"
+  - id: "e0555555-5555-5555-5555-555555555555"
     role: "Member"
-  - id: "88e55555-5555-5555-5555-555555555555" # Service Principal Object ID
+    description: "Member User Object ID"
+  - id: "88e55555-5555-5555-5555-555555555555"
     role: "Contributor"
+    description: "Service Principal Object ID"
 ```
 
 Supported Roles: `Admin`, `Member`, `Contributor`, `Viewer`.
 
-## 6. Troubleshooting
+## 6. End-to-End Worked Example
+
+Complete walkthrough: from zero to a deployed Fabric workspace using only Docker.
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/<org>/usf_fabric_cli_cicd.git
+cd usf_fabric_cli_cicd
+
+# 2. Create .env from template
+cp .env.template .env
+nano .env  # Fill in AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID, FABRIC_CAPACITY_ID
+
+# 3. Build the Docker image (~2-3 minutes first time)
+make docker-build
+
+# 4. Run diagnostics to verify credentials
+make docker-diagnose ENVFILE=.env
+# Expected: ✅ Fabric CLI: 1.3.x  ✅ Authentication: Valid  ✅ API Connectivity: N workspaces
+
+# 5. Generate a project config
+make docker-generate org="Acme Corp" project="Sales Analytics" template=basic_etl
+# Creates: config/projects/acme_corp/sales_analytics.yaml
+
+# 6. Validate the config
+make docker-validate config=config/projects/acme_corp/sales_analytics.yaml ENVFILE=.env
+
+# 7. Deploy!
+make docker-deploy config=config/projects/acme_corp/sales_analytics.yaml env=dev ENVFILE=.env
+
+# 8. Verify — list items in the new workspace
+make docker-list-items workspace="acme-sales-analytics-dev" ENVFILE=.env
+```
+
+### Verification Checklist
+
+After deployment, verify in the [Fabric Portal](https://app.fabric.microsoft.com):
+
+| # | Check | Expected |
+|---|-------|----------|
+| 1 | Workspace exists | Named per config `workspace.name` |
+| 2 | Capacity assigned | Matches `FABRIC_CAPACITY_ID` |
+| 3 | Folders created | All numbered folders from `folders:` list visible |
+| 4 | Principals assigned | SP + security groups with correct roles |
+| 5 | Git connected | Source control shows repo + branch (if configured) |
+| 6 | Items synced | Fabric items appear after Git Sync completes (Git-sync-only) |
+
+## 7. Troubleshooting
 
 ### Interactive Shell
 
@@ -174,7 +262,7 @@ make docker-deploy config=config/projects/clientB/project.yaml env=dev ENVFILE=.
 
 All Docker targets support `ENVFILE=.env.custom` for multi-tenant operations.
 
-## 7. Interactive Learning Webapp
+## 8. Interactive Learning Webapp
 
 The project includes a Dockerized interactive webapp to guide you through all workflows:
 

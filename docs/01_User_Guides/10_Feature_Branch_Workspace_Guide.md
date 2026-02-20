@@ -1,6 +1,14 @@
 # Fabric CI/CD — Full End-to-End Lifecycle Guide
 
 > **Version**: 1.7.6 | **Last validated**: 15 February 2026
+>
+> **⚠️ NOTE**: This guide references `fabric_cicd_test_repo` as the consumer repository template.
+> For the **current production-ready consumer repo** (`EDPFabric`) with multi-project support,
+> two-tier access control, `selective_promote.py`, and `git_directory` isolation, see the
+> [EDPFabric Replication Guide](https://github.com/<org>/edp_fabric_consumer_repo/blob/main/EDPFabric/docs/02_REPLICATION_GUIDE.md).
+>
+> This guide remains useful as a **CLI capability reference** for the feature branch lifecycle and
+> Deployment Pipeline promotion commands.
 
 This guide walks through the **complete lifecycle** of Microsoft Fabric workspace management — from initial environment setup (Dev/Test/Prod), through feature branch development in isolated workspaces, to automated promotion through a Fabric Deployment Pipeline.
 
@@ -211,19 +219,18 @@ environments:
       capacity_id: ${FABRIC_CAPACITY_ID}
 
 folders:
-  - Bronze
-  - Silver
-  - Gold
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
+  - "Archive"
 
-lakehouses:
-  - name: lh_bronze
-    folder: Bronze
-    description: Raw data ingestion landing zone
-
-notebooks:
-  - name: demo_notebook
-    folder: Bronze
-    description: Sample notebook for development
+# Items managed via Git Sync — arrays intentionally empty
+lakehouses: []
+notebooks: []
 
 principals:
   - id: ${DEV_ADMIN_OBJECT_ID}
@@ -274,23 +281,20 @@ environments:
       name: ${PROJECT_PREFIX}
       capacity_id: ${FABRIC_CAPACITY_ID}
 
-# Folder structure
+# Folder structure (numbered convention)
 folders:
-  - Bronze
-  - Silver
-  - Gold
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
+  - "Archive"
 
-# Lakehouse resources
-lakehouses:
-  - name: lh_bronze
-    folder: Bronze
-    description: Raw data ingestion landing zone
-
-# Notebooks
-notebooks:
-  - name: demo_notebook
-    folder: Bronze
-    description: Sample notebook for demo purposes
+# Items managed via Git Sync — arrays intentionally empty
+lakehouses: []
+notebooks: []
 
 # Access control
 principals:
@@ -729,7 +733,7 @@ After the workflow completes successfully, verify in the Fabric portal:
 
 | Check | Expected |
 |:---|:---|
-| Dev workspace | Folders (Bronze/Silver/Gold), lakehouse, notebook, Git-synced to `main` |
+| Dev workspace | Numbered folders (000–999), Git-synced to `main` |
 | Deployment Pipeline | `<prefix>-pipeline` with 3 stages |
 | Test workspace | Exists, assigned to Test stage (empty — awaiting first promotion) |
 | Prod workspace | Exists, assigned to Production stage (empty — awaiting promotion) |
@@ -775,9 +779,8 @@ gh run view <run-id> --web
 
 **Expected output**: The workflow runs for ~2 minutes (validated: 2m 14s) and creates:
 - Workspace: `<prefix>-feature-my-data-product`
-- Folders: Bronze, Silver, Gold
-- Lakehouse: `lh_bronze` in Bronze
-- Notebook: `demo_notebook` in Bronze
+- Folders: 000 Orchestrate, 100 Ingest, 200 Store, etc.
+- Items synced from Git
 - Admin principals assigned
 - Git connection to `feature/my-data-product` branch
 

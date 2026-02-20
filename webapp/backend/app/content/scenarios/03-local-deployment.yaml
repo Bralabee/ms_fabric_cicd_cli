@@ -174,12 +174,11 @@ steps:
       ✓ No duplicate item names
 
       Resources to be created:
-        - Folders: 4
-        - Lakehouses: 3
-        - Warehouses: 1
-        - Notebooks: 3
-        - Pipelines: 2
-        - Semantic Models: 1
+        - Folders: 8 (000 Orchestrate → Archive)
+        - Folder Rules: 11
+        - Principals: 2 (Admin, Contributor)
+        - Deployment Pipeline: 3 stages
+        - Git Integration: configured
 
       ════════════════════════════════════════════════════════════════
       ✅ Configuration is valid!
@@ -202,11 +201,12 @@ steps:
       | 1. Load Config | YAML file parsed, env vars resolved |
       | 2. Authenticate | Service Principal token generated |
       | 3. Create Workspace | Workspace created on Fabric capacity |
-      | 4. Create Folders | Folder structure created |
-      | 5. Create Items | Lakehouses, warehouses, notebooks, etc. |
+      | 4. Create Folders | 8 numbered folders created |
+      | 5. Apply Folder Rules | 11 item-type-to-folder mappings |
       | 6. Assign Principals | User/group access configured |
-      | 7. Configure Git | Git connection established (if specified) |
-      | 8. Write Audit Log | Operation logged to `audit_logs/` |
+      | 7. Configure Git | Git connection established |
+      | 8. Create Pipeline | Deployment pipeline with 3 stages |
+      | 9. Write Audit Log | Operation logged to `audit_logs/` |
     code:
       language: bash
       content: |
@@ -238,23 +238,17 @@ steps:
         Capacity: F8
 
       Creating folders...
-      ✓ Folder '01_Bronze' created
-      ✓ Folder '02_Silver' created
-      ✓ Folder '03_Gold' created
-      ✓ Folder '99_Notebooks' created
+      ✓ Folder '000 Orchestrate' created
+      ✓ Folder '100 Ingest' created
+      ✓ Folder '200 Store' created
+      ✓ Folder '300 Prepare' created
+      ✓ Folder '400 Model' created
+      ✓ Folder '500 Visualize' created
+      ✓ Folder '999 Libraries' created
+      ✓ Folder 'Archive' created
 
-      Creating lakehouses...
-      ✓ Lakehouse 'sales_raw' created in '01_Bronze'
-      ✓ Lakehouse 'sales_curated' created in '02_Silver'
-      ✓ Lakehouse 'sales_gold' created in '03_Gold'
-
-      Creating warehouses...
-      ✓ Warehouse 'sales_reporting' created in '03_Gold'
-
-      Creating notebooks...
-      ✓ Notebook 'ingest_sales' created in '99_Notebooks'
-      ✓ Notebook 'transform_sales' created in '99_Notebooks'
-      ✓ Notebook 'report_generation' created in '99_Notebooks'
+      Applying folder rules...
+      ✓ 11 folder rules configured (DataPipeline→000, Lakehouse→200, Notebook→300, ...)
 
       Assigning principals...
       ✓ Principal 'admin@acme.com' assigned role 'Admin'
@@ -263,6 +257,9 @@ steps:
       Configuring Git integration...
       ✓ Git repository connected: https://dev.azure.com/acme/...
       ✓ Branch: main
+
+      Creating deployment pipeline...
+      ✓ Pipeline 'acme-sales-analytics-pipeline' created (3 stages)
 
       Writing audit log...
       ✓ Logged to: audit_logs/fabric_operations_2025-01-15.jsonl
@@ -322,16 +319,19 @@ steps:
 
       ℹ Workspace 'acme-sales-analytics-dev' already exists (ID: 12345678-...)
 
-      ℹ Folder '01_Bronze' already exists
-      ℹ Folder '02_Silver' already exists
-      ℹ Folder '03_Gold' already exists
-      ℹ Folder '99_Notebooks' already exists
+      ℓ Folder '000 Orchestrate' already exists
+      ℓ Folder '100 Ingest' already exists
+      ℓ Folder '200 Store' already exists
+      ℓ Folder '300 Prepare' already exists
+      ℓ Folder '400 Model' already exists
+      ℓ Folder '500 Visualize' already exists
+      ℓ Folder '999 Libraries' already exists
+      ℓ Folder 'Archive' already exists
 
-      ℹ Lakehouse 'sales_raw' already exists
-      ℹ Lakehouse 'sales_curated' already exists
-      ℹ Lakehouse 'sales_gold' already exists
-
-      ℹ Warehouse 'sales_reporting' already exists
+      ℓ Folder rules already configured
+      ℓ Principals already assigned
+      ℓ Git integration already connected
+      ℓ Deployment pipeline already exists
 
       ═════════════════════════════════════════════════════════════════
       ✅ Deployment completed! (no changes needed)
@@ -373,27 +373,27 @@ steps:
       ╚══════════════════════════════════════════════════════════════╝
 
       Folders:
-      ├── 01_Bronze
-      │   └── Lakehouse: sales_raw
-      ├── 02_Silver
-      │   └── Lakehouse: sales_curated
-      ├── 03_Gold
-      │   ├── Lakehouse: sales_gold
-      │   └── Warehouse: sales_reporting
-      └── 99_Notebooks
-          ├── Notebook: ingest_sales
-          ├── Notebook: transform_sales
-          └── Notebook: report_generation
+      ├── 000 Orchestrate
+      ├── 100 Ingest
+      ├── 200 Store
+      ├── 300 Prepare
+      ├── 400 Model
+      ├── 500 Visualize
+      ├── 999 Libraries
+      └── Archive
 
-      Summary:
-        Folders: 4
-        Lakehouses: 3
-        Warehouses: 1
-        Notebooks: 3
-        Pipelines: 2
-        Semantic Models: 1
+      Folder Rules (11):
+        DataPipeline → 000 Orchestrate
+        Lakehouse → 200 Store
+        Notebook → 300 Prepare
+        Report → 500 Visualize
+        ... (11 total)
+
+      Deployment Pipeline: acme-sales-analytics-pipeline
+        Stages: Development → Test → Production
 
       Git Status: Connected (main branch)
+      Principals: 2 assigned
     checkpoint_question: Does your workspace appear in the Fabric portal with all expected items?
     tips:
       - Bookmark the workspace URL for quick access
@@ -483,12 +483,11 @@ steps:
       Workspace: acme-sales-analytics-dev
 
       This will permanently delete:
-        - 4 Folders
-        - 3 Lakehouses (including all data!)
-        - 1 Warehouse
-        - 3 Notebooks
-        - 2 Pipelines
-        - 1 Semantic Model
+        - 8 Folders (000 Orchestrate → Archive)
+        - 11 Folder Rules
+        - Deployment Pipeline (3 stages)
+        - Git Integration
+        - All workspace items (created via Git Sync or manually)
 
       ⚠️  THIS ACTION CANNOT BE UNDONE
 
@@ -503,6 +502,7 @@ steps:
     warnings:
       - This action **CANNOT** be undone
       - All data in lakehouses and warehouses will be **permanently lost**
+      - All items (created via Git Sync or manually) will be deleted
       - Use with extreme caution in production environments
       - Consider backups before destroying production workspaces
     tips:

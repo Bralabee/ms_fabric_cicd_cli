@@ -291,12 +291,10 @@ steps:
           git_branch: "main"
           git_directory: "/fabric"  # Optional: store artifacts in a subdirectory
 
-        # Rest of configuration...
-        lakehouses:
-          - name: "sales_raw"
-            folder: "01_Bronze"
-
-        # ...
+        # Items are managed via Git Sync (empty arrays)
+        lakehouses: []
+        notebooks: []
+        resources: []
 
         # Environment-specific Git branches
         environments:
@@ -321,10 +319,12 @@ steps:
       When you deploy a workspace with Git configuration, the framework will:
 
       1. Create the workspace
-      2. Create folders and items
-      3. Add principals
-      4. **Connect workspace to Git repository**
-      5. **Perform initial sync to commit workspace contents**
+      2. Create 8 numbered folders (000 Orchestrate → Archive)
+      3. Apply 11 folder rules
+      4. Add principals
+      5. **Connect workspace to Git repository**
+      6. **Create deployment pipeline (3 stages)**
+      7. Items sync automatically from Git after connection
     code:
       language: bash
       content: |
@@ -348,12 +348,13 @@ steps:
       ✓ Workspace 'acme-sales-analytics-dev' created
 
       Creating folders...
-      ✓ Folder '01_Bronze' created
-      ✓ Folder '02_Silver' created
+      ✓ Folder '000 Orchestrate' created
+      ✓ Folder '100 Ingest' created
+      ✓ Folder '200 Store' created
+      ...
 
-      Creating items...
-      ✓ Lakehouse 'sales_raw' created
-      ✓ Notebook 'transform_data' created
+      Applying folder rules...
+      ✓ 11 folder rules configured
 
       Adding principals...
       ✓ Principal 'dev-team@acme.com' added with 'Member' role
@@ -361,7 +362,10 @@ steps:
       Connecting Git...
       ✓ Git integration: Connecting to Azure DevOps...
       ✓ Git integration: Connected to 'main' branch
-      ✓ Git sync: Initial commit created
+      ✓ Git sync: Items will appear as they sync from repo
+
+      Creating deployment pipeline...
+      ✓ Pipeline created (3 stages: Dev → Test → Prod)
 
       ════════════════════════════════════════════════════════════════
       ✅ Deployment completed successfully!

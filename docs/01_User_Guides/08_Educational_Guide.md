@@ -1,6 +1,8 @@
 # The Complete Guide to Fabric CLI CI/CD
 
-> **Version**: 1.7.6 · **Audience**: Platform Engineers, Data Engineers, DevOps, Team Leads
+> **Audience**: Platform Engineers, Data Engineers, DevOps, Team Leads | **Time**: 45–60 min | **Deployment Path**: Conceptual (all paths)
+> **Difficulty**: Beginner | **Prerequisites**: None — conceptual overview
+> **See also**: [00_START_HERE.md](00_START_HERE.md) for hands-on orientation | [Local Deployment Guide](LOCAL_DEPLOYMENT_GUIDE.md) for first deploy | [CLI Reference](CLI_REFERENCE.md) for commands
 
 ---
 
@@ -384,19 +386,19 @@ Choose a template based on your project requirements:
       └── "Regulated industry (HIPAA/PCI/SOX)" ── compliance_regulated ★★★★★
 ```
 
-| Template | Includes | Use Case |
+| Template | Configures | Use Case |
 |:---|:---|:---|
-| `minimal_starter` | 1 Lakehouse, 2 folders | POCs, learning |
-| `basic_etl` | Lakehouses + Warehouses, ETL folders | Standard data pipelines |
-| `medallion` | Bronze/Silver/Gold Lakehouses, DQ folders | Medallion architecture |
-| `advanced_analytics` | ML items, experimentation folders | Analytics & ML workloads |
-| `data_science` | Notebooks focus, model folders | Research & experimentation |
-| `realtime_streaming` | Eventstreams, KQL databases | IoT, real-time analytics |
-| `specialized_timeseries` | Time-series optimised items | APM, metrics, logs |
-| `data_mesh_domain` | Domain-scoped items, contracts | Domain ownership |
-| `migration_hybrid` | Legacy + modern items | Cloud migration |
-| `compliance_regulated` | Audit trails, encryption config | HIPAA, PCI, SOX compliance |
-| `extensive_example` | All item types demonstrated | Enterprise reference |
+| `minimal_starter` | 3 numbered folders, Git connection | POCs, learning |
+| `basic_etl` | 8 numbered folders, folder_rules, Git integration | Standard data pipelines |
+| `medallion` | 8 numbered folders, folder_rules, deployment pipeline | Medallion architecture |
+| `advanced_analytics` | 8 numbered folders, folder_rules, Git integration | Analytics & ML workloads |
+| `data_science` | 8 numbered folders, folder_rules, Git integration | Research & experimentation |
+| `realtime_streaming` | 8 numbered folders, folder_rules, Git integration | IoT, real-time analytics |
+| `specialized_timeseries` | 8 numbered folders, folder_rules, Git integration | APM, metrics, logs |
+| `data_mesh_domain` | 8 numbered folders, folder_rules, domain config | Domain ownership |
+| `migration_hybrid` | 8 numbered folders, folder_rules, Git integration | Cloud migration |
+| `compliance_regulated` | 8 numbered folders, folder_rules, audit config | HIPAA, PCI, SOX compliance |
+| `extensive_example` | All sections demonstrated, folder_rules | Enterprise reference |
 
 ---
 

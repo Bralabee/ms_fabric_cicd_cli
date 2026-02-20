@@ -139,10 +139,10 @@ deployment_pipeline:
       capacity_id: "${FABRIC_CAPACITY_ID}"
     test:
       workspace_name: "compliance-workspace [Test]"
-      capacity_id: "${FABRIC_CAPACITY_ID}"
+      capacity_id: "${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}"
     production:
       workspace_name: "compliance-workspace [Production]"
-      capacity_id: "${FABRIC_CAPACITY_ID}"
+      capacity_id: "${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}"
 
 # REGULATORY COMPLIANCE GUIDANCE:
 # ─────────────────────────────────────────────────────────────────────────────

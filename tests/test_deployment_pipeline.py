@@ -9,15 +9,20 @@ Tests verify:
 - High-level promote() convenience method
 - DeploymentStage.next_stage() logic
 - Retry and token refresh behaviour
+- Power BI API: token acquisition, principal type mapping,
+  list_pipeline_users, add_pipeline_user
 """
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 import requests
 
 from usf_fabric_cli.services.deployment_pipeline import (
+    PBI_API_BASE_URL,
+    PBI_PRINCIPAL_TYPE_MAP,
+    PBI_TOKEN_SCOPE,
     DeploymentStage,
     FabricDeploymentPipelineAPI,
 )
@@ -363,3 +368,298 @@ class TestTokenRefresh:
 
         # Stays the same
         assert api.headers["Authorization"] == "Bearer token-abc"
+
+
+# ── PBI API constants tests ───────────────────────────────────────
+
+
+class TestPBIConstants:
+    """Tests for Power BI API constants and mapping table."""
+
+    def test_pbi_api_base_url(self):
+        assert PBI_API_BASE_URL == "https://api.powerbi.com/v1.0/myorg"
+
+    def test_pbi_token_scope(self):
+        assert PBI_TOKEN_SCOPE == "https://analysis.windows.net/powerbi/api/.default"
+
+    def test_principal_type_map_service_principal(self):
+        assert PBI_PRINCIPAL_TYPE_MAP["ServicePrincipal"] == "App"
+
+    def test_principal_type_map_case_insensitive_sp(self):
+        assert PBI_PRINCIPAL_TYPE_MAP["serviceprincipal"] == "App"
+
+    def test_principal_type_map_app(self):
+        assert PBI_PRINCIPAL_TYPE_MAP["App"] == "App"
+
+    def test_principal_type_map_user(self):
+        assert PBI_PRINCIPAL_TYPE_MAP["User"] == "User"
+
+    def test_principal_type_map_group(self):
+        assert PBI_PRINCIPAL_TYPE_MAP["Group"] == "Group"
+
+
+# ── PBI token acquisition tests ───────────────────────────────────
+
+
+class TestPBITokenAcquisition:
+    """Tests for _get_pbi_headers() and _map_principal_type()."""
+
+    def test_map_principal_type_sp_to_app(self, api):
+        assert api._map_principal_type("ServicePrincipal") == "App"
+
+    def test_map_principal_type_user_unchanged(self, api):
+        assert api._map_principal_type("User") == "User"
+
+    def test_map_principal_type_group_unchanged(self, api):
+        assert api._map_principal_type("Group") == "Group"
+
+    def test_map_principal_type_unknown_passthrough(self, api):
+        """Unknown types are returned as-is (passthrough)."""
+        assert api._map_principal_type("CustomPrincipal") == "CustomPrincipal"
+
+    def test_get_pbi_headers_with_token_manager(self, mock_env_vars):
+        """When TokenManager has a credential, acquire PBI-scoped token."""
+        mock_credential = MagicMock()
+        mock_token = MagicMock()
+        mock_token.token = "pbi-token-from-credential"
+        mock_credential.get_token.return_value = mock_token
+
+        mock_tm = MagicMock()
+        mock_tm._credential = mock_credential
+        mock_tm.get_token.return_value = "fabric-token"
+
+        api = FabricDeploymentPipelineAPI(
+            access_token="fabric-token",
+            token_manager=mock_tm,
+        )
+
+        headers = api._get_pbi_headers()
+
+        assert headers["Authorization"] == "Bearer pbi-token-from-credential"
+        assert headers["Content-Type"] == "application/json"
+        mock_credential.get_token.assert_called_once_with(PBI_TOKEN_SCOPE)
+
+    def test_get_pbi_headers_fallback_to_fabric_token(self, mock_env_vars):
+        """When no TokenManager, fall back to the Fabric token."""
+        api = FabricDeploymentPipelineAPI(access_token="my-fabric-token")
+
+        headers = api._get_pbi_headers()
+
+        assert headers["Authorization"] == "Bearer my-fabric-token"
+
+    def test_get_pbi_headers_credential_exception_fallback(self, mock_env_vars):
+        """When credential.get_token raises, fall back to Fabric token."""
+        mock_credential = MagicMock()
+        mock_credential.get_token.side_effect = Exception("MSAL error")
+
+        mock_tm = MagicMock()
+        mock_tm._credential = mock_credential
+        mock_tm.get_token.return_value = "fabric-token"
+
+        api = FabricDeploymentPipelineAPI(
+            access_token="fabric-token",
+            token_manager=mock_tm,
+        )
+
+        headers = api._get_pbi_headers()
+
+        # Falls back to Fabric token on error
+        assert headers["Authorization"] == "Bearer fabric-token"
+
+    def test_get_pbi_headers_caches_token(self, mock_env_vars):
+        """PBI token is cached — second call doesn't re-acquire."""
+        mock_credential = MagicMock()
+        mock_token = MagicMock()
+        mock_token.token = "cached-pbi-token"
+        mock_credential.get_token.return_value = mock_token
+
+        mock_tm = MagicMock()
+        mock_tm._credential = mock_credential
+        mock_tm.get_token.return_value = "fabric-token"
+
+        api = FabricDeploymentPipelineAPI(
+            access_token="fabric-token",
+            token_manager=mock_tm,
+        )
+
+        # First call acquires
+        api._get_pbi_headers()
+        # Second call should use cache
+        api._get_pbi_headers()
+
+        # get_token called only once
+        assert mock_credential.get_token.call_count == 1
+
+    def test_get_pbi_headers_no_credential_attribute(self, mock_env_vars):
+        """When TokenManager exists but has no _credential, fall back."""
+        mock_tm = MagicMock(spec=[])  # Empty spec — no _credential
+        mock_tm.get_token = MagicMock(return_value="fabric-token")
+
+        api = FabricDeploymentPipelineAPI(
+            access_token="fabric-token",
+            token_manager=mock_tm,
+        )
+
+        headers = api._get_pbi_headers()
+
+        assert headers["Authorization"] == "Bearer fabric-token"
+
+
+# ── Pipeline user management tests (PBI API) ──────────────────────
+
+
+class TestPipelineUsers:
+    """Tests for list_pipeline_users() and add_pipeline_user()."""
+
+    @patch("usf_fabric_cli.services.deployment_pipeline.requests.get")
+    def test_list_pipeline_users_success(self, mock_get, api):
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "value": [
+                {
+                    "identifier": "user-001",
+                    "principalType": "User",
+                    "accessRight": "Admin",
+                },
+                {
+                    "identifier": "sp-001",
+                    "principalType": "App",
+                    "accessRight": "Admin",
+                },
+            ]
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+
+        result = api.list_pipeline_users("pipe-abc")
+
+        assert result["success"] is True
+        assert len(result["users"]) == 2
+        mock_get.assert_called_once()
+        call_url = mock_get.call_args[0][0]
+        assert "api.powerbi.com" in call_url
+        assert "/pipelines/pipe-abc/users" in call_url
+
+    @patch("usf_fabric_cli.services.deployment_pipeline.requests.get")
+    def test_list_pipeline_users_failure(self, mock_get, api):
+        mock_get.side_effect = requests.RequestException("Connection refused")
+
+        result = api.list_pipeline_users("pipe-abc")
+
+        assert result["success"] is False
+        assert "Connection refused" in result["error"]
+
+    @patch("usf_fabric_cli.services.deployment_pipeline.requests.post")
+    def test_add_pipeline_user_success(self, mock_post, api):
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        result = api.add_pipeline_user(
+            pipeline_id="pipe-abc",
+            identifier="group-guid-123",
+            principal_type="Group",
+            pipeline_role="Admin",
+        )
+
+        assert result["success"] is True
+        # Verify the POST body
+        call_kwargs = mock_post.call_args
+        body = (
+            call_kwargs[1]["json"]
+            if "json" in call_kwargs[1]
+            else call_kwargs.kwargs["json"]
+        )
+        assert body["principalType"] == "Group"
+        assert body["accessRight"] == "Admin"
+        assert body["identifier"] == "group-guid-123"
+
+    @patch("usf_fabric_cli.services.deployment_pipeline.requests.post")
+    def test_add_pipeline_user_sp_mapped_to_app(self, mock_post, api):
+        """ServicePrincipal type is automatically mapped to App."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        result = api.add_pipeline_user(
+            pipeline_id="pipe-abc",
+            identifier="sp-guid-456",
+            principal_type="ServicePrincipal",
+            pipeline_role="Admin",
+        )
+
+        assert result["success"] is True
+        call_kwargs = mock_post.call_args
+        body = (
+            call_kwargs[1]["json"]
+            if "json" in call_kwargs[1]
+            else call_kwargs.kwargs["json"]
+        )
+        # Must be "App", not "ServicePrincipal"
+        assert body["principalType"] == "App"
+
+    @patch("usf_fabric_cli.services.deployment_pipeline.requests.post")
+    def test_add_pipeline_user_already_exists_409(self, mock_post, api):
+        """409 Conflict (already exists) is handled as success with reused flag."""
+        mock_exc = requests.HTTPError("409 Conflict")
+        mock_resp = MagicMock()
+        mock_resp.status_code = 409
+        mock_resp.text = "User already exists"
+        mock_exc.response = mock_resp
+
+        mock_post_response = MagicMock()
+        mock_post_response.raise_for_status.side_effect = mock_exc
+        mock_post_response.status_code = 409
+        mock_post.return_value = mock_post_response
+
+        result = api.add_pipeline_user(
+            pipeline_id="pipe-abc",
+            identifier="existing-user",
+            principal_type="User",
+        )
+
+        assert result["success"] is True
+        assert result.get("reused") is True
+
+    @patch("usf_fabric_cli.services.deployment_pipeline.requests.post")
+    def test_add_pipeline_user_network_failure(self, mock_post, api):
+        mock_post.side_effect = requests.RequestException("Timeout")
+
+        result = api.add_pipeline_user(
+            pipeline_id="pipe-abc",
+            identifier="user-guid",
+            principal_type="User",
+        )
+
+        assert result["success"] is False
+        assert "Timeout" in result["error"]
+
+    @patch("usf_fabric_cli.services.deployment_pipeline.requests.post")
+    def test_add_pipeline_user_uses_pbi_url(self, mock_post, api):
+        """Verify the POST goes to api.powerbi.com, not api.fabric."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        api.add_pipeline_user("pipe-abc", "id-123", "User")
+
+        call_url = mock_post.call_args[0][0]
+        assert "api.powerbi.com" in call_url
+        assert "api.fabric.microsoft.com" not in call_url
+
+    @patch("usf_fabric_cli.services.deployment_pipeline.requests.post")
+    def test_add_pipeline_user_access_right_field(self, mock_post, api):
+        """Verify the PBI API uses 'accessRight', not 'pipelineRole'."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        api.add_pipeline_user("pipe-abc", "id-123", "User", "Admin")
+
+        body = mock_post.call_args[1]["json"]
+        assert "accessRight" in body
+        assert "pipelineRole" not in body

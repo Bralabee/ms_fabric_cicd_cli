@@ -1,5 +1,10 @@
 # From Local to CI/CD: What Changed, Why, and How
 
+> **📁 HISTORICAL DOCUMENT** — This is a retrospective documenting the migration from local
+> execution to CI/CD (v1.5.0 → v1.7.0). It is valuable for understanding *why* certain design
+> decisions were made, but is **not a setup guide**. For current setup instructions, see
+> [00_START_HERE.md](00_START_HERE.md).
+
 > **Audience**: Engineers and stakeholders who used the CLI toolkit successfully on local machines or via Docker and need to understand the fixes required to make it work in automated CI/CD pipelines (GitHub Actions).
 
 ---

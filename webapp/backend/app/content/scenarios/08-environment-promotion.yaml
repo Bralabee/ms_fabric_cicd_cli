@@ -189,32 +189,46 @@ steps:
           git_branch: "main"
           git_directory: "/acme-sales"
 
-        # Medallion folder structure (same for all environments)
+        # Standard numbered folder structure (same for all environments)
         folders:
-          - "01_Bronze"
-          - "02_Silver"
-          - "03_Gold"
-          - "99_Notebooks"
+          - "000 Orchestrate"
+          - "100 Ingest"
+          - "200 Store"
+          - "300 Prepare"
+          - "400 Model"
+          - "500 Visualize"
+          - "999 Libraries"
+          - "Archive"
 
-        # Lakehouses with environment-specific storage
-        lakehouses:
-          - name: "sales_raw_{{ env }}"
-            folder: "01_Bronze"
-            description: "Raw sales data landing zone"
+        # Folder rules map item types to folders automatically
+        folder_rules:
+          DataPipeline: "000 Orchestrate"
+          DataflowGen2: "000 Orchestrate"
+          Eventstream: "100 Ingest"
+          Lakehouse: "200 Store"
+          Notebook: "300 Prepare"
+          SparkJobDefinition: "300 Prepare"
+          Warehouse: "400 Model"
+          SemanticModel: "400 Model"
+          Report: "500 Visualize"
+          Dashboard: "500 Visualize"
+          Environment: "999 Libraries"
 
-          - name: "sales_curated_{{ env }}"
-            folder: "02_Silver"
-            description: "Cleaned and validated sales data"
+        # Items are managed via Git Sync, not direct CLI creation
+        lakehouses: []
+        notebooks: []
+        resources: []
 
-          - name: "sales_gold_{{ env }}"
-            folder: "03_Gold"
-            description: "Business-ready sales metrics"
-
-        # Notebooks
-        notebooks:
-          - name: "ingest_sales_data"
-            folder: "99_Notebooks"
-            description: "Ingests data from ${STORAGE_ACCOUNT_URL}"
+        # Deployment pipeline for environment promotion
+        deployment_pipeline:
+          name: "acme-sales-analytics-pipeline"
+          stages:
+            - name: development
+              workspace: "acme-sales-analytics-dev"
+            - name: test
+              workspace: "acme-sales-analytics-test"
+            - name: production
+              workspace: "acme-sales-analytics-prod"
 
         # Base principals (environment overrides add more)
         principals:
@@ -225,6 +239,7 @@ steps:
       - Use `{{ env }}` for values that appear in Fabric UI (names, descriptions)
       - Use `${VAR}` for secrets and IDs that shouldn't be in code
       - Keep folder structure consistent across environments
+      - Items (lakehouses, notebooks) are managed via Git Sync after workspace envelope is created
 
   - id: create-env-overrides
     title: "Step 3: Create Environment Override Files"
@@ -670,15 +685,17 @@ steps:
         Capacity: F2 (dev-capacity-guid)
 
       Creating folders...
-      ✓ Folder '01_Bronze' created
-      ✓ Folder '02_Silver' created
-      ✓ Folder '03_Gold' created
-      ✓ Folder '99_Notebooks' created
+      ✓ Folder '000 Orchestrate' created
+      ✓ Folder '100 Ingest' created
+      ✓ Folder '200 Store' created
+      ✓ Folder '300 Prepare' created
+      ✓ Folder '400 Model' created
+      ✓ Folder '500 Visualize' created
+      ✓ Folder '999 Libraries' created
+      ✓ Folder 'Archive' created
 
-      Creating lakehouses...
-      ✓ Lakehouse 'sales_raw_dev' created
-      ✓ Lakehouse 'sales_curated_dev' created
-      ✓ Lakehouse 'sales_gold_dev' created
+      Applying folder rules...
+      ✓ 11 folder rules configured
 
       Assigning principals...
       ✓ Principal 'project-owner' assigned role 'Admin'
@@ -743,23 +760,30 @@ steps:
       ✓ Workspace 'acme-sales-analytics-test' created
         Capacity: F8 (test-capacity-guid)
 
-      Creating lakehouses...
-      ✓ Lakehouse 'sales_raw_test' created
-      ✓ Lakehouse 'sales_curated_test' created
-      ✓ Lakehouse 'sales_gold_test' created
+      Creating folders...
+      ✓ Folder '000 Orchestrate' created
+      ...
+      ✓ Folder 'Archive' created
+
+      Applying folder rules...
+      ✓ 11 folder rules configured
 
       Assigning principals...
       ✓ Principal 'test-admin' assigned role 'Admin'
       ✓ Principal 'qa-team-group' assigned role 'Contributor'
       ✓ Principal 'test-viewers-group' assigned role 'Viewer'
 
+      Connecting Git & creating deployment pipeline...
+      ✓ Git connected (main branch)
+      ✓ Deployment pipeline configured
+
       ════════════════════════════════════════════════════════════════
       ✅ Deployment to TEST completed successfully!
       ════════════════════════════════════════════════════════════════
     tips:
       - TEST workspace has different capacity (F8 vs F2)
-      - TEST lakehouses end with `-test` suffix
-      - Different principals have access (QA team, not all developers)
+      - TEST workspace gets workspace envelope (folders, rules, principals, Git, pipeline)
+      - Items appear via Git Sync after workspace connects to repo
 
   - id: promote-to-prod
     title: "Step 11: Promote to Production"
@@ -820,15 +844,22 @@ steps:
       ✓ Workspace 'acme-sales-analytics-prod' created
         Capacity: F64 (prod-capacity-guid)
 
-      Creating lakehouses...
-      ✓ Lakehouse 'sales_raw_prod' created
-      ✓ Lakehouse 'sales_curated_prod' created
-      ✓ Lakehouse 'sales_gold_prod' created
+      Creating folders...
+      ✓ Folder '000 Orchestrate' created
+      ...
+      ✓ Folder 'Archive' created
+
+      Applying folder rules...
+      ✓ 11 folder rules configured
 
       Assigning principals...
       ✓ Principal 'prod-admin' assigned role 'Admin'
       ✓ Principal 'prod-viewers-group' assigned role 'Viewer'
       ✓ Principal 'automation-sp' assigned role 'Contributor'
+
+      Connecting Git & creating deployment pipeline...
+      ✓ Git connected (main branch)
+      ✓ Deployment pipeline configured
 
       Writing audit log...
       ✓ Logged to: audit_logs/fabric_operations_2026-01-09.jsonl

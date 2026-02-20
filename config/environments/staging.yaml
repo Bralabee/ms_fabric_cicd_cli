@@ -3,7 +3,7 @@
 # NOTE: Update workspace name to match your project naming convention.
 
 workspace:
-  capacity_id: "${FABRIC_CAPACITY_ID}"  # Override via FABRIC_CAPACITY_ID env var
+  capacity_id: "${FABRIC_CAPACITY_ID_STAGING}"  # Staging-specific capacity (production-like sizing)
   git_branch: "main"
 
 # Full setup but smaller scale
@@ -11,14 +11,19 @@ principals:
   - id: "${STAGING_ADMIN_EMAIL}"
     role: "Admin"
 
+    type: User
   - id: "${STAGING_QA_GROUP_ID}" # QA Team Group Object ID
     role: "Contributor"
 
   # Mandatory Security Principals
+    type: Group
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
     role: "Admin"
     description: "Mandatory Additional Admin"
 
+    type: Group
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
     role: "Contributor"
     description: "Mandatory Additional Contributor"
+
+    type: Group

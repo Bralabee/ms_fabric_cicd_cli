@@ -348,9 +348,13 @@ steps:
 
       ✓ Authenticated as Service Principal
       ✓ Workspace 'acme-sales-analytics-dev' created
-      ✓ Folder '01_Bronze' created
-      ✓ Lakehouse 'sales_raw' created
+      ✓ Folder '000 Orchestrate' created
+      ✓ Folder '100 Ingest' created
+      ✓ Folder '200 Store' created
       ...
+      ✓ 11 folder rules configured
+      ✓ Deployment pipeline created (3 stages)
+      ✓ Git integration connected
 
       ════════════════════════════════════════════════════════════════
       ✅ Deployment completed successfully!

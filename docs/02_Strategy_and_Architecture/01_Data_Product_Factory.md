@@ -77,49 +77,33 @@ workspace:
   git_branch: "main"
   git_directory: "/sales-analytics"
 
-# Folder structure (medallion architecture)
+# Folder structure (numbered convention)
 folders:
-  - "Bronze"
-  - "Silver"
-  - "Gold"
-  - "Notebooks"
-  - "Pipelines"
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
+  - "Archive"
 
-# Data storage
-lakehouses:
-  - name: "raw_data_lakehouse"
-    folder: "Bronze"
-    description: "Raw data from source systems"
+# Items managed via Git Sync — arrays intentionally empty
+lakehouses: []
+notebooks: []
+pipelines: []
+warehouses: []
 
-  - name: "processed_data_lakehouse"
-    folder: "Silver"
-    description: "Cleaned and validated data"
-
-  - name: "analytics_lakehouse"
-    folder: "Gold"
-    description: "Business-ready analytics data"
-
-# Analytics warehouse
-warehouses:
-  - name: "analytics_warehouse"
-    folder: "Gold"
-    description: "Primary analytics warehouse"
-
-# Data processing notebooks
-notebooks:
-  - name: "data_ingestion"
-    folder: "Notebooks"
-    description: "Data ingestion from source systems"
-
-  - name: "data_transformation"
-    folder: "Notebooks"
-    description: "Data cleaning and transformation"
-
-# Orchestration pipelines
-pipelines:
-  - name: "daily_etl_pipeline"
-    folder: "Pipelines"
-    description: "Daily ETL orchestration pipeline"
+# Folder rules — controls post-Git-sync item placement
+folder_rules:
+  - type: DataPipeline
+    folder: "000 Orchestrate"
+  - type: Lakehouse
+    folder: "200 Store"
+  - type: Notebook
+    folder: "300 Prepare"
+  - type: SemanticModel
+    folder: "500 Visualize"
 
 # Security & Access Control
 # NOTE: Use Object IDs (GUIDs) for all principals. Email addresses are not
@@ -175,10 +159,10 @@ make deploy config=config/projects/sales_analytics/config.yaml env=dev
 1. **Authentication:** The CLI authenticates using the Service Principal from `.env`.
 2. **Config Loading:** The `ConfigManager` loads `config.yaml`, substitutes `${ENV_VARS}`, merges `config/environments/dev.yaml`, and validates against the JSON schema.
 3. **Idempotency Check:** It checks if `SalesAnalytics [DEV]` exists. If not, it creates it assigned to the specified Capacity.
-4. **Folder Structure:** Creates the medallion folder structure (Bronze/Silver/Gold/Notebooks/Pipelines).
-5. **Item Provisioning:** Creates lakehouses, warehouses, notebooks, and pipelines.
+4. **Folder Structure:** Creates the numbered folder structure (000 Orchestrate through Archive).
+5. **Git Binding:** Calls the Fabric REST API to connect the workspace to the `main` branch.
 6. **Principal Assignment:** Adds the specified users and service principals with their roles.
-7. **Git Binding:** Calls the Fabric REST API to connect the workspace to the `main` branch.
+7. **Folder Organization:** Applies folder_rules to organize Git-synced items into correct folders.
 
 ---
 

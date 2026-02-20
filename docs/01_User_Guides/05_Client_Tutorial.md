@@ -1,5 +1,9 @@
 # Fabric CLI CI/CD Framework - User Guide
 
+> **Audience**: Clients, Stakeholders, Project Managers | **Time**: 15–20 min | **Deployment Path**: Overview (all)
+> **Difficulty**: Beginner | **Prerequisites**: None
+> **See also**: [00_START_HERE.md](00_START_HERE.md) for hands-on getting started
+
 ## 1. Introduction
 
 The Fabric CLI CI/CD Framework automates Microsoft Fabric workspace lifecycle management through configuration-driven deployment. This framework eliminates manual portal operations by translating declarative YAML configurations into fully provisioned environments. Users specify infrastructure requirements once, and the framework handles creation, updates, and ongoing maintenance.
@@ -42,30 +46,39 @@ Establishes the folder structure for workspace organization.
 
 ```yaml
 folders:
-  - "01_Raw_Data"
-  - "02_Transformation"
-  - "03_Gold_Reports"
-  - "99_Admin"
+  - "000 Orchestrate"
+  - "100 Ingest"
+  - "200 Store"
+  - "300 Prepare"
+  - "400 Model"
+  - "500 Visualize"
+  - "999 Libraries"
+  - "Archive"
 ```
 
 #### C. Infrastructure (Items)
 
-Specifies the Fabric items to be created and their location within the folder structure.
+> **Git-Sync-Only Strategy (Current Best Practice):** In the current standard workflow, Fabric items (lakehouses, notebooks, pipelines, etc.) are managed through **Git Sync** — they are committed to Git and synchronized into the workspace automatically by Fabric. The YAML config defines the workspace envelope (folders, principals, Git connection, deployment pipeline), while item arrays are left empty:
 
 ```yaml
-lakehouses:
-  - name: "Finance_Raw"
-    folder: "01_Raw_Data"
-    description: "Landing zone for raw SAP data"
+# Items managed via Git Sync — arrays intentionally empty
+lakehouses: []
+notebooks: []
+resources: []
+```
 
-warehouses:
-  - name: "Finance_Gold"
-    folder: "03_Gold_Reports"
-    description: "Curated data for Power BI reporting"
+> The `folder_rules` section controls where Git-synced items are placed within the workspace folder structure:
 
-pipelines:
-  - name: "Ingest_SAP_Daily"
-    folder: "02_Transformation"
+```yaml
+folder_rules:
+  - type: "Lakehouse"
+    folder: "200 Store"
+  - type: "Notebook"
+    folder: "300 Prepare"
+  - type: "SemanticModel"
+    folder: "500 Visualize"
+  - name_contains: "ingest"
+    folder: "100 Ingest"
 ```
 
 #### D. Security (Principals)
@@ -140,7 +153,7 @@ To create a "Sales" project for client "Contoso" using the `medallion` template 
 
 3. **Customization**:
     * Open `config/projects/contoso/sales.yaml`.
-    * **Review**: Adjust folder names as required (e.g., "01_Raw" vs "01_Bronze").
+    * **Review**: Adjust folder names as required (standard convention uses numbered prefixes: `000`, `100`, `200`, etc.).
     * **Security**: Verify that principal IDs match the intended users or groups.
     * **Save** the file.
 
@@ -161,9 +174,10 @@ make deploy config=config/projects/MyClient/SalesProject.yaml env=dev
     * *If absent*: The workspace is created.
     * *If present*: The workspace is updated (idempotent operation).
 5. **Folder Structure**: Missing folders are created.
-6. **Item Creation**: Missing Lakehouses, Warehouses, and other items are provisioned.
+6. **Git Connection**: Workspace is connected to the specified Git repository and branch.
 7. **Security Synchronization**: Users and permissions are updated.
 8. **Domain Synchronization**: The workspace is assigned to the specified Domain.
+9. **Folder Organization**: Items synced from Git are organized into folders per `folder_rules`.
 9. **Git Synchronization**: The workspace is connected to the configured Git repository.
 
 ### Step 4: Verification
