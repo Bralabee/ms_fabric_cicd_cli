@@ -12,7 +12,6 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import requests
-
 from packaging import version
 
 from usf_fabric_cli.exceptions import (
@@ -623,8 +622,7 @@ class FabricCLIWrapper:
                 return access_token.token
             except Exception as exc:
                 logger.warning(
-                    "Could not acquire PBI token (%s); "
-                    "falling back to Fabric token",
+                    "Could not acquire PBI token (%s); " "falling back to Fabric token",
                     exc,
                 )
         return self.fabric_token
