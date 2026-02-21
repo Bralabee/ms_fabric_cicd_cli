@@ -196,9 +196,9 @@ class FabricSecrets(BaseSettings):
             FabricSecrets instance
         """
         if env_file is None:
-            instance = cls(_env_file=None)
+            instance = cls(_env_file=None)  # type: ignore[call-arg]
         else:
-            instance = cls(_env_file=env_file)
+            instance = cls(_env_file=env_file)  # type: ignore[call-arg]
 
         # If Key Vault is configured, attempt to populate missing secrets
         if instance.azure_keyvault_url and KEYVAULT_AVAILABLE:
