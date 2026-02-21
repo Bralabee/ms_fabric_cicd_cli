@@ -476,10 +476,78 @@ def promote(
         # Wait for Fabric Git Sync if requested
         if wait_for_git_sync > 0:
             console.print(
-                f"[blue]⏳ Waiting {wait_for_git_sync}s for Fabric "
+                f"[blue]⏳ Waiting up to {wait_for_git_sync}s for Fabric "
                 "Git Sync to complete...[/blue]"
             )
-            _time.sleep(wait_for_git_sync)
+
+            # Fetch the source workspace ID from the pipeline
+            source_ws_id = None
+            stages_result = api.get_pipeline_stages(pipeline["id"])
+            if stages_result.get("success"):
+                for stage in stages_result.get("stages", []):
+                    if stage.get("displayName") == source_stage:
+                        source_ws_id = stage.get("workspaceId")
+                        break
+
+            if source_ws_id:
+                from usf_fabric_cli.services.fabric_git_api import FabricGitAPI
+
+                git_api = FabricGitAPI(
+                    access_token=env_vars["FABRIC_TOKEN"],
+                    token_manager=token_manager,
+                )
+
+                elapsed = 0
+                poll_interval = 5
+
+                # Active polling loop
+                while elapsed < wait_for_git_sync:
+                    status_res = git_api.get_git_status(source_ws_id)
+                    if status_res.get("success"):
+                        status_data = status_res.get("status", {})
+                        remote_commit = status_data.get("remoteCommitHash")
+                        ws_head = status_data.get("workspaceHead")
+
+                        if remote_commit and remote_commit == ws_head:
+                            short_hash = str(ws_head)[:7] if ws_head else "unknown"
+                            console.print(
+                                "[green]✅ Fabric Git Sync complete "
+                                f"(Commit: {short_hash})[/green]"
+                            )
+                            break
+
+                        short_remote = (
+                            str(remote_commit)[:7] if remote_commit else "None"
+                        )
+                        short_head = str(ws_head)[:7] if ws_head else "None"
+                        console.print(
+                            f"[dim]   Syncing... (Head: {short_head}, "
+                            f"Remote: {short_remote})[/dim]"
+                        )
+                    else:
+                        error_str = str(status_res.get("error", ""))
+                        if "WorkspaceNotConnectedToGit" in error_str:
+                            console.print(
+                                "[yellow]⚠️  Workspace is not connected to Git. "
+                                "Skipping wait.[/yellow]"
+                            )
+                            break
+                        console.print(f"[yellow]   Status check: {error_str}[/yellow]")
+
+                    _time.sleep(poll_interval)
+                    elapsed += poll_interval
+
+                if elapsed >= wait_for_git_sync:
+                    console.print(
+                        "[yellow]⚠️  Git Sync polling timed out "
+                        f"after {wait_for_git_sync}s[/yellow]"
+                    )
+            else:
+                console.print(
+                    "[yellow]⚠️  Could not determine source workspace ID. "
+                    "Falling back to naive sleep.[/yellow]"
+                )
+                _time.sleep(wait_for_git_sync)
 
         if selective:
             # Parse exclude types

@@ -67,6 +67,83 @@ class TestCLIPromote:
                 wait=True,
             )
 
+    @patch("time.sleep")
+    @patch("usf_fabric_cli.services.fabric_git_api.FabricGitAPI")
+    def test_promote_waits_for_git_sync(
+        self, mock_git_api_class, mock_sleep, runner, mock_env_vars
+    ):
+        """Verify promote waits for Git sync when requested."""
+        with patch(
+            "usf_fabric_cli.services.deployment_pipeline.FabricDeploymentPipelineAPI"
+        ) as MockAPI:
+            mock_api_instance = MagicMock()
+            mock_api_instance.get_pipeline_by_name.return_value = {"id": "pipe-123"}
+            mock_api_instance.get_pipeline_stages.return_value = {
+                "success": True,
+                "stages": [{"displayName": "Development", "workspaceId": "ws-1"}],
+            }
+            mock_api_instance.promote.return_value = {"success": True}
+            MockAPI.return_value = mock_api_instance
+
+            mock_git_api_instance = MagicMock()
+            # Simulate 1 sync interval before succeeding
+            mock_git_api_instance.get_git_status.side_effect = [
+                {
+                    "success": True,
+                    "status": {"remoteCommitHash": "abc", "workspaceHead": "def"},
+                },
+                {
+                    "success": True,
+                    "status": {"remoteCommitHash": "abc", "workspaceHead": "abc"},
+                },
+            ]
+            mock_git_api_class.return_value = mock_git_api_instance
+
+            result = runner.invoke(
+                app, ["promote", "--pipeline-name", "Pipe", "--wait-for-git-sync", "30"]
+            )
+
+            assert result.exit_code == 0
+            assert mock_sleep.call_count == 1
+            assert mock_git_api_instance.get_git_status.call_count == 2
+            assert "Fabric Git Sync complete" in result.output
+
+    @patch("time.sleep")
+    @patch("usf_fabric_cli.services.fabric_git_api.FabricGitAPI")
+    def test_promote_git_sync_timeout(
+        self, mock_git_api_class, mock_sleep, runner, mock_env_vars
+    ):
+        """Verify promote handles Git sync timeout."""
+        with patch(
+            "usf_fabric_cli.services.deployment_pipeline.FabricDeploymentPipelineAPI"
+        ) as MockAPI:
+            mock_api_instance = MagicMock()
+            mock_api_instance.get_pipeline_by_name.return_value = {"id": "pipe-123"}
+            mock_api_instance.get_pipeline_stages.return_value = {
+                "success": True,
+                "stages": [{"displayName": "Development", "workspaceId": "ws-1"}],
+            }
+            mock_api_instance.promote.return_value = {"success": True}
+            MockAPI.return_value = mock_api_instance
+
+            mock_git_api_instance = MagicMock()
+            # Simulate perpetual sync state
+            mock_git_api_instance.get_git_status.return_value = {
+                "success": True,
+                "status": {"remoteCommitHash": "abc", "workspaceHead": "def"},
+            }
+            mock_git_api_class.return_value = mock_git_api_instance
+
+            # Using 10 seconds, which should cause 2 sleeps of 5 seconds
+            result = runner.invoke(
+                app, ["promote", "--pipeline-name", "Pipe", "--wait-for-git-sync", "10"]
+            )
+
+            assert result.exit_code == 0
+            assert mock_sleep.call_count == 2
+            assert mock_git_api_instance.get_git_status.call_count == 2
+            assert "Git Sync polling timed out" in result.output
+
     def test_promote_api_failure_handles_error(self, runner, mock_env_vars):
         """Verify promote handles API failure correctly."""
         with patch(
