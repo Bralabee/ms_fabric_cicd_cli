@@ -133,6 +133,7 @@ class ArtifactTemplateEngine:
 
         # Render
         rendered = self.render_string(template_string, variables)
+        assert isinstance(rendered, str), "render_string returned non-str"
 
         # Write to output file if specified
         if output_path:
@@ -166,6 +167,7 @@ class ArtifactTemplateEngine:
 
         # Render
         rendered_string = self.render_string(template_string, variables)
+        assert isinstance(rendered_string, str), "render_string returned non-str"
 
         # Parse back to JSON
         try:

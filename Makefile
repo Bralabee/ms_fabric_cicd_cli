@@ -105,7 +105,7 @@ validate: ## Validate a configuration file (Usage: make validate config=path/to/
 	echo "Usage: make validate config=path/to/config.yaml"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli validate $(config)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli validate "$(config)"
 
 diagnose: ## Run pre-flight system diagnostics
 	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.preflight_check
@@ -126,8 +126,8 @@ deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env
 	echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy $(config) --env $(env) \
-		$(if $(branch),--branch $(branch) --force-branch-workspace,)
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy "$(config)" --env "$(env)" \
+		$(if $(branch),--branch "$(branch)" --force-branch-workspace,)
 
 promote: ## Promote through Deployment Pipeline stages (Usage: make promote pipeline="Name" [source=Dev] [target=Test] [note="msg"])
 	@if [ -z "$(pipeline)" ]; then echo "Error: 'pipeline' argument is missing."; exit 1; fi
@@ -171,8 +171,8 @@ destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml 
 	echo "Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override=Name]"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli destroy $(config) \
-		$(if $(env),--env $(env),) \
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli destroy "$(config)" \
+		$(if $(env),--env "$(env)",) \
 		$(if $(force),--force,) \
 		$(if $(workspace_override),--workspace-name-override "$(workspace_override)",)
 
@@ -214,12 +214,12 @@ docker-build: ## Build the Docker image
 
 docker-validate: ## Validate config using Docker (Usage: make docker-validate config=... ENVFILE=.env)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
-	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) validate $(config)
+	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) validate "$(config)"
 
 docker-deploy: ## Deploy using Docker (Usage: make docker-deploy config=... env=dev ENVFILE=.env)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
 	@if [ -z "$(env)" ]; then echo "Error: env argument required"; exit 1; fi
-	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) deploy $(config) --env $(env)
+	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) deploy "$(config)" --env "$(env)"
 
 docker-promote: ## Promote using Docker (Usage: make docker-promote pipeline="Name" [source=Dev] [target=Test])
 	@if [ -z "$(pipeline)" ]; then echo "Error: pipeline argument required"; exit 1; fi
@@ -231,7 +231,7 @@ docker-promote: ## Promote using Docker (Usage: make docker-promote pipeline="Na
 
 docker-destroy: ## Destroy using Docker (Usage: make docker-destroy config=... ENVFILE=.env)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
-	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) destroy $(config)
+	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) destroy "$(config)"
 
 docker-shell: ## Run interactive shell in Docker container (Usage: make docker-shell ENVFILE=.env)
 	docker run --rm -it --entrypoint /bin/bash --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE)
@@ -257,7 +257,7 @@ docker-feature-deploy: ## Deploy feature workspace using Docker (Usage: make doc
 	@if [ -z "$(env)" ]; then echo "Error: env argument required"; exit 1; fi
 	@if [ -z "$(branch)" ]; then echo "Error: branch argument required"; exit 1; fi
 	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
-	deploy $(config) --env $(env) --branch $(branch) --force-branch-workspace
+	deploy "$(config)" --env "$(env)" --branch "$(branch)" --force-branch-workspace
 
 docker-onboard: ## Full bootstrap using Docker (Usage: make docker-onboard org="Org" project="Proj" [stages="dev,test,prod"] ENVFILE=.env)
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi

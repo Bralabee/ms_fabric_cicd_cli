@@ -7,7 +7,7 @@ import argparse
 import ast
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class CustomSolutionAnalyzer:
@@ -183,16 +183,15 @@ class CustomSolutionAnalyzer:
             )
 
         if len(cli_replaceable) > 0:
-            recommendations.append(
-                {
-                    "priority": "MEDIUM",
-                    "action": (
-                        f"Replace {len(cli_replaceable)}" " components with Fabric CLI"
-                    ),
-                    "reason": "These components have direct CLI equivalents",
-                    "components": [c["name"] for c in cli_replaceable],
-                }
-            )
+            rec: Dict[str, Any] = {
+                "priority": "MEDIUM",
+                "action": (
+                    f"Replace {len(cli_replaceable)}" " components with Fabric CLI"
+                ),
+                "reason": "These components have direct CLI equivalents",
+                "components": [c["name"] for c in cli_replaceable],
+            }
+            recommendations.append(rec)
 
         if len(self.analysis["fabric_api_calls"]) > 10:
             recommendations.append(
@@ -209,7 +208,7 @@ class CustomSolutionAnalyzer:
 
         self.analysis["recommendations"] = recommendations
 
-    def generate_report(self, output_file: str = None) -> Dict[str, Any]:
+    def generate_report(self, output_file: Optional[str] = None) -> Dict[str, Any]:
         """Generate migration analysis report."""
         report = {
             "analysis_summary": {

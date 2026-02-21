@@ -27,8 +27,8 @@ try:
     AZURE_IDENTITY_AVAILABLE = True
 except ImportError:
     AZURE_IDENTITY_AVAILABLE = False
-    ClientSecretCredential = None
-    AccessToken = None
+    ClientSecretCredential = None  # type: ignore[misc,assignment]
+    AccessToken = None  # type: ignore[misc,assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -191,12 +191,14 @@ class TokenManager:
                 self._token_info = self._acquire_token()
 
                 # Notify callback if registered
-                if self._on_token_refresh:
+                if self._on_token_refresh and self._token_info:
                     try:
                         self._on_token_refresh(self._token_info.token)
                     except Exception as e:
                         logger.warning("Token refresh callback failed: %s", e)
 
+            if self._token_info is None:
+                raise RuntimeError("Token acquisition failed — no token available")
             return self._token_info.token
 
     def refresh_fabric_cli_auth(self) -> bool:

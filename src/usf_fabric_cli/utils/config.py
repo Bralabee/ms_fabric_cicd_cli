@@ -404,8 +404,9 @@ def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
             load_dotenv(config_env_files[0])
 
     # Map Azure standard names to internal names if needed
-    if os.getenv("AZURE_TENANT_ID") and not os.getenv("TENANT_ID"):
-        os.environ["TENANT_ID"] = os.getenv("AZURE_TENANT_ID")
+    _azure_tenant = os.getenv("AZURE_TENANT_ID")
+    if _azure_tenant and not os.getenv("TENANT_ID"):
+        os.environ["TENANT_ID"] = _azure_tenant
 
     # Auto-generate token from Service Principal if provided but token is missing
     if (

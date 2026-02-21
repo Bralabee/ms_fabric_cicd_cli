@@ -1012,7 +1012,11 @@ class FabricCLIWrapper:
                     "error": f"Workspace {workspace_name} not found",
                 }
 
-            payload = {"displayName": name, "type": "Notebook", "folderId": folder_id}
+            payload: Dict[str, Any] = {
+                "displayName": name,
+                "type": "Notebook",
+                "folderId": folder_id,
+            }
 
             if notebook_definition:
                 payload["definition"] = {
@@ -1039,7 +1043,10 @@ class FabricCLIWrapper:
             # Try REST API first (avoids fab CLI path-resolution issues)
             workspace_id = self.get_workspace_id(workspace_name)
             if workspace_id:
-                payload = {"displayName": name, "type": "Notebook"}
+                payload = {  # type: ignore[no-redef]
+                    "displayName": name,
+                    "type": "Notebook",
+                }
 
                 if notebook_definition:
                     payload["definition"] = {

@@ -377,7 +377,11 @@ class FabricGitAPI(FabricAPIBase):
                     }
 
             logger.error(f"Failed to connect workspace to Git: {e}")
-            error_detail = e.response.text if hasattr(e, "response") else str(e)
+            error_detail = (
+                e.response.text
+                if hasattr(e, "response") and e.response is not None
+                else str(e)
+            )
             return {"success": False, "error": str(e), "details": error_detail}
 
     def initialize_git_connection(self, workspace_id: str) -> Dict[str, Any]:
