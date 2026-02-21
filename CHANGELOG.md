@@ -8,11 +8,13 @@ All notable changes to this project will be documented in this file.
 
 - **Workspace Deletion PBI API Fallback**: `delete_workspace()` now falls back to the Power BI REST API (`DELETE /v1.0/myorg/groups/{workspaceId}`) when the Fabric CLI (`fab rm`) returns an `UnknownError`. This mirrors the v1.7.15 pattern used for pipeline user management — the Fabric API intermittently returns HTTP 400 `UnknownError` for workspace deletion, while the PBI API works reliably.
 - **CLI Destroy Output**: The `destroy` command now shows "(via PBI API fallback)" when the fallback path is used.
+- **Promote Command Git Sync Polling**: Replaced naive `time.sleep(wait_for_git_sync)` with an active polling mechanism using `FabricGitAPI.get_git_status()`. The `promote` command now actively checks if the `remoteCommitHash` matches the `workspaceHead` instead of blindly waiting, preventing race conditions and Fabric API locking errors.
 
 ### Tests
 
 - **+12 unit tests**: 11 new `test_fabric_wrapper.py` tests covering PBI fallback on UnknownError, 204 responses, non-UnknownError passthrough, both-fail error messages, workspace ID resolution (cache hit + API), `_get_pbi_token()` with/without TokenManager, credential errors, and safety blocks. 1 new CLI test for fallback message display.
-- **452/452 tests passing**.
+- **+2 unit tests**: `test_promote_waits_for_git_sync` and `test_promote_git_sync_timeout` added to `test_cli_promote.py` to cover the new active polling logic.
+- **454/454 tests passing**.
 
 ## [1.7.15] - 2026-02-20
 
