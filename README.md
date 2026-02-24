@@ -164,7 +164,7 @@ The **`feature-workspace`** command additionally:
 
 1. Creates and checks out a standardized feature branch (e.g., `feature/iot-platform`).
 2. Creates an isolated workspace connected to that feature branch.
-3. Prepends a Unicode prefix (default `⚡`) to display-name workspaces for instant visual identification in the Fabric portal sidebar (e.g., `⚡ IoT Platform [FEATURE-iot-platform]`). Configure via `feature_prefix` in `config/environments/feature_workspace.json`.
+3. Prepends an ASCII prefix (default `[F]`) to display-name workspaces for instant visual identification in the Fabric portal sidebar (e.g., `[F] IoT Platform [FEATURE-iot-platform]`). Configure via `feature_prefix` in `config/environments/feature_workspace.json`.
 
 ### 4. Docker-Based Workflow
 

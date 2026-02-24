@@ -243,7 +243,7 @@ def destroy(
         ),
     ),
     feature_prefix: str = typer.Option(
-        "⚡",
+        "[F]",
         "--feature-prefix",
         help="Feature workspace name prefix (use '' to disable)",
     ),
