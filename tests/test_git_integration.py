@@ -94,11 +94,11 @@ class TestGetWorkspaceNameFromBranch:
     # ── Feature prefix customization ──
 
     def test_custom_feature_prefix(self):
-        """Display names: custom prefix replaces default ⚡."""
+        """Display names: custom ASCII prefix replaces default [F]."""
         result = self.git.get_workspace_name_from_branch(
-            "Sales Report", "feature/fix-bug", feature_prefix="◈"
+            "Sales Report", "feature/fix-bug", feature_prefix=">>"
         )
-        assert result == "◈ Sales Report [FEATURE-fix-bug]"
+        assert result == ">> Sales Report [FEATURE-fix-bug]"
 
     def test_empty_feature_prefix_disables_prefix(self):
         """Display names: empty string disables the prefix entirely."""
@@ -113,6 +113,72 @@ class TestGetWorkspaceNameFromBranch:
             "my-workspace", "feature/add-auth", feature_prefix="[F]"
         )
         assert result == "my-workspace-feature-add-auth"
+
+
+class TestWorkspaceNameValidation:
+    """Tests for workspace name ASCII validation guard."""
+
+    def setup_method(self):
+        self.git = GitFabricIntegration(fabric_wrapper=None)
+
+    def test_rejects_emoji_prefix(self):
+        """Non-ASCII emoji prefix raises ValueError before name is generated."""
+        with pytest.raises(ValueError, match="not allowed by Fabric"):
+            self.git.get_workspace_name_from_branch(
+                "Sales Report", "feature/fix-bug", feature_prefix="⚡"
+            )
+
+    def test_rejects_non_ascii_prefix(self):
+        """Non-ASCII symbol prefix raises ValueError."""
+        with pytest.raises(ValueError, match="not allowed by Fabric"):
+            self.git.get_workspace_name_from_branch(
+                "Sales Report", "feature/fix-bug", feature_prefix="◈"
+            )
+
+    def test_rejects_period_in_base_name(self):
+        """Period in base workspace name raises ValueError."""
+        with pytest.raises(ValueError, match="'.'"):
+            self.git.get_workspace_name_from_branch(
+                "sales.report workspace", "feature/fix-bug"
+            )
+
+    def test_rejects_percent_in_base_name(self):
+        """Percent in base workspace name raises ValueError."""
+        with pytest.raises(ValueError, match="'%'"):
+            self.git.get_workspace_name_from_branch(
+                "sales%report workspace", "feature/fix-bug"
+            )
+
+    def test_valid_ascii_name_passes(self):
+        """Standard ASCII workspace names pass validation."""
+        result = self.git.get_workspace_name_from_branch(
+            "Sales Report", "feature/fix-bug"
+        )
+        assert result == "[F] Sales Report [FEATURE-fix-bug]"
+
+    def test_empty_prefix_skips_prefix_validation(self):
+        """Empty string prefix bypasses prefix validation."""
+        result = self.git.get_workspace_name_from_branch(
+            "Sales Report", "feature/fix-bug", feature_prefix=""
+        )
+        assert result == "Sales Report [FEATURE-fix-bug]"
+
+    def test_main_branch_skips_validation(self):
+        """Main/master branches return base name without validation."""
+        result = self.git.get_workspace_name_from_branch("Sales.Report", "main")
+        assert result == "Sales.Report"
+
+    def test_validate_workspace_name_directly(self):
+        """Direct call to _validate_workspace_name catches forbidden chars."""
+        with pytest.raises(ValueError, match="not allowed"):
+            GitFabricIntegration._validate_workspace_name("My 🚀 Workspace")
+
+    def test_validate_workspace_name_clean(self):
+        """Clean names pass _validate_workspace_name without error."""
+        # Should not raise
+        GitFabricIntegration._validate_workspace_name(
+            "[F] Sales Report [FEATURE-fix-bug]"
+        )
 
 
 class TestInitializeRepo:

@@ -165,6 +165,35 @@ class GitFabricIntegration:
 
         return result
 
+    @staticmethod
+    def _validate_workspace_name(name: str) -> None:
+        """Validate that a workspace name is Fabric-safe.
+
+        Fabric rejects workspace names containing:
+          - Non-ASCII characters (e.g. emoji, accented letters)
+          - The characters ``.`` (period) and ``%`` (percent)
+
+        Raises:
+            ValueError: If the name contains forbidden characters,
+                with a message listing the offending characters.
+        """
+        forbidden_chars = []
+        for ch in name:
+            if ord(ch) > 127:
+                forbidden_chars.append(repr(ch))
+            elif ch in ".%":
+                forbidden_chars.append(repr(ch))
+
+        if forbidden_chars:
+            unique = sorted(set(forbidden_chars))
+            raise ValueError(
+                f"Workspace name contains characters not allowed by Fabric: "
+                f"{', '.join(unique)}. "
+                f"Fabric rejects non-ASCII characters and the symbols '.' / '%' "
+                f"in workspace names with schema-enabled lakehouses. "
+                f"Got: {name!r}"
+            )
+
     def get_workspace_name_from_branch(
         self,
         base_workspace_name: str,
@@ -197,8 +226,16 @@ class GitFabricIntegration:
 
         This keeps feature workspaces visually aligned with their
         parent [DEV]/[TEST]/[PROD] workspaces.
+
+        Raises:
+            ValueError: If the feature_prefix or final workspace name
+                contains non-ASCII characters or forbidden symbols.
         """
         import re
+
+        # Validate prefix early to fail fast on bad input
+        if feature_prefix:
+            self._validate_workspace_name(feature_prefix)
 
         if branch == "main" or branch == "master":
             return base_workspace_name
@@ -216,11 +253,15 @@ class GitFabricIntegration:
         if " " in base_clean:
             safe_desc = branch_desc.replace("/", "-")
             prefix = f"{feature_prefix} " if feature_prefix else ""
-            return f"{prefix}{base_clean} [FEATURE-{safe_desc}]"
+            result = f"{prefix}{base_clean} [FEATURE-{safe_desc}]"
+            self._validate_workspace_name(result)
+            return result
 
         # Slug names → hyphen notation (legacy behavior, no prefix)
         sanitized_branch = branch.replace("/", "-").replace("_", "-").lower()
-        return f"{base_clean}-{sanitized_branch}"
+        result = f"{base_clean}-{sanitized_branch}"
+        self._validate_workspace_name(result)
+        return result
 
     def sync_workspace_with_git(self, workspace_id: str) -> Dict[str, Any]:
         """Sync Fabric workspace with Git repository"""
