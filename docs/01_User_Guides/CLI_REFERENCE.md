@@ -121,7 +121,7 @@ fabric-cicd destroy <config> [OPTIONS]
 | `--force`, `-f` | No | `False` | Skip confirmation prompt |
 | `--workspace-name-override` | No | `None` | Override the workspace name from config |
 | `--branch`, `-b` | No | `None` | Derive workspace name from branch (overrides `--workspace-name-override`) |
-| `--feature-prefix` | No | `⚡` | Prefix for feature workspace names (use `''` to disable) |
+| `--feature-prefix` | No | `[F]` | Prefix for feature workspace names (use `''` to disable) |
 | `--safe` / `--no-safe` | No | `True` | Refuse to delete workspaces containing Fabric items |
 | `--force-destroy-populated` | No | `False` | Override `--safe` — delete even if workspace has items |
 

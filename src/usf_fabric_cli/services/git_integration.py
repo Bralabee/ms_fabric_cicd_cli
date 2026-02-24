@@ -169,7 +169,7 @@ class GitFabricIntegration:
         self,
         base_workspace_name: str,
         branch: str,
-        feature_prefix: str = "⚡",
+        feature_prefix: str = "[F]",
     ) -> str:
         """Generate workspace name for feature branch.
 
@@ -177,14 +177,19 @@ class GitFabricIntegration:
           - Display names (contain spaces): prepend feature_prefix + append
             [FEATURE-<desc>]
             e.g. "Sales Report" + feature/fix-bug
-              → "⚡ Sales Report [FEATURE-fix-bug]"
+              → "[F] Sales Report [FEATURE-fix-bug]"
           - Slug names (no spaces): append -feature-<desc>
             e.g. "my-project" + feature/fix-bug
               → "my-project-feature-fix-bug"
 
-        The feature_prefix (default "⚡") provides instant visual
+        The feature_prefix (default "[F]") provides instant visual
         identification of feature workspaces in the Fabric portal
         sidebar.  Set to empty string "" to disable.
+
+        Note: The prefix must use only ASCII characters — Fabric
+        rejects non-ASCII characters (e.g. emoji) and the symbols
+        ``.`` / ``%`` in workspace names that contain schema-enabled
+        lakehouses.
 
         Slashes are replaced with hyphens inside bracket notation because
         the Fabric CLI interprets '/' as a path separator, which breaks
