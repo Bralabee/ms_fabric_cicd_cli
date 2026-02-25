@@ -11,6 +11,7 @@ Implements 12-Factor App configuration methodology for secure credential managem
 across development, staging, and production environments.
 """
 
+import logging
 import os
 from typing import Optional
 
@@ -24,6 +25,8 @@ try:
     KEYVAULT_AVAILABLE = True
 except ImportError:
     KEYVAULT_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
 
 
 class FabricSecrets(BaseSettings):
@@ -75,8 +78,8 @@ class FabricSecrets(BaseSettings):
             )
             secret = client.get_secret(secret_name)
             return secret.value
-        except Exception:
-            # Silently fail and fall back to None
+        except Exception as e:
+            logger.warning("Azure Key Vault error [%s]: %s", type(e).__name__, e)
             return None
 
     def get_secret(
