@@ -2,7 +2,7 @@
 
 Enterprise Microsoft Fabric deployment automation using a **modular architecture** around official Fabric CLI (~10,000 LOC across services, utils, and CLI layers).
 
-**Current Version**: 1.7.16 (February 2026)
+**Current Version**: 1.7.17 (February 2026)
 
 ## 📏 Development Standards
 

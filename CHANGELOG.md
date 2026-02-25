@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.17] - 2026-02-25
+
+### Fixed
+
+- **Polling busy-poll floor (H3)**: `deployment_pipeline.py` and `fabric_git_api.py` LRO polling loops now use `time.sleep(max(retry_after, 2))` instead of bare `time.sleep(retry_after)`. Prevents CPU spin if the Fabric API returns `Retry-After: 0` or a caller passes 0.
+- **Key Vault error visibility (M3)**: `secrets.py` previously swallowed all Azure Key Vault exceptions silently. Now logs `logger.warning("Azure Key Vault error [%s]: %s", type(e).__name__, e)` before falling back to `None`, making misconfigured Key Vault URLs diagnosable without inspecting source.
+- **RECOMMENDED_CLI_VERSION updated (M9)**: `fabric_wrapper.py:RECOMMENDED_CLI_VERSION` updated from `"1.0.0"` to `"1.3.1"` to match the ms-fabric-cli version pinned in all consumer workflow `pip install` lines.
+
 ## [1.7.16] - 2026-02-21
 
 ### Fixed

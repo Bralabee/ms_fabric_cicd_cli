@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 # Expected CLI version range (can be configured)
 MINIMUM_CLI_VERSION = "1.0.0"
-RECOMMENDED_CLI_VERSION = "1.0.0"
+RECOMMENDED_CLI_VERSION = "1.3.1"
 
 # Substrings (lowercased) that indicate idempotent "already exists" errors.
 # Centralised here so new patterns only need adding in one place.
