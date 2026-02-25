@@ -624,7 +624,7 @@ class FabricGitAPI(FabricAPIBase):
                     }
 
                 # Continue polling
-                time.sleep(retry_after)
+                time.sleep(max(retry_after, 2))
 
             except requests.exceptions.RequestException as e:
                 logger.error(f"Failed to poll operation: {e}")
