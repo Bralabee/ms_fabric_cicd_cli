@@ -618,7 +618,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                         "result": result,
                     }
 
-                time.sleep(retry_after)
+                time.sleep(max(retry_after, 2))
 
             except requests.RequestException as e:
                 logger.error("Failed to poll operation %s: %s", operation_id, e)
