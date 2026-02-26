@@ -64,5 +64,5 @@ class TelemetryClient:
             }
             with open(self._log_file, "a") as fh:
                 fh.write(json.dumps(record) + "\n")
-        except Exception as exc:
+        except OSError as exc:
             raise FabricTelemetryError(f"Failed to write telemetry: {exc}") from exc

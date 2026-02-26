@@ -163,7 +163,7 @@ class TestCLIPromote:
 
             # Verify failure
             assert result.exit_code == 1
-            assert "Promotion failed" in result.output
+            assert "Failed to promote entire stage" in result.output
             assert "API Error" in result.output
 
     def test_promote_pipeline_not_found(self, runner, mock_env_vars):
@@ -222,12 +222,12 @@ class TestCLIPromote:
             "usf_fabric_cli.services.deployment_pipeline.FabricDeploymentPipelineAPI"
         ) as MockAPI:
             # Setup mock to raise exception
-            MockAPI.side_effect = Exception("Unexpected Crash")
+            MockAPI.side_effect = ValueError("Unexpected Crash")
 
             # Run command
             result = runner.invoke(app, ["promote", "--pipeline-name", "Pipe"])
 
             # Verify failure
             assert result.exit_code == 1
-            assert "Promote failed" in result.output
+            assert "Failed to promote deployment pipeline" in result.output
             assert "Unexpected Crash" in result.output

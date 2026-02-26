@@ -268,7 +268,7 @@ class TestDeploymentStateRollback:
         state.record(ItemType.LAKEHOUSE, "LH3", "WS")
 
         # First deletion fails
-        mock_wrapper._execute_command.side_effect = Exception("API Error")
+        mock_wrapper._execute_command.side_effect = RuntimeError("API Error")
 
         result = state.rollback(mock_wrapper, stop_on_error=True)
 

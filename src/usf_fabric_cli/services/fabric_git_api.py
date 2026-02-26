@@ -365,7 +365,7 @@ class FabricGitAPI(FabricAPIBase):
                 try:
                     error_body = e.response.json()
                     error_code = error_body.get("errorCode", "")
-                except Exception:
+                except ValueError:
                     error_code = ""
 
                 if error_code == "WorkspaceAlreadyConnectedToGit":

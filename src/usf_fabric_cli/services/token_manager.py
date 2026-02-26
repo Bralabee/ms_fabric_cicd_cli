@@ -22,6 +22,7 @@ from typing import Callable, Optional
 
 try:
     from azure.core.credentials import AccessToken
+    from azure.core.exceptions import AzureError, ClientAuthenticationError
     from azure.identity import ClientSecretCredential
 
     AZURE_IDENTITY_AVAILABLE = True
@@ -29,6 +30,8 @@ except ImportError:
     AZURE_IDENTITY_AVAILABLE = False
     ClientSecretCredential = None  # type: ignore[misc,assignment]
     AccessToken = None  # type: ignore[misc,assignment]
+    AzureError = Exception  # type: ignore[misc,assignment]
+    ClientAuthenticationError = Exception  # type: ignore[misc,assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -170,9 +173,9 @@ class TokenManager:
                 expires_on=expires_on,
                 acquired_at=acquired_at,
             )
-        except Exception as e:
+        except (ClientAuthenticationError, AzureError, ValueError) as e:
             logger.error("Failed to acquire token: %s", e)
-            raise
+            raise RuntimeError(f"Token acquisition failed: {e}") from e
 
     def get_token(self) -> str:
         """
@@ -194,7 +197,7 @@ class TokenManager:
                 if self._on_token_refresh and self._token_info:
                     try:
                         self._on_token_refresh(self._token_info.token)
-                    except Exception as e:
+                    except (ValueError, RuntimeError, OSError) as e:
                         logger.warning("Token refresh callback failed: %s", e)
 
             if self._token_info is None:
@@ -231,25 +234,38 @@ class TokenManager:
                 timeout=10,
             )
 
-            # Login with Service Principal credentials
-            cmd = [
-                "fab",
-                "auth",
-                "login",
-                "--username",
-                self._client_id,
-                "--password",
-                self._client_secret,
-                "--tenant",
-                self._tenant_id,
-            ]
+            # Secure credential passing via stdin python script
+            import os
+            import sys
+
+            secure_script = """
+import sys
+import os
+from fabric_cli.main import main
+
+sys.argv = [
+    'fab', 'auth', 'login',
+    '--username', os.environ['FAB_CLIENT_ID'],
+    '--password', os.environ['FAB_CLIENT_SECRET'],
+    '--tenant', os.environ['FAB_TENANT_ID']
+]
+sys.exit(main())
+"""
+            secure_env = os.environ.copy()
+            secure_env["FAB_CLIENT_ID"] = self._client_id
+            secure_env["FAB_CLIENT_SECRET"] = self._client_secret
+            secure_env["FAB_TENANT_ID"] = self._tenant_id
+
+            cmd = [sys.executable, "-"]
 
             subprocess.run(
                 cmd,
+                input=secure_script,
                 capture_output=True,
                 text=True,
                 check=True,
                 timeout=30,
+                env=secure_env,
             )
 
             self._last_cli_auth = datetime.now(timezone.utc)
@@ -260,10 +276,14 @@ class TokenManager:
             logger.error("Fabric CLI authentication timed out")
             return False
         except subprocess.CalledProcessError as e:
-            logger.error("Fabric CLI authentication failed: %s", e.stderr)
+            stderr = e.stderr or ""
+            safe_stderr = stderr.replace(self._client_secret, "***REDACTED***")
+            logger.error("Fabric CLI authentication failed: %s", safe_stderr)
             return False
         except FileNotFoundError:
-            logger.error("Fabric CLI ('fab') not found")
+            # We are using sys.executable now, so this might trigger if python
+            # executable somehow is not found
+            logger.error("Python executable not found for CLI re-authentication")
             return False
 
     def ensure_fresh_auth(self, max_age_seconds: float = 300) -> bool:
@@ -341,6 +361,6 @@ def create_token_manager_from_env() -> Optional[TokenManager]:
     except ImportError:
         logger.warning("azure-identity not available, TokenManager disabled")
         return None
-    except Exception as e:
+    except (ValueError, TypeError) as e:
         logger.warning("Failed to create TokenManager: %s", e)
         return None

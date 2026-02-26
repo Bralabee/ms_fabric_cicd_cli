@@ -450,7 +450,7 @@ class TestPBITokenAcquisition:
     def test_get_pbi_headers_credential_exception_fallback(self, mock_env_vars):
         """When credential.get_token raises, fall back to Fabric token."""
         mock_credential = MagicMock()
-        mock_credential.get_token.side_effect = Exception("MSAL error")
+        mock_credential.get_token.side_effect = ValueError("MSAL error")
 
         mock_tm = MagicMock()
         mock_tm._credential = mock_credential

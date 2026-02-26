@@ -255,7 +255,13 @@ def _create_empty_workspace(
 
         return workspace_id
 
-    except Exception as e:
+    except (
+        ValueError,
+        KeyError,
+        OSError,
+        RuntimeError,
+        subprocess.SubprocessError,
+    ) as e:
         logger.error(f"  ❌ Workspace creation failed: {e}")
         return None
 
@@ -366,7 +372,7 @@ def _create_deployment_pipeline(
 
         return True
 
-    except Exception as e:
+    except (ValueError, KeyError, OSError, RuntimeError) as e:
         logger.error(f"  ❌ Pipeline setup failed: {e}")
         return False
 
@@ -541,7 +547,7 @@ def onboard_project(
                 capacity_id,
                 git_repo or "",
             )
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:
         logger.error(f"Failed to generate config: {e}")
         return False
 
@@ -554,7 +560,7 @@ def onboard_project(
             with open(config_path, "r") as f:
                 loaded_config = yaml.safe_load(f)
             principals = loaded_config.get("principals", [])
-        except Exception:
+        except (OSError, ValueError):
             logger.warning("  ⚠️  Could not load principals from config.")
 
     # Inject mandatory env-var principals (governance SP + admin user)
@@ -605,7 +611,7 @@ def onboard_project(
                 run_command(["git", "push", "-u", "origin", branch_name])
                 logger.info("  ✅ Branch pushed to origin")
 
-            except Exception as e:
+            except (subprocess.SubprocessError, OSError) as e:
                 logger.error(f"Failed to manage git branch: {e}")
                 return False
 
@@ -655,7 +661,7 @@ def onboard_project(
                             if ws.get("displayName") == (ws_names["dev"]):
                                 workspace_ids["dev"] = ws["id"]
                                 break
-                except Exception:
+                except (ValueError, KeyError, OSError, RuntimeError):
                     logger.warning(
                         "  ⚠️  Could not retrieve Dev workspace ID for pipeline."
                     )

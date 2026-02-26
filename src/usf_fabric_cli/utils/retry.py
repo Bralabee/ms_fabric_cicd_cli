@@ -172,7 +172,14 @@ def retry_with_backoff(
             for attempt in range(max_retries + 1):
                 try:
                     return func(*args, **kwargs)
-                except Exception as e:
+                except (
+                    ValueError,
+                    RuntimeError,
+                    OSError,
+                    KeyError,
+                    TypeError,
+                    AttributeError,
+                ) as e:
                     last_exception = e
                     error_str = str(e)
 
@@ -200,8 +207,8 @@ def retry_with_backoff(
                     if on_retry:
                         try:
                             on_retry(e, attempt, delay)
-                        except Exception:
-                            pass  # Don't let callback failures break retry
+                        except (ValueError, RuntimeError, TypeError) as cb_err:
+                            logger.debug(f"Retry callback failed: {cb_err}")
 
                     time.sleep(delay)
 

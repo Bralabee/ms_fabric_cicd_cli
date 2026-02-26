@@ -816,9 +816,9 @@ class TestCLIGenerate:
     @patch("usf_fabric_cli.cli.generate_project_config")
     def test_generate_failure_exits_1(self, mock_fn, runner):
         """Exception from generate_project_config → exit code 1."""
-        mock_fn.side_effect = RuntimeError("Template not found")
+        mock_fn.side_effect = ValueError("Template not found")
 
         result = runner.invoke(app, ["generate", "Org", "Proj"])
 
         assert result.exit_code == 1
-        assert "Generate failed" in result.output
+        assert "Failed to generate project configuration" in result.output

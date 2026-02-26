@@ -375,7 +375,7 @@ class TestSyncWorkspaceWithGit:
 
     def test_sync_failure(self):
         """Should return failure details on error."""
-        self.mock_fabric._execute_command.side_effect = Exception("Network error")
+        self.mock_fabric._execute_command.side_effect = ValueError("Network error")
 
         result = self.git.sync_workspace_with_git("ws-123")
         assert result["success"] is False

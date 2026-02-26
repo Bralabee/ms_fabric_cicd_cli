@@ -53,7 +53,7 @@ IDEMPOTENT_ERROR_PATTERNS: tuple[str, ...] = (
 # reliable for workspace deletion (same pattern as pipeline user
 # management).
 PBI_API_BASE_URL = "https://api.powerbi.com/v1.0/myorg"
-PBI_TOKEN_SCOPE = "https://analysis.windows.net/powerbi/api/.default"
+PBI_TOKEN_SCOPE = "https://analysis.windows.net/powerbi/api/.default"  # nosec B105
 
 
 class FabricCLIWrapper:
@@ -120,7 +120,7 @@ class FabricCLIWrapper:
                         logger.warning(
                             f"Recommended version: {RECOMMENDED_CLI_VERSION}"
                         )
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     logger.debug(f"Could not compare versions: {e}")
             else:
                 logger.warning(f"Could not parse CLI version from: {version_output}")
@@ -139,7 +139,7 @@ class FabricCLIWrapper:
             logger.warning("Fabric CLI version check timed out")
             self.cli_version = "unknown"
 
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.warning(f"Could not validate CLI version: {e}")
             self.cli_version = "unknown"
 
@@ -175,36 +175,57 @@ class FabricCLIWrapper:
                         capture_output=True,
                         check=False,
                     )
-                except Exception:
-                    pass
+                except (subprocess.SubprocessError, OSError) as e:
+                    logger.debug("Config set failed (non-fatal): %s", e)
 
                 # Logout first to clear any stale state
                 try:
                     subprocess.run(
                         ["fab", "auth", "logout"], capture_output=True, check=False
                     )
-                except Exception:
-                    pass
+                except (subprocess.SubprocessError, OSError) as e:
+                    logger.debug("Auth logout failed (non-fatal): %s", e)
+
+                # Secure credential passing via stdin python script
+                # Inject credentials via env vars (hidden from process args)
+                import sys  # ensure sys is locally available
+
+                secure_script = """
+import sys
+import os
+from fabric_cli.main import main
+
+sys.argv = [
+    'fab', 'auth', 'login',
+    '--username', os.environ['FAB_CLIENT_ID'],
+    '--password', os.environ['FAB_CLIENT_SECRET'],
+    '--tenant', os.environ['FAB_TENANT_ID']
+]
+sys.exit(main())
+"""
+                secure_env = os.environ.copy()
+                secure_env["FAB_CLIENT_ID"] = client_id
+                secure_env["FAB_CLIENT_SECRET"] = client_secret
+                secure_env["FAB_TENANT_ID"] = tenant_id
 
                 # We use subprocess directly here to avoid infinite recursion if we
                 # used _run_fabric_command
-                # Using short flags -u and -p as per some CLI versions preference
-                cmd = [
-                    "fab",
-                    "auth",
-                    "login",
-                    "--username",
-                    client_id,
-                    "--password",
-                    client_secret,
-                    "--tenant",
-                    tenant_id,
-                ]
+                cmd = [sys.executable, "-"]
 
-                subprocess.run(cmd, capture_output=True, text=True, check=True)
+                subprocess.run(
+                    cmd,
+                    input=secure_script,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    env=secure_env,
+                )
                 logger.info("Successfully logged in to Fabric CLI")
             except subprocess.CalledProcessError as e:
-                logger.error(f"Failed to login to Fabric CLI: {e.stderr}")
+                # Redact the secret from any error output before logging
+                stderr = e.stderr or ""
+                safe_stderr = stderr.replace(client_secret, "***REDACTED***")
+                logger.error(f"Failed to login to Fabric CLI: {safe_stderr}")
                 # We don't raise here, as we might still be able to run if there's an
                 # existing token,
                 # although unlikely if explicit login failed.
@@ -239,7 +260,7 @@ class FabricCLIWrapper:
         if self._token_manager:
             try:
                 self._token_manager.ensure_fresh_auth(max_age_seconds=300)
-            except Exception as e:
+            except (RuntimeError, ValueError) as e:
                 logger.warning(
                     "Token refresh failed, continuing with existing auth: %s", e
                 )
@@ -344,7 +365,7 @@ class FabricCLIWrapper:
             cmd = ["fab", "exists", path]
             result = subprocess.run(cmd, capture_output=True, text=True, check=False)
             return "true" in result.stdout.lower()
-        except Exception:
+        except (subprocess.SubprocessError, OSError):
             return False
 
     def create_workspace(
@@ -442,8 +463,10 @@ class FabricCLIWrapper:
                 if isinstance(data, str):
                     try:
                         data = json.loads(data)
-                    except json.JSONDecodeError:
-                        pass
+                    except json.JSONDecodeError as exc:
+                        logger.debug(
+                            "Failed to decode JSON from fabric API wrapper: %s", exc
+                        )
 
                 # Handle fab api error response format
                 if isinstance(data, dict):
@@ -626,7 +649,7 @@ class FabricCLIWrapper:
                 )
                 logger.debug("Acquired PBI token for workspace deletion fallback")
                 return access_token.token
-            except Exception as exc:
+            except (ValueError, RuntimeError) as exc:
                 logger.warning(
                     "Could not acquire PBI token (%s); " "falling back to Fabric token",
                     exc,
@@ -734,8 +757,8 @@ class FabricCLIWrapper:
                 if isinstance(data, str):
                     try:
                         data = json.loads(data)
-                    except json.JSONDecodeError:
-                        pass
+                    except json.JSONDecodeError as exc:
+                        logger.debug("Failed to decode folder list JSON: %s", exc)
 
                 # Handle nested "text" field from fab api wrapper if present
                 if (
@@ -970,7 +993,7 @@ class FabricCLIWrapper:
                     f"Supported: .py, .ipynb"
                 )
                 return None
-        except Exception as e:
+        except OSError as e:
             logger.error(f"Failed to read notebook file {file_path}: {e}")
             return None
 
@@ -1355,8 +1378,8 @@ class FabricCLIWrapper:
                     if self._token_manager:
                         try:
                             token = self._token_manager.get_token()
-                        except Exception:
-                            pass
+                        except (ValueError, RuntimeError) as token_err:
+                            logger.debug(f"Failed to get fresh token: {token_err}")
 
                     headers = {
                         "Authorization": f"Bearer {token}",
@@ -1395,8 +1418,11 @@ class FabricCLIWrapper:
                             f"{error_code}: {error_msg} "
                             f"{'; '.join(detail_msgs)}".strip()
                         )
-                    except Exception:
-                        last_error = f"HTTP {resp.status_code}: {resp.text}"
+                    except (ValueError, KeyError, TypeError) as parse_err:
+                        last_error = (
+                            f"HTTP {resp.status_code}:"
+                            f" {resp.text} (Parse error: {parse_err})"
+                        )
 
                     # Only retry with next type if principal type issue
                     if not any(
@@ -1410,7 +1436,11 @@ class FabricCLIWrapper:
                     ):
                         break  # Non-type-related error, don't retry
 
-                except Exception as e:
+                except (
+                    requests.exceptions.RequestException,
+                    ValueError,
+                    TypeError,
+                ) as e:
                     last_error = str(e)
                     logger.error(
                         f"REST API call failed for principal "
@@ -1943,8 +1973,8 @@ class FabricDiagnostics:
                     elif current >= minimum:
                         validation_result["compatibility"] = "compatible"
 
-                except Exception:
-                    pass
+                except ValueError as ve:
+                    logger.debug(f"Version parse error: {ve}")
 
             return validation_result
 
