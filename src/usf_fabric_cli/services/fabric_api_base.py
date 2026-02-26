@@ -70,7 +70,7 @@ class FabricAPIBase:
                     self._access_token = new_token
                     self.headers["Authorization"] = f"Bearer {new_token}"
                     logger.debug("Token refreshed for %s", self.__class__.__name__)
-            except Exception as e:
+            except RuntimeError as e:
                 logger.warning("Token refresh failed: %s", e)
 
     # ── HTTP helper ────────────────────────────────────────────────

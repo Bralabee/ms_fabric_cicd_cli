@@ -160,7 +160,7 @@ def main():
             args.capacity_id,
             args.git_repo,
         )
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:
         print(f"❌ Error: {e}")
         return 1
 

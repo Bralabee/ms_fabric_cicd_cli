@@ -255,7 +255,7 @@ def init_github_repo(
         console.print(f"\n[bold cyan]🔗 GitHub Repo:[/bold cyan] {html_url}")
 
         return clone_url
-    except Exception as exc:
+    except (ValueError, requests.exceptions.RequestException, OSError) as exc:
         console.print(f"[red]GitHub repo init failed: {exc}[/red]")
         logger.error("init_github_repo error: %s", exc)
         return None

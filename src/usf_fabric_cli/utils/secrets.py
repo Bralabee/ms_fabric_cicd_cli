@@ -78,7 +78,7 @@ class FabricSecrets(BaseSettings):
             )
             secret = client.get_secret(secret_name)
             return secret.value
-        except Exception as e:
+        except (ValueError, RuntimeError, OSError) as e:
             logger.warning("Azure Key Vault error [%s]: %s", type(e).__name__, e)
             return None
 
@@ -270,7 +270,7 @@ def get_secrets() -> FabricSecrets:
             secrets.fabric_token = token
             os.environ["FABRIC_TOKEN"] = token
             logger.info("Fabric token generated successfully")
-        except Exception as e:
+        except (ValueError, RuntimeError, OSError) as e:
             import logging
 
             logger = logging.getLogger(__name__)
@@ -296,7 +296,7 @@ def get_environment_variables() -> dict:
     try:
         secrets = get_secrets()
         return secrets.to_env_dict()
-    except Exception:
+    except ValueError:
         # Fallback to legacy environment variable loading
         return {
             "AZURE_CLIENT_ID": os.getenv("AZURE_CLIENT_ID", ""),

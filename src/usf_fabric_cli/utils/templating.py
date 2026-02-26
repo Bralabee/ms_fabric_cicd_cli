@@ -103,7 +103,7 @@ class ArtifactTemplateEngine:
             logger.error(f"Undefined variable in template: {e}")
             raise ValueError(f"Undefined variable in template: {e}")
 
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             logger.error(f"Template rendering error: {e}")
             raise ValueError(f"Template rendering error: {e}")
 
@@ -368,7 +368,7 @@ class FabricArtifactTemplater:
         try:
             with open(artifact_path, "r", encoding="utf-8") as f:
                 content = f.read()
-        except Exception as e:
+        except OSError as e:
             errors.append(f"Could not read template: {e}")
             return False, errors
 
@@ -387,7 +387,7 @@ class FabricArtifactTemplater:
             result = self.engine.render_string(content, dummy_vars, validate_only=True)
             if result is False:
                 errors.append("Template syntax error: invalid template syntax")
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             errors.append(f"Template syntax error: {e}")
 
         is_valid = len(errors) == 0

@@ -12,10 +12,12 @@ import re
 import time
 from typing import Dict, Optional
 
+import requests
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from usf_fabric_cli.exceptions import FabricCLIError
 from usf_fabric_cli.services.deployment_pipeline import FabricDeploymentPipelineAPI
 from usf_fabric_cli.services.deployment_state import DeploymentState, ItemType
 from usf_fabric_cli.services.fabric_git_api import FabricGitAPI, GitProviderType
@@ -283,7 +285,7 @@ class FabricDeployer:
                                     f"✅ Folder organize: {moved} items moved"
                                 ),
                             )
-                    except Exception as e:
+                    except (FabricCLIError, ValueError) as e:
                         logger.warning(f"Folder organization failed (non-fatal): {e}")
                         progress.update(
                             task,
@@ -323,7 +325,7 @@ class FabricDeployer:
 
             return True
 
-        except Exception as e:
+        except (FabricCLIError, ValueError, KeyError, OSError, RuntimeError) as e:
             console.print(f"[red]Deployment failed: {e}[/red]")
 
             if rollback_on_failure and self.deployment_state.item_count > 0:
@@ -536,7 +538,7 @@ class FabricDeployer:
                             notebook.get("file_path"),
                             effective_file_path,
                         )
-                except Exception as e:
+                except (OSError, ValueError, RuntimeError) as e:
                     logger.warning(
                         "Template rendering failed for %s: %s — using raw file",
                         notebook.get("file_path"),
@@ -556,8 +558,12 @@ class FabricDeployer:
                     import os
 
                     os.unlink(temp_file_path)
-                except OSError:
-                    pass
+                except OSError as exc:
+                    logger.debug(
+                        "Failed to clean up notebook temp file %s: %s",
+                        temp_file_path,
+                        exc,
+                    )
 
             if result["success"]:
                 reused = "exists" if result.get("reused") else "created"
@@ -1108,7 +1114,13 @@ class FabricDeployer:
             )
             return True
 
-        except Exception as e:
+        except (
+            requests.exceptions.RequestException,
+            ValueError,
+            KeyError,
+            FabricCLIError,
+            RuntimeError,
+        ) as e:
             console.print(f"[red]Error connecting to Git: {e}[/red]")
             import traceback
 
