@@ -138,11 +138,12 @@ class ConfigManager:
                 fallback_var = fallback_var.strip()
 
                 value = os.getenv(var_name)
-                if value is None and fallback_var:
+                # In bash, :- means "if unset or empty"
+                if not value and fallback_var:
                     value = os.getenv(fallback_var)
                     if value is not None:
                         logger.info(
-                            "Capacity fallback: %s not set, resolved via %s",
+                            "Capacity fallback: %s not set or empty, resolved via %s",
                             var_name,
                             fallback_var,
                         )

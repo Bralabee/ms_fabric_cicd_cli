@@ -371,17 +371,17 @@ class TestSubstituteEnvVarsFallback:
         finally:
             os.environ.pop("WS_FB_007", None)
 
-    def test_empty_primary_still_uses_primary(self):
-        """An empty-string primary is a valid value — fallback is NOT triggered."""
+    def test_empty_primary_triggers_fallback(self):
+        """An empty-string primary triggers the fallback (bash :- syntax)."""
         import os
 
         os.environ["EMPTY_PRI_008"] = ""
-        os.environ["EMPTY_FB_008"] = "should-not-use"
+        os.environ["EMPTY_FB_008"] = "fallback-value"
         try:
             cm = self._make_cm()
             result = cm._substitute_env_vars("${EMPTY_PRI_008:-EMPTY_FB_008}")
-            # Empty string is a valid env value (not None), so primary wins
-            assert result == ""
+            # Empty string triggers fallback
+            assert result == "fallback-value"
         finally:
             os.environ.pop("EMPTY_PRI_008", None)
             os.environ.pop("EMPTY_FB_008", None)
