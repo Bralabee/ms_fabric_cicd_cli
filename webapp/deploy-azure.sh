@@ -230,7 +230,7 @@ deploy_backend() {
         --max-replicas 3 \
         --cpu 0.5 \
         --memory 1.0Gi \
-        --env-vars "CORS_ORIGINS=*" \
+        --env-vars "CORS_ORIGINS=${CORS_ORIGINS:?Set CORS_ORIGINS for production}" \
         --output none
 
     # Get backend FQDN

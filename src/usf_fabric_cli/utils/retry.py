@@ -208,7 +208,7 @@ def retry_with_backoff(
                         try:
                             on_retry(e, attempt, delay)
                         except (ValueError, RuntimeError, TypeError) as cb_err:
-                            logger.debug(f"Retry callback failed: {cb_err}")
+                            logger.debug("Retry callback failed: %s", cb_err)
 
                     time.sleep(delay)
 
