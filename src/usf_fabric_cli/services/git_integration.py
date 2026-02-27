@@ -15,6 +15,7 @@ Key Learning Applied: Feature Branch Workflows
 import logging
 from typing import Any, Dict, Optional
 
+import git
 from git import InvalidGitRepositoryError, Repo
 
 from usf_fabric_cli.exceptions import FabricCLIError
@@ -61,7 +62,7 @@ class GitFabricIntegration:
                 remote_branches = [
                     ref.name.split("/")[-1] for ref in self.repo.remote().refs
                 ]
-            except Exception:
+            except git.exc.GitCommandError:
                 logger.warning("Could not fetch remote branches")
 
             branch_exists_local = branch_name in local_branches
@@ -75,7 +76,7 @@ class GitFabricIntegration:
                 "available": branch_exists_local or branch_exists_remote,
             }
 
-        except Exception as e:
+        except (git.exc.GitCommandError, ValueError, OSError) as e:
             return {"success": False, "error": f"Error validating branch: {str(e)}"}
 
     def create_feature_branch(
@@ -92,12 +93,12 @@ class GitFabricIntegration:
             # Fetch latest
             try:
                 self.repo.git.fetch("origin")
-            except Exception as fetch_err:
-                logger.warning(f"Git fetch warning: {fetch_err}")
+            except git.exc.GitCommandError as fetch_err:
+                logger.warning("Git fetch warning: %s", fetch_err)
 
             # Check if branch exists
             if branch_name in self.repo.heads:
-                logger.info(f"Branch '{branch_name}' exists. Checking out...")
+                logger.info("Branch '%s' exists. Checking out...", branch_name)
                 self.repo.heads[branch_name].checkout()
                 return {
                     "success": True,
@@ -106,18 +107,20 @@ class GitFabricIntegration:
                 }
 
             # Create new branch from base
-            logger.info(f"Creating new branch '{branch_name}' from '{base_branch}'...")
+            logger.info(
+                "Creating new branch '%s' from '%s'...", branch_name, base_branch
+            )
             self.repo.git.checkout(base_branch)
             try:
                 self.repo.git.pull("origin", base_branch)
-            except Exception:
-                pass  # Ignore pull errors if remote is unreachable
+            except git.exc.GitCommandError as exc:
+                logger.debug("Ignore pull err (remote may be unreachable): %s", exc)
 
             new_branch = self.repo.create_head(branch_name)
             new_branch.checkout()
 
             if push_to_remote:
-                logger.info(f"Pushing branch '{branch_name}' to remote...")
+                logger.info("Pushing branch '%s' to remote...", branch_name)
                 self.repo.git.push("--set-upstream", "origin", branch_name)
 
             return {
@@ -128,7 +131,7 @@ class GitFabricIntegration:
                 "message": f"Created and checked out branch: {branch_name}",
             }
 
-        except Exception as e:
+        except (git.exc.GitCommandError, ValueError, OSError) as e:
             return {"success": False, "error": f"Error creating branch: {str(e)}"}
 
     def connect_workspace_to_git(
@@ -159,8 +162,10 @@ class GitFabricIntegration:
 
         if result["success"]:
             logger.info(
-                f"Successfully connected workspace {workspace_id} to "
-                f"{git_repo_url}:{branch}"
+                "Successfully connected workspace %s to %s:%s",
+                workspace_id,
+                git_repo_url,
+                branch,
             )
 
         return result
@@ -194,8 +199,8 @@ class GitFabricIntegration:
                 f"Got: {name!r}"
             )
 
+    @staticmethod
     def get_workspace_name_from_branch(
-        self,
         base_workspace_name: str,
         branch: str,
         feature_prefix: str = "[F]",
@@ -235,7 +240,7 @@ class GitFabricIntegration:
 
         # Validate prefix early to fail fast on bad input
         if feature_prefix:
-            self._validate_workspace_name(feature_prefix)
+            GitFabricIntegration._validate_workspace_name(feature_prefix)
 
         if branch == "main" or branch == "master":
             return base_workspace_name
@@ -254,13 +259,13 @@ class GitFabricIntegration:
             safe_desc = branch_desc.replace("/", "-")
             prefix = f"{feature_prefix} " if feature_prefix else ""
             result = f"{prefix}{base_clean} [FEATURE-{safe_desc}]"
-            self._validate_workspace_name(result)
+            GitFabricIntegration._validate_workspace_name(result)
             return result
 
         # Slug names → hyphen notation (legacy behavior, no prefix)
         sanitized_branch = branch.replace("/", "-").replace("_", "-").lower()
         result = f"{base_clean}-{sanitized_branch}"
-        self._validate_workspace_name(result)
+        GitFabricIntegration._validate_workspace_name(result)
         return result
 
     def sync_workspace_with_git(self, workspace_id: str) -> Dict[str, Any]:
@@ -278,7 +283,7 @@ class GitFabricIntegration:
             return result
         except FabricCLIError as exc:
             return {"success": False, "error": str(exc)}
-        except Exception as e:
+        except (git.exc.GitCommandError, ValueError, OSError) as e:
             return {"success": False, "error": f"Error syncing workspace: {str(e)}"}
 
     def _get_remote_url(self) -> Optional[str]:
@@ -289,7 +294,7 @@ class GitFabricIntegration:
         try:
             remote = self.repo.remote("origin")
             return remote.url
-        except Exception:
+        except git.exc.GitCommandError:
             return None
 
     def _validate_git_repo_url(self, repo_url: str) -> Dict[str, Any]:
@@ -336,12 +341,12 @@ class GitFabricIntegration:
                     ),
                 }
         except subprocess.TimeoutExpired:
-            logger.warning(f"Repository accessibility check timed out for: {repo_url}")
+            logger.warning("Repository accessibility check timed out for: %s", repo_url)
             # Continue anyway - let Fabric API handle final validation
         except FileNotFoundError:
             logger.warning("git command not found - skipping accessibility check")
-        except Exception as e:
-            logger.debug(f"Repository accessibility check failed: {e}")
+        except (git.exc.GitCommandError, ValueError, OSError) as e:
+            logger.debug("Repository accessibility check failed: %s", e)
             # Continue anyway - non-critical for basic validation
 
         return {"success": True, "repository_url": repo_url}
@@ -372,5 +377,5 @@ class GitFabricIntegration:
                 },
             }
 
-        except Exception as e:
+        except (git.exc.GitCommandError, ValueError, OSError) as e:
             return {"success": False, "error": f"Error getting Git info: {str(e)}"}

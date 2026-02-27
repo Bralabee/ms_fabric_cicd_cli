@@ -22,6 +22,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 if TYPE_CHECKING:
     from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
 
+from usf_fabric_cli.exceptions import FabricCLIError
+
 logger = logging.getLogger(__name__)
 
 
@@ -241,7 +243,7 @@ class DeploymentState:
                 self._deployment_id,
             )
             return True
-        except Exception as e:
+        except (json.JSONDecodeError, OSError, ValueError) as e:
             logger.error("Failed to load checkpoint: %s", e)
             return False
 
@@ -297,7 +299,7 @@ class DeploymentState:
                             "error": "Deletion returned failure",
                         }
                     )
-            except Exception as e:
+            except (RuntimeError, ValueError, OSError, FabricCLIError) as e:
                 failed += 1
                 error_msg = str(e)
                 errors.append(
@@ -320,8 +322,12 @@ class DeploymentState:
             try:
                 self._checkpoint_path.unlink()
                 logger.debug("Checkpoint file removed after rollback")
-            except Exception:
-                pass
+            except OSError as exc:
+                logger.debug(
+                    "Failed to remove checkpoint file %s: %s",
+                    self._checkpoint_path,
+                    exc,
+                )
 
         result = {
             "success": failed == 0,

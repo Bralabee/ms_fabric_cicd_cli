@@ -193,7 +193,12 @@ def main(
         web_url = f"https://dev.azure.com/{organization}/{project}/_git/{repository}"
         console.print(f"\n[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}")
 
-    except Exception as e:
+    except (
+        ValueError,
+        requests.exceptions.RequestException,
+        OSError,
+        RuntimeError,
+    ) as e:
         console.print(f"[red]Error: {str(e)}[/red]")
         raise typer.Exit(1)
 
@@ -319,7 +324,12 @@ def init_ado_repo(
 
         return clone_url
 
-    except Exception as exc:
+    except (
+        ValueError,
+        requests.exceptions.RequestException,
+        OSError,
+        RuntimeError,
+    ) as exc:
         console.print(f"[red]ADO repo init failed: {exc}[/red]")
         logger.error("init_ado_repo error: %s", exc)
         return None

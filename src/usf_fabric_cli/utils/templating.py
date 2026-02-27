@@ -94,17 +94,17 @@ class ArtifactTemplateEngine:
             return rendered
 
         except TemplateSyntaxError as e:
-            logger.error(f"Template syntax error: {e}")
+            logger.error("Template syntax error: %s", e)
             if validate_only:
                 return False
             raise ValueError(f"Template syntax error at line {e.lineno}: {e.message}")
 
         except UndefinedError as e:
-            logger.error(f"Undefined variable in template: {e}")
+            logger.error("Undefined variable in template: %s", e)
             raise ValueError(f"Undefined variable in template: {e}")
 
-        except Exception as e:
-            logger.error(f"Template rendering error: {e}")
+        except (ValueError, TypeError) as e:
+            logger.error("Template rendering error: %s", e)
             raise ValueError(f"Template rendering error: {e}")
 
     def render_file(
@@ -140,7 +140,7 @@ class ArtifactTemplateEngine:
             output_path.parent.mkdir(parents=True, exist_ok=True)
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(rendered)
-            logger.info(f"Rendered template to: {output_path}")
+            logger.info("Rendered template to: %s", output_path)
 
         return rendered
 
@@ -173,7 +173,7 @@ class ArtifactTemplateEngine:
         try:
             return json.loads(rendered_string)
         except json.JSONDecodeError as e:
-            logger.error(f"Rendered template is not valid JSON: {e}")
+            logger.error("Rendered template is not valid JSON: %s", e)
             raise ValueError(f"Rendered template is not valid JSON: {e}")
 
     def prepare_environment_variables(
@@ -205,7 +205,7 @@ class ArtifactTemplateEngine:
             final_vars.update(env_specific_vars)
 
         logger.debug(
-            f"Prepared {len(final_vars)} variables for environment: {environment}"
+            "Prepared %s variables for environment: %s", len(final_vars), environment
         )
         return final_vars
 
@@ -265,7 +265,7 @@ class FabricArtifactTemplater:
         Returns:
             Rendered notebook as dict
         """
-        logger.info(f"Rendering notebook: {notebook_path}")
+        logger.info("Rendering notebook: %s", notebook_path)
 
         # Read notebook
         with open(notebook_path, "r", encoding="utf-8") as f:
@@ -279,7 +279,7 @@ class FabricArtifactTemplater:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(rendered_notebook, f, indent=2)
 
-        logger.info(f"Rendered notebook saved to: {output_path}")
+        logger.info("Rendered notebook saved to: %s", output_path)
         return rendered_notebook
 
     def render_lakehouse_definition(
@@ -296,7 +296,7 @@ class FabricArtifactTemplater:
         Returns:
             Rendered definition as dict
         """
-        logger.info(f"Rendering lakehouse definition: {definition_path}")
+        logger.info("Rendering lakehouse definition: %s", definition_path)
 
         # Read definition
         with open(definition_path, "r", encoding="utf-8") as f:
@@ -310,7 +310,7 @@ class FabricArtifactTemplater:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(rendered_definition, f, indent=2)
 
-        logger.info(f"Rendered lakehouse definition saved to: {output_path}")
+        logger.info("Rendered lakehouse definition saved to: %s", output_path)
         return rendered_definition
 
     def render_pipeline(
@@ -327,7 +327,7 @@ class FabricArtifactTemplater:
         Returns:
             Rendered pipeline as dict
         """
-        logger.info(f"Rendering pipeline: {pipeline_path}")
+        logger.info("Rendering pipeline: %s", pipeline_path)
 
         # Read pipeline
         with open(pipeline_path, "r", encoding="utf-8") as f:
@@ -341,7 +341,7 @@ class FabricArtifactTemplater:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(rendered_pipeline, f, indent=2)
 
-        logger.info(f"Rendered pipeline saved to: {output_path}")
+        logger.info("Rendered pipeline saved to: %s", output_path)
         return rendered_pipeline
 
     def validate_artifact_template(
@@ -368,7 +368,7 @@ class FabricArtifactTemplater:
         try:
             with open(artifact_path, "r", encoding="utf-8") as f:
                 content = f.read()
-        except Exception as e:
+        except OSError as e:
             errors.append(f"Could not read template: {e}")
             return False, errors
 
@@ -387,7 +387,7 @@ class FabricArtifactTemplater:
             result = self.engine.render_string(content, dummy_vars, validate_only=True)
             if result is False:
                 errors.append("Template syntax error: invalid template syntax")
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             errors.append(f"Template syntax error: {e}")
 
         is_valid = len(errors) == 0

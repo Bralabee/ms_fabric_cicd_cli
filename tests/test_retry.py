@@ -192,7 +192,7 @@ class TestRetryWithBackoff:
             nonlocal call_count
             call_count += 1
             if call_count < 3:
-                raise Exception("429 rate limited")
+                raise RuntimeError("429 rate limited")
             return "ok"
 
         assert flaky() == "ok"
@@ -207,7 +207,7 @@ class TestRetryWithBackoff:
         def always_fail():
             nonlocal call_count
             call_count += 1
-            raise Exception("503 Service Unavailable")
+            raise RuntimeError("503 Service Unavailable")
 
         with pytest.raises(Exception, match="503"):
             always_fail()
@@ -221,7 +221,7 @@ class TestRetryWithBackoff:
         def permission_denied():
             nonlocal call_count
             call_count += 1
-            raise Exception("Permission denied")
+            raise RuntimeError("Permission denied")
 
         with pytest.raises(Exception, match="Permission denied"):
             permission_denied()
@@ -237,7 +237,7 @@ class TestRetryWithBackoff:
             retryable_check=lambda e: "custom" in str(e),
         )
         def custom_retry():
-            raise Exception("custom transient error")
+            raise RuntimeError("custom transient error")
 
         with pytest.raises(Exception, match="custom"):
             custom_retry()
@@ -257,7 +257,7 @@ class TestRetryWithBackoff:
             nonlocal call_count
             call_count += 1
             if call_count < 3:
-                raise Exception("429 rate limited")
+                raise RuntimeError("429 rate limited")
             return "ok"
 
         flaky()
@@ -278,7 +278,7 @@ class TestRetryWithBackoff:
             nonlocal call_count
             call_count += 1
             if call_count < 2:
-                raise Exception("timeout")
+                raise RuntimeError("timeout")
             return "ok"
 
         assert flaky() == "ok"

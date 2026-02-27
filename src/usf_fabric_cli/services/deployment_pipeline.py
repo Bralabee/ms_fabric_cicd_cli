@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 # Reference: https://learn.microsoft.com/en-us/rest/api/power-bi/
 #            pipelines/update-user-as-admin
 PBI_API_BASE_URL = "https://api.powerbi.com/v1.0/myorg"
-PBI_TOKEN_SCOPE = "https://analysis.windows.net/powerbi/api/.default"
+PBI_TOKEN_SCOPE = "https://analysis.windows.net/powerbi/api/.default"  # nosec B105
 
 # The Power BI API uses "App" for Service Principals, not
 # "ServicePrincipal" as used elsewhere in Microsoft APIs.
@@ -139,7 +139,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                     )
                     self._pbi_token = access_token.token
                     logger.debug("Acquired Power BI API token for pipeline users")
-                except Exception as exc:
+                except (RuntimeError, ValueError) as exc:
                     logger.warning(
                         "Could not acquire PBI token (%s); "
                         "falling back to Fabric token",
@@ -377,7 +377,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             if hasattr(e, "response") and e.response is not None:
                 try:
                     error_detail = e.response.text
-                except Exception:
+                except (ValueError, AttributeError):
                     error_detail = ""
 
             # Already exists is OK (idempotent)
@@ -464,7 +464,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                 status_code = e.response.status_code
                 try:
                     error_detail = e.response.text
-                except Exception:
+                except (ValueError, AttributeError):
                     error_detail = ""
 
             logger.error(
