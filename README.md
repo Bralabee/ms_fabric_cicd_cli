@@ -540,4 +540,4 @@ If migrating from a custom Fabric API solution:
 
 ## License
 
-MIT License - Use freely in any organization.
+© 2026 Ricoh Europe PLC. All rights reserved. Proprietary and confidential. See [LICENSE](LICENSE) for details.

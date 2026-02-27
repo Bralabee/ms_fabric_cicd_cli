@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, NoReturn, Optional
+
+from rich.console import Console
+
+console = Console()
 
 
 class FabricCLIError(RuntimeError):
@@ -40,3 +44,21 @@ class FabricTelemetryError(RuntimeError):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+def handle_cli_error(
+    operation: str, error: Exception | str, suggestion: Optional[str] = None
+) -> NoReturn:
+    """
+    Standardize CLI error output.
+    1. What failed (operation)
+    2. Why it failed (from error)
+    3. What to do next (suggestion)
+    """
+    import typer
+
+    console.print(f"[red]❌ Failed to {operation}[/red]")
+    console.print(f"   [red]Reason: {error}[/red]")
+    if suggestion:
+        console.print(f"\n[yellow]💡 Suggested Action: {suggestion}[/yellow]")
+    raise typer.Exit(1)

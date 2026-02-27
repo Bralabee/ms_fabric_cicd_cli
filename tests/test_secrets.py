@@ -245,7 +245,9 @@ class TestKeyVaultIntegration:
         secrets = self._make_secrets(
             monkeypatch, AZURE_KEYVAULT_URL="https://my-vault.vault.azure.net"
         )
-        mock_client_cls.return_value.get_secret.side_effect = Exception("403 Forbidden")
+        mock_client_cls.return_value.get_secret.side_effect = ValueError(
+            "403 Forbidden"
+        )
 
         result = secrets._get_from_keyvault("azure-client-id")
         assert result is None

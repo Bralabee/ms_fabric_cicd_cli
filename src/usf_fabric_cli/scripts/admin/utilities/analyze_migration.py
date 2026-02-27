@@ -62,7 +62,7 @@ class CustomSolutionAnalyzer:
             except SyntaxError:
                 print(f"⚠️  Could not parse {file_path} (syntax error)")
 
-        except Exception as e:
+        except OSError as e:
             print(f"⚠️  Error analyzing {file_path}: {e}")
 
     def _analyze_ast(self, tree: ast.AST, file_path: Path) -> None:
@@ -280,7 +280,7 @@ def main() -> int:
         if args.output:
             analyzer.generate_report(args.output)
 
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:
         print(f"❌ Analysis failed: {e}")
         return 1
 

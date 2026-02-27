@@ -12,6 +12,7 @@ import typer
 from dotenv import load_dotenv
 from rich.console import Console
 
+from usf_fabric_cli.exceptions import FabricCLIError, handle_cli_error
 from usf_fabric_cli.scripts.admin.bulk_destroy import bulk_destroy as bulk_destroy_fn
 from usf_fabric_cli.scripts.admin.utilities.init_github_repo import (
     init_github_repo as init_github_repo_fn,
@@ -72,18 +73,29 @@ def deploy(
 
             cli_check = diagnostics.validate_fabric_cli_installation()
             if not cli_check["success"]:
-                console.print(f"[red]❌ {cli_check['error']}[/red]")
-                raise typer.Exit(1)
+                handle_cli_error(
+                    "validate Fabric CLI installation",
+                    cli_check["error"],
+                    "Ensure the Microsoft Fabric CLI is installed"
+                    " and available in your PATH.",
+                )
 
             auth_check = diagnostics.validate_authentication()
             if not auth_check["success"]:
-                console.print(f"[red]❌ {auth_check['error']}[/red]")
-                raise typer.Exit(1)
+                handle_cli_error(
+                    "validate authentication",
+                    auth_check["error"],
+                    "Run 'fab auth login' to authenticate with Fabric,"
+                    " or check your configuration.",
+                )
 
             console.print("[green]✅ Pre-flight checks passed[/green]")
-        except Exception as e:
-            console.print(f"[red]Diagnostics failed: {e}[/red]")
-            raise typer.Exit(1)
+        except (FabricCLIError, KeyError, ValueError) as e:
+            handle_cli_error(
+                "run diagnostics",
+                e,
+                "Check your internet connection and authentication tokens.",
+            )
 
     if validate_only:
         console.print("[blue]Validating configuration...[/blue]")
@@ -92,9 +104,13 @@ def deploy(
             config_manager.load_config(environment)
             console.print("[green]✅ Configuration is valid[/green]")
             return
-        except Exception as e:
-            console.print(f"[red]❌ Configuration validation failed: {e}[/red]")
-            raise typer.Exit(1)
+        except (ValueError, FileNotFoundError, KeyError) as e:
+            handle_cli_error(
+                "validate configuration",
+                e,
+                "Verify that your configuration file and environment"
+                " variables are correctly set.",
+            )
 
     try:
         deployer = FabricDeployer(config, environment)
@@ -103,9 +119,13 @@ def deploy(
         if not success:
             raise typer.Exit(1)
 
-    except Exception as e:
-        console.print(f"[red]Deployment failed: {e}[/red]")
-        raise typer.Exit(1)
+    except (FabricCLIError, ValueError, KeyError, FileNotFoundError) as e:
+        handle_cli_error(
+            "deploy workspace",
+            e,
+            "Review the configuration and ensure all referenced files"
+            " exist and are accessible.",
+        )
 
 
 @app.command()
@@ -169,9 +189,12 @@ def validate(
         else:
             console.print("[green]✅ All folder references are valid[/green]")
 
-    except Exception as e:
-        console.print(f"[red]❌ Configuration validation failed: {e}[/red]")
-        raise typer.Exit(1)
+    except (ValueError, FileNotFoundError, KeyError) as e:
+        handle_cli_error(
+            "validate configuration",
+            e,
+            "Ensure the config file is valid JSON/YAML and the environment exists.",
+        )
 
 
 @app.command()
@@ -190,16 +213,22 @@ def diagnose():
         if cli_check["success"]:
             console.print(f"[green]✅ Fabric CLI: {cli_check['version']}[/green]")
         else:
-            console.print(f"[red]❌ Fabric CLI: {cli_check['error']}[/red]")
-            raise typer.Exit(1)
+            handle_cli_error(
+                "validate Fabric CLI installation",
+                cli_check["error"],
+                "Install the Microsoft Fabric CLI and ensure it's in your PATH.",
+            )
 
         # Check authentication
         auth_check = diagnostics.validate_authentication()
         if auth_check["success"]:
             console.print("[green]✅ Authentication: Valid[/green]")
         else:
-            console.print(f"[red]❌ Authentication: {auth_check['error']}[/red]")
-            raise typer.Exit(1)
+            handle_cli_error(
+                "validate authentication",
+                auth_check["error"],
+                "Run 'fab auth login' to authenticate with Microsoft Fabric.",
+            )
 
         # Check API connectivity
         api_check = diagnostics.validate_api_connectivity()
@@ -213,9 +242,13 @@ def diagnose():
 
         console.print("\n[green]All diagnostic checks completed![/green]")
 
-    except Exception as e:
-        console.print(f"[red]Diagnostics failed: {e}[/red]")
-        raise typer.Exit(1)
+    except (FabricCLIError, KeyError, ValueError) as e:
+        handle_cli_error(
+            "run diagnostics",
+            e,
+            "Check your network connection and verify authentication"
+            " tokens are active.",
+        )
 
 
 @app.command()
@@ -283,8 +316,7 @@ def destroy(
             from usf_fabric_cli.services.git_integration import GitFabricIntegration
 
             base_name = workspace_config.name
-            git = GitFabricIntegration.__new__(GitFabricIntegration)
-            workspace_name = git.get_workspace_name_from_branch(
+            workspace_name = GitFabricIntegration.get_workspace_name_from_branch(
                 base_workspace_name=base_name,
                 branch=branch,
                 feature_prefix=feature_prefix,
@@ -365,12 +397,15 @@ def destroy(
                     "Manual cleanup may be required.[/yellow]"
                 )
             else:
-                console.print(f"[red]❌ Failed to destroy workspace: {error_msg}[/red]")
-                raise typer.Exit(1)
+                handle_cli_error(
+                    "destroy workspace",
+                    error_msg,
+                    "Check your Fabric API connectivity and permissions.",
+                )
 
     except (typer.Exit, SystemExit):
         raise  # Re-raise exit codes (including safety block exit code 2)
-    except Exception as e:
+    except (FabricCLIError, ValueError, KeyError) as e:
         error_str = str(e)
         # Treat "not found" as success — workspace already cleaned up (idempotent)
         if "NotFound" in error_str or "could not be found" in error_str.lower():
@@ -390,8 +425,11 @@ def destroy(
                 "Manual cleanup may be required.[/yellow]"
             )
         else:
-            console.print(f"[red]Destroy failed: {e}[/red]")
-            raise typer.Exit(1)
+            handle_cli_error(
+                "destroy workspace",
+                e,
+                "Check your Fabric API connectivity and permissions.",
+            )
 
 
 @app.command()
@@ -467,8 +505,11 @@ def promote(
 
         pipeline = api.get_pipeline_by_name(pipeline_name)
         if not pipeline:
-            console.print(f"[red]❌ Pipeline '{pipeline_name}' not found[/red]")
-            raise typer.Exit(1)
+            handle_cli_error(
+                "promote deployment pipeline",
+                f"Pipeline '{pipeline_name}' not found",
+                "Verify the exact pipeline name matches the Fabric UI.",
+            )
 
         display_target = target_stage or DeploymentStage.next_stage(source_stage)
         console.print(f"[blue]🚀 Promoting: {source_stage} → {display_target}[/blue]")
@@ -577,11 +618,11 @@ def promote(
                 msg = result.get("message", "Promotion succeeded")
                 console.print(f"[green]✅ {msg}[/green]")
             else:
-                console.print(
-                    f"[red]❌ Promotion failed: "
-                    f"{result.get('error', 'unknown')}[/red]"
+                handle_cli_error(
+                    "promote selective items",
+                    result.get("error", "unknown"),
+                    "Check the target workspace for locking or permissions issues.",
                 )
-                raise typer.Exit(1)
         else:
             result = api.promote(
                 pipeline_id=pipeline["id"],
@@ -597,15 +638,18 @@ def promote(
                     f"{display_target}[/green]"
                 )
             else:
-                console.print(
-                    f"[red]❌ Promotion failed: "
-                    f"{result.get('error', 'unknown')}[/red]"
+                handle_cli_error(
+                    "promote entire stage",
+                    result.get("error", "unknown"),
+                    "Check the target workspace for locking or permissions issues.",
                 )
-                raise typer.Exit(1)
 
-    except Exception as e:
-        console.print(f"[red]Promote failed: {e}[/red]")
-        raise typer.Exit(1)
+    except (FabricCLIError, ValueError, KeyError) as e:
+        handle_cli_error(
+            "promote deployment pipeline",
+            e,
+            "Verify the deployment pipeline ID and stage names.",
+        )
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -659,10 +703,11 @@ def onboard(
         valid_stages = {"dev", "test", "prod"}
         invalid = requested_stages - valid_stages
         if invalid:
-            console.print(
-                f"[red]❌ Invalid stage(s): {invalid}. Valid: {valid_stages}[/red]"
+            handle_cli_error(
+                "parse target stages",
+                f"Invalid stage(s) provided: {invalid}",
+                f"Use a comma-separated list of valid stages: {valid_stages}",
             )
-            raise typer.Exit(1)
 
         success = onboard_project(
             org,
@@ -685,9 +730,13 @@ def onboard(
             raise typer.Exit(1)
     except typer.Exit:
         raise
-    except Exception as e:
-        console.print(f"[red]Onboard failed: {e}[/red]")
-        raise typer.Exit(1)
+    except (FabricCLIError, ValueError, KeyError) as e:
+        handle_cli_error(
+            "onboard new project",
+            e,
+            "Check template names, capacity ID permissions,"
+            " and repository configuration.",
+        )
 
 
 @app.command()
@@ -709,9 +758,13 @@ def generate(
     """Generate project configuration from a blueprint template"""
     try:
         generate_project_config(org_name, project_name, template, capacity_id, git_repo)
-    except Exception as e:
-        console.print(f"[red]❌ Generate failed: {e}[/red]")
-        raise typer.Exit(1)
+    except (ValueError, OSError) as e:
+        handle_cli_error(
+            "generate project configuration",
+            e,
+            "Ensure the template exists and you have write permissions"
+            " to the destination directory.",
+        )
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -728,8 +781,11 @@ def list_workspaces():
         env_vars = get_environment_variables()
         token = env_vars.get("FABRIC_TOKEN") or ""
         if not token:
-            console.print("[red]❌ FABRIC_TOKEN is not set[/red]")
-            raise typer.Exit(1)
+            handle_cli_error(
+                "list workspaces",
+                "FABRIC_TOKEN is not set",
+                "Export FABRIC_TOKEN in your environment or set it in your .env file.",
+            )
 
         fabric = FabricCLIWrapper(token)
         console.print("[blue]Listing workspaces...[/blue]")
@@ -740,17 +796,19 @@ def list_workspaces():
             if isinstance(data, str):
                 try:
                     data = json.loads(data)
-                except Exception:
-                    pass
+                except json.JSONDecodeError as exc:
+                    logger.debug("Failed to decode workspace list JSON: %s", exc)
             console.print(json.dumps(data, indent=2))
         else:
-            console.print(f"[red]❌ {result.get('error')}[/red]")
-            raise typer.Exit(1)
+            handle_cli_error(
+                "list workspaces",
+                result.get("error", "unknown"),
+                "Check your Fabric API connectivity and token permissions.",
+            )
     except typer.Exit:
         raise
-    except Exception as e:
-        console.print(f"[red]Error: {e}[/red]")
-        raise typer.Exit(1)
+    except (FabricCLIError, KeyError, ValueError, OSError, RuntimeError) as e:
+        handle_cli_error("list workspaces", e, "Check your Fabric API connectivity.")
 
 
 @app.command("list-items")
@@ -762,8 +820,11 @@ def list_items(
         env_vars = get_environment_variables()
         token = env_vars.get("FABRIC_TOKEN") or ""
         if not token:
-            console.print("[red]❌ FABRIC_TOKEN is not set[/red]")
-            raise typer.Exit(1)
+            handle_cli_error(
+                "list items",
+                "FABRIC_TOKEN is not set",
+                "Export FABRIC_TOKEN in your environment or set it in your .env file.",
+            )
 
         fabric = FabricCLIWrapper(token)
         console.print(f"[blue]Listing items in workspace '{workspace}'...[/blue]")
@@ -781,13 +842,17 @@ def list_items(
                 desc = item.get("description", "")
                 console.print(f"  {name:<40} {item_type:<25} {desc}")
         else:
-            console.print(f"[red]❌ {result.get('error')}[/red]")
-            raise typer.Exit(1)
+            handle_cli_error(
+                "list items",
+                result.get("error", "unknown"),
+                "Verify the workspace name and your access permissions.",
+            )
     except typer.Exit:
         raise
-    except Exception as e:
-        console.print(f"[red]Error: {e}[/red]")
-        raise typer.Exit(1)
+    except (FabricCLIError, KeyError, ValueError) as e:
+        handle_cli_error(
+            "list items", e, "Verify the workspace name and your access permissions."
+        )
 
 
 @app.command("bulk-destroy")
@@ -800,16 +865,18 @@ def bulk_destroy(
     from pathlib import Path
 
     if not Path(file).exists():
-        console.print(f"[red]❌ File '{file}' not found[/red]")
-        raise typer.Exit(1)
+        handle_cli_error(
+            "bulk destroy",
+            f"File '{file}' not found",
+            "Provide a valid path to a text file containing workspace names.",
+        )
 
     try:
         bulk_destroy_fn(file, dry_run, force)
     except typer.Exit:
         raise
-    except Exception as e:
-        console.print(f"[red]Bulk destroy failed: {e}[/red]")
-        raise typer.Exit(1)
+    except (FabricCLIError, KeyError, ValueError, OSError) as e:
+        handle_cli_error("bulk destroy", e, "Check your file format and permissions.")
 
 
 @app.command("organize-folders")
@@ -849,8 +916,11 @@ def organize_folders(
         env_vars = get_environment_variables()
         token = env_vars.get("FABRIC_TOKEN") or ""
         if not token:
-            console.print("[red]❌ FABRIC_TOKEN is not set[/red]")
-            raise typer.Exit(1)
+            handle_cli_error(
+                "organize folders",
+                "FABRIC_TOKEN is not set",
+                "Export it in your environment.",
+            )
 
         config_mgr = ConfigManager(config)
         cfg = config_mgr.load_config(environment)
@@ -915,9 +985,12 @@ def organize_folders(
 
     except typer.Exit:
         raise
-    except Exception as e:
-        console.print(f"[red]Error: {e}[/red]")
-        raise typer.Exit(1)
+    except (FabricCLIError, KeyError, ValueError, OSError) as e:
+        handle_cli_error(
+            "organize folders",
+            e,
+            "Ensure your folder_rules map to existing structures.",
+        )
 
 
 @app.command("init-github-repo")
@@ -935,8 +1008,11 @@ def init_github_repo(
     try:
         token = os.getenv("GITHUB_TOKEN")
         if not token:
-            console.print("[red]❌ GITHUB_TOKEN is not set[/red]")
-            raise typer.Exit(1)
+            handle_cli_error(
+                "initialize github repo",
+                "GITHUB_TOKEN is not set",
+                "Export a valid personal access token with repo scopes.",
+            )
 
         clone_url = init_github_repo_fn(
             owner=owner,
@@ -951,13 +1027,17 @@ def init_github_repo(
             web_url = clone_url.removesuffix(".git")
             console.print(f"[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}")
         else:
-            console.print("[red]❌ Failed to initialize repository[/red]")
-            raise typer.Exit(1)
-    except typer.Exit:
-        raise
-    except Exception as e:
-        console.print(f"[red]Init repo failed: {e}[/red]")
-        raise typer.Exit(1)
+            handle_cli_error(
+                "initialize github repo",
+                "Process returned empty URL.",
+                "Ensure the organization/user name is correct.",
+            )
+    except (FabricCLIError, KeyError, ValueError, OSError, RuntimeError) as e:
+        handle_cli_error(
+            "initialize github repo",
+            e,
+            "Ensure your GITHUB_TOKEN has the required repo scopes.",
+        )
 
 
 if __name__ == "__main__":

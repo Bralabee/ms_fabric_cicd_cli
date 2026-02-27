@@ -12,6 +12,7 @@ Usage:
 import os
 import sys
 
+from usf_fabric_cli.exceptions import FabricCLIError
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
 from usf_fabric_cli.utils.config import get_environment_variables
 
@@ -59,7 +60,7 @@ def list_workspace_items(workspace_name: str) -> None:
             print(f"Failed to list items: {result.get('error')}")
             sys.exit(1)
 
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError, FabricCLIError) as e:
         print(f"Error: {str(e)}")
         sys.exit(1)
 

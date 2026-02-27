@@ -10,6 +10,7 @@ Usage:
 
 import json
 
+from usf_fabric_cli.exceptions import FabricCLIError
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
 from usf_fabric_cli.utils.config import get_environment_variables
 
@@ -29,14 +30,14 @@ def list_workspaces() -> None:
             if isinstance(data, str):
                 try:
                     data = json.loads(data)
-                except json.JSONDecodeError:
-                    pass
+                except json.JSONDecodeError as exc:
+                    print(f"Debug: Failed to decode workspace list JSON: {exc}")
             print(json.dumps(data, indent=2))
         else:
             print(f"Error: {result.get('error')}")
             if result.get("exception"):
                 print(f"Exception: {result.get('exception')}")
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError, FabricCLIError) as e:
         print(f"An error occurred: {e}")
 
 

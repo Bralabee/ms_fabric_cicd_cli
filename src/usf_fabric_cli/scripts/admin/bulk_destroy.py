@@ -60,7 +60,7 @@ def bulk_destroy(file_path, dry_run=False, force=False):
     try:
         env_vars = get_environment_variables()
         fabric = FabricCLIWrapper(env_vars.get("FABRIC_TOKEN", ""))
-    except Exception as e:
+    except (ValueError, OSError, RuntimeError) as e:
         print(f"Error initializing Fabric wrapper: {e}")
         return
 
@@ -78,7 +78,7 @@ def bulk_destroy(file_path, dry_run=False, force=False):
             else:
                 print(f" ❌ Failed: {result.get('error')}")
                 fail_count += 1
-        except Exception as e:
+        except (ValueError, KeyError, OSError, RuntimeError) as e:
             print(f" ❌ Error: {e}")
             fail_count += 1
 

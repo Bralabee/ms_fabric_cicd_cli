@@ -385,7 +385,7 @@ class TestFabricCLIWrapper:
     def test_get_pbi_token_credential_error_falls_back(self):
         """Test _get_pbi_token falls back to fabric_token on credential error."""
         mock_credential = MagicMock()
-        mock_credential.get_token.side_effect = Exception("auth failure")
+        mock_credential.get_token.side_effect = ValueError("auth failure")
         mock_tm = MagicMock()
         mock_tm._credential = mock_credential
 
@@ -846,7 +846,7 @@ class TestRetryUtilities:
             nonlocal call_count
             call_count += 1
             if call_count < 2:
-                raise Exception("503 Service Unavailable")
+                raise RuntimeError("503 Service Unavailable")
             return "success"
 
         result = flaky_function()
@@ -864,7 +864,7 @@ class TestRetryUtilities:
         def always_fails():
             nonlocal call_count
             call_count += 1
-            raise Exception("429 Rate limited")
+            raise RuntimeError("429 Rate limited")
 
         with pytest.raises(Exception) as exc_info:
             always_fails()
@@ -882,7 +882,7 @@ class TestRetryUtilities:
         def permission_denied():
             nonlocal call_count
             call_count += 1
-            raise Exception("Permission denied")
+            raise RuntimeError("Permission denied")
 
         with pytest.raises(Exception) as exc_info:
             permission_denied()

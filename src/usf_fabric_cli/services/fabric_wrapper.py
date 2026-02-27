@@ -53,7 +53,7 @@ IDEMPOTENT_ERROR_PATTERNS: tuple[str, ...] = (
 # reliable for workspace deletion (same pattern as pipeline user
 # management).
 PBI_API_BASE_URL = "https://api.powerbi.com/v1.0/myorg"
-PBI_TOKEN_SCOPE = "https://analysis.windows.net/powerbi/api/.default"
+PBI_TOKEN_SCOPE = "https://analysis.windows.net/powerbi/api/.default"  # nosec B105
 
 
 class FabricCLIWrapper:
@@ -105,7 +105,7 @@ class FabricCLIWrapper:
 
             if version_match:
                 self.cli_version = version_match.group(1)
-                logger.info(f"Detected Fabric CLI version: {self.cli_version}")
+                logger.info("Detected Fabric CLI version: %s", self.cli_version)
 
                 # Compare versions
                 try:
@@ -113,17 +113,20 @@ class FabricCLIWrapper:
                         self.min_version
                     ):
                         logger.warning(
-                            f"Fabric CLI version {self.cli_version} is below minimum "
-                            f"required version {self.min_version}. This may cause "
-                            "compatibility issues."
+                            "Fabric CLI version %s is below minimum "
+                            "required version %s. This may cause "
+                            "compatibility issues.",
+                            self.cli_version,
+                            self.min_version,
                         )
                         logger.warning(
-                            f"Recommended version: {RECOMMENDED_CLI_VERSION}"
+                            "Recommended version: %s",
+                            RECOMMENDED_CLI_VERSION,
                         )
-                except Exception as e:
-                    logger.debug(f"Could not compare versions: {e}")
+                except (ValueError, TypeError) as e:
+                    logger.debug("Could not compare versions: %s", e)
             else:
-                logger.warning(f"Could not parse CLI version from: {version_output}")
+                logger.warning("Could not parse CLI version from: %s", version_output)
                 self.cli_version = "unknown"
 
         except FileNotFoundError:
@@ -139,8 +142,8 @@ class FabricCLIWrapper:
             logger.warning("Fabric CLI version check timed out")
             self.cli_version = "unknown"
 
-        except Exception as e:
-            logger.warning(f"Could not validate CLI version: {e}")
+        except (OSError, RuntimeError) as e:
+            logger.warning("Could not validate CLI version: %s", e)
             self.cli_version = "unknown"
 
     def _setup_auth(self):
@@ -175,36 +178,57 @@ class FabricCLIWrapper:
                         capture_output=True,
                         check=False,
                     )
-                except Exception:
-                    pass
+                except (subprocess.SubprocessError, OSError) as e:
+                    logger.debug("Config set failed (non-fatal): %s", e)
 
                 # Logout first to clear any stale state
                 try:
                     subprocess.run(
                         ["fab", "auth", "logout"], capture_output=True, check=False
                     )
-                except Exception:
-                    pass
+                except (subprocess.SubprocessError, OSError) as e:
+                    logger.debug("Auth logout failed (non-fatal): %s", e)
+
+                # Secure credential passing via stdin python script
+                # Inject credentials via env vars (hidden from process args)
+                import sys  # ensure sys is locally available
+
+                secure_script = """
+import sys
+import os
+from fabric_cli.main import main
+
+sys.argv = [
+    'fab', 'auth', 'login',
+    '--username', os.environ['FAB_CLIENT_ID'],
+    '--password', os.environ['FAB_CLIENT_SECRET'],
+    '--tenant', os.environ['FAB_TENANT_ID']
+]
+sys.exit(main())
+"""
+                secure_env = os.environ.copy()
+                secure_env["FAB_CLIENT_ID"] = client_id
+                secure_env["FAB_CLIENT_SECRET"] = client_secret
+                secure_env["FAB_TENANT_ID"] = tenant_id
 
                 # We use subprocess directly here to avoid infinite recursion if we
                 # used _run_fabric_command
-                # Using short flags -u and -p as per some CLI versions preference
-                cmd = [
-                    "fab",
-                    "auth",
-                    "login",
-                    "--username",
-                    client_id,
-                    "--password",
-                    client_secret,
-                    "--tenant",
-                    tenant_id,
-                ]
+                cmd = [sys.executable, "-"]
 
-                subprocess.run(cmd, capture_output=True, text=True, check=True)
+                subprocess.run(
+                    cmd,
+                    input=secure_script,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    env=secure_env,
+                )
                 logger.info("Successfully logged in to Fabric CLI")
             except subprocess.CalledProcessError as e:
-                logger.error(f"Failed to login to Fabric CLI: {e.stderr}")
+                # Redact the secret from any error output before logging
+                stderr = e.stderr or ""
+                safe_stderr = stderr.replace(client_secret, "***REDACTED***")
+                logger.error("Failed to login to Fabric CLI: %s", safe_stderr)
                 # We don't raise here, as we might still be able to run if there's an
                 # existing token,
                 # although unlikely if explicit login failed.
@@ -239,7 +263,7 @@ class FabricCLIWrapper:
         if self._token_manager:
             try:
                 self._token_manager.ensure_fresh_auth(max_age_seconds=300)
-            except Exception as e:
+            except (RuntimeError, ValueError) as e:
                 logger.warning(
                     "Token refresh failed, continuing with existing auth: %s", e
                 )
@@ -344,7 +368,7 @@ class FabricCLIWrapper:
             cmd = ["fab", "exists", path]
             result = subprocess.run(cmd, capture_output=True, text=True, check=False)
             return "true" in result.stdout.lower()
-        except Exception:
+        except (subprocess.SubprocessError, OSError):
             return False
 
     def create_workspace(
@@ -359,7 +383,7 @@ class FabricCLIWrapper:
 
         # Check existence first
         if self._item_exists(f"{name}.Workspace"):
-            logger.info(f"Workspace {name} already exists. Retrieving details...")
+            logger.info("Workspace %s already exists. Retrieving details...", name)
             workspace_info = self.get_workspace(name)
             workspace_id = None
             if workspace_info.get("success") and workspace_info.get("data"):
@@ -442,8 +466,10 @@ class FabricCLIWrapper:
                 if isinstance(data, str):
                     try:
                         data = json.loads(data)
-                    except json.JSONDecodeError:
-                        pass
+                    except json.JSONDecodeError as exc:
+                        logger.debug(
+                            "Failed to decode JSON from fabric API wrapper: %s", exc
+                        )
 
                 # Handle fab api error response format
                 if isinstance(data, dict):
@@ -626,7 +652,7 @@ class FabricCLIWrapper:
                 )
                 logger.debug("Acquired PBI token for workspace deletion fallback")
                 return access_token.token
-            except Exception as exc:
+            except (ValueError, RuntimeError) as exc:
                 logger.warning(
                     "Could not acquire PBI token (%s); " "falling back to Fabric token",
                     exc,
@@ -734,8 +760,8 @@ class FabricCLIWrapper:
                 if isinstance(data, str):
                     try:
                         data = json.loads(data)
-                    except json.JSONDecodeError:
-                        pass
+                    except json.JSONDecodeError as exc:
+                        logger.debug("Failed to decode folder list JSON: %s", exc)
 
                 # Handle nested "text" field from fab api wrapper if present
                 if (
@@ -761,7 +787,7 @@ class FabricCLIWrapper:
         # Check if exists
         folder_id = self.get_folder_id(workspace_name, folder_name)
         if folder_id:
-            logger.info(f"Folder {folder_name} already exists.")
+            logger.info("Folder %s already exists.", folder_name)
             return {
                 "success": True,
                 "data": "already_exists",
@@ -797,7 +823,9 @@ class FabricCLIWrapper:
             folder_id = self.get_folder_id(workspace_name, folder)
             if not folder_id:
                 logger.warning(
-                    f"Folder {folder} not found. Creating Lakehouse {name} at root."
+                    "Folder %s not found. Creating Lakehouse %s at root.",
+                    folder,
+                    name,
                 )
                 folder_id = None
         else:
@@ -864,7 +892,9 @@ class FabricCLIWrapper:
             folder_id = self.get_folder_id(workspace_name, folder)
             if not folder_id:
                 logger.warning(
-                    f"Folder {folder} not found. Creating Warehouse {name} at root."
+                    "Folder %s not found. Creating Warehouse %s at root.",
+                    folder,
+                    name,
                 )
                 folder_id = None
         else:
@@ -935,7 +965,7 @@ class FabricCLIWrapper:
         path = Path(file_path)
         if not path.exists():
             # Try relative to config file directory
-            logger.warning(f"Notebook file not found: {file_path}")
+            logger.warning("Notebook file not found: %s", file_path)
             return None
 
         try:
@@ -966,12 +996,12 @@ class FabricCLIWrapper:
                 return base64.b64encode(content.encode("utf-8")).decode("utf-8")
             else:
                 logger.warning(
-                    f"Unsupported notebook file type: {path.suffix}. "
-                    f"Supported: .py, .ipynb"
+                    "Unsupported notebook file type: %s. " "Supported: .py, .ipynb",
+                    path.suffix,
                 )
                 return None
-        except Exception as e:
-            logger.error(f"Failed to read notebook file {file_path}: {e}")
+        except OSError as e:
+            logger.error("Failed to read notebook file %s: %s", file_path, e)
             return None
 
     def create_notebook(
@@ -987,18 +1017,20 @@ class FabricCLIWrapper:
         if file_path:
             notebook_definition = self._read_notebook_definition(file_path)
             if notebook_definition:
-                logger.info(f"Loaded notebook content from {file_path}")
+                logger.info("Loaded notebook content from %s", file_path)
             else:
                 logger.warning(
-                    f"Could not load notebook from {file_path}; "
-                    f"creating empty notebook"
+                    "Could not load notebook from %s; " "creating empty notebook",
+                    file_path,
                 )
 
         if folder:
             folder_id = self.get_folder_id(workspace_name, folder)
             if not folder_id:
                 logger.warning(
-                    f"Folder {folder} not found. Creating Notebook {name} at root."
+                    "Folder %s not found. Creating Notebook %s at root.",
+                    folder,
+                    name,
                 )
                 folder_id = None
         else:
@@ -1088,7 +1120,9 @@ class FabricCLIWrapper:
             folder_id = self.get_folder_id(workspace_name, folder)
             if not folder_id:
                 logger.warning(
-                    f"Folder {folder} not found. Creating Pipeline {name} at root."
+                    "Folder %s not found. Creating Pipeline %s at root.",
+                    folder,
+                    name,
                 )
                 folder_id = None
         else:
@@ -1153,7 +1187,9 @@ class FabricCLIWrapper:
             folder_id = self.get_folder_id(workspace_name, folder)
             if not folder_id:
                 logger.warning(
-                    f"Folder {folder} not found. Creating SemanticModel {name} at root."
+                    "Folder %s not found. Creating SemanticModel %s at root.",
+                    folder,
+                    name,
                 )
                 folder_id = None
         else:
@@ -1219,7 +1255,10 @@ class FabricCLIWrapper:
             folder_id = self.get_folder_id(workspace_name, folder)
             if not folder_id:
                 logger.warning(
-                    f"Folder {folder} not found. Creating {item_type} {name} at root."
+                    "Folder %s not found. Creating %s %s at root.",
+                    folder,
+                    item_type,
+                    name,
                 )
                 folder_id = None
         else:
@@ -1286,7 +1325,7 @@ class FabricCLIWrapper:
             }
 
         if "your-company.com" in principal_id or "example.com" in principal_id:
-            logger.warning(f"Skipping placeholder principal: {principal_id}")
+            logger.warning("Skipping placeholder principal: %s", principal_id)
             return {
                 "success": True,
                 "message": "Skipped placeholder principal",
@@ -1298,8 +1337,9 @@ class FabricCLIWrapper:
         sp_client_id = os.environ.get("AZURE_CLIENT_ID", "")
         if sp_client_id and principal_id.lower() == sp_client_id.lower():
             logger.info(
-                f"Skipping deploying SP Client ID {principal_id[:12]}... "
-                f"(already has implicit Admin access as workspace creator)"
+                "Skipping deploying SP Client ID %s... "
+                "(already has implicit Admin access as workspace creator)",
+                principal_id[:12],
             )
             return {
                 "success": True,
@@ -1313,8 +1353,9 @@ class FabricCLIWrapper:
             principal_id.lower(),
         ):
             logger.warning(
-                f"Principal ID '{principal_id}' looks like an email. Fabric CLI/API "
-                f"requires an Object ID (GUID)."
+                "Principal ID '%s' looks like an email. Fabric CLI/API "
+                "requires an Object ID (GUID).",
+                principal_id,
             )
             # We continue anyway, as the CLI might support it in future or if it's a
             # UPN that works in some contexts
@@ -1355,8 +1396,8 @@ class FabricCLIWrapper:
                     if self._token_manager:
                         try:
                             token = self._token_manager.get_token()
-                        except Exception:
-                            pass
+                        except (ValueError, RuntimeError) as token_err:
+                            logger.debug("Failed to get fresh token: %s", token_err)
 
                     headers = {
                         "Authorization": f"Bearer {token}",
@@ -1370,8 +1411,10 @@ class FabricCLIWrapper:
 
                     if resp.status_code == 201:
                         logger.info(
-                            f"Added principal {principal_id[:12]}... as "
-                            f"{ptype}/{api_role}"
+                            "Added principal %s... as %s/%s",
+                            principal_id[:12],
+                            ptype,
+                            api_role,
                         )
                         return {"success": True, "data": resp.json()}
 
@@ -1395,8 +1438,11 @@ class FabricCLIWrapper:
                             f"{error_code}: {error_msg} "
                             f"{'; '.join(detail_msgs)}".strip()
                         )
-                    except Exception:
-                        last_error = f"HTTP {resp.status_code}: {resp.text}"
+                    except (ValueError, KeyError, TypeError) as parse_err:
+                        last_error = (
+                            f"HTTP {resp.status_code}:"
+                            f" {resp.text} (Parse error: {parse_err})"
+                        )
 
                     # Only retry with next type if principal type issue
                     if not any(
@@ -1410,11 +1456,16 @@ class FabricCLIWrapper:
                     ):
                         break  # Non-type-related error, don't retry
 
-                except Exception as e:
+                except (
+                    requests.exceptions.RequestException,
+                    ValueError,
+                    TypeError,
+                ) as e:
                     last_error = str(e)
                     logger.error(
-                        f"REST API call failed for principal "
-                        f"{principal_id[:12]}...: {e}"
+                        "REST API call failed for principal " "%s...: %s",
+                        principal_id[:12],
+                        e,
                     )
                     break
 
@@ -1438,8 +1489,9 @@ class FabricCLIWrapper:
             error_msg = result.get("error", "")
             if "NotFound" in error_msg or "identity not found" in error_msg:
                 logger.error(
-                    f"Principal ID {principal_id} not found. Please verify the Object "
-                    f"ID and ensure it exists in the tenant."
+                    "Principal ID %s not found. Please verify the Object "
+                    "ID and ensure it exists in the tenant.",
+                    principal_id,
                 )
                 # Return success=True to avoid failing the entire deployment for one
                 # missing user
@@ -1569,7 +1621,9 @@ class FabricCLIWrapper:
         # fab api <endpoint> -X POST -i <json_string>
         command = ["api", endpoint, "-X", "post", "-i", json.dumps(payload)]
 
-        logger.info(f"Connecting workspace {workspace_name} to Git repo {git_repo}...")
+        logger.info(
+            "Connecting workspace %s to Git repo %s...", workspace_name, git_repo
+        )
         return self._execute_command(command)
 
     def assign_to_domain(self, workspace_name: str, domain_name: str) -> Dict[str, Any]:
@@ -1596,7 +1650,9 @@ class FabricCLIWrapper:
 
         command = ["assign", domain_path, "-W", f"{workspace_name}.Workspace", "-f"]
 
-        logger.info(f"Assigning workspace {workspace_name} to domain {domain_name}...")
+        logger.info(
+            "Assigning workspace %s to domain %s...", workspace_name, domain_name
+        )
         return self._execute_command(command, timeout=60)
 
     def list_workspace_items(self, workspace_name: str) -> Dict[str, Any]:
@@ -1891,14 +1947,18 @@ class FabricCLIWrapper:
                     return True
                 elif status in ["Failed", "Cancelled"]:
                     logger.error(
-                        f"Operation {operation_id} failed with status: {status}"
+                        "Operation %s failed with status: %s",
+                        operation_id,
+                        status,
                     )
                     return False
 
             time.sleep(10)  # Wait 10 seconds before checking again
 
         logger.error(
-            f"Operation {operation_id} timed out after {max_wait_seconds} seconds"
+            "Operation %s timed out after %s seconds",
+            operation_id,
+            max_wait_seconds,
         )
         return False
 
@@ -1943,8 +2003,8 @@ class FabricDiagnostics:
                     elif current >= minimum:
                         validation_result["compatibility"] = "compatible"
 
-                except Exception:
-                    pass
+                except ValueError as ve:
+                    logger.debug("Version parse error: %s", ve)
 
             return validation_result
 
