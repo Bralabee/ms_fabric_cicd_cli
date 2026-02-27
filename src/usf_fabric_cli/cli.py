@@ -316,8 +316,7 @@ def destroy(
             from usf_fabric_cli.services.git_integration import GitFabricIntegration
 
             base_name = workspace_config.name
-            git = GitFabricIntegration.__new__(GitFabricIntegration)
-            workspace_name = git.get_workspace_name_from_branch(
+            workspace_name = GitFabricIntegration.get_workspace_name_from_branch(
                 base_workspace_name=base_name,
                 branch=branch,
                 feature_prefix=feature_prefix,

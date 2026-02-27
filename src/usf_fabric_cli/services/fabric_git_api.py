@@ -184,7 +184,7 @@ class FabricGitAPI(FabricAPIBase):
             response = self._make_request("POST", url, json=request_body)
 
             result = response.json()
-            logger.info(f"Created Git connection: {result.get('id')}")
+            logger.info("Created Git connection: %s", result.get("id"))
             return {"success": True, "connection": result}
 
         except requests.exceptions.RequestException as e:
@@ -194,8 +194,8 @@ class FabricGitAPI(FabricAPIBase):
                 if e.response.status_code == 409:
                     response_text = e.response.text
                     logger.info(
-                        f"Connection creation returned 409 "
-                        f"(duplicate): {response_text}"
+                        "Connection creation returned 409 (duplicate): %s",
+                        response_text,
                     )
                     return {
                         "success": False,
@@ -203,11 +203,11 @@ class FabricGitAPI(FabricAPIBase):
                         "error": str(e),
                         "response": response_text,
                     }
-                logger.error(f"Failed to create Git connection: {e}")
-                logger.error(f"Response Status: {e.response.status_code}")
-                logger.error(f"Response Body: {e.response.text}")
+                logger.error("Failed to create Git connection: %s", e)
+                logger.error("Response Status: %s", e.response.status_code)
+                logger.error("Response Body: %s", e.response.text)
             else:
-                logger.error(f"Failed to create Git connection: {e}")
+                logger.error("Failed to create Git connection: %s", e)
 
             return {
                 "success": False,
@@ -234,11 +234,11 @@ class FabricGitAPI(FabricAPIBase):
             result = response.json()
             connections = result.get("value", [])
 
-            logger.info(f"Found {len(connections)} Git connections")
+            logger.info("Found %s Git connections", len(connections))
             return {"success": True, "connections": connections}
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to list connections: {e}")
+            logger.error("Failed to list connections: %s", e)
             return {"success": False, "error": str(e)}
 
     def get_connection_by_name(self, display_name: str) -> Optional[Dict[str, Any]]:
@@ -356,7 +356,7 @@ class FabricGitAPI(FabricAPIBase):
         try:
             self._make_request("POST", url, json=request_body)
 
-            logger.info(f"Connected workspace {workspace_id} to Git")
+            logger.info("Connected workspace %s to Git", workspace_id)
             return {"success": True, "message": "Workspace connected to Git"}
 
         except requests.exceptions.RequestException as e:
@@ -369,14 +369,16 @@ class FabricGitAPI(FabricAPIBase):
                     error_code = ""
 
                 if error_code == "WorkspaceAlreadyConnectedToGit":
-                    logger.info(f"Workspace {workspace_id} is already connected to Git")
+                    logger.info(
+                        "Workspace %s is already connected to Git", workspace_id
+                    )
                     return {
                         "success": True,
                         "message": "Workspace already connected to Git",
                         "already_connected": True,
                     }
 
-            logger.error(f"Failed to connect workspace to Git: {e}")
+            logger.error("Failed to connect workspace to Git: %s", e)
             error_detail = (
                 e.response.text
                 if hasattr(e, "response") and e.response is not None
@@ -406,8 +408,9 @@ class FabricGitAPI(FabricAPIBase):
             required_action = result.get("RequiredAction", "None")
 
             logger.info(
-                f"Initialized Git connection for workspace {workspace_id}. "
-                f"Required action: {required_action}"
+                "Initialized Git connection for workspace %s. " "Required action: %s",
+                workspace_id,
+                required_action,
             )
             return {
                 "success": True,
@@ -422,15 +425,16 @@ class FabricGitAPI(FabricAPIBase):
             if hasattr(e, "response") and e.response is not None:
                 if e.response.status_code == 409:
                     logger.info(
-                        f"Git connection already initialized for "
-                        f"workspace {workspace_id} (idempotent)"
+                        "Git connection already initialized for "
+                        "workspace %s (idempotent)",
+                        workspace_id,
                     )
                     return {
                         "success": True,
                         "already_initialized": True,
                         "required_action": "None",
                     }
-            logger.error(f"Failed to initialize Git connection: {e}")
+            logger.error("Failed to initialize Git connection: %s", e)
             return {"success": False, "error": str(e)}
 
     def update_from_git(
@@ -463,7 +467,7 @@ class FabricGitAPI(FabricAPIBase):
             operation_id = response.headers.get("x-ms-operation-id")
             retry_after = int(response.headers.get("Retry-After", "5"))
 
-            logger.info(f"Started update from Git operation: {operation_id}")
+            logger.info("Started update from Git operation: %s", operation_id)
             return {
                 "success": True,
                 "operation_id": operation_id,
@@ -471,7 +475,7 @@ class FabricGitAPI(FabricAPIBase):
             }
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to update from Git: {e}")
+            logger.error("Failed to update from Git: %s", e)
             return {"success": False, "error": str(e)}
 
     def commit_to_git(
@@ -511,7 +515,7 @@ class FabricGitAPI(FabricAPIBase):
             operation_id = response.headers.get("x-ms-operation-id")
             retry_after = int(response.headers.get("Retry-After", "5"))
 
-            logger.info(f"Started commit to Git operation: {operation_id}")
+            logger.info("Started commit to Git operation: %s", operation_id)
             return {
                 "success": True,
                 "operation_id": operation_id,
@@ -519,7 +523,7 @@ class FabricGitAPI(FabricAPIBase):
             }
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to commit to Git: {e}")
+            logger.error("Failed to commit to Git: %s", e)
             return {"success": False, "error": str(e)}
 
     def get_git_status(self, workspace_id: str) -> Dict[str, Any]:
@@ -541,7 +545,7 @@ class FabricGitAPI(FabricAPIBase):
             return {"success": True, "status": result}
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to get Git status: {e}")
+            logger.error("Failed to get Git status: %s", e)
             return {"success": False, "error": str(e)}
 
     def get_git_connection(self, workspace_id: str) -> Dict[str, Any]:
@@ -563,7 +567,7 @@ class FabricGitAPI(FabricAPIBase):
             return {"success": True, "connection": result}
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to get Git connection: {e}")
+            logger.error("Failed to get Git connection: %s", e)
             return {"success": False, "error": str(e)}
 
     def disconnect_from_git(self, workspace_id: str) -> Dict[str, Any]:
@@ -581,11 +585,11 @@ class FabricGitAPI(FabricAPIBase):
         try:
             self._make_request("POST", url, json={})
 
-            logger.info(f"Disconnected workspace {workspace_id} from Git")
+            logger.info("Disconnected workspace %s from Git", workspace_id)
             return {"success": True, "message": "Workspace disconnected from Git"}
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to disconnect from Git: {e}")
+            logger.error("Failed to disconnect from Git: %s", e)
             return {"success": False, "error": str(e)}
 
     def poll_operation(
@@ -612,8 +616,11 @@ class FabricGitAPI(FabricAPIBase):
                 status = result.get("status", "Unknown")
 
                 logger.debug(
-                    f"Operation {operation_id} status: {status} (attempt "
-                    f"{attempt + 1}/{max_attempts})"
+                    "Operation %s status: %s (attempt %s/%s)",
+                    operation_id,
+                    status,
+                    attempt + 1,
+                    max_attempts,
                 )
 
                 if status in ["Succeeded", "Failed", "Cancelled"]:
@@ -627,12 +634,13 @@ class FabricGitAPI(FabricAPIBase):
                 time.sleep(max(retry_after, 2))
 
             except requests.exceptions.RequestException as e:
-                logger.error(f"Failed to poll operation: {e}")
+                logger.error("Failed to poll operation: %s", e)
                 return {"success": False, "error": str(e)}
 
         # Timeout
         logger.error(
-            f"Operation {operation_id} timed out after "
-            f"{max_attempts * retry_after} seconds"
+            "Operation %s timed out after %s seconds",
+            operation_id,
+            max_attempts * retry_after,
         )
         return {"success": False, "error": "Operation timed out", "status": "Timeout"}

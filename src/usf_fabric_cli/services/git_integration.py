@@ -94,11 +94,11 @@ class GitFabricIntegration:
             try:
                 self.repo.git.fetch("origin")
             except git.exc.GitCommandError as fetch_err:
-                logger.warning(f"Git fetch warning: {fetch_err}")
+                logger.warning("Git fetch warning: %s", fetch_err)
 
             # Check if branch exists
             if branch_name in self.repo.heads:
-                logger.info(f"Branch '{branch_name}' exists. Checking out...")
+                logger.info("Branch '%s' exists. Checking out...", branch_name)
                 self.repo.heads[branch_name].checkout()
                 return {
                     "success": True,
@@ -107,7 +107,9 @@ class GitFabricIntegration:
                 }
 
             # Create new branch from base
-            logger.info(f"Creating new branch '{branch_name}' from '{base_branch}'...")
+            logger.info(
+                "Creating new branch '%s' from '%s'...", branch_name, base_branch
+            )
             self.repo.git.checkout(base_branch)
             try:
                 self.repo.git.pull("origin", base_branch)
@@ -118,7 +120,7 @@ class GitFabricIntegration:
             new_branch.checkout()
 
             if push_to_remote:
-                logger.info(f"Pushing branch '{branch_name}' to remote...")
+                logger.info("Pushing branch '%s' to remote...", branch_name)
                 self.repo.git.push("--set-upstream", "origin", branch_name)
 
             return {
@@ -160,8 +162,10 @@ class GitFabricIntegration:
 
         if result["success"]:
             logger.info(
-                f"Successfully connected workspace {workspace_id} to "
-                f"{git_repo_url}:{branch}"
+                "Successfully connected workspace %s to %s:%s",
+                workspace_id,
+                git_repo_url,
+                branch,
             )
 
         return result
@@ -195,8 +199,8 @@ class GitFabricIntegration:
                 f"Got: {name!r}"
             )
 
+    @staticmethod
     def get_workspace_name_from_branch(
-        self,
         base_workspace_name: str,
         branch: str,
         feature_prefix: str = "[F]",
@@ -236,7 +240,7 @@ class GitFabricIntegration:
 
         # Validate prefix early to fail fast on bad input
         if feature_prefix:
-            self._validate_workspace_name(feature_prefix)
+            GitFabricIntegration._validate_workspace_name(feature_prefix)
 
         if branch == "main" or branch == "master":
             return base_workspace_name
@@ -255,13 +259,13 @@ class GitFabricIntegration:
             safe_desc = branch_desc.replace("/", "-")
             prefix = f"{feature_prefix} " if feature_prefix else ""
             result = f"{prefix}{base_clean} [FEATURE-{safe_desc}]"
-            self._validate_workspace_name(result)
+            GitFabricIntegration._validate_workspace_name(result)
             return result
 
         # Slug names → hyphen notation (legacy behavior, no prefix)
         sanitized_branch = branch.replace("/", "-").replace("_", "-").lower()
         result = f"{base_clean}-{sanitized_branch}"
-        self._validate_workspace_name(result)
+        GitFabricIntegration._validate_workspace_name(result)
         return result
 
     def sync_workspace_with_git(self, workspace_id: str) -> Dict[str, Any]:
@@ -337,12 +341,12 @@ class GitFabricIntegration:
                     ),
                 }
         except subprocess.TimeoutExpired:
-            logger.warning(f"Repository accessibility check timed out for: {repo_url}")
+            logger.warning("Repository accessibility check timed out for: %s", repo_url)
             # Continue anyway - let Fabric API handle final validation
         except FileNotFoundError:
             logger.warning("git command not found - skipping accessibility check")
         except (git.exc.GitCommandError, ValueError, OSError) as e:
-            logger.debug(f"Repository accessibility check failed: {e}")
+            logger.debug("Repository accessibility check failed: %s", e)
             # Continue anyway - non-critical for basic validation
 
         return {"success": True, "repository_url": repo_url}

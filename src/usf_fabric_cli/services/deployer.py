@@ -286,7 +286,7 @@ class FabricDeployer:
                                 ),
                             )
                     except (FabricCLIError, ValueError) as e:
-                        logger.warning(f"Folder organization failed (non-fatal): {e}")
+                        logger.warning("Folder organization failed (non-fatal): %s", e)
                         progress.update(
                             task,
                             description="⚠️ Folder organize skipped (error)",
@@ -1167,7 +1167,7 @@ class FabricDeployer:
             }
 
         # Could not parse
-        logger.warning(f"Could not parse Git URL: {git_url}")
+        logger.warning("Could not parse Git URL: %s", git_url)
         return None
 
     def _setup_deployment_pipeline(self, dev_workspace_name: str) -> bool:
