@@ -53,9 +53,9 @@ htmlcov/
 .tox/
 .hypothesis/
 
-# Debug files
-debug_*.py
-debug_*.json
+# Debug files (root-level scratch scripts only)
+/debug_*.py
+/debug_*.json
 
 # Build artifacts
 *.whl
