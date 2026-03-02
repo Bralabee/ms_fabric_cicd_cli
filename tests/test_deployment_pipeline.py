@@ -14,6 +14,7 @@ Tests verify:
 """
 
 import os
+import time
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
@@ -663,3 +664,419 @@ class TestPipelineUsers:
         body = mock_post.call_args[1]["json"]
         assert "accessRight" in body
         assert "pipelineRole" not in body
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: list_stage_items
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestListStageItems:
+    """Test list_stage_items method."""
+
+    @patch.object(FabricDeploymentPipelineAPI, "_make_request")
+    def test_list_stage_items_success(self, mock_request, api):
+        """Test listing items in a pipeline stage."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "value": [
+                {
+                    "itemId": "item-1",
+                    "itemDisplayName": "MyLakehouse",
+                    "itemType": "Lakehouse",
+                },
+                {
+                    "itemId": "item-2",
+                    "itemDisplayName": "MyNotebook",
+                    "itemType": "Notebook",
+                },
+            ]
+        }
+        mock_request.return_value = mock_response
+        result = api.list_stage_items("pipe-id", "stage-id")
+        assert result["success"] is True
+        assert len(result["items"]) == 2
+
+    @patch.object(FabricDeploymentPipelineAPI, "_make_request")
+    def test_list_stage_items_failure(self, mock_request, api):
+        """Test list_stage_items on API failure."""
+        mock_request.side_effect = requests.RequestException("Stage not found")
+        result = api.list_stage_items("pipe-id", "bad-stage-id")
+        assert result["success"] is False
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: _build_selective_items (pure logic)
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestBuildSelectiveItems:
+    """Test _build_selective_items pure pairing logic."""
+
+    def test_basic_deployable_items(self, api):
+        """Test basic item selection without exclusions."""
+        source = [
+            {"itemId": "s1", "itemDisplayName": "nb1", "itemType": "Notebook"},
+            {"itemId": "s2", "itemDisplayName": "lh1", "itemType": "Lakehouse"},
+        ]
+        target = []
+        result = api._build_selective_items(source, target, set())
+        assert len(result["deployable"]) == 2
+        assert len(result["excluded"]) == 0
+        assert result["paired"] == 0
+
+    def test_excludes_unsupported_types(self, api):
+        """Test that items with excluded types are filtered out."""
+        source = [
+            {"itemId": "s1", "itemDisplayName": "nb1", "itemType": "Notebook"},
+            {"itemId": "s2", "itemDisplayName": "wh1", "itemType": "Warehouse"},
+            {"itemId": "s3", "itemDisplayName": "sql1", "itemType": "SQLEndpoint"},
+        ]
+        target = []
+        exclude = {"Warehouse", "SQLEndpoint"}
+        result = api._build_selective_items(source, target, exclude)
+        assert len(result["deployable"]) == 1
+        assert len(result["excluded"]) == 2
+        assert result["deployable"][0]["itemType"] == "Notebook"
+
+    def test_pairs_with_target_items(self, api):
+        """Test that source items are paired with matching target items."""
+        source = [
+            {"itemId": "s1", "itemDisplayName": "nb1", "itemType": "Notebook"},
+            {"itemId": "s2", "itemDisplayName": "lh1", "itemType": "Lakehouse"},
+        ]
+        target = [
+            {"itemId": "t1", "itemDisplayName": "nb1", "itemType": "Notebook"},
+        ]
+        result = api._build_selective_items(source, target, set())
+        assert result["paired"] == 1
+        # The paired item should have a targetItemId
+        paired_item = [i for i in result["deployable"] if "targetItemId" in i]
+        assert len(paired_item) == 1
+        assert paired_item[0]["targetItemId"] == "t1"
+
+    def test_empty_source_items(self, api):
+        """Test with empty source items."""
+        result = api._build_selective_items([], [], set())
+        assert len(result["deployable"]) == 0
+        assert result["paired"] == 0
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: _extract_failing_item_ids (static, pure)
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestExtractFailingItemIds:
+    """Test _extract_failing_item_ids static method."""
+
+    def test_extracts_resource_ids(self, api):
+        """Test extraction of failing resource IDs from error response."""
+        result = {
+            "result": {
+                "error": {
+                    "moreDetails": [
+                        {
+                            "relatedResource": {
+                                "resourceId": "item-1",
+                                "resourceType": "Notebook",
+                            }
+                        },
+                        {
+                            "relatedResource": {
+                                "resourceId": "item-2",
+                                "resourceType": "Lakehouse",
+                            }
+                        },
+                    ]
+                }
+            }
+        }
+        ids = FabricDeploymentPipelineAPI._extract_failing_item_ids(result)
+        assert ids == {"item-1", "item-2"}
+
+    def test_no_more_details(self, api):
+        """Test returns empty set when no moreDetails."""
+        result = {"result": {"error": {}}}
+        ids = FabricDeploymentPipelineAPI._extract_failing_item_ids(result)
+        assert ids == set()
+
+    def test_missing_resource_id(self, api):
+        """Test skips entries without resourceId."""
+        result = {
+            "result": {
+                "error": {
+                    "moreDetails": [
+                        {"relatedResource": {}},
+                        {
+                            "relatedResource": {
+                                "resourceId": "item-1",
+                            }
+                        },
+                    ]
+                }
+            }
+        }
+        ids = FabricDeploymentPipelineAPI._extract_failing_item_ids(result)
+        assert ids == {"item-1"}
+
+    def test_empty_result(self):
+        """Test with completely empty result dict."""
+        ids = FabricDeploymentPipelineAPI._extract_failing_item_ids({})
+        assert ids == set()
+
+    def test_flat_error_structure(self):
+        """Test with error at top level (no nested 'result')."""
+        result = {
+            "error": {
+                "moreDetails": [
+                    {"relatedResource": {"resourceId": "item-x"}},
+                ]
+            }
+        }
+        ids = FabricDeploymentPipelineAPI._extract_failing_item_ids(result)
+        assert ids == {"item-x"}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: selective_promote
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestSelectivePromote:
+    """Test selective_promote method."""
+
+    @patch.object(FabricDeploymentPipelineAPI, "poll_operation")
+    @patch.object(FabricDeploymentPipelineAPI, "deploy_to_stage")
+    @patch.object(FabricDeploymentPipelineAPI, "list_stage_items")
+    @patch.object(FabricDeploymentPipelineAPI, "get_pipeline_stages")
+    def test_selective_promote_success(
+        self, mock_stages, mock_list, mock_deploy, mock_poll, api
+    ):
+        """Test successful selective promotion."""
+        mock_stages.return_value = {
+            "success": True,
+            "stages": [
+                {"id": "dev-id", "displayName": "Development"},
+                {"id": "test-id", "displayName": "Test"},
+            ],
+        }
+        mock_list.side_effect = [
+            {
+                "success": True,
+                "items": [
+                    {
+                        "itemId": "s1",
+                        "itemDisplayName": "nb1",
+                        "itemType": "Notebook",
+                    },
+                ],
+            },
+            {"success": True, "items": []},
+        ]
+        mock_deploy.return_value = {
+            "success": True,
+            "operation_id": "op-1",
+            "retry_after": 5,
+        }
+        mock_poll.return_value = {"success": True}
+
+        result = api.selective_promote("pipe-id", "Development", "Test")
+        assert result["success"] is True
+        assert result["deployed"] == 1
+
+    def test_selective_promote_no_next_stage(self, api):
+        """Test selective_promote with invalid next stage (auto-infer)."""
+        result = api.selective_promote("pipe-id", "Production")
+        assert result["success"] is False
+        assert "No next stage" in result["error"]
+
+    @patch.object(FabricDeploymentPipelineAPI, "get_pipeline_stages")
+    def test_selective_promote_stage_not_found(self, mock_stages, api):
+        """Test selective_promote when source stage doesn't exist."""
+        mock_stages.return_value = {
+            "success": True,
+            "stages": [
+                {"id": "dev-id", "displayName": "Development"},
+            ],
+        }
+        result = api.selective_promote("pipe-id", "Development", "Test")
+        assert result["success"] is False
+        assert "not found" in result["error"]
+
+    @patch.object(FabricDeploymentPipelineAPI, "list_stage_items")
+    @patch.object(FabricDeploymentPipelineAPI, "get_pipeline_stages")
+    def test_selective_promote_no_items(self, mock_stages, mock_list, api):
+        """Test selective_promote with no items in source stage."""
+        mock_stages.return_value = {
+            "success": True,
+            "stages": [
+                {"id": "dev-id", "displayName": "Development"},
+                {"id": "test-id", "displayName": "Test"},
+            ],
+        }
+        mock_list.side_effect = [
+            {"success": True, "items": []},
+            {"success": True, "items": []},
+        ]
+
+        result = api.selective_promote("pipe-id", "Development", "Test")
+        assert result["success"] is True
+        assert result.get("no_items") is True
+
+    @patch.object(FabricDeploymentPipelineAPI, "list_stage_items")
+    @patch.object(FabricDeploymentPipelineAPI, "get_pipeline_stages")
+    def test_selective_promote_all_excluded(self, mock_stages, mock_list, api):
+        """Test selective_promote when all items are excluded types."""
+        mock_stages.return_value = {
+            "success": True,
+            "stages": [
+                {"id": "dev-id", "displayName": "Development"},
+                {"id": "test-id", "displayName": "Test"},
+            ],
+        }
+        mock_list.side_effect = [
+            {
+                "success": True,
+                "items": [
+                    {
+                        "itemId": "s1",
+                        "itemDisplayName": "wh1",
+                        "itemType": "Warehouse",
+                    },
+                    {
+                        "itemId": "s2",
+                        "itemDisplayName": "sql1",
+                        "itemType": "SQLEndpoint",
+                    },
+                ],
+            },
+            {"success": True, "items": []},
+        ]
+
+        result = api.selective_promote("pipe-id", "Development", "Test")
+        assert result["success"] is True
+        assert result.get("no_items") is True
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: poll_operation edge cases
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestPollOperationEdgeCases:
+    """Test poll_operation for Failed and network error paths."""
+
+    @patch("time.sleep")
+    @patch.object(FabricDeploymentPipelineAPI, "_make_request")
+    def test_poll_operation_failed(self, mock_request, mock_sleep, api):
+        """Test poll_operation returns failure for Failed status."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "status": "Failed",
+            "error": {"message": "Deploy failed"},
+        }
+        mock_request.return_value = mock_response
+        result = api.poll_operation("op-id", retry_after=0)
+        assert result["success"] is False
+        assert result["status"] == "Failed"
+
+    @patch("time.sleep")
+    @patch.object(FabricDeploymentPipelineAPI, "_make_request")
+    def test_poll_operation_cancelled(self, mock_request, mock_sleep, api):
+        """Test poll_operation returns failure for Cancelled status."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"status": "Cancelled"}
+        mock_request.return_value = mock_response
+        result = api.poll_operation("op-id", retry_after=0)
+        assert result["success"] is False
+        assert result["status"] == "Cancelled"
+
+    @patch("time.sleep")
+    @patch.object(FabricDeploymentPipelineAPI, "_make_request")
+    def test_poll_operation_network_error(self, mock_request, mock_sleep, api):
+        """Test poll_operation handles network errors gracefully."""
+        mock_request.side_effect = requests.RequestException("Network error")
+        result = api.poll_operation("op-id", retry_after=0)
+        assert result["success"] is False
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: unassign_workspace_from_stage
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestUnassignWorkspaceFromStage:
+    """Test unassign_workspace_from_stage method."""
+
+    @patch.object(FabricDeploymentPipelineAPI, "_make_request")
+    def test_unassign_success(self, mock_request, api):
+        """Test successful workspace unassignment."""
+        mock_request.return_value = MagicMock()
+        result = api.unassign_workspace_from_stage("pipe-id", "stage-id")
+        assert result["success"] is True
+
+    @patch.object(FabricDeploymentPipelineAPI, "_make_request")
+    def test_unassign_failure(self, mock_request, api):
+        """Test workspace unassignment failure."""
+        mock_request.side_effect = requests.RequestException("Stage not found")
+        result = api.unassign_workspace_from_stage("pipe-id", "bad-stage")
+        assert result["success"] is False
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: assign_workspace_to_stage error detail
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestAssignWorkspaceErrorPaths:
+    """Test assign_workspace_to_stage error handling."""
+
+    @patch.object(FabricDeploymentPipelineAPI, "_make_request")
+    def test_assign_workspace_api_error_with_detail(self, mock_request, api):
+        """Test assign_workspace_to_stage captures error details."""
+        exc = requests.RequestException("Assignment failed")
+        mock_resp = MagicMock()
+        mock_resp.status_code = 400
+        mock_resp.text = "Bad request: workspace already assigned"
+        exc.response = mock_resp
+        mock_request.side_effect = exc
+        result = api.assign_workspace_to_stage("pipe-id", "stage-id", "ws-id-123")
+        assert result["success"] is False
+        assert result["status_code"] == 400
+        assert "already assigned" in result["error_detail"]
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: deploy_to_stage with items parameter
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestDeployToStageWithItems:
+    """Test deploy_to_stage with explicit items list."""
+
+    @patch.object(FabricDeploymentPipelineAPI, "_make_request")
+    def test_deploy_with_items(self, mock_request, api):
+        """Test deployment with explicit item list."""
+        mock_response = MagicMock()
+        mock_response.headers = {
+            "x-ms-operation-id": "op-123",
+            "Retry-After": "10",
+        }
+        mock_request.return_value = mock_response
+
+        items = [
+            {"sourceItemId": "s1", "itemType": "Notebook"},
+            {"sourceItemId": "s2", "itemType": "Lakehouse"},
+        ]
+        result = api.deploy_to_stage(
+            pipeline_id="pipe-id",
+            source_stage_id="dev-id",
+            target_stage_id="test-id",
+            items=items,
+            note="Test deploy",
+        )
+        assert result["success"] is True
+        assert result["operation_id"] == "op-123"
+        # Verify the request was made with the items
+        assert mock_request.called
