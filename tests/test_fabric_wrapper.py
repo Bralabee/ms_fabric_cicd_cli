@@ -3,6 +3,8 @@ Unit tests for Fabric CLI wrapper
 """
 
 import json
+import subprocess
+import time
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -889,3 +891,670 @@ class TestRetryUtilities:
 
         assert "Permission denied" in str(exc_info.value)
         assert call_count == 1  # No retries for non-retryable errors
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: _validate_cli_version
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestValidateCliVersion:
+    """Test _validate_cli_version paths to improve coverage."""
+
+    def _make_wrapper(self):
+        """Create wrapper with version validation disabled."""
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            wrapper = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+        return wrapper
+
+    @patch("subprocess.run")
+    def test_successful_version_parse(self, mock_run):
+        """Test parsing a valid version string."""
+        mock_run.return_value = Mock(stdout="Fabric CLI 1.3.1", returncode=0)
+        wrapper = self._make_wrapper()
+        wrapper._validate_cli_version()
+        assert wrapper.cli_version == "1.3.1"
+
+    @patch("subprocess.run")
+    def test_version_below_minimum(self, mock_run):
+        """Test warning for version below minimum."""
+        mock_run.return_value = Mock(stdout="Fabric CLI 0.0.1", returncode=0)
+        wrapper = self._make_wrapper()
+        wrapper._validate_cli_version()
+        assert wrapper.cli_version == "0.0.1"
+
+    @patch("subprocess.run")
+    def test_file_not_found_raises(self, mock_run):
+        """Test FileNotFoundError raises FabricCLINotFoundError."""
+        from usf_fabric_cli.exceptions import FabricCLINotFoundError
+
+        mock_run.side_effect = FileNotFoundError("fab not found")
+        wrapper = self._make_wrapper()
+
+        with pytest.raises(FabricCLINotFoundError):
+            wrapper._validate_cli_version()
+
+    @patch("subprocess.run")
+    def test_timeout_sets_unknown(self, mock_run):
+        """Test TimeoutExpired sets version to 'unknown'."""
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="fab", timeout=5)
+        wrapper = self._make_wrapper()
+        wrapper._validate_cli_version()
+        assert wrapper.cli_version == "unknown"
+
+    @patch("subprocess.run")
+    def test_os_error_sets_unknown(self, mock_run):
+        """Test OSError sets version to 'unknown'."""
+        mock_run.side_effect = OSError("some error")
+        wrapper = self._make_wrapper()
+        wrapper._validate_cli_version()
+        assert wrapper.cli_version == "unknown"
+
+    @patch("subprocess.run")
+    def test_unparseable_version_output(self, mock_run):
+        """Test that unparseable version output sets 'unknown'."""
+        mock_run.return_value = Mock(stdout="some random output", returncode=0)
+        wrapper = self._make_wrapper()
+        wrapper._validate_cli_version()
+        assert wrapper.cli_version == "unknown"
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: _parse_git_url
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestParseGitUrl:
+    """Test _parse_git_url for all URL formats (pure function)."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    def test_ado_format_1(self):
+        """Test Azure DevOps URL format: dev.azure.com/{org}/{project}/_git/{repo}"""
+        url = "https://dev.azure.com/MyOrg/MyProject/_git/MyRepo"
+        result = self.fabric._parse_git_url(url)
+        assert result["gitProviderType"] == "AzureDevOps"
+        assert result["organizationName"] == "MyOrg"
+        assert result["projectName"] == "MyProject"
+        assert result["repositoryName"] == "MyRepo"
+
+    def test_ado_format_2(self):
+        """Test Azure DevOps URL format: {org}.visualstudio.com/{project}/_git/{repo}"""
+        url = "https://MyOrg.visualstudio.com/MyProject/_git/MyRepo"
+        result = self.fabric._parse_git_url(url)
+        assert result["gitProviderType"] == "AzureDevOps"
+        assert result["organizationName"] == "MyOrg"
+        assert result["projectName"] == "MyProject"
+        assert result["repositoryName"] == "MyRepo"
+
+    def test_github_format(self):
+        """Test GitHub URL: https://github.com/{owner}/{repo}"""
+        url = "https://github.com/my-org/my-repo"
+        result = self.fabric._parse_git_url(url)
+        assert result["gitProviderType"] == "GitHub"
+        assert result["ownerName"] == "my-org"
+        assert result["repositoryName"] == "my-repo"
+
+    def test_github_format_with_git_suffix(self):
+        """Test GitHub URL with .git suffix."""
+        url = "https://github.com/my-org/my-repo.git"
+        result = self.fabric._parse_git_url(url)
+        assert result["gitProviderType"] == "GitHub"
+        assert result["ownerName"] == "my-org"
+        assert result["repositoryName"] == "my-repo"
+
+    def test_unrecognized_url_returns_empty(self):
+        """Test that unrecognized URLs return empty dict."""
+        result = self.fabric._parse_git_url("https://gitlab.com/foo/bar")
+        assert result == {}
+
+    def test_empty_string_returns_empty(self):
+        """Test that empty string returns empty dict."""
+        result = self.fabric._parse_git_url("")
+        assert result == {}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: _item_exists
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestItemExists:
+    """Test _item_exists method."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    @patch("subprocess.run")
+    def test_item_exists_true(self, mock_run):
+        """Test _item_exists returns True when item exists."""
+        mock_run.return_value = Mock(stdout="true", stderr="", returncode=0)
+        assert self.fabric._item_exists("test-workspace.Workspace") is True
+
+    @patch("subprocess.run")
+    def test_item_exists_false(self, mock_run):
+        """Test _item_exists returns False when item does not exist."""
+        mock_run.return_value = Mock(stdout="false", stderr="", returncode=0)
+        assert self.fabric._item_exists("test-workspace.Workspace") is False
+
+    @patch("subprocess.run")
+    def test_item_exists_failure_returns_false(self, mock_run):
+        """Test _item_exists returns False on error."""
+        mock_run.side_effect = subprocess.SubprocessError("error")
+        assert self.fabric._item_exists("test-workspace.Workspace") is False
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: create_folder and get_workspace_item_summary
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestCreateFolderAndSummary:
+    """Test create_folder and get_workspace_item_summary."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(FabricCLIWrapper, "get_folder_id", return_value="folder-id-456")
+    def test_create_folder_already_exists(self, mock_folder_id, mock_ws_id):
+        """Test create_folder returns success when folder already exists."""
+        result = self.fabric.create_folder("test-workspace", "Bronze")
+        assert result["success"] is True
+        assert result["data"] == "already_exists"
+        assert result["reused"] is True
+        assert result["id"] == "folder-id-456"
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(FabricCLIWrapper, "get_folder_id", return_value=None)
+    @patch.object(
+        FabricCLIWrapper,
+        "_execute_command",
+        return_value={
+            "success": True,
+            "data": {"id": "new-folder-id", "displayName": "Bronze"},
+        },
+    )
+    def test_create_folder_new(self, mock_exec, mock_folder_id, mock_ws_id):
+        """Test create_folder creates a new folder via API."""
+        result = self.fabric.create_folder("test-workspace", "Bronze")
+        assert result["success"] is True
+
+    @patch.object(
+        FabricCLIWrapper,
+        "list_workspace_items_api",
+        return_value=[
+            {"type": "Lakehouse", "displayName": "lh1"},
+            {"type": "Lakehouse", "displayName": "lh2"},
+            {"type": "Notebook", "displayName": "nb1"},
+            {"type": "Pipeline", "displayName": "pl1"},
+        ],
+    )
+    def test_get_workspace_item_summary(self, mock_items):
+        """Test get_workspace_item_summary aggregates by type."""
+        result = self.fabric.get_workspace_item_summary("test-workspace")
+        assert result["item_count"] == 4
+        assert result["has_items"] is True
+        assert result["items_by_type"]["Lakehouse"] == 2
+        assert result["items_by_type"]["Notebook"] == 1
+        assert result["items_by_type"]["Pipeline"] == 1
+        assert len(result["items"]) == 4
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: list_workspace_items_api (pagination)
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestListWorkspaceItemsApi:
+    """Test list_workspace_items_api with pagination scenarios."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_single_page(self, mock_exec, mock_ws_id):
+        """Test listing items with a single page (no continuation)."""
+        mock_exec.return_value = {
+            "success": True,
+            "data": {
+                "value": [
+                    {"id": "1", "displayName": "item1", "type": "Lakehouse"},
+                    {"id": "2", "displayName": "item2", "type": "Notebook"},
+                ],
+            },
+        }
+        items = self.fabric.list_workspace_items_api("test-workspace")
+        assert len(items) == 2
+        assert items[0]["displayName"] == "item1"
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_with_continuation_token(self, mock_exec, mock_ws_id):
+        """Test pagination via continuationToken."""
+        page1 = {
+            "success": True,
+            "data": {
+                "value": [{"id": "1", "displayName": "item1", "type": "Lakehouse"}],
+                "continuationToken": "token-abc",
+            },
+        }
+        page2 = {
+            "success": True,
+            "data": {
+                "value": [{"id": "2", "displayName": "item2", "type": "Notebook"}],
+            },
+        }
+        mock_exec.side_effect = [page1, page2]
+        items = self.fabric.list_workspace_items_api("test-workspace")
+        assert len(items) == 2
+        assert mock_exec.call_count == 2
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_with_continuation_uri(self, mock_exec, mock_ws_id):
+        """Test pagination via continuationUri (full URL)."""
+        page1 = {
+            "success": True,
+            "data": {
+                "value": [{"id": "1", "displayName": "item1", "type": "Lakehouse"}],
+                "continuationUri": (
+                    "https://api.fabric.microsoft.com/v1/"
+                    "workspaces/ws-id-123/items?continuationToken=xyz"
+                ),
+            },
+        }
+        page2 = {
+            "success": True,
+            "data": {
+                "value": [{"id": "2", "displayName": "item2", "type": "Notebook"}],
+            },
+        }
+        mock_exec.side_effect = [page1, page2]
+        items = self.fabric.list_workspace_items_api("test-workspace")
+        assert len(items) == 2
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value=None)
+    def test_no_workspace_id_returns_empty(self, mock_ws_id):
+        """Test returns empty list when workspace ID cannot be resolved."""
+        items = self.fabric.list_workspace_items_api("unknown-workspace")
+        assert items == []
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_api_failure_returns_partial(self, mock_exec, mock_ws_id):
+        """Test returns empty list on API failure."""
+        mock_exec.return_value = {"success": False, "error": "API error"}
+        items = self.fabric.list_workspace_items_api("test-workspace")
+        assert items == []
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_string_data_parsed_as_json(self, mock_exec, mock_ws_id):
+        """Test that string response data is parsed as JSON."""
+        mock_exec.return_value = {
+            "success": True,
+            "data": json.dumps(
+                {"value": [{"id": "1", "displayName": "item1", "type": "Lakehouse"}]}
+            ),
+        }
+        items = self.fabric.list_workspace_items_api("test-workspace")
+        assert len(items) == 1
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_nested_text_field(self, mock_exec, mock_ws_id):
+        """Test that nested 'text' field is unwrapped."""
+        mock_exec.return_value = {
+            "success": True,
+            "data": {
+                "text": {
+                    "value": [{"id": "1", "displayName": "item1", "type": "Lakehouse"}],
+                }
+            },
+        }
+        items = self.fabric.list_workspace_items_api("test-workspace")
+        assert len(items) == 1
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: wait_for_operation
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestWaitForOperation:
+    """Test wait_for_operation polling logic."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    @patch("time.sleep")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_succeeds_immediately(self, mock_exec, mock_sleep):
+        """Test operation succeeds on first poll."""
+        mock_exec.return_value = {
+            "success": True,
+            "data": {"status": "Succeeded"},
+        }
+        result = self.fabric.wait_for_operation("op-123")
+        assert result is True
+
+    @patch("time.sleep")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_completed_status(self, mock_exec, mock_sleep):
+        """Test operation returns True for 'Completed' status."""
+        mock_exec.return_value = {
+            "success": True,
+            "data": {"status": "Completed"},
+        }
+        result = self.fabric.wait_for_operation("op-123")
+        assert result is True
+
+    @patch("time.sleep")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_fails(self, mock_exec, mock_sleep):
+        """Test operation returns False for 'Failed' status."""
+        mock_exec.return_value = {
+            "success": True,
+            "data": {"status": "Failed"},
+        }
+        result = self.fabric.wait_for_operation("op-123")
+        assert result is False
+
+    @patch("time.sleep")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_cancelled(self, mock_exec, mock_sleep):
+        """Test operation returns False for 'Cancelled' status."""
+        mock_exec.return_value = {
+            "success": True,
+            "data": {"status": "Cancelled"},
+        }
+        result = self.fabric.wait_for_operation("op-123")
+        assert result is False
+
+    @patch("usf_fabric_cli.services.fabric_wrapper.time")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_timeout(self, mock_exec, mock_time_mod):
+        """Test operation times out after max_wait_seconds."""
+        # time.time() is called for start and for each loop check
+        mock_time_mod.time.side_effect = [0, 100, 200, 400]
+        mock_time_mod.sleep = MagicMock()
+        mock_exec.return_value = {
+            "success": True,
+            "data": {"status": "Running"},
+        }
+        result = self.fabric.wait_for_operation("op-123", max_wait_seconds=300)
+        assert result is False
+
+    @patch("usf_fabric_cli.services.fabric_wrapper.time")
+    @patch.object(FabricCLIWrapper, "_execute_command")
+    def test_succeeds_after_polling(self, mock_exec, mock_time_mod):
+        """Test operation succeeds after a few polling cycles."""
+        mock_time_mod.time.side_effect = [0, 10, 20, 30]
+        mock_time_mod.sleep = MagicMock()
+        mock_exec.side_effect = [
+            {"success": True, "data": {"status": "Running"}},
+            {"success": True, "data": {"status": "Running"}},
+            {"success": True, "data": {"status": "Succeeded"}},
+        ]
+        result = self.fabric.wait_for_operation("op-123", max_wait_seconds=300)
+        assert result is True
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: move_item_to_folder
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestMoveItemToFolder:
+    """Test move_item_to_folder method."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(FabricCLIWrapper, "_execute_command", return_value={"success": True})
+    def test_move_success(self, mock_exec, mock_ws_id):
+        """Test successful item move."""
+        result = self.fabric.move_item_to_folder(
+            "test-workspace", "item-id-1", "folder-id-1", "MyNotebook"
+        )
+        assert result["success"] is True
+        # Verify PATCH command was constructed correctly
+        call_args = mock_exec.call_args[0][0]
+        assert "patch" in call_args
+        assert "items/item-id-1" in call_args[1]
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value=None)
+    def test_move_no_workspace_id(self, mock_ws_id):
+        """Test move fails when workspace ID cannot be resolved."""
+        result = self.fabric.move_item_to_folder(
+            "unknown-ws", "item-id-1", "folder-id-1"
+        )
+        assert result["success"] is False
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: organize_items_into_folders
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestOrganizeItemsIntoFolders:
+    """Test organize_items_into_folders method."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    def test_empty_rules(self):
+        """Test with empty folder_rules returns zero counts."""
+        result = self.fabric.organize_items_into_folders("test-ws", [])
+        assert result["moved"] == 0
+        assert result["skipped"] == 0
+        assert result["failed"] == 0
+
+    @patch.object(FabricCLIWrapper, "list_workspace_items_api", return_value=[])
+    def test_no_items_in_workspace(self, mock_items):
+        """Test with no items to organize."""
+        rules = [{"type": "Notebook", "folder": "Notebooks"}]
+        result = self.fabric.organize_items_into_folders("test-ws", rules)
+        assert result["moved"] == 0
+
+    @patch.object(
+        FabricCLIWrapper,
+        "move_item_to_folder",
+        return_value={"success": True},
+    )
+    @patch.object(
+        FabricCLIWrapper,
+        "_execute_command",
+        return_value={
+            "success": True,
+            "data": {
+                "value": [
+                    {"id": "folder-nb-id", "displayName": "Notebooks"},
+                ]
+            },
+        },
+    )
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(
+        FabricCLIWrapper,
+        "list_workspace_items_api",
+        return_value=[
+            {
+                "id": "nb-1",
+                "displayName": "MyNotebook",
+                "type": "Notebook",
+            },
+            {
+                "id": "lh-1",
+                "displayName": "MyLakehouse",
+                "type": "Lakehouse",
+                "folderId": "existing-folder",
+            },
+        ],
+    )
+    def test_moves_root_items_skips_existing(
+        self, mock_items, mock_ws_id, mock_exec, mock_move
+    ):
+        """Test moves root items and skips items already in folders."""
+        rules = [{"type": "Notebook", "folder": "Notebooks"}]
+        result = self.fabric.organize_items_into_folders("test-ws", rules)
+        assert result["moved"] == 1
+        assert mock_move.call_count == 1
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
+    @patch.object(
+        FabricCLIWrapper,
+        "_execute_command",
+        return_value={
+            "success": True,
+            "data": {"value": []},  # No folders exist
+        },
+    )
+    @patch.object(
+        FabricCLIWrapper,
+        "list_workspace_items_api",
+        return_value=[
+            {"id": "nb-1", "displayName": "MyNotebook", "type": "Notebook"},
+        ],
+    )
+    def test_folder_not_found_increments_failed(
+        self, mock_items, mock_exec, mock_ws_id
+    ):
+        """Test rule with missing folder increments failed count."""
+        rules = [{"type": "Notebook", "folder": "NonexistentFolder"}]
+        result = self.fabric.organize_items_into_folders("test-ws", rules)
+        assert result["failed"] == 1
+        assert any(d["status"] == "folder_not_found" for d in result["details"])
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: list_workspace_items (CLI)
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestListWorkspaceItems:
+    """Test list_workspace_items (CLI-based)."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    @patch.object(
+        FabricCLIWrapper,
+        "_execute_command",
+        return_value={"success": True, "data": "item1\nitem2\n"},
+    )
+    def test_list_workspace_items_success(self, mock_exec):
+        """Test successful list_workspace_items call."""
+        result = self.fabric.list_workspace_items("test-workspace")
+        assert result["success"] is True
+        # Verify the command uses the correct workspace path
+        call_args = mock_exec.call_args[0][0]
+        assert "ls" in call_args
+        assert "test-workspace.Workspace" in call_args
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Coverage Improvement: connect_git
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestConnectGit:
+    """Test connect_git method."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    @patch.object(FabricCLIWrapper, "_execute_command", return_value={"success": True})
+    @patch.object(
+        FabricCLIWrapper,
+        "get_workspace",
+        return_value={"success": True, "data": {"id": "ws-id-123"}},
+    )
+    def test_connect_git_github(self, mock_get_ws, mock_exec):
+        """Test connecting workspace to GitHub repo."""
+        result = self.fabric.connect_git(
+            "test-workspace",
+            "https://github.com/my-org/my-repo",
+            branch="main",
+        )
+        assert result["success"] is True
+
+    @patch.object(
+        FabricCLIWrapper,
+        "get_workspace",
+        return_value={"success": True, "data": {"id": "ws-id-123"}},
+    )
+    def test_connect_git_invalid_url(self, mock_get_ws):
+        """Test connecting with an unrecognized Git URL fails."""
+        result = self.fabric.connect_git(
+            "test-workspace",
+            "https://gitlab.com/foo/bar",
+        )
+        assert result["success"] is False
+        assert "Could not parse" in result.get("error", "")
+
+    @patch.object(
+        FabricCLIWrapper,
+        "get_workspace",
+        return_value={"success": False, "data": None},
+    )
+    def test_connect_git_workspace_not_found(self, mock_get_ws):
+        """Test error when workspace is not found."""
+        result = self.fabric.connect_git(
+            "nonexistent-workspace",
+            "https://github.com/my-org/my-repo",
+        )
+        assert result["success"] is False
