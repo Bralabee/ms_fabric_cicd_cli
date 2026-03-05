@@ -515,8 +515,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
         target_stage_id: str,
         items: Optional[List[Dict[str, str]]] = None,
         note: str = "",
-        allow_create_artifact: bool = True,
-        allow_overwrite_artifact: bool = True,
+        allow_cross_region_deployment: bool = False,
     ) -> Dict[str, Any]:
         """
         Promote (deploy) content from one pipeline stage to the next.
@@ -529,10 +528,9 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             source_stage_id: Stage to deploy FROM.
             target_stage_id: Stage to deploy TO.
             items: Optional selective list of items to deploy.
-                   Each: ``{"itemId": "...", "type": "..."}``
-            note: Deployment note / description.
-            allow_create_artifact: Create new items in target if missing.
-            allow_overwrite_artifact: Overwrite existing items in target.
+                   Each: ``{"sourceItemId": "...", "itemType": "..."}``
+            note: Deployment note / description (max 1024 chars).
+            allow_cross_region_deployment: Allow deployment across regions.
 
         Returns:
             ``{"success": True, "operation_id": "...", "retry_after": N}``
@@ -543,11 +541,12 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             "sourceStageId": source_stage_id,
             "targetStageId": target_stage_id,
             "note": note,
-            "options": {
-                "allowCreateArtifact": allow_create_artifact,
-                "allowOverwriteArtifact": allow_overwrite_artifact,
-            },
         }
+
+        if allow_cross_region_deployment:
+            body["options"] = {
+                "allowCrossRegionDeployment": True,
+            }
 
         if items:
             body["items"] = items
@@ -710,10 +709,9 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                 "itemType": item_type,
             }
 
-            # Pair with existing target item to avoid name conflicts
+            # Track pairing with existing target items for logging
             target_id = target_by_name.get((item_name, item_type))
             if target_id:
-                entry["targetItemId"] = target_id
                 paired += 1
 
             deployable.append(entry)

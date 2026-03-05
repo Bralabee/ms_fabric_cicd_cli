@@ -740,7 +740,7 @@ class TestBuildSelectiveItems:
         assert result["deployable"][0]["itemType"] == "Notebook"
 
     def test_pairs_with_target_items(self, api):
-        """Test that source items are paired with matching target items."""
+        """Test that source items paired with matching target items are counted."""
         source = [
             {"itemId": "s1", "itemDisplayName": "nb1", "itemType": "Notebook"},
             {"itemId": "s2", "itemDisplayName": "lh1", "itemType": "Lakehouse"},
@@ -750,10 +750,11 @@ class TestBuildSelectiveItems:
         ]
         result = api._build_selective_items(source, target, set())
         assert result["paired"] == 1
-        # The paired item should have a targetItemId
-        paired_item = [i for i in result["deployable"] if "targetItemId" in i]
-        assert len(paired_item) == 1
-        assert paired_item[0]["targetItemId"] == "t1"
+        # Items should only contain sourceItemId and itemType (per Fabric API)
+        for item in result["deployable"]:
+            assert "sourceItemId" in item
+            assert "itemType" in item
+            assert "targetItemId" not in item
 
     def test_empty_source_items(self, api):
         """Test with empty source items."""

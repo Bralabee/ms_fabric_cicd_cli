@@ -546,9 +546,9 @@ class TestInitializeGitConnection:
         """Test initializing Git connection."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
-            "RequiredAction": "UpdateFromGit",
-            "RemoteCommitHash": "abc123",
-            "WorkspaceHead": "def456",
+            "requiredAction": "UpdateFromGit",
+            "remoteCommitHash": "abc123",
+            "workspaceHead": "def456",
         }
         mock_response.raise_for_status = MagicMock()
         mock_request.return_value = mock_response
@@ -597,9 +597,9 @@ class TestInitializeGitConnection:
         """Test that PreferWorkspace strategy is included in the request body."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
-            "RequiredAction": "None",
-            "RemoteCommitHash": "abc123",
-            "WorkspaceHead": "abc123",
+            "requiredAction": "None",
+            "remoteCommitHash": "abc123",
+            "workspaceHead": "abc123",
         }
         mock_response.raise_for_status = MagicMock()
         mock_request.return_value = mock_response
@@ -618,9 +618,9 @@ class TestInitializeGitConnection:
         """Test that PreferRemote strategy is included in the request body."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
-            "RequiredAction": "UpdateFromGit",
-            "RemoteCommitHash": "abc123",
-            "WorkspaceHead": "def456",
+            "requiredAction": "UpdateFromGit",
+            "remoteCommitHash": "abc123",
+            "workspaceHead": "def456",
         }
         mock_response.raise_for_status = MagicMock()
         mock_request.return_value = mock_response
@@ -639,9 +639,9 @@ class TestInitializeGitConnection:
         """Test that omitting strategy sends an empty body (backward compat)."""
         mock_response = MagicMock()
         mock_response.json.return_value = {
-            "RequiredAction": "None",
-            "RemoteCommitHash": "abc123",
-            "WorkspaceHead": "abc123",
+            "requiredAction": "None",
+            "remoteCommitHash": "abc123",
+            "workspaceHead": "abc123",
         }
         mock_response.raise_for_status = MagicMock()
         mock_request.return_value = mock_response

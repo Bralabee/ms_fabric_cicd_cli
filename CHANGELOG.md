@@ -9,6 +9,23 @@ All notable changes to this project will be documented in this file.
 - **Git Initialization Strategy**: `initialize_git_connection()` in `fabric_git_api.py` now accepts an optional `initialization_strategy` parameter (`PreferWorkspace` or `PreferRemote`). Configurable via `git_init_strategy` in `base_workspace.yaml`. When omitted, the CLI sends an empty body (backward-compatible with existing configs). JSON schema (`workspace_config.json`) updated with enum validation.
 - **Folder-Aware Scaffold**: `_build_folder_rules()` in `scaffold_workspace.py` now accepts an optional `folders` parameter. When the workspace has folders, uses each item's `folderId` to resolve actual folder names via majority vote. Falls back to hardcoded `ITEM_TYPE_TO_FOLDER` mapping only when items lack folder placement.
 
+### Fixed
+
+- **`initializeConnection` response casing (API-H3)**: `fabric_git_api.py` now reads `requiredAction`, `remoteCommitHash`, `workspaceHead` (camelCase) from the Fabric REST API response. Previously used PascalCase (`RequiredAction`, etc.) which silently defaulted to `"None"`, breaking the Git sync flow.
+- **`commitToGit` field name (API-H1)**: Request body now sends `"comment"` instead of `"message"` per the [official API spec](https://learn.microsoft.com/en-us/rest/api/fabric/core/git/commit-to-git). Commit messages were silently dropped.
+- **`commitToGit` missing `workspaceHead` (API-H2)**: Added optional `workspace_head` parameter to `commit_to_git()`. The Fabric API accepts this for head-mismatch validation.
+- **`deploy_to_stage` legacy options (API-H4)**: Removed Power BI-era `allowCreateArtifact`/`allowOverwriteArtifact` from deployment options. The [Fabric API](https://learn.microsoft.com/en-us/rest/api/fabric/core/deployment-pipelines/deploy-stage-content) `DeploymentOptions` only supports `allowCrossRegionDeployment`.
+- **Selective promote `targetItemId` (API-M1)**: Removed non-existent `targetItemId` field from items sent to the Fabric Deploy API. `ItemDeploymentRequest` only accepts `sourceItemId` and `itemType`.
+- **Scaffold YAML description quoting (CLI-H2)**: `description` field in generated YAML is now quoted, preventing breakage when workspace names contain `:`, `#`, or `{`.
+
+### Added
+
+- **`update_from_git` conflict resolution (API-M3)**: `update_from_git()` now supports optional `conflict_resolution_policy` (`PreferRemote`/`PreferWorkspace`) and `allow_override_items` parameters per the [official API spec](https://learn.microsoft.com/en-us/rest/api/fabric/core/git/update-from-git).
+- **`get_git_status` LRO handling (API-M5)**: `get_git_status()` now handles 202 responses (long-running operation) by returning `operation_id` and `retry_after`, instead of failing on empty JSON body.
+- **Scaffold output path validation (CLI-H1)**: `scaffold_workspace.py` now rejects output paths outside the project directory tree.
+- **Principals schema: `type` field (CLI-M4)**: `workspace_config.json` principals now require `type` (enum: `User`, `Group`, `ServicePrincipal`) and `role` (enum: `Admin`, `Contributor`, `Member`, `Viewer`).
+- **Folder rules schema: `name` property (XREPO-M1)**: `folder_rules` items now accept an optional `name` field for item-specific folder placement, without breaking `additionalProperties: false`.
+
 ### Changed
 
 - **Scaffold output defaults to `_templates/`**: `scaffold_workspace.py` now writes to `config/projects/_templates/<slug>/base_workspace.yaml` by default (was `config/projects/<slug>/`). This makes it clear that scaffolded output is a template that needs review before becoming a live project config. The `--output` flag still overrides the default.
@@ -24,6 +41,7 @@ All notable changes to this project will be documented in this file.
 - **+4 unit tests**: `test_fabric_git_api.py` — tests `initialization_strategy` parameter in request body (preferred workspace, preferred remote, default omission).
 - **+11 unit tests**: `test_scaffold_workspace.py` — tests `_build_folder_rules` (with/without folders, majority vote, fallback, empty inputs, unknown types), `_categorize_items`, and `ITEM_TYPE_TO_FOLDER` constant coverage.
 - **+1 unit test**: `test_config.py` — asserts `git_init_strategy` defaults to `None` on minimal config.
+- **Test fixture updates**: `test_fabric_git_api.py` mock responses updated to camelCase; `test_deployment_pipeline.py` selective-promote test updated (no `targetItemId`); `test_cli.py` principal fixture updated (added `type` field).
 - **610/610 tests passing**.
 
 ## [1.7.17] - 2026-02-25

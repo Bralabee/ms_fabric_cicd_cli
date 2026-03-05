@@ -386,7 +386,7 @@ def _generate_yaml(
     lines.append("workspace:")
     lines.append(f'  name: "{workspace_name}"')
     lines.append(f'  display_name: "{workspace_name}"')
-    lines.append(f"  description: {workspace_name} workspace — managed by CI/CD")
+    lines.append(f'  description: "{workspace_name} workspace — managed by CI/CD"')
     lines.append("  capacity_id: ${FABRIC_CAPACITY_ID}")
     lines.append("  domain: ${FABRIC_DOMAIN_NAME}")
     lines.append("  git_repo: ${GIT_REPO_URL}")
@@ -548,7 +548,7 @@ def _generate_feature_yaml(
     lines.append("workspace:")
     lines.append("  name: ${PROJECT_PREFIX}")
     lines.append("  display_name: ${PROJECT_PREFIX}")
-    lines.append(f"  description: {workspace_name} feature branch workspace")
+    lines.append(f'  description: "{workspace_name} feature branch workspace"')
     lines.append("  capacity_id: ${FABRIC_CAPACITY_ID}")
     lines.append("  domain: ${FABRIC_DOMAIN_NAME}")
     lines.append("  git_repo: ${GIT_REPO_URL}")
@@ -722,9 +722,20 @@ def scaffold_workspace(
     )
 
     if output_path:
-        base_path = Path(output_path)
+        base_path = Path(output_path).resolve()
     else:
-        base_path = Path(f"config/projects/_templates/{slug}/base_workspace.yaml")
+        base_path = Path(
+            f"config/projects/_templates/{slug}/base_workspace.yaml"
+        ).resolve()
+
+    # Validate output path — guard against writing outside the project tree
+    cwd = Path.cwd().resolve()
+    if not str(base_path).startswith(str(cwd)):
+        raise SystemExit(
+            f"Error: output path '{base_path}' is outside the project "
+            f"directory '{cwd}'. Use a relative path or one within the "
+            f"project tree."
+        )
 
     base_path.parent.mkdir(parents=True, exist_ok=True)
     base_path.write_text(base_yaml, encoding="utf-8")
