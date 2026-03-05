@@ -192,6 +192,32 @@ class TestCreateFolders:
 
         deployer.fabric.create_folder.assert_not_called()
 
+    def test_create_folders_depth_sorted(self):
+        """Nested folders are created parents-first (depth-sorted)."""
+        config = _make_config(
+            folders=[
+                "200 Store/Raw",
+                "000 Orchestrate",
+                "200 Store",
+                "200 Store/Raw/Delta",
+            ]
+        )
+        deployer = _build_deployer(config=config)
+        deployer.fabric.create_folder.return_value = {"success": True}
+
+        deployer._create_folders()
+
+        # Verify call order: parents before children
+        call_args = [
+            call[0][1] for call in deployer.fabric.create_folder.call_args_list
+        ]
+        assert call_args == [
+            "000 Orchestrate",
+            "200 Store",
+            "200 Store/Raw",
+            "200 Store/Raw/Delta",
+        ]
+
 
 class TestCreateItems:
     """Tests for _create_items — all 6 item types."""

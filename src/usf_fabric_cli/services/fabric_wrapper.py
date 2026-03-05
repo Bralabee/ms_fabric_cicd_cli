@@ -742,39 +742,110 @@ sys.exit(main())
                 return data.get("id")
         return None
 
+    def _list_all_folders_raw(self, workspace_name: str) -> List[Dict[str, str]]:
+        """List all folders in workspace, preserving hierarchy info.
+
+        Returns list of dicts with ``id``, ``displayName``, and
+        ``parentFolderId`` (empty string for root-level folders).
+        """
+        workspace_id = self.get_workspace_id(workspace_name)
+        if not workspace_id:
+            return []
+
+        command = ["api", f"workspaces/{workspace_id}/folders"]
+        result = self._execute_command(command)
+
+        if not result.get("success"):
+            return []
+
+        data = result.get("data")
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                return []
+
+        # Handle nested "text" field from fab api wrapper
+        if isinstance(data, dict) and "text" in data and isinstance(data["text"], dict):
+            data = data["text"]
+
+        if not isinstance(data, dict) or "value" not in data:
+            return []
+
+        return [
+            {
+                "id": f.get("id", ""),
+                "displayName": f.get("displayName", ""),
+                "parentFolderId": f.get("parentFolderId", ""),
+            }
+            for f in data["value"]
+        ]
+
+    @staticmethod
+    def _build_folder_path_lookup(
+        raw_folders: List[Dict[str, str]],
+    ) -> Dict[str, str]:
+        """Build a mapping from path strings to folder IDs.
+
+        Reconstructs folder hierarchy from ``parentFolderId`` and produces
+        path-based keys using ``/`` as separator.
+
+        Example::
+
+            Input:  [{"id": "a", "displayName": "200 Store", "parentFolderId": ""},
+                     {"id": "b", "displayName": "Raw", "parentFolderId": "a"}]
+            Output: {"200 Store": "a", "200 Store/Raw": "b"}
+
+        Root-level folders use their ``displayName`` as the path key.
+        """
+        id_to_folder: Dict[str, Dict[str, str]] = {
+            f["id"]: f for f in raw_folders if f.get("id")
+        }
+        path_cache: Dict[str, str] = {}  # folder_id -> resolved path
+
+        def _resolve_path(folder_id: str) -> str:
+            if folder_id in path_cache:
+                return path_cache[folder_id]
+            folder = id_to_folder.get(folder_id)
+            if not folder:
+                return ""
+            parent_id = folder.get("parentFolderId", "")
+            if parent_id and parent_id in id_to_folder:
+                parent_path = _resolve_path(parent_id)
+                path = f"{parent_path}/{folder['displayName']}"
+            else:
+                path = folder["displayName"]
+            path_cache[folder_id] = path
+            return path
+
+        lookup: Dict[str, str] = {}
+        for f in raw_folders:
+            fid = f.get("id", "")
+            if fid:
+                path = _resolve_path(fid)
+                if path:
+                    lookup[path] = fid
+        return lookup
+
     def get_folder_id(
         self, workspace_name: str, folder_name: str, retries: int = 5
     ) -> Optional[str]:
-        """Get folder ID by name with retries for propagation"""
-        workspace_id = self.get_workspace_id(workspace_name)
-        if not workspace_id:
+        """Get folder ID by name or path with retries for propagation.
+
+        Supports both flat names (``"200 Store"``) and path-based names
+        (``"200 Store/Raw"``).
+        """
+        folder_name = folder_name.strip("/")
+        if not folder_name:
             return None
 
         for attempt in range(retries):
-            # List folders using API
-            command = ["api", f"workspaces/{workspace_id}/folders"]
-            result = self._execute_command(command)
-
-            if result.get("success"):
-                data = result.get("data")
-                if isinstance(data, str):
-                    try:
-                        data = json.loads(data)
-                    except json.JSONDecodeError as exc:
-                        logger.debug("Failed to decode folder list JSON: %s", exc)
-
-                # Handle nested "text" field from fab api wrapper if present
-                if (
-                    isinstance(data, dict)
-                    and "text" in data
-                    and isinstance(data["text"], dict)
-                ):
-                    data = data["text"]
-
-                if isinstance(data, dict) and "value" in data:
-                    for folder in data["value"]:
-                        if folder.get("displayName") == folder_name:
-                            return folder.get("id")
+            raw = self._list_all_folders_raw(workspace_name)
+            if raw:
+                lookup = self._build_folder_path_lookup(raw)
+                folder_id = lookup.get(folder_name)
+                if folder_id:
+                    return folder_id
 
             # Wait before retrying if not found
             if attempt < retries - 1:
@@ -783,9 +854,18 @@ sys.exit(main())
         return None
 
     def create_folder(self, workspace_name: str, folder_name: str) -> Dict[str, Any]:
-        """Create folder in workspace"""
-        # Check if exists
-        folder_id = self.get_folder_id(workspace_name, folder_name)
+        """Create folder in workspace, supporting nested paths.
+
+        For path-based names like ``"200 Store/Raw"``, the parent folder
+        is resolved (or auto-created) and ``parentFolderId`` is included
+        in the POST payload.  Flat names behave identically to before.
+        """
+        folder_name = folder_name.strip("/")
+        if not folder_name:
+            return {"success": False, "error": "Empty folder name"}
+
+        # Check if already exists
+        folder_id = self.get_folder_id(workspace_name, folder_name, retries=1)
         if folder_id:
             logger.info("Folder %s already exists.", folder_name)
             return {
@@ -799,8 +879,43 @@ sys.exit(main())
         if not workspace_id:
             return {"success": False, "error": f"Workspace {workspace_name} not found"}
 
-        # Create using API
-        payload = {"displayName": folder_name}
+        parts = folder_name.split("/")
+        leaf_name = parts[-1]
+        parent_folder_id = None
+
+        # Resolve or auto-create parent for nested paths
+        if len(parts) > 1:
+            parent_path = "/".join(parts[:-1])
+            parent_folder_id = self.get_folder_id(
+                workspace_name, parent_path, retries=1
+            )
+            if not parent_folder_id:
+                logger.info(
+                    "Auto-creating parent folder '%s' for '%s'",
+                    parent_path,
+                    folder_name,
+                )
+                parent_result = self.create_folder(workspace_name, parent_path)
+                if parent_result.get("success"):
+                    parent_folder_id = parent_result.get("id")
+                    if not parent_folder_id:
+                        parent_folder_id = self.get_folder_id(
+                            workspace_name, parent_path, retries=2
+                        )
+                if not parent_folder_id:
+                    return {
+                        "success": False,
+                        "error": (
+                            f"Could not resolve parent folder '{parent_path}' "
+                            f"for '{folder_name}'"
+                        ),
+                    }
+
+        # Build payload
+        payload: Dict[str, str] = {"displayName": leaf_name}
+        if parent_folder_id:
+            payload["parentFolderId"] = parent_folder_id
+
         command = [
             "api",
             f"workspaces/{workspace_id}/folders",
@@ -1812,33 +1927,13 @@ sys.exit(main())
             logger.info("No items found in workspace %s", workspace_name)
             return result
 
-        # Step 2: Build folder-name → folder-id lookup
-        workspace_id = self.get_workspace_id(workspace_name)
-        if not workspace_id:
+        # Step 2: Build folder-path → folder-id lookup (supports nested folders)
+        raw_folders = self._list_all_folders_raw(workspace_name)
+        if not raw_folders:
             result["failed"] = len(folder_rules)
             return result
 
-        folder_lookup: Dict[str, str] = {}
-        list_cmd = ["api", f"workspaces/{workspace_id}/folders"]
-        folder_resp = self._execute_command(list_cmd)
-        if folder_resp.get("success"):
-            data = folder_resp.get("data")
-            # Handle string response from fab api
-            if isinstance(data, str):
-                try:
-                    data = json.loads(data)
-                except json.JSONDecodeError:
-                    data = {}
-            # Handle nested "text" field from fab api wrapper
-            if (
-                isinstance(data, dict)
-                and "text" in data
-                and isinstance(data["text"], dict)
-            ):
-                data = data["text"]
-            if isinstance(data, dict):
-                for f in data.get("value", []):
-                    folder_lookup[f["displayName"]] = f["id"]
+        folder_lookup = self._build_folder_path_lookup(raw_folders)
 
         # Step 3: For each rule, find matching items at root and move them.
         # Sort rules so name-specific rules execute before wildcards of the

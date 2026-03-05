@@ -13,6 +13,7 @@ import pytest
 from usf_fabric_cli.scripts.admin.utilities.scaffold_workspace import (
     DEFAULT_FOLDERS,
     ITEM_TYPE_TO_FOLDER,
+    _build_folder_paths,
     _build_folder_rules,
     _categorize_items,
 )
@@ -242,3 +243,110 @@ class TestImportSmoke:
         assert "items" in params
         assert "folders" in params
         assert sig.parameters["folders"].default is None
+
+
+# ── _build_folder_paths tests ────────────────────────────────────────────
+
+
+class TestBuildFolderPaths:
+    """Tests for _build_folder_paths — nested folder path reconstruction."""
+
+    def test_flat_folders_unchanged(self):
+        """Root-only folders produce their displayName as-is."""
+        raw = [
+            {"id": "a", "displayName": "000 Orchestrate"},
+            {"id": "b", "displayName": "200 Store"},
+        ]
+        paths = _build_folder_paths(raw)
+        assert paths == ["000 Orchestrate", "200 Store"]
+
+    def test_nested_parent_child(self):
+        """Child folders produce 'Parent/Child' path strings."""
+        raw = [
+            {"id": "a", "displayName": "200 Store"},
+            {"id": "b", "displayName": "Raw", "parentFolderId": "a"},
+            {"id": "c", "displayName": "Curated", "parentFolderId": "a"},
+        ]
+        paths = _build_folder_paths(raw)
+        assert "200 Store" in paths
+        assert "200 Store/Raw" in paths
+        assert "200 Store/Curated" in paths
+        # Parents come before children in sorted output
+        assert paths.index("200 Store") < paths.index("200 Store/Raw")
+
+    def test_multi_level_hierarchy(self):
+        """Three-level deep hierarchy reconstructed correctly."""
+        raw = [
+            {"id": "a", "displayName": "200 Store"},
+            {"id": "b", "displayName": "Raw", "parentFolderId": "a"},
+            {"id": "c", "displayName": "Delta", "parentFolderId": "b"},
+        ]
+        paths = _build_folder_paths(raw)
+        assert paths == ["200 Store", "200 Store/Raw", "200 Store/Raw/Delta"]
+
+    def test_no_parent_id_field_treated_as_root(self):
+        """Folders without parentFolderId are treated as root-level."""
+        raw = [
+            {"id": "a", "displayName": "Folder A"},
+            {"id": "b", "displayName": "Folder B"},
+        ]
+        paths = _build_folder_paths(raw)
+        assert paths == ["Folder A", "Folder B"]
+
+    def test_empty_input_returns_empty(self):
+        """No folders → no paths."""
+        assert _build_folder_paths([]) == []
+
+    def test_sorted_by_depth_then_alphabetically(self):
+        """Paths sorted: shallowest first, then alphabetical within same depth."""
+        raw = [
+            {"id": "a", "displayName": "Zebra"},
+            {"id": "b", "displayName": "Alpha"},
+            {"id": "c", "displayName": "Sub", "parentFolderId": "a"},
+            {"id": "d", "displayName": "Sub", "parentFolderId": "b"},
+        ]
+        paths = _build_folder_paths(raw)
+        assert paths == ["Alpha", "Zebra", "Alpha/Sub", "Zebra/Sub"]
+
+    def test_orphan_parent_id_treated_as_root(self):
+        """Folder with parentFolderId pointing to unknown ID → treat as root."""
+        raw = [
+            {"id": "a", "displayName": "200 Store"},
+            {"id": "b", "displayName": "Orphan", "parentFolderId": "nonexistent"},
+        ]
+        paths = _build_folder_paths(raw)
+        assert "200 Store" in paths
+        assert "Orphan" in paths  # treated as root, not nested
+
+
+# ── _build_folder_rules with nested folders ──────────────────────────────
+
+
+class TestBuildFolderRulesNested:
+    """Tests for _build_folder_rules when folders have parentFolderId."""
+
+    def test_items_in_nested_folder_get_path_rules(self):
+        """Items in a child folder should get path-based folder rules."""
+        folders = [
+            {"id": "a", "displayName": "200 Store"},
+            {"id": "b", "displayName": "Raw", "parentFolderId": "a"},
+        ]
+        items = [
+            {"type": "Lakehouse", "displayName": "lh1", "folderId": "b"},
+        ]
+        rules = _build_folder_rules(items, folders=folders)
+        rules_dict = {r["type"]: r["folder"] for r in rules}
+        assert rules_dict["Lakehouse"] == "200 Store/Raw"
+
+    def test_items_in_root_folder_still_flat(self):
+        """Items in root folder still get flat names (backward compat)."""
+        folders = [
+            {"id": "a", "displayName": "200 Store"},
+            {"id": "b", "displayName": "Raw", "parentFolderId": "a"},
+        ]
+        items = [
+            {"type": "Lakehouse", "displayName": "lh1", "folderId": "a"},
+        ]
+        rules = _build_folder_rules(items, folders=folders)
+        rules_dict = {r["type"]: r["folder"] for r in rules}
+        assert rules_dict["Lakehouse"] == "200 Store"

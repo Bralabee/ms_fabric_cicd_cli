@@ -1407,15 +1407,10 @@ class TestOrganizeItemsIntoFolders:
     )
     @patch.object(
         FabricCLIWrapper,
-        "_execute_command",
-        return_value={
-            "success": True,
-            "data": {
-                "value": [
-                    {"id": "folder-nb-id", "displayName": "Notebooks"},
-                ]
-            },
-        },
+        "_list_all_folders_raw",
+        return_value=[
+            {"id": "folder-nb-id", "displayName": "Notebooks", "parentFolderId": ""},
+        ],
     )
     @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
     @patch.object(
@@ -1436,7 +1431,7 @@ class TestOrganizeItemsIntoFolders:
         ],
     )
     def test_moves_root_items_skips_existing(
-        self, mock_items, mock_ws_id, mock_exec, mock_move
+        self, mock_items, mock_ws_id, mock_raw, mock_move
     ):
         """Test moves root items and skips items already in folders."""
         rules = [{"type": "Notebook", "folder": "Notebooks"}]
@@ -1444,14 +1439,12 @@ class TestOrganizeItemsIntoFolders:
         assert result["moved"] == 1
         assert mock_move.call_count == 1
 
-    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-id-123")
     @patch.object(
         FabricCLIWrapper,
-        "_execute_command",
-        return_value={
-            "success": True,
-            "data": {"value": []},  # No folders exist
-        },
+        "_list_all_folders_raw",
+        return_value=[
+            {"id": "folder-1", "displayName": "OtherFolder", "parentFolderId": ""},
+        ],
     )
     @patch.object(
         FabricCLIWrapper,
@@ -1460,9 +1453,7 @@ class TestOrganizeItemsIntoFolders:
             {"id": "nb-1", "displayName": "MyNotebook", "type": "Notebook"},
         ],
     )
-    def test_folder_not_found_increments_failed(
-        self, mock_items, mock_exec, mock_ws_id
-    ):
+    def test_folder_not_found_increments_failed(self, mock_items, mock_raw):
         """Test rule with missing folder increments failed count."""
         rules = [{"type": "Notebook", "folder": "NonexistentFolder"}]
         result = self.fabric.organize_items_into_folders("test-ws", rules)
@@ -1558,3 +1549,198 @@ class TestConnectGit:
             "https://github.com/my-org/my-repo",
         )
         assert result["success"] is False
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Nested folder support: _build_folder_path_lookup
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestBuildFolderPathLookup:
+    """Tests for FabricCLIWrapper._build_folder_path_lookup."""
+
+    def test_flat_folders(self):
+        """Root-level folders produce {displayName: id} mapping."""
+        raw = [
+            {"id": "a", "displayName": "200 Store", "parentFolderId": ""},
+            {"id": "b", "displayName": "300 Prepare", "parentFolderId": ""},
+        ]
+        lookup = FabricCLIWrapper._build_folder_path_lookup(raw)
+        assert lookup == {"200 Store": "a", "300 Prepare": "b"}
+
+    def test_nested_folders(self):
+        """Nested folders produce path-based keys."""
+        raw = [
+            {"id": "a", "displayName": "200 Store", "parentFolderId": ""},
+            {"id": "b", "displayName": "Raw", "parentFolderId": "a"},
+            {"id": "c", "displayName": "Curated", "parentFolderId": "a"},
+        ]
+        lookup = FabricCLIWrapper._build_folder_path_lookup(raw)
+        assert lookup["200 Store"] == "a"
+        assert lookup["200 Store/Raw"] == "b"
+        assert lookup["200 Store/Curated"] == "c"
+
+    def test_three_levels_deep(self):
+        """Three-level hierarchy produces correct paths."""
+        raw = [
+            {"id": "a", "displayName": "Root", "parentFolderId": ""},
+            {"id": "b", "displayName": "Mid", "parentFolderId": "a"},
+            {"id": "c", "displayName": "Leaf", "parentFolderId": "b"},
+        ]
+        lookup = FabricCLIWrapper._build_folder_path_lookup(raw)
+        assert lookup == {
+            "Root": "a",
+            "Root/Mid": "b",
+            "Root/Mid/Leaf": "c",
+        }
+
+    def test_orphan_parent_id_treated_as_root(self):
+        """Folder with parentFolderId pointing to unknown ID → root-level."""
+        raw = [
+            {"id": "a", "displayName": "Known", "parentFolderId": ""},
+            {"id": "b", "displayName": "Orphan", "parentFolderId": "nonexistent"},
+        ]
+        lookup = FabricCLIWrapper._build_folder_path_lookup(raw)
+        assert lookup["Known"] == "a"
+        assert lookup["Orphan"] == "b"  # Treated as root
+
+    def test_empty_input(self):
+        """No folders → empty lookup."""
+        assert FabricCLIWrapper._build_folder_path_lookup([]) == {}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Nested folder support: create_folder with nested paths
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestCreateFolderNested:
+    """Tests for create_folder with nested path support."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-123")
+    @patch.object(FabricCLIWrapper, "get_folder_id", return_value="existing-id")
+    def test_flat_folder_already_exists(self, mock_folder_id, mock_ws_id):
+        """Single-segment folder that already exists → reused."""
+        result = self.fabric.create_folder("test-ws", "Bronze")
+        assert result["success"] is True
+        assert result["reused"] is True
+
+    @patch.object(FabricCLIWrapper, "get_workspace_id", return_value="ws-123")
+    @patch.object(
+        FabricCLIWrapper,
+        "_execute_command",
+        return_value={
+            "success": True,
+            "data": {"id": "new-folder-id", "displayName": "Raw"},
+        },
+    )
+    @patch.object(FabricCLIWrapper, "get_folder_id")
+    def test_nested_folder_includes_parent_id(
+        self, mock_get_folder, mock_exec, mock_ws_id
+    ):
+        """Nested path includes parentFolderId in POST payload."""
+        # First call: check if "200 Store/Raw" exists → None
+        # Second call: resolve parent "200 Store" → parent-id
+        mock_get_folder.side_effect = [None, "parent-id"]
+
+        result = self.fabric.create_folder("test-ws", "200 Store/Raw")
+        assert result["success"] is True
+
+        # Verify the POST payload includes parentFolderId
+        call_args = mock_exec.call_args[0][0]
+        payload = json.loads(call_args[5])  # -i <payload> is at index 5
+        assert payload["displayName"] == "Raw"
+        assert payload["parentFolderId"] == "parent-id"
+
+    def test_empty_folder_name_returns_error(self):
+        """Empty folder name returns failure."""
+        result = self.fabric.create_folder("test-ws", "")
+        assert result["success"] is False
+
+    def test_slash_only_folder_name_returns_error(self):
+        """Slash-only folder name stripped to empty → failure."""
+        result = self.fabric.create_folder("test-ws", "///")
+        assert result["success"] is False
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Nested folder support: get_folder_id path resolution
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestGetFolderIdPathResolution:
+    """Tests for get_folder_id with path-based folder names."""
+
+    def setup_method(self):
+        telemetry = MagicMock()
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(stdout="Fabric CLI 1.0.0", returncode=0)
+            self.fabric = FabricCLIWrapper(
+                "fake-token", telemetry_client=telemetry, validate_version=False
+            )
+
+    @patch.object(
+        FabricCLIWrapper,
+        "_list_all_folders_raw",
+        return_value=[
+            {"id": "a", "displayName": "200 Store", "parentFolderId": ""},
+            {"id": "b", "displayName": "Raw", "parentFolderId": "a"},
+        ],
+    )
+    def test_path_resolution(self, mock_raw):
+        """Path 'Parent/Child' resolves to correct folder ID."""
+        folder_id = self.fabric.get_folder_id("test-ws", "200 Store/Raw", retries=1)
+        assert folder_id == "b"
+
+    @patch.object(
+        FabricCLIWrapper,
+        "_list_all_folders_raw",
+        return_value=[
+            {"id": "a", "displayName": "200 Store", "parentFolderId": ""},
+            {"id": "b", "displayName": "Raw", "parentFolderId": "a"},
+        ],
+    )
+    def test_flat_name_still_works(self, mock_raw):
+        """Flat name '200 Store' still resolves correctly."""
+        folder_id = self.fabric.get_folder_id("test-ws", "200 Store", retries=1)
+        assert folder_id == "a"
+
+    @patch.object(
+        FabricCLIWrapper,
+        "_list_all_folders_raw",
+        return_value=[
+            {"id": "a", "displayName": "200 Store", "parentFolderId": ""},
+        ],
+    )
+    def test_nonexistent_path_returns_none(self, mock_raw):
+        """Path that doesn't exist returns None."""
+        folder_id = self.fabric.get_folder_id(
+            "test-ws", "200 Store/NonExistent", retries=1
+        )
+        assert folder_id is None
+
+    @patch.object(FabricCLIWrapper, "_list_all_folders_raw", return_value=[])
+    def test_empty_workspace_returns_none(self, mock_raw):
+        """No folders in workspace → None."""
+        folder_id = self.fabric.get_folder_id("test-ws", "Anything", retries=1)
+        assert folder_id is None
+
+    def test_strips_leading_trailing_slashes(self):
+        """Leading/trailing slashes are stripped from folder name."""
+        with patch.object(
+            FabricCLIWrapper,
+            "_list_all_folders_raw",
+            return_value=[
+                {"id": "a", "displayName": "200 Store", "parentFolderId": ""},
+            ],
+        ):
+            folder_id = self.fabric.get_folder_id("test-ws", "/200 Store/", retries=1)
+            assert folder_id == "a"

@@ -118,12 +118,59 @@ def _get_workspace_folders(
         data = data["text"]
 
     if isinstance(data, dict) and "value" in data:
-        return [
-            {"id": f.get("id", ""), "displayName": f.get("displayName", "")}
-            for f in data["value"]
-        ]
+        folders = []
+        for f in data["value"]:
+            entry: Dict[str, str] = {
+                "id": f.get("id", ""),
+                "displayName": f.get("displayName", ""),
+            }
+            if f.get("parentFolderId"):
+                entry["parentFolderId"] = f["parentFolderId"]
+            folders.append(entry)
+        return folders
 
     return []
+
+
+def _build_folder_paths(raw_folders: List[Dict[str, str]]) -> List[str]:
+    """Convert a flat list of folder dicts into sorted path strings.
+
+    Walks ``parentFolderId`` chains to reconstruct full paths using ``/``
+    as separator.  Root folders produce their ``displayName`` as-is.
+
+    Returns paths sorted by depth (shallowest first), then alphabetically.
+    """
+    id_to_folder: Dict[str, Dict[str, str]] = {
+        f["id"]: f for f in raw_folders if f.get("id")
+    }
+    path_cache: Dict[str, str] = {}
+
+    def _resolve(folder_id: str) -> str:
+        if folder_id in path_cache:
+            return path_cache[folder_id]
+        folder = id_to_folder.get(folder_id)
+        if not folder:
+            return ""
+        parent_id = folder.get("parentFolderId", "")
+        if parent_id and parent_id in id_to_folder:
+            parent_path = _resolve(parent_id)
+            path = f"{parent_path}/{folder['displayName']}"
+        else:
+            path = folder["displayName"]
+        path_cache[folder_id] = path
+        return path
+
+    paths = []
+    for f in raw_folders:
+        fid = f.get("id", "")
+        if fid:
+            p = _resolve(fid)
+            if p:
+                paths.append(p)
+
+    # Sort: shallowest first, then alphabetically within same depth
+    paths.sort(key=lambda p: (p.count("/"), p))
+    return paths
 
 
 def _build_folder_rules(
@@ -140,25 +187,44 @@ def _build_folder_rules(
     This ensures scaffolded configs accurately reflect non-standard folder
     structures (e.g. workspaces that don't follow the medallion convention).
     """
-    # Build folder-ID → display-name lookup from discovered folders
-    folder_id_to_name: Dict[str, str] = {}
+    # Build folder-ID → path lookup from discovered folders
+    folder_id_to_path: Dict[str, str] = {}
     if folders:
-        folder_id_to_name = {
-            f["id"]: f["displayName"]
+        # Reuse _build_folder_paths logic to get full path per folder ID
+        id_to_folder = {f["id"]: f for f in folders if f.get("id")}
+        path_cache: Dict[str, str] = {}
+
+        def _resolve_path(folder_id: str) -> str:
+            if folder_id in path_cache:
+                return path_cache[folder_id]
+            folder = id_to_folder.get(folder_id)
+            if not folder:
+                return ""
+            parent_id = folder.get("parentFolderId", "")
+            if parent_id and parent_id in id_to_folder:
+                parent_path = _resolve_path(parent_id)
+                path = f"{parent_path}/{folder['displayName']}"
+            else:
+                path = folder["displayName"]
+            path_cache[folder_id] = path
+            return path
+
+        folder_id_to_path = {
+            f["id"]: _resolve_path(f["id"])
             for f in folders
-            if f.get("id") and f.get("displayName")
+            if f.get("id") and _resolve_path(f["id"])
         }
 
     # Determine the most common folder per item type based on actual placement
     type_to_folder: Dict[str, str] = {}
-    if folder_id_to_name:
+    if folder_id_to_path:
         # Count how many items of each type live in each folder
         type_folder_counts: Dict[str, Counter] = defaultdict(Counter)
         for item in items:
             item_type = item.get("type", "")
             folder_id = item.get("folderId") or item.get("parentFolderId")
-            if item_type and folder_id and folder_id in folder_id_to_name:
-                type_folder_counts[item_type][folder_id_to_name[folder_id]] += 1
+            if item_type and folder_id and folder_id in folder_id_to_path:
+                type_folder_counts[item_type][folder_id_to_path[folder_id]] += 1
 
         # Pick the most common folder for each type (majority vote)
         for item_type, counter in type_folder_counts.items():
@@ -663,7 +729,7 @@ def scaffold_workspace(
     # ── 3. List folders ──
     print("   Discovering folders...")
     raw_folders = _get_workspace_folders(fabric, workspace_name)
-    folder_names = [f["displayName"] for f in raw_folders]
+    folder_names = _build_folder_paths(raw_folders) if raw_folders else []
     if folder_names:
         print(f"   Found {len(folder_names)} folders: {', '.join(folder_names)}")
     else:

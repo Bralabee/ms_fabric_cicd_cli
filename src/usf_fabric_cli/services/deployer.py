@@ -411,11 +411,13 @@ class FabricDeployer:
         return result
 
     def _create_folders(self):
-        """Create folder structure"""
+        """Create folder structure — parents before children."""
         workspace_name = self._effective_workspace_name
         if self.config.folders:
             console.print("[blue]Creating folders...[/blue]")
-            for folder in self.config.folders:
+            # Sort by depth so parents are created before children
+            sorted_folders = sorted(self.config.folders, key=lambda f: f.count("/"))
+            for folder in sorted_folders:
                 result = self.fabric.create_folder(workspace_name, folder)
                 if result["success"]:
                     console.print(f"  Created folder: {folder}")
@@ -1560,7 +1562,11 @@ class FabricDeployer:
                 # (TF-002 fix: ensures Test/Prod have the same folders as Dev)
                 if self.config.folders:
                     console.print(f"    Creating folders in {ws_name}...")
-                    for folder in self.config.folders:
+                    # Sort by depth so parents are created before children
+                    sorted_stage_folders = sorted(
+                        self.config.folders, key=lambda f: f.count("/")
+                    )
+                    for folder in sorted_stage_folders:
                         f_result = self.fabric.create_folder(ws_name, folder)
                         if f_result.get("success"):
                             if f_result.get("reused"):

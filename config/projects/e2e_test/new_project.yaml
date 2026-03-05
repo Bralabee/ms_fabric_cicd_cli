@@ -1,0 +1,82 @@
+workspace:
+  name: "e2e-test-new [DEV]"
+  display_name: "E2E Test New [DEV]"
+  description: "E2E validation project for CLI v1.7.17 audit fixes"
+  capacity_id: ${FABRIC_CAPACITY_ID}
+  domain: ${FABRIC_DOMAIN_NAME}
+  git_repo: ${GIT_REPO_URL}
+  git_branch: main
+  git_directory: /e2e_test_new
+environments:
+  dev:
+    workspace:
+      name: "e2e-test-new [DEV]"
+      capacity_id: ${FABRIC_CAPACITY_ID}
+folders:
+- 000 Orchestrate
+- 100 Ingest
+- 200 Store
+- 300 Prepare
+- 400 Model
+- 500 Visualize
+- 999 Libraries
+- Archive
+folder_rules:
+- type: DataPipeline
+  folder: 000 Orchestrate
+- type: DataflowGen2
+  folder: 000 Orchestrate
+- type: Eventstream
+  folder: 100 Ingest
+- type: Lakehouse
+  folder: 200 Store
+- type: Notebook
+  folder: 300 Prepare
+- type: SparkJobDefinition
+  folder: 300 Prepare
+- type: Warehouse
+  folder: 400 Model
+- type: SemanticModel
+  folder: 400 Model
+- type: Report
+  folder: 500 Visualize
+- type: Dashboard
+  folder: 500 Visualize
+- type: Environment
+  folder: 999 Libraries
+lakehouses: []
+notebooks: []
+resources: []
+principals:
+- id: ${AZURE_CLIENT_ID}
+  type: ServicePrincipal
+  role: Contributor
+  description: "Automation SP \u2014 required for CI/CD deployments"
+- id: ${ADDITIONAL_ADMIN_PRINCIPAL_ID}
+  type: Group
+  role: Admin
+  description: Mandatory governance admin group
+- id: ${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}
+  type: Group
+  role: Contributor
+  description: Mandatory governance contributor group
+- id: ${PROJECT_ADMIN_ID}
+  type: Group
+  role: Admin
+  description: "Project admins \u2014 set via PROJECT_ADMIN_ID secret"
+- id: ${PROJECT_MEMBERS_ID}
+  type: Group
+  role: Member
+  description: "Project team members \u2014 set via PROJECT_MEMBERS_ID secret"
+deployment_pipeline:
+  pipeline_name: "E2E Test New - Pipeline"
+  stages:
+    development:
+      workspace_name: "e2e-test-new [DEV]"
+      capacity_id: ${FABRIC_CAPACITY_ID}
+    test:
+      workspace_name: "e2e-test-new [TEST]"
+      capacity_id: ${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}
+    production:
+      workspace_name: "e2e-test-new [PROD]"
+      capacity_id: ${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}
