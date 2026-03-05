@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **Git Initialization Strategy**: `initialize_git_connection()` in `fabric_git_api.py` now accepts an optional `initialization_strategy` parameter (`PreferWorkspace` or `PreferRemote`). Configurable via `git_init_strategy` in `base_workspace.yaml`. When omitted, the CLI sends an empty body (backward-compatible with existing configs). JSON schema (`workspace_config.json`) updated with enum validation.
+- **Folder-Aware Scaffold**: `_build_folder_rules()` in `scaffold_workspace.py` now accepts an optional `folders` parameter. When the workspace has folders, uses each item's `folderId` to resolve actual folder names via majority vote. Falls back to hardcoded `ITEM_TYPE_TO_FOLDER` mapping only when items lack folder placement.
+
+### Changed
+
+- **Scaffold output defaults to `_templates/`**: `scaffold_workspace.py` now writes to `config/projects/_templates/<slug>/base_workspace.yaml` by default (was `config/projects/<slug>/`). This makes it clear that scaffolded output is a template that needs review before becoming a live project config. The `--output` flag still overrides the default.
+- **Scaffold conflict checker updated**: `_check_git_directory_conflicts()` now walks up past `_templates/` to find `config/projects/`, and skips `_templates/` entries when scanning for conflicts (templates are not live projects).
+- **Scaffold "Next steps" output**: Now includes instructions to copy the template to a project config directory (via `cp -r` or `make new-project template=<slug>`).
+
+### Validated
+
+- **Live API confirmation**: Both features validated against live Fabric REST API (219 workspaces). `folderId` confirmed present in Items API responses for items placed in folders. `initializationStrategy` parameter confirmed accepted by Git init endpoint (enum validation active, `PreferWorkspace`/`PreferRemote` recognized). See `WORKFLOW_REFERENCE.md` § 7.
+
+### Tests
+
+- **+4 unit tests**: `test_fabric_git_api.py` — tests `initialization_strategy` parameter in request body (preferred workspace, preferred remote, default omission).
+- **+11 unit tests**: `test_scaffold_workspace.py` — tests `_build_folder_rules` (with/without folders, majority vote, fallback, empty inputs, unknown types), `_categorize_items`, and `ITEM_TYPE_TO_FOLDER` constant coverage.
+- **+1 unit test**: `test_config.py` — asserts `git_init_strategy` defaults to `None` on minimal config.
+- **610/610 tests passing**.
+
 ## [1.7.17] - 2026-02-25
 
 ### Fixed

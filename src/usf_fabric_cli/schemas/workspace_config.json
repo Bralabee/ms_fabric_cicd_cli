@@ -32,6 +32,11 @@
         },
         "git_directory": {
           "type": "string"
+        },
+        "git_init_strategy": {
+          "type": "string",
+          "enum": ["PreferWorkspace", "PreferRemote"],
+          "description": "Strategy for resolving conflicts between workspace and Git content during initialization. Omit to let Fabric decide."
         }
       },
       "required": [

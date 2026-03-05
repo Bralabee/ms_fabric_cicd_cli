@@ -592,6 +592,66 @@ class TestInitializeGitConnection:
 
         assert result["success"] is False
 
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_initialize_with_prefer_workspace_strategy(self, mock_request, api):
+        """Test that PreferWorkspace strategy is included in the request body."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "RequiredAction": "None",
+            "RemoteCommitHash": "abc123",
+            "WorkspaceHead": "abc123",
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_request.return_value = mock_response
+
+        result = api.initialize_git_connection(
+            "ws-123", initialization_strategy="PreferWorkspace"
+        )
+
+        assert result["success"] is True
+        # Verify the request body included the strategy
+        call_kwargs = mock_request.call_args
+        assert call_kwargs[1]["json"] == {"initializationStrategy": "PreferWorkspace"}
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_initialize_with_prefer_remote_strategy(self, mock_request, api):
+        """Test that PreferRemote strategy is included in the request body."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "RequiredAction": "UpdateFromGit",
+            "RemoteCommitHash": "abc123",
+            "WorkspaceHead": "def456",
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_request.return_value = mock_response
+
+        result = api.initialize_git_connection(
+            "ws-123", initialization_strategy="PreferRemote"
+        )
+
+        assert result["success"] is True
+        assert result["required_action"] == "UpdateFromGit"
+        call_kwargs = mock_request.call_args
+        assert call_kwargs[1]["json"] == {"initializationStrategy": "PreferRemote"}
+
+    @patch("usf_fabric_cli.services.fabric_git_api.requests.request")
+    def test_initialize_without_strategy_sends_empty_body(self, mock_request, api):
+        """Test that omitting strategy sends an empty body (backward compat)."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "RequiredAction": "None",
+            "RemoteCommitHash": "abc123",
+            "WorkspaceHead": "abc123",
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_request.return_value = mock_response
+
+        result = api.initialize_git_connection("ws-123")
+
+        assert result["success"] is True
+        call_kwargs = mock_request.call_args
+        assert call_kwargs[1]["json"] == {}
+
 
 class TestCreateGitConnectionDuplicate:
     """Tests for create_git_connection 409 DuplicateConnectionName handling."""

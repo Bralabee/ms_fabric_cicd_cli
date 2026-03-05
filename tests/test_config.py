@@ -248,6 +248,7 @@ def test_to_workspace_config_defaults():
     assert wc.lakehouses == []
     assert wc.notebooks == []
     assert wc.resources == []
+    assert wc.git_init_strategy is None  # No default strategy
 
 
 def test_config_import_path():
