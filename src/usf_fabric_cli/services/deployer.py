@@ -1054,8 +1054,18 @@ class FabricDeployer:
             )
 
             # Step 3: Initialize the Git connection
-            console.print("[blue]Initializing Git connection...[/blue]")
-            init_result = self.git_api.initialize_git_connection(self.workspace_id)
+            strategy = self.config.git_init_strategy
+            if strategy:
+                console.print(
+                    f"[blue]Initializing Git connection "
+                    f"(strategy: {strategy})...[/blue]"
+                )
+            else:
+                console.print("[blue]Initializing Git connection...[/blue]")
+            init_result = self.git_api.initialize_git_connection(
+                self.workspace_id,
+                initialization_strategy=strategy,
+            )
 
             if not init_result["success"]:
                 console.print(

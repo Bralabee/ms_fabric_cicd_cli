@@ -1040,5 +1040,95 @@ def init_github_repo(
         )
 
 
+@app.command("scaffold")
+def scaffold(
+    workspace: str = typer.Argument(
+        ..., help="Name of the existing Fabric workspace to scan"
+    ),
+    output: str = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output path for base_workspace.yaml (default: config/projects/<slug>/)",
+    ),
+    include_feature_template: bool = typer.Option(
+        False,
+        "--include-feature-template",
+        "-f",
+        help="Also generate a feature_workspace.yaml template",
+    ),
+    pipeline_name: str = typer.Option(
+        None,
+        "--pipeline-name",
+        "-p",
+        help="Include deployment_pipeline section with this pipeline name",
+    ),
+    project_slug: str = typer.Option(
+        None,
+        "--project-slug",
+        "-s",
+        help="Override the auto-generated project slug",
+    ),
+    test_workspace_name: str = typer.Option(
+        None,
+        "--test-workspace-name",
+        help="Explicit Test stage workspace name (overrides auto-inference)",
+    ),
+    prod_workspace_name: str = typer.Option(
+        None,
+        "--prod-workspace-name",
+        help="Explicit Production stage workspace name (overrides auto-inference)",
+    ),
+):
+    """Scaffold a YAML config from an existing Fabric workspace.
+
+    Connects to a live workspace, discovers its folders and items,
+    and generates deployer-compatible YAML config file(s).
+
+    This automates the manual process of writing base_workspace.yaml
+    and feature_workspace.yaml when onboarding existing workspaces.
+
+    Examples:
+
+        fabric-cicd scaffold "EDP [DEV]"
+
+        fabric-cicd scaffold "Sales [DEV]" --include-feature-template
+
+        fabric-cicd scaffold "HR Analytics [DEV]" -f -p "HR - Pipeline"
+
+        fabric-cicd scaffold "My WS" -p "Pipeline" --test-workspace-name "My WS [TEST]"
+    """
+    try:
+        from usf_fabric_cli.scripts.admin.utilities.scaffold_workspace import (
+            scaffold_workspace,
+        )
+
+        results = scaffold_workspace(
+            workspace_name=workspace,
+            output_path=output,
+            include_feature_template=include_feature_template,
+            pipeline_name=pipeline_name,
+            project_slug=project_slug,
+            test_workspace_name=test_workspace_name,
+            prod_workspace_name=prod_workspace_name,
+        )
+
+        if not results:
+            handle_cli_error(
+                "scaffold",
+                "No output files were generated.",
+                "Verify the workspace name and your access permissions.",
+            )
+    except typer.Exit:
+        raise
+    except (FabricCLIError, KeyError, ValueError, OSError) as e:
+        handle_cli_error(
+            "scaffold",
+            e,
+            "Verify the workspace name and your credentials "
+            "(FABRIC_TOKEN or AZURE_CLIENT_ID/SECRET/TENANT_ID).",
+        )
+
+
 if __name__ == "__main__":
     app()

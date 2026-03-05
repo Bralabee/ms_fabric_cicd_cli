@@ -386,7 +386,11 @@ class FabricGitAPI(FabricAPIBase):
             )
             return {"success": False, "error": str(e), "details": error_detail}
 
-    def initialize_git_connection(self, workspace_id: str) -> Dict[str, Any]:
+    def initialize_git_connection(
+        self,
+        workspace_id: str,
+        initialization_strategy: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Initialize Git connection for a workspace.
 
@@ -395,14 +399,29 @@ class FabricGitAPI(FabricAPIBase):
 
         Args:
             workspace_id: Fabric workspace ID
+            initialization_strategy: Optional strategy for resolving conflicts
+                between workspace and Git content. Accepted values:
+                - "PreferWorkspace": Keep workspace content on conflict
+                - "PreferRemote": Overwrite workspace with Git content
+                - None (default): Let the Fabric API decide (current behavior)
 
         Returns:
             Initialization result with requiredAction field
         """
         url = f"{self.base_url}/workspaces/{workspace_id}/git/initializeConnection"
 
+        # Build request body — empty preserves backward-compatible behavior
+        body: Dict[str, Any] = {}
+        if initialization_strategy:
+            body["initializationStrategy"] = initialization_strategy
+            logger.info(
+                "Using initialization strategy '%s' for workspace %s",
+                initialization_strategy,
+                workspace_id,
+            )
+
         try:
-            response = self._make_request("POST", url, json={})
+            response = self._make_request("POST", url, json=body)
 
             result = response.json()
             required_action = result.get("RequiredAction", "None")

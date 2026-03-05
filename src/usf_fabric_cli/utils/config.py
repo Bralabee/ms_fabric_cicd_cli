@@ -37,6 +37,7 @@ class WorkspaceConfig:
     git_repo: Optional[str] = None
     git_branch: str = "main"
     git_directory: str = "/"
+    git_init_strategy: Optional[str] = None  # "PreferWorkspace" or "PreferRemote"
 
     # Folder structure
     folders: Optional[List[str]] = None
@@ -322,6 +323,7 @@ class ConfigManager:
             git_repo=workspace_data.get("git_repo"),
             git_branch=workspace_data.get("git_branch", "main"),
             git_directory=workspace_data.get("git_directory", "/"),
+            git_init_strategy=workspace_data.get("git_init_strategy"),
             folders=data.get("folders", []),
             folder_rules=data.get("folder_rules", []),
             lakehouses=data.get("lakehouses", []),

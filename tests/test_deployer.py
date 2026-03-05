@@ -26,6 +26,7 @@ def _make_config(**overrides):
         "git_repo": None,
         "git_branch": "main",
         "git_directory": "/",
+        "git_init_strategy": None,
         "folders": ["Bronze", "Silver"],
         "folder_rules": [],
         "lakehouses": [{"name": "raw", "folder": "Bronze", "description": "Raw"}],
