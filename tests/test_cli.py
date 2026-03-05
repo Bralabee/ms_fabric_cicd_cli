@@ -414,6 +414,7 @@ pipelines:
     description: Daily ETL
 principals:
   - id: "test-principal-id"
+    type: ServicePrincipal
     role: Admin
 """
         config_file = tmp_path / "full_config.yaml"

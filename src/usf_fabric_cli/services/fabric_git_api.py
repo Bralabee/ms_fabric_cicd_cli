@@ -424,7 +424,7 @@ class FabricGitAPI(FabricAPIBase):
             response = self._make_request("POST", url, json=body)
 
             result = response.json()
-            required_action = result.get("RequiredAction", "None")
+            required_action = result.get("requiredAction", "None")
 
             logger.info(
                 "Initialized Git connection for workspace %s. " "Required action: %s",
@@ -434,8 +434,8 @@ class FabricGitAPI(FabricAPIBase):
             return {
                 "success": True,
                 "required_action": required_action,
-                "remote_commit_hash": result.get("RemoteCommitHash"),
-                "workspace_head": result.get("WorkspaceHead"),
+                "remote_commit_hash": result.get("remoteCommitHash"),
+                "workspace_head": result.get("workspaceHead"),
             }
 
         except requests.exceptions.RequestException as e:
@@ -457,7 +457,12 @@ class FabricGitAPI(FabricAPIBase):
             return {"success": False, "error": str(e)}
 
     def update_from_git(
-        self, workspace_id: str, remote_commit_hash: str, workspace_head: str
+        self,
+        workspace_id: str,
+        remote_commit_hash: str,
+        workspace_head: Optional[str] = None,
+        conflict_resolution_policy: Optional[str] = None,
+        allow_override_items: bool = False,
     ) -> Dict[str, Any]:
         """
         Update workspace with commits from Git.
@@ -467,17 +472,34 @@ class FabricGitAPI(FabricAPIBase):
         Args:
             workspace_id: Fabric workspace ID
             remote_commit_hash: Remote commit hash from initialize_git_connection
-            workspace_head: Workspace head from initialize_git_connection
+            workspace_head: Workspace head from initialize_git_connection.
+                            May be None only after Initialize Connection.
+            conflict_resolution_policy: "PreferRemote" or "PreferWorkspace".
+                                        Required when conflicts exist.
+            allow_override_items: Consent to override incoming items.
 
         Returns:
             Operation details including operation_id
         """
         url = f"{self.base_url}/workspaces/{workspace_id}/git/updateFromGit"
 
-        request_body = {
+        request_body: Dict[str, Any] = {
             "remoteCommitHash": remote_commit_hash,
-            "workspaceHead": workspace_head,
         }
+
+        if workspace_head:
+            request_body["workspaceHead"] = workspace_head
+
+        if conflict_resolution_policy:
+            request_body["conflictResolution"] = {
+                "conflictResolutionType": "Workspace",
+                "conflictResolutionPolicy": conflict_resolution_policy,
+            }
+
+        if allow_override_items:
+            request_body["options"] = {
+                "allowOverrideItems": True,
+            }
 
         try:
             response = self._make_request("POST", url, json=request_body)
@@ -502,6 +524,7 @@ class FabricGitAPI(FabricAPIBase):
         workspace_id: str,
         message: str,
         items: Optional[List[Dict[str, str]]] = None,
+        workspace_head: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Commit workspace changes to Git.
@@ -510,9 +533,11 @@ class FabricGitAPI(FabricAPIBase):
 
         Args:
             workspace_id: Fabric workspace ID
-            message: Commit message
+            message: Commit comment (max 300 chars)
             items: Optional list of specific items to commit
-                   Each item: {"logicalId": "...", "displayName": "...", "type": "..."}
+                   Each item: {"logicalId": "...", "objectId": "..."}
+            workspace_head: Full SHA hash the workspace is synced to
+                            (from get_git_status)
 
         Returns:
             Operation details including operation_id
@@ -521,8 +546,11 @@ class FabricGitAPI(FabricAPIBase):
 
         request_body: Dict[str, Any] = {
             "mode": "Selective" if items else "All",
-            "message": message,
+            "comment": message,
         }
+
+        if workspace_head:
+            request_body["workspaceHead"] = workspace_head
 
         if items:
             request_body["items"] = items
@@ -549,16 +577,31 @@ class FabricGitAPI(FabricAPIBase):
         """
         Get Git status for workspace (pending changes).
 
+        This API supports LRO — may return 202 with an operation ID.
+
         Args:
             workspace_id: Fabric workspace ID
 
         Returns:
-            Git status including changes to commit and incoming changes
+            Git status including changes to commit and incoming changes,
+            or operation_id if the request is still processing (202).
         """
         url = f"{self.base_url}/workspaces/{workspace_id}/git/status"
 
         try:
             response = self._make_request("GET", url)
+
+            # LRO: 202 means status computation is in progress
+            if response.status_code == 202:
+                operation_id = response.headers.get("x-ms-operation-id")
+                retry_after = int(response.headers.get("Retry-After", "30"))
+                logger.info("Git status is being computed (LRO): %s", operation_id)
+                return {
+                    "success": True,
+                    "lro": True,
+                    "operation_id": operation_id,
+                    "retry_after": retry_after,
+                }
 
             result = response.json()
             return {"success": True, "status": result}

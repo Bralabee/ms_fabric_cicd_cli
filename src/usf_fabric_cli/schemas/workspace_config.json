@@ -162,8 +162,15 @@
           "id": {
             "type": "string"
           },
+          "type": {
+            "type": "string",
+            "enum": ["User", "Group", "ServicePrincipal"],
+            "description": "The principal type (User, Group, or ServicePrincipal)"
+          },
           "role": {
-            "type": "string"
+            "type": "string",
+            "enum": ["Admin", "Contributor", "Member", "Viewer"],
+            "description": "The workspace role to assign"
           },
           "description": {
             "type": "string",
@@ -171,7 +178,9 @@
           }
         },
         "required": [
-          "id"
+          "id",
+          "type",
+          "role"
         ]
       }
     },
@@ -234,6 +243,10 @@
           "folder": {
             "type": "string",
             "description": "Target folder path within the workspace"
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional item display name for item-specific folder placement"
           }
         },
         "required": [
