@@ -76,7 +76,10 @@ If using Azure DevOps with a Service Principal, ensure the following:
 Follow these steps to deploy a new project from scratch:
 
 **Step 1: Generate Project Configuration**
-Use the template generator to create a standardized configuration file. Choose from **11 production-ready blueprints**:
+
+Two approaches: **generate** from a blueprint template, or **scaffold** from an existing workspace.
+
+**Option A — From Template** (new workspaces): Choose from **11 production-ready blueprints**:
 
 ```bash
 # Standard ETL (Medallion architecture)
@@ -90,6 +93,19 @@ python -m usf_fabric_cli.scripts.dev.generate_project "HealthCo" "Patient Platfo
 
 # See all 11 templates: docs/01_User_Guides/07_Blueprint_Catalog.md
 # Output: config/projects/{org_name}/{project_name}.yaml
+```
+
+**Option B — From Existing Workspace** (onboard live workspaces):
+
+```bash
+# Scaffold config from a live Fabric workspace
+python -m usf_fabric_cli.cli scaffold "EDP [DEV]"
+
+# With feature template + deployment pipeline
+python -m usf_fabric_cli.cli scaffold "Sales [DEV]" -f -p "Sales - Pipeline"
+
+# Output: config/projects/_templates/<slug>/base_workspace.yaml
+# Copy to config/projects/<project>/ and customize before deploying
 ```
 
 **Step 2: Initialize Git Repository**
@@ -305,6 +321,38 @@ python -m usf_fabric_cli.cli promote [OPTIONS]
 | `--source-stage` | `-s` | Source stage name (default: Development) |
 | `--target-stage` | `-t` | Target stage name (auto-inferred if omitted) |
 | `--note` | `-n` | Deployment note / description |
+
+### Scaffold Command
+
+```bash
+python -m usf_fabric_cli.cli scaffold WORKSPACE [OPTIONS]
+```
+
+Scaffold a YAML config from an existing Fabric workspace. Connects to a live workspace, discovers its folders and items, and generates deployer-compatible YAML config file(s).
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--output` | `-o` | Output path for base_workspace.yaml (default: `config/projects/_templates/<slug>/`) |
+| `--include-feature-template` | `-f` | Also generate a feature_workspace.yaml template |
+| `--pipeline-name` | `-p` | Include deployment_pipeline section with this pipeline name |
+| `--project-slug` | `-s` | Override the auto-generated project slug |
+| `--test-workspace-name` | | Explicit Test stage workspace name (overrides auto-inference) |
+| `--prod-workspace-name` | | Explicit Production stage workspace name (overrides auto-inference) |
+
+**Examples:**
+```bash
+# Basic scaffold
+fabric-cicd scaffold "EDP [DEV]"
+
+# With feature workspace template
+fabric-cicd scaffold "Sales [DEV]" --include-feature-template
+
+# With deployment pipeline stages
+fabric-cicd scaffold "HR Analytics [DEV]" -f -p "HR - Pipeline"
+
+# With explicit stage workspace names
+fabric-cicd scaffold "My WS" -p "Pipeline" --test-workspace-name "My WS [TEST]"
+```
 
 ## Interactive Learning Guide
 

@@ -25,7 +25,7 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
 **Core Components** (`src/usf_fabric_cli/`):
 
 *Root:*
-- `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate/promote/onboard commands)
+- `cli.py`: Typer-based CLI orchestrator (deploy/destroy/validate/promote/onboard/scaffold commands)
 - `exceptions.py`: Custom error handling classes (`FabricCLIError`, `FabricCLINotFoundError`)
 
 *Services* (`services/`):
@@ -49,6 +49,7 @@ Configuration (YAML) → FabricDeployer (orchestrator) → FabricCLIWrapper → 
 ### Organization-Agnostic Design
 All configurations use **environment variable substitution** (`${VAR_NAME}`). No hardcoded organization names.
 Template blueprints in `src/usf_fabric_cli/templates/blueprints/*.yaml` are customized via `src/usf_fabric_cli/scripts/dev/generate_project.py`.
+Live workspace scaffolding via `src/usf_fabric_cli/scripts/admin/utilities/scaffold_workspace.py` generates configs from existing Fabric workspaces.
 
 ## 🔐 Secret Management (CRITICAL)
 
@@ -93,6 +94,10 @@ conda env list  # Should show * next to fabric-cli-cicd
 # See docs/01_User_Guides/07_Blueprint_Catalog.md for full list.
 python -m usf_fabric_cli.scripts.dev.generate_project "Acme Corp" "Sales Analytics" --template realtime_streaming
 # Output: config/projects/acme_corp/sales_analytics.yaml
+
+# 1b. OR scaffold from an existing workspace (alternative to template generation)
+python -m usf_fabric_cli.cli scaffold "EDP [DEV]" --include-feature-template -p "EDP - Pipeline"
+# Output: config/projects/_templates/<slug>/base_workspace.yaml + feature_workspace.yaml
 
 # 2. One-Click Onboard (preferred — generates config + deploys in one step)
 make onboard org="Acme Corp" project="Sales Analytics" template=realtime_streaming

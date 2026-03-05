@@ -41,8 +41,9 @@ All notable changes to this project will be documented in this file.
 - **+4 unit tests**: `test_fabric_git_api.py` — tests `initialization_strategy` parameter in request body (preferred workspace, preferred remote, default omission).
 - **+11 unit tests**: `test_scaffold_workspace.py` — tests `_build_folder_rules` (with/without folders, majority vote, fallback, empty inputs, unknown types), `_categorize_items`, and `ITEM_TYPE_TO_FOLDER` constant coverage.
 - **+1 unit test**: `test_config.py` — asserts `git_init_strategy` defaults to `None` on minimal config.
+- **+10 unit tests**: `test_fabric_api_base.py` — new test file covering `FabricAPIBase` (base URL construction, auth headers, retry logic, error handling).
 - **Test fixture updates**: `test_fabric_git_api.py` mock responses updated to camelCase; `test_deployment_pipeline.py` selective-promote test updated (no `targetItemId`); `test_cli.py` principal fixture updated (added `type` field).
-- **610/610 tests passing**.
+- **627/627 tests passing**.
 
 ## [1.7.17] - 2026-02-25
 
