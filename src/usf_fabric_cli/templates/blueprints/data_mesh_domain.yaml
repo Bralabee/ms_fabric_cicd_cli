@@ -96,27 +96,32 @@ resources: []
 principals:
   # 1. Automation Service Principal (runs deployments)
   - id: "${AZURE_CLIENT_ID}"
+    type: ServicePrincipal
     role: Contributor
     description: "Automation SP — required for CI/CD deployments"
 
   # 2. Mandatory Admin security group (IT governance)
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+    type: Group
     role: Admin
     description: "Mandatory governance admin group"
 
   # 3. Mandatory Contributor security group (support team)
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+    type: Group
     role: Contributor
     description: "Mandatory governance contributor group"
 
   # ── Domain-specific principals ─────────────────────────────────────────────
   # Domain owner (product manager / data owner)
   - id: "${PROJECT_ADMIN_ID}"               # ← CHANGE
+    type: Group
     role: Admin
     description: "Domain owner — accountable for data products"
 
   # Domain data engineers
   - id: "${PROJECT_MEMBERS_ID}"             # ← CHANGE
+    type: Group
     role: Member
     description: "Domain data engineering team"
 

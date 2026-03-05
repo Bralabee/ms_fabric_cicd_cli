@@ -86,26 +86,31 @@ resources: []
 principals:
   # 1. Automation Service Principal (runs deployments)
   - id: "${AZURE_CLIENT_ID}"
+    type: ServicePrincipal
     role: Contributor
     description: "Automation SP — required for CI/CD deployments"
 
   # 2. Mandatory Admin security group (IT governance)
   - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"
+    type: Group
     role: Admin
     description: "Mandatory governance admin group"
 
   # 3. Mandatory Contributor security group (support team)
   - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"
+    type: Group
     role: Contributor
     description: "Mandatory governance contributor group"
 
   # ── Project-specific principals (runtime-configurable via env vars) ────────
   # Replace with your project's secret names. Supports comma-separated GUIDs.
   - id: "${PROJECT_ADMIN_ID}"               # ← CHANGE: Your admin secret name
+    type: Group
     role: Admin
     description: "Project admins — set via PROJECT_ADMIN_ID secret"
 
   - id: "${PROJECT_MEMBERS_ID}"             # ← CHANGE: Your member secret name
+    type: Group
     role: Member
     description: "Project team members — set via PROJECT_MEMBERS_ID secret"
 
