@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **`discover-folders` CLI command**: New `fabric-cicd discover-folders` command that scans a live Fabric workspace for folders and item-to-folder mappings, computes the diff against an existing YAML config, and updates the config with new entries. Designed for CI pre-merge automation. Exit code 2 = changes found. Supports `--workspace`, `--branch`, and `--dry-run` flags.
+- **`discover-folders` module**: New `src/usf_fabric_cli/scripts/admin/utilities/discover_folders.py` with functions: `discover_folders()`, `_compute_diff()`, `_update_yaml_file()`, `_derive_feature_workspace_name()`.
+- **Makefile `scaffold` target**: New `make scaffold workspace="<name>"` target for running the scaffold command with optional `slug=`, `feature=`, `pipeline=` parameters. Includes Docker variant `make docker-scaffold`.
+- **Makefile `discover-folders` target**: New `make discover-folders config="<path>"` target with optional `workspace=`, `branch=`, `dry_run=` parameters. Includes Docker variant `make docker-discover-folders`.
+
 ## [1.8.0] - 2026-03-06
 
 ### Added

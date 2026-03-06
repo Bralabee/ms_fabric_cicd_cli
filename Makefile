@@ -10,13 +10,13 @@ CONDA_ACTIVATE := source ~/miniconda3/etc/profile.d/conda.sh && conda activate $
 
 .PHONY: help setup install build test test-integration lint format clean \
 	validate diagnose deploy promote onboard onboard-isolated \
-	init-github-repo feature-workspace destroy bulk-destroy generate \
+	init-github-repo feature-workspace destroy bulk-destroy generate scaffold discover-folders \
 	check-env typecheck security coverage ci version \
 	pre-commit-install pre-commit-run \
 	list-workspaces list-items \
 	webapp-dev webapp-build \
 	docker-build docker-validate docker-deploy docker-destroy \
-	docker-shell docker-diagnose docker-generate docker-init-repo \
+	docker-shell docker-diagnose docker-generate docker-scaffold docker-discover-folders docker-init-repo \
 	docker-feature-deploy docker-promote \
 	docker-onboard docker-onboard-isolated docker-feature-workspace \
 	docker-bulk-destroy docker-list-workspaces docker-list-items
@@ -114,6 +114,51 @@ generate: ## Generate project config (Usage: make generate org="Org" project="Pr
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
 	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.generate_project "$(org)" "$(project)" --template $(or $(template),medallion)
+
+scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace="Name" [output=path] [feature=1] [pipeline="Name"] [slug=override])
+	@if [ -z "$(workspace)" ]; then \
+	echo "\033[31mError: 'workspace' argument is missing.\033[0m"; \
+	echo "Usage: make scaffold workspace=\"My Workspace [DEV]\""; \
+	echo ""; \
+	echo "Options:"; \
+	echo "  workspace  — Name of the existing Fabric workspace to scan (required)"; \
+	echo "  output     — Output path for base_workspace.yaml (default: config/projects/_templates/<slug>/)"; \
+	echo "  feature=1  — Also generate feature_workspace.yaml"; \
+	echo "  pipeline   — Include deployment_pipeline section with this name"; \
+	echo "  slug       — Override the auto-generated project slug"; \
+	echo "  test_ws    — Explicit Test stage workspace name"; \
+	echo "  prod_ws    — Explicit Production stage workspace name"; \
+	echo ""; \
+	echo "Examples:"; \
+	echo "  make scaffold workspace=\"EDP [DEV]\""; \
+	echo "  make scaffold workspace=\"EDP [DEV]\" feature=1 pipeline=\"EDP - Pipeline\""; \
+	echo "  make scaffold workspace=\"Sales\" slug=re_sales output=config/projects/_templates/re_sales/base_workspace.yaml"; \
+	exit 1; \
+	fi
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.scaffold_workspace "$(workspace)" \
+		$(if $(output),--output "$(output)",) \
+		$(if $(feature),--include-feature-template,) \
+		$(if $(pipeline),--pipeline-name "$(pipeline)",) \
+		$(if $(slug),--project-slug "$(slug)",) \
+		$(if $(test_ws),--test-workspace-name "$(test_ws)",) \
+		$(if $(prod_ws),--prod-workspace-name "$(prod_ws)",)
+
+discover-folders: ## Discover new folders from live workspace and update YAML config (Usage: make discover-folders config=path/to/config.yaml [workspace="Name"] [branch=feature/x] [dry_run=1])
+	@if [ -z "$(config)" ]; then \
+	echo "\033[31mError: 'config' argument is missing.\033[0m"; \
+	echo "Usage: make discover-folders config=config/projects/edp/base_workspace.yaml workspace=\"EDP Feature\""; \
+	echo ""; \
+	echo "Options:"; \
+	echo "  config     — Path to base_workspace.yaml (required)"; \
+	echo "  workspace  — Name of the live workspace to scan"; \
+	echo "  branch     — Feature branch name (derives workspace name if workspace not given)"; \
+	echo "  dry_run=1  — Show what would change without writing"; \
+	exit 1; \
+	fi
+	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.discover_folders "$(config)" \
+		$(if $(workspace),--workspace "$(workspace)",) \
+		$(if $(branch),--branch "$(branch)",) \
+		$(if $(dry_run),--dry-run,)
 
 deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env=dev [branch=feature/x])
 	@if [ -z "$(config)" ]; then \
@@ -244,6 +289,25 @@ docker-generate: ## Generate project config in Docker (Usage: make docker-genera
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
 	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.dev.generate_project "$(org)" "$(project)" --template $(or $(template),basic_etl)
+
+docker-scaffold: ## Scaffold config from live workspace in Docker (Usage: make docker-scaffold workspace="Name" [feature=1] [pipeline="Name"] ENVFILE=.env)
+	@if [ -z "$(workspace)" ]; then echo "Error: workspace argument required"; exit 1; fi
+	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	-m usf_fabric_cli.scripts.admin.utilities.scaffold_workspace "$(workspace)" \
+	$(if $(output),--output "$(output)",) \
+	$(if $(feature),--include-feature-template,) \
+	$(if $(pipeline),--pipeline-name "$(pipeline)",) \
+	$(if $(slug),--project-slug "$(slug)",) \
+	$(if $(test_ws),--test-workspace-name "$(test_ws)",) \
+	$(if $(prod_ws),--prod-workspace-name "$(prod_ws)",)
+
+docker-discover-folders: ## Discover new folders from live workspace in Docker (Usage: make docker-discover-folders config=... [workspace="Name"] [branch=...] ENVFILE=.env)
+	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
+	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	-m usf_fabric_cli.scripts.admin.utilities.discover_folders "$(config)" \
+	$(if $(workspace),--workspace "$(workspace)",) \
+	$(if $(branch),--branch "$(branch)",) \
+	$(if $(dry_run),--dry-run,)
 
 docker-init-repo: ## Initialize ADO repo in Docker (Usage: make docker-init-repo org="Org" project="Proj" repo="Repo")
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi

@@ -993,6 +993,75 @@ def organize_folders(
         )
 
 
+@app.command("discover-folders")
+def discover_folders_cmd(
+    config: str = typer.Argument(..., help="Path to configuration file"),
+    workspace: Optional[str] = typer.Option(
+        None,
+        "--workspace",
+        "-w",
+        help="Name of the live workspace to scan",
+    ),
+    branch: Optional[str] = typer.Option(
+        None,
+        "--branch",
+        "-b",
+        help="Feature branch name (derives workspace name if --workspace not given)",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Show what would change without writing to the config file",
+    ),
+):
+    """Discover new folders from a live workspace and update the YAML config.
+
+    Scans a workspace (typically a feature workspace) for folders and item
+    placements not yet in the project's base_workspace.yaml, then adds them.
+    Run this in CI before PR merge to capture folder changes made in feature
+    workspaces.
+
+    Examples:
+
+        fabric-cicd discover-folders config/projects/edp/base_workspace.yaml \\
+            --workspace "EDP Feature-my-feature"
+
+        fabric-cicd discover-folders config/projects/edp/base_workspace.yaml \\
+            --branch feature/edp/new-reports --dry-run
+    """
+    try:
+        from usf_fabric_cli.scripts.admin.utilities.discover_folders import (
+            discover_folders,
+        )
+
+        result = discover_folders(
+            config_path=config,
+            workspace_name=workspace,
+            branch=branch,
+            dry_run=dry_run,
+        )
+
+        total = result["new_folders"] + result["new_rules"]
+        if total:
+            console.print(
+                f"\n[green]Discovered {result['new_folders']} new folder(s) "
+                f"and {result['new_rules']} new rule(s).[/green]"
+            )
+            if not dry_run:
+                console.print(
+                    f"[green]Updated: {result['config']}[/green]"
+                )
+        else:
+            console.print("[green]Config is up to date — no changes needed.[/green]")
+
+    except (ValueError, FileNotFoundError, KeyError, OSError, RuntimeError) as e:
+        handle_cli_error(
+            "discover folders",
+            e,
+            "Ensure the workspace exists and you have access.",
+        )
+
+
 @app.command("init-github-repo")
 def init_github_repo(
     owner: str = typer.Option(..., "--owner", help="GitHub user or organization name"),
