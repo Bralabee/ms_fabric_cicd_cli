@@ -1048,9 +1048,7 @@ def discover_folders_cmd(
                 f"and {result['new_rules']} new rule(s).[/green]"
             )
             if not dry_run:
-                console.print(
-                    f"[green]Updated: {result['config']}[/green]"
-                )
+                console.print(f"[green]Updated: {result['config']}[/green]")
         else:
             console.print("[green]Config is up to date — no changes needed.[/green]")
 

@@ -147,16 +147,15 @@ def _update_yaml_file(
         insert_block = "\n".join(folder_lines)
 
         # Strategy: find the folders: section and append after the last "  - " line
-        folders_match = re.search(
-            r"(folders:\s*\n(?:\s+-\s+.*\n)*)", updated
-        )
+        folders_match = re.search(r"(folders:\s*\n(?:\s+-\s+.*\n)*)", updated)
         if folders_match:
             existing_block = folders_match.group(1)
             updated_block = existing_block.rstrip("\n") + "\n" + insert_block + "\n"
             updated = updated.replace(existing_block, updated_block)
         else:
             # No folders section exists — add one before folder_rules or principals
-            insert_point = "folder_rules:" if "folder_rules:" in updated else "principals:"
+            has_rules = "folder_rules:" in updated
+            insert_point = "folder_rules:" if has_rules else "principals:"
             if insert_point in updated:
                 updated = updated.replace(
                     insert_point,
@@ -181,9 +180,7 @@ def _update_yaml_file(
             updated = updated.replace(existing_block, updated_block)
         else:
             # No folder_rules section — add one after folders section
-            folders_end = re.search(
-                r"(folders:\s*\n(?:\s+-\s+.*\n)*)\n", updated
-            )
+            folders_end = re.search(r"(folders:\s*\n(?:\s+-\s+.*\n)*)\n", updated)
             if folders_end:
                 insert_after = folders_end.group(0)
                 updated = updated.replace(
@@ -194,9 +191,7 @@ def _update_yaml_file(
     return updated
 
 
-def _derive_feature_workspace_name(
-    config: Dict[str, Any], branch: str
-) -> str:
+def _derive_feature_workspace_name(config: Dict[str, Any], branch: str) -> str:
     """Derive feature workspace name from config + branch.
 
     Follows the same convention as the CLI's deploy --branch logic:
