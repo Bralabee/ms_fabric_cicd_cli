@@ -4,10 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-03-06
+
 ### Added
 
+- **Scaffold CLI Command**: New `scaffold` subcommand (`cli.py`) generates YAML configs from existing live Fabric workspaces. Uses `scaffold_workspace.py` to introspect workspace items, folder placement, and Git connections, producing a ready-to-review template config.
 - **Git Initialization Strategy**: `initialize_git_connection()` in `fabric_git_api.py` now accepts an optional `initialization_strategy` parameter (`PreferWorkspace` or `PreferRemote`). Configurable via `git_init_strategy` in `base_workspace.yaml`. When omitted, the CLI sends an empty body (backward-compatible with existing configs). JSON schema (`workspace_config.json`) updated with enum validation.
 - **Folder-Aware Scaffold**: `_build_folder_rules()` in `scaffold_workspace.py` now accepts an optional `folders` parameter. When the workspace has folders, uses each item's `folderId` to resolve actual folder names via majority vote. Falls back to hardcoded `ITEM_TYPE_TO_FOLDER` mapping only when items lack folder placement.
+- **`update_from_git` conflict resolution (API-M3)**: `update_from_git()` now supports optional `conflict_resolution_policy` (`PreferRemote`/`PreferWorkspace`) and `allow_override_items` parameters per the [official API spec](https://learn.microsoft.com/en-us/rest/api/fabric/core/git/update-from-git).
+- **`get_git_status` LRO handling (API-M5)**: `get_git_status()` now handles 202 responses (long-running operation) by returning `operation_id` and `retry_after`, instead of failing on empty JSON body.
+- **Scaffold output path validation (CLI-H1)**: `scaffold_workspace.py` now rejects output paths outside the project directory tree.
+- **Principals schema: `type` field (CLI-M4)**: `workspace_config.json` principals now require `type` (enum: `User`, `Group`, `ServicePrincipal`) and `role` (enum: `Admin`, `Contributor`, `Member`, `Viewer`).
+- **Folder rules schema: `name` property (XREPO-M1)**: `folder_rules` items now accept an optional `name` field for item-specific folder placement, without breaking `additionalProperties: false`.
 
 ### Fixed
 
@@ -17,14 +25,6 @@ All notable changes to this project will be documented in this file.
 - **`deploy_to_stage` legacy options (API-H4)**: Removed Power BI-era `allowCreateArtifact`/`allowOverwriteArtifact` from deployment options. The [Fabric API](https://learn.microsoft.com/en-us/rest/api/fabric/core/deployment-pipelines/deploy-stage-content) `DeploymentOptions` only supports `allowCrossRegionDeployment`.
 - **Selective promote `targetItemId` (API-M1)**: Removed non-existent `targetItemId` field from items sent to the Fabric Deploy API. `ItemDeploymentRequest` only accepts `sourceItemId` and `itemType`.
 - **Scaffold YAML description quoting (CLI-H2)**: `description` field in generated YAML is now quoted, preventing breakage when workspace names contain `:`, `#`, or `{`.
-
-### Added
-
-- **`update_from_git` conflict resolution (API-M3)**: `update_from_git()` now supports optional `conflict_resolution_policy` (`PreferRemote`/`PreferWorkspace`) and `allow_override_items` parameters per the [official API spec](https://learn.microsoft.com/en-us/rest/api/fabric/core/git/update-from-git).
-- **`get_git_status` LRO handling (API-M5)**: `get_git_status()` now handles 202 responses (long-running operation) by returning `operation_id` and `retry_after`, instead of failing on empty JSON body.
-- **Scaffold output path validation (CLI-H1)**: `scaffold_workspace.py` now rejects output paths outside the project directory tree.
-- **Principals schema: `type` field (CLI-M4)**: `workspace_config.json` principals now require `type` (enum: `User`, `Group`, `ServicePrincipal`) and `role` (enum: `Admin`, `Contributor`, `Member`, `Viewer`).
-- **Folder rules schema: `name` property (XREPO-M1)**: `folder_rules` items now accept an optional `name` field for item-specific folder placement, without breaking `additionalProperties: false`.
 
 ### Changed
 
