@@ -857,10 +857,7 @@ def scaffold_workspace(
         f'display="<Name>" template={slug}'
     )
     print(f"   {step + 1}. Add required secrets to GitHub")
-    print(
-        f"   {step + 2}. "
-        "Add project to workflow dropdown (feature-workspace-create.yml)"
-    )
+    print(f"   {step + 2}. " "Workflow dropdowns are automatic via `make new-project`")
     print(f"   {step + 3}. " "Run: fabric-cicd deploy <config>.yaml --env dev")
     print()
 
