@@ -3,25 +3,25 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Default owners for everything
-*                                   @BralaBee-LEIT
+*                                   @BralaBee-LEIT @amalapai-ricoh
 
 # Core source code
-src/                                @BralaBee-LEIT
-tests/                              @BralaBee-LEIT
+src/                                @BralaBee-LEIT @amalapai-ricoh
+tests/                              @BralaBee-LEIT @amalapai-ricoh
 
 # CI/CD & Infrastructure
-.github/                            @BralaBee-LEIT
-Dockerfile                          @BralaBee-LEIT
-Makefile                            @BralaBee-LEIT
-azure-pipelines.yml                 @BralaBee-LEIT
+.github/                            @BralaBee-LEIT @amalapai-ricoh
+Dockerfile                          @BralaBee-LEIT @amalapai-ricoh
+Makefile                            @BralaBee-LEIT @amalapai-ricoh
+azure-pipelines.yml                 @BralaBee-LEIT @amalapai-ricoh
 
 # Configuration & Templates
-config/                             @BralaBee-LEIT
-src/usf_fabric_cli/templates/       @BralaBee-LEIT
+config/                             @BralaBee-LEIT @amalapai-ricoh
+src/usf_fabric_cli/templates/       @BralaBee-LEIT @amalapai-ricoh
 
 # Webapp (Learning Guide)
-webapp/                             @BralaBee-LEIT
+webapp/                             @BralaBee-LEIT @amalapai-ricoh
 
 # Documentation
-docs/                               @BralaBee-LEIT
-*.md                                @BralaBee-LEIT
+docs/                               @BralaBee-LEIT @amalapai-ricoh
+*.md                                @BralaBee-LEIT @amalapai-ricoh
