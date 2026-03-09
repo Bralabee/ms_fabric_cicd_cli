@@ -8,7 +8,7 @@
 #   Override: make SHELL=C:/custom/Git/bin/bash.exe
 ifeq ($(OS),Windows_NT)
     ifeq ($(shell echo "test"),"test")
-        # Make is using cmd.exe — use 8.3 short path to avoid spaces
+        # Make is using cmd.exe -- use 8.3 short path to avoid spaces
         SHELL := C:/PROGRA~1/Git/bin/bash.exe
     else
         # Make is using a POSIX shell (sh/bash from Git, MSYS2, or conda)
@@ -108,7 +108,7 @@ coverage: check-env ## Run tests with coverage report
 	$(PYTEST) -m "not integration" --cov=usf_fabric_cli --cov-report=term-missing --cov-report=html
 
 ci: lint typecheck test security ## Run full CI quality suite (lint + typecheck + test + security)
-	@printf "\033[32m✅ All quality checks passed.\033[0m\n"
+	@printf "\033[32m[OK] All quality checks passed.\033[0m\n"
 
 clean: ## Clean up cache and temporary files
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -142,13 +142,13 @@ scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace
 	echo "Usage: make scaffold workspace=\"My Workspace [DEV]\""; \
 	echo ""; \
 	echo "Options:"; \
-	echo "  workspace  — Name of the existing Fabric workspace to scan (required)"; \
-	echo "  output     — Output path for base_workspace.yaml (default: config/projects/_templates/<slug>/)"; \
-	echo "  feature=1  — Also generate feature_workspace.yaml"; \
-	echo "  pipeline   — Include deployment_pipeline section with this name"; \
-	echo "  slug       — Override the auto-generated project slug"; \
-	echo "  test_ws    — Explicit Test stage workspace name"; \
-	echo "  prod_ws    — Explicit Production stage workspace name"; \
+	echo "  workspace  -- Name of the existing Fabric workspace to scan (required)"; \
+	echo "  output     -- Output path for base_workspace.yaml (default: config/projects/_templates/<slug>/)"; \
+	echo "  feature=1  -- Also generate feature_workspace.yaml"; \
+	echo "  pipeline   -- Include deployment_pipeline section with this name"; \
+	echo "  slug       -- Override the auto-generated project slug"; \
+	echo "  test_ws    -- Explicit Test stage workspace name"; \
+	echo "  prod_ws    -- Explicit Production stage workspace name"; \
 	echo ""; \
 	echo "Examples:"; \
 	echo "  make scaffold workspace=\"EDP [DEV]\""; \
@@ -170,10 +170,10 @@ discover-folders: ## Discover new folders from live workspace and update YAML co
 	echo "Usage: make discover-folders config=config/projects/edp/base_workspace.yaml workspace=\"EDP Feature\""; \
 	echo ""; \
 	echo "Options:"; \
-	echo "  config     — Path to base_workspace.yaml (required)"; \
-	echo "  workspace  — Name of the live workspace to scan"; \
-	echo "  branch     — Feature branch name (derives workspace name if workspace not given)"; \
-	echo "  dry_run=1  — Show what would change without writing"; \
+	echo "  config     -- Path to base_workspace.yaml (required)"; \
+	echo "  workspace  -- Name of the live workspace to scan"; \
+	echo "  branch     -- Feature branch name (derives workspace name if workspace not given)"; \
+	echo "  dry_run=1  -- Show what would change without writing"; \
 	exit 1; \
 	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.discover_folders "$(config)" \
