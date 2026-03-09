@@ -23,6 +23,8 @@ and exit codes. Use this as a quick look-up; for narrative guides, see the linke
    - [list-items](#list-items)
    - [bulk-destroy](#bulk-destroy)
    - [organize-folders](#organize-folders)
+   - [discover-folders](#discover-folders)
+   - [scaffold](#scaffold)
    - [init-github-repo](#init-github-repo)
 2. [Make Targets](#2-make-targets)
 3. [Docker Make Targets](#3-docker-make-targets)
@@ -317,6 +319,78 @@ Useful after Git Sync, which always places items at the workspace root.
 
 ---
 
+### discover-folders
+
+Discover new folders from a live workspace and update the YAML config. Scans a workspace
+(typically a feature workspace) for folders and item placements not yet in the project's
+`base_workspace.yaml`, then adds them. Run this in CI before PR merge to capture folder
+changes made in feature workspaces.
+
+```
+fabric-cicd discover-folders <config> [OPTIONS]
+```
+
+| Argument / Flag | Required | Default | Description |
+|----------------|----------|---------|-------------|
+| `config` | **Yes** | — | Path to YAML config file |
+| `--workspace`, `-w` | No | Derived from branch | Name of the live workspace to scan |
+| `--branch`, `-b` | No | `None` | Feature branch name (derives workspace name if `--workspace` not given) |
+| `--dry-run` | No | `False` | Show what would change without writing to the config file |
+
+**Examples:**
+
+```bash
+# Scan a feature workspace and update config
+fabric-cicd discover-folders config/projects/edp/base_workspace.yaml \
+    --workspace "EDP Feature-my-feature"
+
+# Derive workspace name from branch, dry run
+fabric-cicd discover-folders config/projects/edp/base_workspace.yaml \
+    --branch feature/edp/new-reports --dry-run
+```
+
+---
+
+### scaffold
+
+Scaffold a YAML config from an existing Fabric workspace. Connects to a live workspace,
+discovers its folders and items, and generates deployer-compatible YAML config file(s).
+This automates the manual process of writing `base_workspace.yaml` and `feature_workspace.yaml`
+when onboarding existing workspaces.
+
+```
+fabric-cicd scaffold <workspace> [OPTIONS]
+```
+
+| Argument / Flag | Required | Default | Description |
+|----------------|----------|---------|-------------|
+| `workspace` | **Yes** | — | Name of the existing Fabric workspace to scan |
+| `--output`, `-o` | No | `config/projects/_templates/<slug>/` | Output path for base_workspace.yaml |
+| `--include-feature-template`, `-f` | No | `False` | Also generate a feature_workspace.yaml template |
+| `--pipeline-name`, `-p` | No | `None` | Include deployment_pipeline section with this pipeline name |
+| `--project-slug`, `-s` | No | Auto-generated | Override the auto-generated project slug |
+| `--test-workspace-name` | No | Auto-inferred | Explicit Test stage workspace name |
+| `--prod-workspace-name` | No | Auto-inferred | Explicit Production stage workspace name |
+
+**Examples:**
+
+```bash
+# Basic scaffold
+fabric-cicd scaffold "EDP [DEV]"
+
+# With feature template and pipeline
+fabric-cicd scaffold "Sales [DEV]" --include-feature-template
+
+# Full scaffold with pipeline and explicit stage names
+fabric-cicd scaffold "HR Analytics [DEV]" -f -p "HR - Pipeline" \
+    --test-workspace-name "HR Analytics [TEST]"
+```
+
+> **Note**: Scaffold is read-only — it does NOT create, modify, or delete anything in Fabric.
+> It reads an existing workspace and generates local YAML config files.
+
+---
+
 ### init-github-repo
 
 Create and initialize a GitHub repository for Fabric Git integration.
@@ -489,7 +563,7 @@ Naming convention: `<PROJECT>_ADMIN_ID`, `<PROJECT>_MEMBERS_ID` (supports comma-
 |------|---------|--------------|
 | `0` | Success | Operation completed normally |
 | `1` | General failure | Config error, auth failure, API error |
-| `2` | Safety block (destroy only) | Workspace contains items and `--safe` is enabled |
+| `2` | Graceful skip | No deployable items, or workspace contains items with `--safe` enabled (destroy) |
 
 ---
 

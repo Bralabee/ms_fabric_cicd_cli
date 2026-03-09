@@ -1,5 +1,9 @@
 # Documentation Gap Analysis & Harmonisation Plan
 
+> **HISTORICAL DOCUMENT** — Written February 2026 (pre-v1.8.0). Some references are outdated:
+> `selective_promote.py` has been archived (superseded by `fabric-cicd promote --selective`),
+> CLI now has 14 commands (was 11), and the consumer repo uses Makefile automation instead of manual scripts.
+>
 > **Date**: Generated February 2026
 > **Scope**: `usf_fabric_cli_cicd` (CLI library) + `edp_fabric_consumer_repo/EDPFabric` (consumer)
 > **Objective**: Identify documentation gaps preventing users from understanding how to start and successfully deploy via CLI, Python, Docker, or GitHub Workflows — and propose a harmonisation plan.
