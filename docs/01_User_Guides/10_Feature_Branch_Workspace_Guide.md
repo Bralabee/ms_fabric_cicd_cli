@@ -1,10 +1,10 @@
 # Fabric CI/CD — Full End-to-End Lifecycle Guide
 
-> **Version**: 1.7.6 | **Last validated**: 15 February 2026
+> **Version**: 1.8.0 | **Last validated**: 9 March 2026
 >
 > **⚠️ NOTE**: This guide references `fabric_cicd_test_repo` as the consumer repository template.
 > For the **current production-ready consumer repo** (`EDPFabric`) with multi-project support,
-> two-tier access control, `selective_promote.py`, and `git_directory` isolation, see the
+> two-tier access control, Makefile automation, and `git_directory` isolation, see the
 > [EDPFabric Replication Guide](https://github.com/<org>/edp_fabric_consumer_repo/blob/main/EDPFabric/docs/02_REPLICATION_GUIDE.md).
 >
 > This guide remains useful as a **CLI capability reference** for the feature branch lifecycle and
@@ -274,7 +274,7 @@ workspace:
   git_branch: main
   git_directory: /
 
-# Inline environment overrides (v1.7.6+)
+# Inline environment overrides (v1.8.0+)
 environments:
   dev:
     workspace:
@@ -307,7 +307,7 @@ principals:
 
 - **`workspace.name`** is the **base name**. When `--force-branch-workspace` is used, the CLI appends the branch name as a suffix (e.g., `<prefix>-feature-my-feature`)
 - **`${VAR_NAME}`** placeholders are resolved from environment variables or `.env`
-- **`environments:`** block (v1.7.6+) allows inline per-environment overrides — these take priority over external files in `config/environments/`
+- **`environments:`** block (v1.8.0+) allows inline per-environment overrides — these take priority over external files in `config/environments/`
 - The deploying Service Principal automatically gets Admin access; you don't need to list it
 
 ---
@@ -371,7 +371,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
-          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.7.6' }}"
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.0' }}"
 
       - name: Verify credentials
         run: |
@@ -432,7 +432,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
-          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.7.6' }}"
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.0' }}"
 
       - name: Extract branch info
         id: branch
@@ -516,7 +516,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
-          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.7.6' }}"
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.0' }}"
 
       - name: Extract branch info
         id: branch
@@ -592,7 +592,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
-          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.7.6' }}"
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.0' }}"
 
       - name: Wait for Fabric Git Sync
         run: |
@@ -678,7 +678,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
-          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.7.6' }}"
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.0' }}"
 
       - name: Promote Test → Production
         env:
@@ -1038,7 +1038,7 @@ cat audit_logs/fabric_operations_$(date +%Y-%m-%d).jsonl | python -m json.tool |
 |:---|:---|:---|
 | `AADSTS7000215` | Expired or invalid Service Principal secret | Rotate the secret in Azure portal, update `AZURE_CLIENT_SECRET` secret |
 | `Insufficient capacity` | F2 trial exhausted | Free capacity by destroying unused workspaces, or use a larger capacity |
-| `Additional properties are not allowed ('environments')` | CLI version < 1.7.6 | Upgrade to v1.7.6+ (see [Troubleshooting §15](06_Troubleshooting.md#15-inline-environments-schema-validation-error)) |
+| `Additional properties are not allowed ('environments')` | CLI version < 1.7.6 | Upgrade to v1.8.0+ (see [Troubleshooting §15](06_Troubleshooting.md#15-inline-environments-schema-validation-error)) |
 | `Repository not found` | Wrong `FABRIC_GITHUB_TOKEN` or repo is private | Verify PAT has `repo` scope and can access the consumer repo |
 | `WorkspaceAlreadyConnectedToGit` | Re-push to same branch | Safe to ignore — CLI handles this idempotently |
 
@@ -1072,7 +1072,7 @@ python -m usf_fabric_cli.scripts.admin.preflight_check
 | `Promotion rejected` (Test→Prod) | Didn't type `PROMOTE` | Re-run the workflow and type `PROMOTE` exactly |
 | `Content conflict` | Items modified directly in Test/Prod | Resolve in Fabric portal, then re-promote |
 | `Insufficient permissions` | SP not admin on target workspace | Re-run setup workflow (auto-assigns SP as Admin), or add manually in portal |
-| `403 Forbidden` on promote | `FABRIC_TOKEN` not generated | Upgrade to CLI v1.7.6+ which auto-generates tokens from SP credentials |
+| `403 Forbidden` on promote | `FABRIC_TOKEN` not generated | Upgrade to CLI v1.8.0+ which auto-generates tokens from SP credentials |
 
 ---
 

@@ -76,7 +76,7 @@ pip install -e .
 
 > **For consumers** (using the CLI as a dependency, not developing it):
 > ```bash
-> pip install git+https://github.com/<org>/usf_fabric_cli_cicd.git@v1.7.15
+> pip install git+https://github.com/<org>/usf_fabric_cli_cicd.git@v1.8.0
 > ```
 
 ---

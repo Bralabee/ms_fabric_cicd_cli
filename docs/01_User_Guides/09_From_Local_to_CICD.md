@@ -569,7 +569,7 @@ The final milestone addressed a subtle but impactful schema validation bug: proj
 **E2E Validation:** Full feature branch workspace lifecycle tested via consumer repo:
 - Create workflow: workspace provisioned with folders, lakehouse, notebook, principals, and Git connection (2m 26s)
 - Cleanup workflow: workspace destroyed on branch delete (28s)
-- 369 unit tests passing (backward-compatible change)
+- 634 unit tests passing (backward-compatible change)
 
 ---
 
