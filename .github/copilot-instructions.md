@@ -415,14 +415,33 @@ Every version bump **must** complete ALL of the following steps in order:
 2. **Update `CHANGELOG.md`** — add release notes under the new version heading
 3. **Update `.github/copilot-instructions.md`** — change `Current Version` at the top of this file and the wheel filename in "Packaging & Distribution"
 4. **Update `README.md`** — change the version in the "February 2026 Update" banner
-5. **Create PR to `main`** → CI validates → merge (squash)
-6. **Create annotated Git tag**: `git tag -a vX.Y.Z -m "vX.Y.Z: <summary>"`
-7. **Push tag + main to ALL remotes**: `git push <remote> main --tags` for `origin`, `mirror`, `abba-replc`, `bralabee`
-8. **Update consumer repo variable**: set `CLI_REPO_REF` in downstream repos (e.g. `EDPFabric`) to the new tag:
+5. **Docs freshness audit** — grep the ENTIRE repo for the old version string and update all occurrences. Check ALL docs for stale version refs, test counts, command counts, workflow counts, file listings, and archived tool references. Verify with actual commands:
+   ```bash
+   git tag --sort=-v:refname | head -1        # Current version tag
+   grep -rn "v<OLD_VERSION>" docs/ README.md  # Stale version refs
+   pytest --co -q 2>/dev/null | tail -1       # Actual test count
+   ls .github/workflows/*.yml | wc -l         # Actual workflow count
+   ```
+6. **Create PR to `main`** → CI validates → merge (squash)
+7. **Create annotated Git tag**: `git tag -a vX.Y.Z -m "vX.Y.Z: <summary>"`
+8. **Push tag + main to ALL remotes**: `git push <remote> main --tags` for `origin`, `mirror`, `abba-replc`, `bralabee`
+9. **Update consumer repo variable**: set `CLI_REPO_REF` in downstream repos (e.g. `EDPFabric`) to the new tag:
    ```bash
    gh variable set CLI_REPO_REF --body "vX.Y.Z" --repo <org>/<consumer-repo>
    ```
-9. **Update consumer repo workflow defaults**: bump the hardcoded fallback version in all workflow `pip install` lines
-10. **Verify** — confirm the consumer workflow can install the new version successfully
+10. **Update consumer repo workflow defaults**: bump the hardcoded fallback version in all workflow `pip install` lines
+11. **Consumer repo freshness audit**: grep consumer repos for old version refs; update docs, copilot-instructions, and any hardcoded version strings
+12. **Verify** — confirm the consumer workflow can install the new version successfully
 
 > **Why this matters**: Consumer repos install the CLI via `pip install git+...@vX.Y.Z`. If `pyproject.toml` version or the Git tag is missing, deployments will fail.
+
+### Docs Freshness Audit (MANDATORY — every commit, not just releases)
+Before every final commit, verify all documentation reflects the true state of the project:
+
+1. **Version alignment**: `pyproject.toml` version must match CHANGELOG, README, copilot-instructions, and all docs
+2. **Numeric claims**: test counts, command counts (currently 14), blueprint counts (currently 11), workflow counts — verify with actual commands, not from memory
+3. **File/directory listings**: compare doc tree diagrams against actual `ls` output
+4. **Archived references**: search for `selective_promote`, `DEPRECATED`, or any tool known to be archived
+5. **Stale "how-to" instructions**: check that documented steps still match actual behavior (new flags, renamed commands, changed defaults)
+
+Use an Explore agent for thoroughness. This is standard practice on every commit.
