@@ -45,7 +45,7 @@ CONDA_ACTIVATE := source ~/miniconda3/etc/profile.d/conda.sh && conda activate $
 # Check if conda environment is active
 check-env:
 	@if [ "$$CONDA_DEFAULT_ENV" != "$(CONDA_ENV)" ]; then \
-		printf "\033[33m⚠️  Warning: Conda environment '$(CONDA_ENV)' is not active.\033[0m\n"; \
+		printf "\033[33m!  Warning: Conda environment '$(CONDA_ENV)' is not active.\033[0m\n"; \
 		printf "\033[33m   Run: source ~/miniconda3/etc/profile.d/conda.sh && conda activate $(CONDA_ENV)\033[0m\n"; \
 	fi
 
