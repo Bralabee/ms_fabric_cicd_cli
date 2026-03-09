@@ -2,11 +2,12 @@
 
 # Shell detection: bash is required for all recipes.
 # Windows: requires Git for Windows (https://git-scm.com) which provides bash.
-#   If you get "system cannot find the file" errors, ensure Git for Windows is
-#   installed and its bin/ directory is on your PATH:
-#     set PATH=%PROGRAMFILES%\Git\bin;%PATH%
+#   We resolve bash via the PROGRAMFILES env var so it works even when Git's
+#   bin/ directory is not on PATH (the default Git for Windows installer only
+#   adds cmd/ to PATH, not bin/).
+#   Override if Git is installed elsewhere: make SHELL=C:/custom/Git/bin/bash.exe
 ifeq ($(OS),Windows_NT)
-    SHELL := bash.exe
+    SHELL := $(subst \,/,$(PROGRAMFILES))/Git/bin/bash.exe
     PYTHON := python
 else
     SHELL := /bin/bash
