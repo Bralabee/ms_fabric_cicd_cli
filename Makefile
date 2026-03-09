@@ -2,12 +2,12 @@
 
 # Shell detection: bash is required for all recipes.
 # Windows: requires Git for Windows (https://git-scm.com) which provides bash.
-#   We resolve bash via the PROGRAMFILES env var so it works even when Git's
-#   bin/ directory is not on PATH (the default Git for Windows installer only
-#   adds cmd/ to PATH, not bin/).
+#   We convert "Program Files" to its 8.3 short name (PROGRA~1) because GNU Make
+#   cannot handle spaces in the SHELL variable.
 #   Override if Git is installed elsewhere: make SHELL=C:/custom/Git/bin/bash.exe
 ifeq ($(OS),Windows_NT)
-    SHELL := $(subst \,/,$(PROGRAMFILES))/Git/bin/bash.exe
+    PROGFILES_SHORT := $(subst \,/,$(shell for %I in ("%ProgramFiles%") do @echo %~sI))
+    SHELL := $(PROGFILES_SHORT)/Git/bin/bash.exe
     PYTHON := python
 else
     SHELL := /bin/bash
