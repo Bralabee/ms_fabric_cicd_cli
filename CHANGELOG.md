@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **`destroy` — automatic pipeline teardown**: When `--force-destroy-populated` is set and the config has a `deployment_pipeline` section, the `destroy` command now automatically unassigns all workspaces from pipeline stages and deletes the pipeline before deleting the workspace. Previously, Fabric blocked workspace deletion with `ALM_InvalidRequest_CannotDisableFoldersThatAreConnectedToAnyALMPipeline`.
+- **`destroy --cleanup-repo` flag**: New `--cleanup-repo` flag removes local repo files after workspace destruction: the config directory (`config/projects/<slug>/`), git sync directory, and project entries from workflow choice lists (`.github/workflows/*.yml`). Requires `--force-destroy-populated`.
 - **`discover-folders` CLI command**: New `fabric-cicd discover-folders` command that scans a live Fabric workspace for folders and item-to-folder mappings, computes the diff against an existing YAML config, and updates the config with new entries. Designed for CI pre-merge automation. Exit code 2 = changes found. Supports `--workspace`, `--branch`, and `--dry-run` flags.
 - **`discover-folders` module**: New `src/usf_fabric_cli/scripts/admin/utilities/discover_folders.py` with functions: `discover_folders()`, `_compute_diff()`, `_update_yaml_file()`, `_derive_feature_workspace_name()`.
 - **Makefile `scaffold` target**: New `make scaffold workspace="<name>"` target for running the scaffold command with optional `slug=`, `feature=`, `pipeline=` parameters. Includes Docker variant `make docker-scaffold`.

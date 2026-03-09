@@ -297,6 +297,15 @@ def destroy(
             "contains Fabric items. Use with caution."
         ),
     ),
+    cleanup_repo: bool = typer.Option(
+        False,
+        "--cleanup-repo",
+        help=(
+            "Remove local repo files after workspace destruction: "
+            "config directory, git sync directory, and workflow "
+            "choice-list entries. Requires --force-destroy-populated."
+        ),
+    ),
 ):
     """Destroy Fabric workspace based on configuration.
 
@@ -350,6 +359,65 @@ def destroy(
         env_vars = get_environment_variables(validate_vars=True)
         fabric = FabricCLIWrapper(env_vars["FABRIC_TOKEN"])
 
+        # ── Tear down deployment pipeline first (if configured) ────
+        # Fabric refuses to delete workspaces connected to ALM pipelines.
+        # When force flags are set, automatically unassign + delete the
+        # pipeline before attempting workspace deletion.
+        dp_config = workspace_config.deployment_pipeline
+        if force_destroy_populated and dp_config:
+            pipeline_name = dp_config.get("pipeline_name")
+            if pipeline_name:
+                from usf_fabric_cli.services.deployment_pipeline import (
+                    FabricDeploymentPipelineAPI,
+                )
+
+                pipeline_api = FabricDeploymentPipelineAPI(
+                    env_vars["FABRIC_TOKEN"],
+                )
+                pipeline = pipeline_api.get_pipeline_by_name(pipeline_name)
+                if pipeline:
+                    pipeline_id = pipeline["id"]
+                    console.print(
+                        f"[yellow]Tearing down pipeline: "
+                        f"{pipeline_name} ({pipeline_id})[/yellow]"
+                    )
+                    # Unassign all workspaces from pipeline stages
+                    stages_result = pipeline_api.get_pipeline_stages(pipeline_id)
+                    if stages_result["success"]:
+                        for stage in stages_result["stages"]:
+                            if stage.get("workspaceId"):
+                                unassign = pipeline_api.unassign_workspace_from_stage(
+                                    pipeline_id, stage["id"]
+                                )
+                                stage_name = stage.get("displayName", stage["id"])
+                                if unassign["success"]:
+                                    console.print(
+                                        f"  [dim]Unassigned workspace from "
+                                        f"{stage_name} stage[/dim]"
+                                    )
+                                else:
+                                    console.print(
+                                        f"  [yellow]⚠️  Failed to unassign "
+                                        f"{stage_name}: "
+                                        f"{unassign.get('error', '')}[/yellow]"
+                                    )
+                    # Delete the pipeline itself
+                    del_result = pipeline_api.delete_pipeline(pipeline_id)
+                    if del_result["success"]:
+                        console.print(
+                            f"  [green]✓ Pipeline '{pipeline_name}' deleted[/green]"
+                        )
+                    else:
+                        console.print(
+                            f"  [yellow]⚠️  Failed to delete pipeline: "
+                            f"{del_result.get('error', '')}[/yellow]"
+                        )
+                else:
+                    console.print(
+                        f"[dim]Pipeline '{pipeline_name}' not found — "
+                        "skipping pipeline teardown[/dim]"
+                    )
+
         result = fabric.delete_workspace(workspace_name, safe=effective_safe)
 
         if result.get("blocked_by_safety"):
@@ -402,6 +470,75 @@ def destroy(
                     error_msg,
                     "Check your Fabric API connectivity and permissions.",
                 )
+
+        # ── Repo cleanup (local files + workflow entries) ──────────
+        # Only runs when --cleanup-repo and --force-destroy-populated are
+        # both set, and the workspace was successfully destroyed (or was
+        # already gone).
+        workspace_gone = result["success"] or (
+            "NotFound" in str(result.get("error", ""))
+            or "could not be found" in str(result.get("error", "")).lower()
+        )
+        if cleanup_repo and force_destroy_populated and workspace_gone:
+            import re
+            import shutil
+            from pathlib import Path
+
+            config_path = Path(config).resolve()
+            # Derive project slug from config directory name
+            # e.g., config/projects/ap_testing_si/base_workspace.yaml → ap_testing_si
+            project_slug = config_path.parent.name
+
+            # Find repo root (walk up until we find .github/ or .git/)
+            repo_root = config_path.parent
+            while repo_root != repo_root.parent:
+                if (repo_root / ".git").exists() or (repo_root / ".github").exists():
+                    break
+                repo_root = repo_root.parent
+
+            console.print(
+                f"\n[yellow]Cleaning up repo files for " f"'{project_slug}'...[/yellow]"
+            )
+
+            # 1. Remove config directory (config/projects/<slug>/)
+            config_dir = config_path.parent
+            if config_dir.exists():
+                shutil.rmtree(config_dir)
+                console.print(
+                    f"  [dim]Removed {config_dir.relative_to(repo_root)}/[/dim]"
+                )
+
+            # 2. Remove git sync directory (from git_directory in config)
+            git_directory = workspace_config.git_directory
+            if git_directory and git_directory != "/":
+                # git_directory is like "/ap_testing_si" — strip leading /
+                sync_dir = repo_root / git_directory.lstrip("/")
+                if sync_dir.exists():
+                    shutil.rmtree(sync_dir)
+                    console.print(
+                        f"  [dim]Removed " f"{sync_dir.relative_to(repo_root)}/[/dim]"
+                    )
+
+            # 3. Remove project from workflow choice lists
+            workflows_dir = repo_root / ".github" / "workflows"
+            if workflows_dir.exists():
+                # Match lines like "          - ap_testing_si"
+                # in YAML workflow_dispatch choice lists
+                pattern = re.compile(r"^\s*-\s+" + re.escape(project_slug) + r"\s*$")
+                for wf_path in sorted(workflows_dir.glob("*.yml")):
+                    lines = wf_path.read_text().splitlines(keepends=True)
+                    new_lines = [line for line in lines if not pattern.match(line)]
+                    if len(new_lines) < len(lines):
+                        wf_path.write_text("".join(new_lines))
+                        removed = len(lines) - len(new_lines)
+                        console.print(
+                            f"  [dim]Removed {removed} entry/entries from "
+                            f"{wf_path.name}[/dim]"
+                        )
+
+            console.print(
+                f"[green]✅ Repo cleanup complete for " f"'{project_slug}'[/green]"
+            )
 
     except (typer.Exit, SystemExit):
         raise  # Re-raise exit codes (including safety block exit code 2)

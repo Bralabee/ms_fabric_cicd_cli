@@ -124,8 +124,13 @@ fabric-cicd destroy <config> [OPTIONS]
 | `--feature-prefix` | No | `[F]` | Prefix for feature workspace names (use `''` to disable) |
 | `--safe` / `--no-safe` | No | `True` | Refuse to delete workspaces containing Fabric items |
 | `--force-destroy-populated` | No | `False` | Override `--safe` — delete even if workspace has items |
+| `--cleanup-repo` | No | `False` | Remove local config dir, git sync dir, and workflow entries (requires `--force-destroy-populated`) |
 
 **Workspace name priority**: `--branch` > `--workspace-name-override` > config `workspace.name`
+
+**Pipeline teardown**: When `--force-destroy-populated` is set and the config has a `deployment_pipeline` section, the command automatically unassigns all workspaces from pipeline stages and deletes the pipeline before workspace deletion.
+
+**Repo cleanup** (`--cleanup-repo`): Removes the config directory (`config/projects/<slug>/`), git sync directory (from `git_directory`), and the project slug from workflow choice lists in `.github/workflows/*.yml`.
 
 **Examples:**
 
@@ -133,8 +138,11 @@ fabric-cicd destroy <config> [OPTIONS]
 # Safe destroy (default — will refuse if workspace has items)
 fabric-cicd destroy config/projects/acme/sales.yaml --env dev --force
 
-# Force destroy populated workspace
+# Force destroy populated workspace (auto-tears down pipeline)
 fabric-cicd destroy config/projects/acme/sales.yaml --force --force-destroy-populated
+
+# Full teardown: workspace + pipeline + repo files
+fabric-cicd destroy config/projects/acme/sales.yaml --force --force-destroy-populated --cleanup-repo
 
 # Destroy a feature branch workspace by name
 fabric-cicd destroy config/projects/acme/sales.yaml --branch feature/my-branch --force

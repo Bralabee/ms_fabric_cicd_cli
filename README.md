@@ -308,6 +308,9 @@ python -m usf_fabric_cli.cli destroy CONFIG [OPTIONS]
 | `--env` | `-e` | Target environment (dev/staging/prod) |
 | `--force` | `-f` | Skip confirmation prompt |
 | `--workspace-name-override` | | Override workspace name (e.g., for branch-specific cleanup) |
+| `--branch` | `-b` | Derive workspace name from branch name |
+| `--force-destroy-populated` | | Delete workspace even if it contains items (auto-tears down pipeline) |
+| `--cleanup-repo` | | Also remove config dir, git sync dir, and workflow entries |
 
 ### Promote Command
 
