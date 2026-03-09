@@ -1,6 +1,18 @@
 # Fabric CLI CI/CD Makefile
 
-PYTHON := python3
+# Shell detection: bash is required for all recipes.
+# Windows: requires Git for Windows (https://git-scm.com) which provides bash.
+#   If you get "system cannot find the file" errors, ensure Git for Windows is
+#   installed and its bin/ directory is on your PATH:
+#     set PATH=%PROGRAMFILES%\Git\bin;%PATH%
+ifeq ($(OS),Windows_NT)
+    SHELL := bash.exe
+    PYTHON := python
+else
+    SHELL := /bin/bash
+    PYTHON := python3
+endif
+.SHELLFLAGS := -c
 PIP := pip
 PYTEST := pytest
 
@@ -24,8 +36,8 @@ CONDA_ACTIVATE := source ~/miniconda3/etc/profile.d/conda.sh && conda activate $
 # Check if conda environment is active
 check-env:
 	@if [ "$$CONDA_DEFAULT_ENV" != "$(CONDA_ENV)" ]; then \
-		echo "\033[33m⚠️  Warning: Conda environment '$(CONDA_ENV)' is not active.\033[0m"; \
-		echo "\033[33m   Run: source ~/miniconda3/etc/profile.d/conda.sh && conda activate $(CONDA_ENV)\033[0m"; \
+		printf "\033[33m⚠️  Warning: Conda environment '$(CONDA_ENV)' is not active.\033[0m\n"; \
+		printf "\033[33m   Run: source ~/miniconda3/etc/profile.d/conda.sh && conda activate $(CONDA_ENV)\033[0m\n"; \
 	fi
 
 help: ## Show this help message
@@ -87,7 +99,7 @@ coverage: check-env ## Run tests with coverage report
 	$(PYTEST) -m "not integration" --cov=usf_fabric_cli --cov-report=term-missing --cov-report=html
 
 ci: lint typecheck test security ## Run full CI quality suite (lint + typecheck + test + security)
-	@echo "\033[32m✅ All quality checks passed.\033[0m"
+	@printf "\033[32m✅ All quality checks passed.\033[0m\n"
 
 clean: ## Clean up cache and temporary files
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -101,7 +113,7 @@ clean: ## Clean up cache and temporary files
 
 validate: ## Validate a configuration file (Usage: make validate config=path/to/config.yaml)
 	@if [ -z "$(config)" ]; then \
-	echo "\033[31mError: 'config' argument is missing.\033[0m"; \
+	printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
 	echo "Usage: make validate config=path/to/config.yaml"; \
 	exit 1; \
 	fi
@@ -117,7 +129,7 @@ generate: ## Generate project config (Usage: make generate org="Org" project="Pr
 
 scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace="Name" [output=path] [feature=1] [pipeline="Name"] [slug=override])
 	@if [ -z "$(workspace)" ]; then \
-	echo "\033[31mError: 'workspace' argument is missing.\033[0m"; \
+	printf "\033[31mError: 'workspace' argument is missing.\033[0m\n"; \
 	echo "Usage: make scaffold workspace=\"My Workspace [DEV]\""; \
 	echo ""; \
 	echo "Options:"; \
@@ -145,7 +157,7 @@ scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace
 
 discover-folders: ## Discover new folders from live workspace and update YAML config (Usage: make discover-folders config=path/to/config.yaml [workspace="Name"] [branch=feature/x] [dry_run=1])
 	@if [ -z "$(config)" ]; then \
-	echo "\033[31mError: 'config' argument is missing.\033[0m"; \
+	printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
 	echo "Usage: make discover-folders config=config/projects/edp/base_workspace.yaml workspace=\"EDP Feature\""; \
 	echo ""; \
 	echo "Options:"; \
@@ -162,12 +174,12 @@ discover-folders: ## Discover new folders from live workspace and update YAML co
 
 deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env=dev [branch=feature/x])
 	@if [ -z "$(config)" ]; then \
-	echo "\033[31mError: 'config' argument is missing.\033[0m"; \
+	printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
 	echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
 	exit 1; \
 	fi
 	@if [ -z "$(env)" ]; then \
-	echo "\033[31mError: 'env' argument is missing.\033[0m"; \
+	printf "\033[31mError: 'env' argument is missing.\033[0m\n"; \
 	echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
 	exit 1; \
 	fi
@@ -212,7 +224,7 @@ feature-workspace: ## Create isolated feature workspace (Usage: make feature-wor
 
 destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override="Name"])
 	@if [ -z "$(config)" ]; then \
-	echo "\033[31mError: 'config' argument is missing.\033[0m"; \
+	printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
 	echo "Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override=Name]"; \
 	exit 1; \
 	fi
@@ -253,22 +265,29 @@ webapp-build: ## Build the webapp Docker images
 DOCKER_IMAGE := fabric-cli-cicd
 # Default env file for Docker runs. Override with `ENVFILE=.env.other` when needed.
 ENVFILE ?= .env
+# On Windows, MSYS_NO_PATHCONV prevents Git Bash from converting Unix-style paths
+# (like /app/config) into Windows paths when passing arguments to Docker.
+ifeq ($(OS),Windows_NT)
+    DOCKER_PREFIX := MSYS_NO_PATHCONV=1
+else
+    DOCKER_PREFIX :=
+endif
 
 docker-build: ## Build the Docker image
-	docker build -t $(DOCKER_IMAGE) .
+	$(DOCKER_PREFIX) docker build -t $(DOCKER_IMAGE) .
 
 docker-validate: ## Validate config using Docker (Usage: make docker-validate config=... ENVFILE=.env)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
-	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) validate "$(config)"
+	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) validate "$(config)"
 
 docker-deploy: ## Deploy using Docker (Usage: make docker-deploy config=... env=dev ENVFILE=.env)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
 	@if [ -z "$(env)" ]; then echo "Error: env argument required"; exit 1; fi
-	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) deploy "$(config)" --env "$(env)"
+	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) deploy "$(config)" --env "$(env)"
 
 docker-promote: ## Promote using Docker (Usage: make docker-promote pipeline="Name" [source=Dev] [target=Test])
 	@if [ -z "$(pipeline)" ]; then echo "Error: pipeline argument required"; exit 1; fi
-	docker run --rm --env-file $(ENVFILE) $(DOCKER_IMAGE) promote \
+	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) $(DOCKER_IMAGE) promote \
 		--pipeline-name "$(pipeline)" \
 		$(if $(source),--source-stage $(source),) \
 		$(if $(target),--target-stage $(target),) \
@@ -276,23 +295,23 @@ docker-promote: ## Promote using Docker (Usage: make docker-promote pipeline="Na
 
 docker-destroy: ## Destroy using Docker (Usage: make docker-destroy config=... ENVFILE=.env)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
-	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) destroy "$(config)"
+	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) destroy "$(config)"
 
 docker-shell: ## Run interactive shell in Docker container (Usage: make docker-shell ENVFILE=.env)
-	docker run --rm -it --entrypoint /bin/bash --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE)
+	$(DOCKER_PREFIX) docker run --rm -it --entrypoint /bin/bash --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE)
 
 docker-diagnose: ## Run diagnostics in Docker (Usage: make docker-diagnose ENVFILE=.env)
-	docker run --rm --env-file $(ENVFILE) $(DOCKER_IMAGE) diagnose
+	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) $(DOCKER_IMAGE) diagnose
 
 docker-generate: ## Generate project config in Docker (Usage: make docker-generate org="Org" project="Proj" template="basic_etl")
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
-	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.dev.generate_project "$(org)" "$(project)" --template $(or $(template),basic_etl)
 
 docker-scaffold: ## Scaffold config from live workspace in Docker (Usage: make docker-scaffold workspace="Name" [feature=1] [pipeline="Name"] ENVFILE=.env)
 	@if [ -z "$(workspace)" ]; then echo "Error: workspace argument required"; exit 1; fi
-	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.utilities.scaffold_workspace "$(workspace)" \
 	$(if $(output),--output "$(output)",) \
 	$(if $(feature),--include-feature-template,) \
@@ -303,7 +322,7 @@ docker-scaffold: ## Scaffold config from live workspace in Docker (Usage: make d
 
 docker-discover-folders: ## Discover new folders from live workspace in Docker (Usage: make docker-discover-folders config=... [workspace="Name"] [branch=...] ENVFILE=.env)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
-	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.utilities.discover_folders "$(config)" \
 	$(if $(workspace),--workspace "$(workspace)",) \
 	$(if $(branch),--branch "$(branch)",) \
@@ -313,27 +332,27 @@ docker-init-repo: ## Initialize ADO repo in Docker (Usage: make docker-init-repo
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
 	@if [ -z "$(repo)" ]; then echo "Error: repo argument required"; exit 1; fi
-	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.utilities.init_ado_repo --organization "$(org)" --project "$(project)" --repository "$(repo)"
 
 docker-feature-deploy: ## Deploy feature workspace using Docker (Usage: make docker-feature-deploy config=... env=dev branch=feature/x)
 	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
 	@if [ -z "$(env)" ]; then echo "Error: env argument required"; exit 1; fi
 	@if [ -z "$(branch)" ]; then echo "Error: branch argument required"; exit 1; fi
-	docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	deploy "$(config)" --env "$(env)" --branch "$(branch)" --force-branch-workspace
 
 docker-onboard: ## Full bootstrap using Docker (Usage: make docker-onboard org="Org" project="Proj" [stages="dev,test,prod"] ENVFILE=.env)
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
-	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) $(if $(stages),--stages $(stages),)
 
 docker-onboard-isolated: ## Bootstrap with auto-created repo using Docker (Usage: make docker-onboard-isolated org="Org" project="Proj" git_owner="Owner" ENVFILE=.env)
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
 	@if [ -z "$(git_owner)" ]; then echo "Error: git_owner argument required"; exit 1; fi
-	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
 	--create-repo --git-provider $(or $(git_provider),github) --git-owner "$(git_owner)" \
 	$(if $(ado_project),--ado-project "$(ado_project)",) $(if $(stages),--stages $(stages),)
@@ -341,19 +360,19 @@ docker-onboard-isolated: ## Bootstrap with auto-created repo using Docker (Usage
 docker-feature-workspace: ## Create isolated feature workspace using Docker (Usage: make docker-feature-workspace org="Org" project="Proj" ENVFILE=.env)
 	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
-	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
 
 docker-bulk-destroy: ## Bulk destroy workspaces using Docker (Usage: make docker-bulk-destroy file=list.txt ENVFILE=.env)
 	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make docker-bulk-destroy file=list.txt"; exit 1; fi
-	docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/$(file):/app/$(file) $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/$(file):/app/$(file) $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.bulk_destroy $(file)
 
 docker-list-workspaces: ## List all Fabric workspaces using Docker (Usage: make docker-list-workspaces ENVFILE=.env)
-	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.utilities.list_workspaces
 
 docker-list-items: ## List items in a workspace using Docker (Usage: make docker-list-items workspace="Name" ENVFILE=.env)
 	@if [ -z "$(workspace)" ]; then echo "Error: workspace argument required"; exit 1; fi
-	docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
+	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.utilities.list_workspace_items "$(workspace)"
