@@ -2,16 +2,24 @@
 
 # Shell detection: bash is required for all recipes.
 # Windows: requires Git for Windows (https://git-scm.com) which provides bash.
-#   We resolve bash via the PROGRAMFILES env var so it works even when Git's
-#   bin/ directory is not on PATH (the default Git for Windows installer only
-#   adds cmd/ to PATH, not bin/).
-#   Override if Git is installed elsewhere: make SHELL=C:/custom/Git/bin/bash.exe
+#   GNU Make on Windows may start with cmd.exe OR sh.exe depending on PATH.
+#   We use a polyglot test (cmd.exe preserves quotes in echo, POSIX shells strip
+#   them) to detect the active shell, then locate bash accordingly.
+#   Override: make SHELL=C:/custom/Git/bin/bash.exe
 ifeq ($(OS),Windows_NT)
-    SHELL := $(subst \,/,$(PROGRAMFILES))/Git/bin/bash.exe
+    ifeq ($(shell echo "test"),"test")
+        # Make is using cmd.exe — use 8.3 short path to avoid spaces
+        SHELL := C:/PROGRA~1/Git/bin/bash.exe
+    else
+        # Make is using a POSIX shell (sh/bash from Git, MSYS2, or conda)
+        SHELL := $(shell command -v bash 2>/dev/null || echo /usr/bin/bash)
+    endif
     PYTHON := python
+    PATHSEP := ;
 else
     SHELL := /bin/bash
     PYTHON := python3
+    PATHSEP := :
 endif
 .SHELLFLAGS := -c
 PIP := pip
@@ -51,8 +59,8 @@ version: ## Show current project version
 ##@ Environment Setup
 
 setup: ## First-time project setup (creates conda env, installs deps, copies .env template)
-	@chmod +x bin/setup.sh
-	bin/setup.sh
+	@if [ -x bin/setup.sh ] || chmod +x bin/setup.sh 2>/dev/null; then true; fi
+	bash bin/setup.sh
 
 install: check-env ## Install dependencies and package in editable mode
 	$(PIP) install -r requirements-dev.txt
@@ -118,15 +126,15 @@ validate: ## Validate a configuration file (Usage: make validate config=path/to/
 	echo "Usage: make validate config=path/to/config.yaml"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli validate "$(config)"
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli validate "$(config)"
 
 diagnose: ## Run pre-flight system diagnostics
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.preflight_check
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.preflight_check
 
 generate: ## Generate project config (Usage: make generate org="Org" project="Proj" [template="medallion"])
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.generate_project "$(org)" "$(project)" --template $(or $(template),medallion)
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.generate_project "$(org)" "$(project)" --template $(or $(template),medallion)
 
 scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace="Name" [output=path] [feature=1] [pipeline="Name"] [slug=override])
 	@if [ -z "$(workspace)" ]; then \
@@ -148,7 +156,7 @@ scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace
 	echo "  make scaffold workspace=\"Sales\" slug=re_sales output=config/projects/_templates/re_sales/base_workspace.yaml"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.scaffold_workspace "$(workspace)" \
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.scaffold_workspace "$(workspace)" \
 		$(if $(output),--output "$(output)",) \
 		$(if $(feature),--include-feature-template,) \
 		$(if $(pipeline),--pipeline-name "$(pipeline)",) \
@@ -168,7 +176,7 @@ discover-folders: ## Discover new folders from live workspace and update YAML co
 	echo "  dry_run=1  — Show what would change without writing"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.discover_folders "$(config)" \
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.discover_folders "$(config)" \
 		$(if $(workspace),--workspace "$(workspace)",) \
 		$(if $(branch),--branch "$(branch)",) \
 		$(if $(dry_run),--dry-run,)
@@ -184,12 +192,12 @@ deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env
 	echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy "$(config)" --env "$(env)" \
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy "$(config)" --env "$(env)" \
 		$(if $(branch),--branch "$(branch)" --force-branch-workspace,)
 
 promote: ## Promote through Deployment Pipeline stages (Usage: make promote pipeline="Name" [source=Dev] [target=Test] [note="msg"])
 	@if [ -z "$(pipeline)" ]; then echo "Error: 'pipeline' argument is missing."; exit 1; fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli promote \
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli promote \
 		--pipeline-name "$(pipeline)" \
 		$(if $(source),--source-stage $(source),) \
 		$(if $(target),--target-stage $(target),) \
@@ -198,7 +206,7 @@ promote: ## Promote through Deployment Pipeline stages (Usage: make promote pipe
 onboard: ## Full bootstrap: Dev+Test+Prod + Pipeline (Usage: make onboard org="Org" project="Proj" [stages="dev,test,prod"] [capacity_id=...] [dry_run=1])
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli onboard \
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli onboard \
 		--org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
 		$(if $(stages),--stages $(stages),) \
 		$(if $(capacity_id),--capacity-id $(capacity_id),) \
@@ -209,19 +217,19 @@ onboard-isolated: ## Bootstrap with auto-created project repo (Usage: make onboa
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
 	@if [ -z "$(git_owner)" ]; then echo "Error: 'git_owner' argument is missing."; exit 1; fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
 		--create-repo --git-provider $(or $(git_provider),github) --git-owner "$(git_owner)" \
 		$(if $(ado_project),--ado-project "$(ado_project)",) $(if $(stages),--stages $(stages),)
 
 init-github-repo: ## Create & initialize a GitHub repo (Usage: make init-github-repo git_owner="Owner" repo="Repo")
 	@if [ -z "$(git_owner)" ]; then echo "Error: 'git_owner' argument is missing."; exit 1; fi
 	@if [ -z "$(repo)" ]; then echo "Error: 'repo' argument is missing."; exit 1; fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.init_github_repo --owner "$(git_owner)" --repo "$(repo)" $(if $(branch),--branch $(branch),)
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.init_github_repo --owner "$(git_owner)" --repo "$(repo)" $(if $(branch),--branch $(branch),)
 
 feature-workspace: ## Create isolated feature workspace (Usage: make feature-workspace org="Org" project="Proj")
 	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
 	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
 
 destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override="Name"])
 	@if [ -z "$(config)" ]; then \
@@ -229,27 +237,27 @@ destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml 
 	echo "Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override=Name]"; \
 	exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli destroy "$(config)" \
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli destroy "$(config)" \
 		$(if $(env),--env "$(env)",) \
 		$(if $(force),--force,) \
 		$(if $(workspace_override),--workspace-name-override "$(workspace_override)",)
 
 bulk-destroy: ## Bulk destroy workspaces from list (Usage: make bulk-destroy file=list.txt)
 	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make bulk-destroy file=list.txt"; exit 1; fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.bulk_destroy $(file)
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.bulk_destroy $(file)
 
 
 ##@ Admin Utilities
 
 list-workspaces: ## List all Fabric workspaces
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
 
 list-items: ## List items in a workspace (Usage: make list-items workspace="Name")
 	@if [ -z "$(workspace)" ]; then echo "Error: 'workspace' argument is missing."; exit 1; fi
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items "$(workspace)"
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items "$(workspace)"
 
 analyze-migration: ## Analyze what can be replaced with Fabric CLI (Usage: make analyze-migration)
-	export PYTHONPATH="$${PYTHONPATH}:$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.analyze_migration
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.analyze_migration
 
 
 ##@ Webapp (Interactive Guide)
