@@ -495,50 +495,96 @@ def destroy(
                 if (repo_root / ".git").exists() or (repo_root / ".github").exists():
                     break
                 repo_root = repo_root.parent
+            # Safeguard: abort if we walked all the way to filesystem root
+            if not (repo_root / ".git").exists() and not (repo_root / ".github").exists():
+                console.print(
+                    "[red]ERROR: Could not find repo root (.git/ or .github/) "
+                    "— skipping repo cleanup to prevent accidental deletions.[/red]"
+                )
+                return
 
             console.print(
                 f"\n[yellow]Cleaning up repo files for " f"'{project_slug}'...[/yellow]"
             )
 
+            cleanup_errors = []
+
             # 1. Remove config directory (config/projects/<slug>/)
-            config_dir = config_path.parent
-            if config_dir.exists():
-                shutil.rmtree(config_dir)
+            try:
+                config_dir = config_path.parent
+                if config_dir.exists():
+                    shutil.rmtree(config_dir)
+                    console.print(
+                        f"  [dim]Removed {config_dir.relative_to(repo_root)}/[/dim]"
+                    )
+            except Exception as cleanup_err:
+                cleanup_errors.append(f"Config dir: {cleanup_err}")
                 console.print(
-                    f"  [dim]Removed {config_dir.relative_to(repo_root)}/[/dim]"
+                    f"  [yellow]⚠️  Failed to remove config directory: "
+                    f"{cleanup_err}[/yellow]"
                 )
 
             # 2. Remove git sync directory (from git_directory in config)
-            git_directory = workspace_config.git_directory
-            if git_directory and git_directory != "/":
-                # git_directory is like "/ap_testing_si" — strip leading /
-                sync_dir = repo_root / git_directory.lstrip("/")
-                if sync_dir.exists():
-                    shutil.rmtree(sync_dir)
-                    console.print(
-                        f"  [dim]Removed " f"{sync_dir.relative_to(repo_root)}/[/dim]"
-                    )
+            try:
+                git_directory = workspace_config.git_directory
+                if git_directory and git_directory != "/":
+                    # git_directory is like "/ap_testing_si" — strip leading /
+                    sync_dir = repo_root / git_directory.lstrip("/")
+                    if sync_dir.exists():
+                        shutil.rmtree(sync_dir)
+                        console.print(
+                            f"  [dim]Removed "
+                            f"{sync_dir.relative_to(repo_root)}/[/dim]"
+                        )
+            except Exception as cleanup_err:
+                cleanup_errors.append(f"Git sync dir: {cleanup_err}")
+                console.print(
+                    f"  [yellow]⚠️  Failed to remove git sync directory: "
+                    f"{cleanup_err}[/yellow]"
+                )
 
             # 3. Remove project from workflow choice lists
-            workflows_dir = repo_root / ".github" / "workflows"
-            if workflows_dir.exists():
-                # Match lines like "          - ap_testing_si"
-                # in YAML workflow_dispatch choice lists
-                pattern = re.compile(r"^\s*-\s+" + re.escape(project_slug) + r"\s*$")
-                for wf_path in sorted(workflows_dir.glob("*.yml")):
-                    lines = wf_path.read_text().splitlines(keepends=True)
-                    new_lines = [line for line in lines if not pattern.match(line)]
-                    if len(new_lines) < len(lines):
-                        wf_path.write_text("".join(new_lines))
-                        removed = len(lines) - len(new_lines)
-                        console.print(
-                            f"  [dim]Removed {removed} entry/entries from "
-                            f"{wf_path.name}[/dim]"
-                        )
+            try:
+                workflows_dir = repo_root / ".github" / "workflows"
+                if workflows_dir.exists():
+                    # Match lines like "          - ap_testing_si"
+                    # or "          - ap_testing_si  # comment"
+                    # in YAML workflow_dispatch choice lists
+                    pattern = re.compile(
+                        r"^\s*-\s+"
+                        + re.escape(project_slug)
+                        + r"(\s*#.*)?\s*$"
+                    )
+                    for wf_path in sorted(workflows_dir.glob("*.yml")):
+                        lines = wf_path.read_text().splitlines(keepends=True)
+                        new_lines = [
+                            line for line in lines if not pattern.match(line)
+                        ]
+                        if len(new_lines) < len(lines):
+                            wf_path.write_text("".join(new_lines))
+                            removed = len(lines) - len(new_lines)
+                            console.print(
+                                f"  [dim]Removed {removed} entry/entries from "
+                                f"{wf_path.name}[/dim]"
+                            )
+            except Exception as cleanup_err:
+                cleanup_errors.append(f"Workflow entries: {cleanup_err}")
+                console.print(
+                    f"  [yellow]⚠️  Failed to update workflow files: "
+                    f"{cleanup_err}[/yellow]"
+                )
 
-            console.print(
-                f"[green]✅ Repo cleanup complete for " f"'{project_slug}'[/green]"
-            )
+            if cleanup_errors:
+                console.print(
+                    f"[yellow]⚠️  Repo cleanup partially completed for "
+                    f"'{project_slug}' — {len(cleanup_errors)} step(s) "
+                    f"failed. Manual cleanup may be needed.[/yellow]"
+                )
+            else:
+                console.print(
+                    f"[green]✅ Repo cleanup complete for "
+                    f"'{project_slug}'[/green]"
+                )
 
     except (typer.Exit, SystemExit):
         raise  # Re-raise exit codes (including safety block exit code 2)
