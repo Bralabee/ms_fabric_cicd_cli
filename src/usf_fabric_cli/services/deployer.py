@@ -994,7 +994,7 @@ class FabricDeployer:
             existing_git = self.git_api.get_git_connection(self.workspace_id)
             if existing_git.get("success") and existing_git.get("connection"):
                 existing_conn = existing_git["connection"]
-                existing_details = existing_conn.get("gitProviderDetails", {})
+                existing_details = existing_conn.get("gitProviderDetails") or {}
 
                 # Build the expected values for comparison
                 if provider_type == GitProviderType.GITHUB:
