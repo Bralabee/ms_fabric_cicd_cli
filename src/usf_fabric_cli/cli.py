@@ -1327,6 +1327,15 @@ def scaffold(
         "--prod-workspace-name",
         help="Explicit Production stage workspace name (overrides auto-inference)",
     ),
+    templatise: bool = typer.Option(
+        False,
+        "--templatise",
+        "-t",
+        help=(
+            "Replace real workspace/pipeline names with CHANGE-ME placeholders, "
+            "making the output a reusable template for 'make new-project'"
+        ),
+    ),
 ):
     """Scaffold a YAML config from an existing Fabric workspace.
 
@@ -1342,7 +1351,7 @@ def scaffold(
 
         fabric-cicd scaffold "Sales [DEV]" --include-feature-template
 
-        fabric-cicd scaffold "HR Analytics [DEV]" -f -p "HR - Pipeline"
+        fabric-cicd scaffold "HR Analytics [DEV]" -f -p "HR - Pipeline" -t
 
         fabric-cicd scaffold "My WS" -p "Pipeline" --test-workspace-name "My WS [TEST]"
     """
@@ -1359,6 +1368,7 @@ def scaffold(
             project_slug=project_slug,
             test_workspace_name=test_workspace_name,
             prod_workspace_name=prod_workspace_name,
+            templatise=templatise,
         )
 
         if not results:

@@ -510,6 +510,195 @@ class TestBrowseUrlWithGitDirectory:
         )
 
 
+class TestGitDisconnectBeforeReconnect:
+    """Tests for disconnect-before-reconnect when workspace has an existing
+    Git connection pointing to a different repo/branch/directory.
+
+    This handles the scaffold flow: an existing workspace already connected
+    to Git (e.g. different branch or directory) must be disconnected first
+    before reconnecting with the new config.
+    """
+
+    def _build_scaffold_deployer(
+        self,
+        git_repo="https://github.com/ABBA-REPLC/EDPFabric",
+        git_directory="/sc30gld_dm30_opco_data_mart",
+        existing_connection=None,
+    ):
+        """Helper: build a deployer with an existing Git connection on the workspace."""
+        config = _make_config(git_repo=git_repo, git_directory=git_directory)
+        deployer = _build_deployer(config=config)
+        deployer.workspace_id = "ws-existing"
+        deployer._effective_workspace_name = "SC30GLD-DM30 [DEV]"
+
+        deployer.secrets.github_token = "ghp_test_token"
+        deployer.secrets.validate_git_auth.return_value = (True, "")
+
+        # Git connection creation
+        deployer.git_api.create_git_connection.return_value = {
+            "success": True,
+            "connection": {"id": "conn-new"},
+        }
+
+        # Existing Git connection on the workspace
+        if existing_connection is not None:
+            deployer.git_api.get_git_connection.return_value = existing_connection
+        else:
+            deployer.git_api.get_git_connection.return_value = {
+                "success": False,
+            }
+
+        # Default: disconnect succeeds, connect succeeds, init succeeds
+        deployer.git_api.disconnect_from_git.return_value = {"success": True}
+        deployer.git_api.connect_workspace_to_git.return_value = {
+            "success": True,
+            "message": "Connected",
+        }
+        deployer.git_api.initialize_git_connection.return_value = {
+            "success": True,
+            "required_action": "None",
+        }
+        return deployer
+
+    def test_mismatched_directory_triggers_disconnect(self):
+        """When existing Git points to a different directory, disconnect first."""
+        deployer = self._build_scaffold_deployer(
+            git_directory="/sc30gld_dm30_opco_data_mart",
+            existing_connection={
+                "success": True,
+                "connection": {
+                    "gitProviderDetails": {
+                        "gitProviderType": "GitHub",
+                        "ownerName": "ABBA-REPLC",
+                        "repositoryName": "EDPFabric",
+                        "branchName": "main",
+                        "directoryName": "/old_project",
+                    }
+                },
+            },
+        )
+
+        deployer._connect_git(branch="main")
+
+        deployer.git_api.disconnect_from_git.assert_called_once_with("ws-existing")
+        deployer.git_api.connect_workspace_to_git.assert_called_once()
+        deployer.git_api.initialize_git_connection.assert_called_once()
+
+    def test_mismatched_branch_triggers_disconnect(self):
+        """When existing Git points to a different branch, disconnect first."""
+        deployer = self._build_scaffold_deployer(
+            existing_connection={
+                "success": True,
+                "connection": {
+                    "gitProviderDetails": {
+                        "gitProviderType": "GitHub",
+                        "ownerName": "ABBA-REPLC",
+                        "repositoryName": "EDPFabric",
+                        "branchName": "feature/old-branch",
+                        "directoryName": "/sc30gld_dm30_opco_data_mart",
+                    }
+                },
+            },
+        )
+
+        deployer._connect_git(branch="main")
+
+        deployer.git_api.disconnect_from_git.assert_called_once_with("ws-existing")
+
+    def test_mismatched_repo_triggers_disconnect(self):
+        """When existing Git points to a different repo, disconnect first."""
+        deployer = self._build_scaffold_deployer(
+            existing_connection={
+                "success": True,
+                "connection": {
+                    "gitProviderDetails": {
+                        "gitProviderType": "GitHub",
+                        "ownerName": "ABBA-REPLC",
+                        "repositoryName": "OtherRepo",
+                        "branchName": "main",
+                        "directoryName": "/sc30gld_dm30_opco_data_mart",
+                    }
+                },
+            },
+        )
+
+        deployer._connect_git(branch="main")
+
+        deployer.git_api.disconnect_from_git.assert_called_once_with("ws-existing")
+
+    def test_matching_connection_skips_disconnect(self):
+        """When existing Git matches the target config, no disconnect needed."""
+        deployer = self._build_scaffold_deployer(
+            existing_connection={
+                "success": True,
+                "connection": {
+                    "gitProviderDetails": {
+                        "gitProviderType": "GitHub",
+                        "ownerName": "ABBA-REPLC",
+                        "repositoryName": "EDPFabric",
+                        "branchName": "main",
+                        "directoryName": "/sc30gld_dm30_opco_data_mart",
+                    }
+                },
+            },
+        )
+
+        deployer._connect_git(branch="main")
+
+        deployer.git_api.disconnect_from_git.assert_not_called()
+        # Should still proceed with connect + init
+        deployer.git_api.connect_workspace_to_git.assert_called_once()
+        deployer.git_api.initialize_git_connection.assert_called_once()
+
+    def test_no_existing_connection_skips_disconnect(self):
+        """When workspace has no Git connection, skip disconnect entirely."""
+        deployer = self._build_scaffold_deployer(
+            existing_connection={"success": False},
+        )
+
+        deployer._connect_git(branch="main")
+
+        deployer.git_api.disconnect_from_git.assert_not_called()
+        deployer.git_api.connect_workspace_to_git.assert_called_once()
+
+    def test_disconnect_failure_continues_anyway(self):
+        """If disconnect fails, continue with connect attempt."""
+        deployer = self._build_scaffold_deployer(
+            existing_connection={
+                "success": True,
+                "connection": {
+                    "gitProviderDetails": {
+                        "gitProviderType": "GitHub",
+                        "ownerName": "ABBA-REPLC",
+                        "repositoryName": "EDPFabric",
+                        "branchName": "main",
+                        "directoryName": "/different_dir",
+                    }
+                },
+            },
+        )
+        deployer.git_api.disconnect_from_git.return_value = {
+            "success": False,
+            "error": "403 Forbidden",
+        }
+
+        deployer._connect_git(branch="main")
+
+        # Should still attempt connect even after disconnect failure
+        deployer.git_api.disconnect_from_git.assert_called_once()
+        deployer.git_api.connect_workspace_to_git.assert_called_once()
+
+    def test_empty_connection_details_skips_disconnect(self):
+        """When get_git_connection returns success but empty connection."""
+        deployer = self._build_scaffold_deployer(
+            existing_connection={"success": True, "connection": {}},
+        )
+
+        deployer._connect_git(branch="main")
+
+        deployer.git_api.disconnect_from_git.assert_not_called()
+
+
 class TestGitHubDuplicateConnectionRecovery:
     """Tests for GitHub duplicate connection fallback in _connect_git.
 

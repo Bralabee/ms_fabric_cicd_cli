@@ -5,6 +5,7 @@ Covers:
 - _build_folder_rules: actual folder placement, hardcoded fallback, majority vote
 - _categorize_items: grouping items by type
 - ITEM_TYPE_TO_FOLDER: constant completeness checks
+- _generate_yaml / _generate_feature_yaml: templatise=True placeholder generation
 - Import smoke tests for top-level functions
 """
 
@@ -16,6 +17,8 @@ from usf_fabric_cli.scripts.admin.utilities.scaffold_workspace import (
     _build_folder_paths,
     _build_folder_rules,
     _categorize_items,
+    _generate_feature_yaml,
+    _generate_yaml,
 )
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
@@ -350,3 +353,185 @@ class TestBuildFolderRulesNested:
         rules = _build_folder_rules(items, folders=folders)
         rules_dict = {r["type"]: r["folder"] for r in rules}
         assert rules_dict["Lakehouse"] == "200 Store"
+
+
+# ── _generate_yaml templatise tests ──────────────────────────────────────
+
+
+class TestGenerateYamlTemplatise:
+    """Tests for _generate_yaml with templatise=True."""
+
+    FOLDERS = ["000 Orchestrate", "200 Store", "300 Prepare"]
+    ITEMS_BY_TYPE = {
+        "DataPipeline": [{"displayName": "ingest"}],
+        "Lakehouse": [{"displayName": "raw"}],
+    }
+    FOLDER_RULES = [
+        {"type": "DataPipeline", "folder": "000 Orchestrate"},
+        {"type": "Lakehouse", "folder": "200 Store"},
+    ]
+
+    def _gen(self, **overrides):
+        """Helper to call _generate_yaml with sensible defaults."""
+        kwargs = dict(
+            workspace_name="Sales Analytics [DEV]",
+            folders=self.FOLDERS,
+            items_by_type=self.ITEMS_BY_TYPE,
+            folder_rules=self.FOLDER_RULES,
+        )
+        kwargs.update(overrides)
+        return _generate_yaml(**kwargs)
+
+    def test_templatise_replaces_workspace_name_with_change_me(self):
+        """Workspace name/display_name should be CHANGE-ME [DEV]."""
+        yaml = self._gen(templatise=True)
+        assert 'name: "CHANGE-ME [DEV]"' in yaml
+        assert 'display_name: "CHANGE-ME [DEV]"' in yaml
+        # Real name should NOT appear in workspace section
+        assert 'name: "Sales Analytics [DEV]"' not in yaml
+
+    def test_templatise_replaces_git_directory_with_change_me(self):
+        """git_directory should be /CHANGE-ME, not the real slug."""
+        yaml = self._gen(templatise=True)
+        assert "git_directory: /CHANGE-ME" in yaml
+        assert "git_directory: /sales_analytics" not in yaml
+
+    def test_templatise_header_says_template(self):
+        """Header comment should say 'Template' and reference scaffolded source."""
+        yaml = self._gen(templatise=True)
+        assert "(Template)" in yaml
+        assert "Scaffolded from: Sales Analytics [DEV]" in yaml
+
+    def test_templatise_principals_use_changeme_prefix(self):
+        """Project-specific principals should use CHANGEME_ prefix."""
+        yaml = self._gen(templatise=True)
+        assert "${CHANGEME_ADMIN_ID}" in yaml
+        assert "${CHANGEME_MEMBERS_ID}" in yaml
+        # Should NOT contain the real slug-based principal names
+        assert "SALES_ANALYTICS_ADMIN_ID" not in yaml
+
+    def test_templatise_discovered_principals_as_comments(self):
+        """Discovered principals should appear as reference comments."""
+        principals = [
+            {
+                "id": "aaaa-bbbb-cccc",
+                "type": "Group",
+                "role": "Admin",
+                "description": "Data Team Admins",
+            },
+        ]
+        yaml = self._gen(
+            discovered_principals=principals,
+            templatise=True,
+        )
+        # Should appear as a comment, not as a live principal
+        assert "Discovered principals from source workspace" in yaml
+        assert "Group (Admin): Data Team Admins" in yaml
+        # The comment line should start with #
+        for line in yaml.splitlines():
+            if "Data Team Admins" in line:
+                assert line.strip().startswith("#")
+
+    def test_templatise_pipeline_uses_change_me_names(self):
+        """Pipeline section should use CHANGE-ME placeholders."""
+        yaml = self._gen(
+            pipeline_name="Sales Analytics - Pipeline",
+            templatise=True,
+        )
+        assert 'pipeline_name: "CHANGE-ME - Pipeline"' in yaml
+        assert 'workspace_name: "CHANGE-ME [DEV]"' in yaml
+        assert 'workspace_name: "CHANGE-ME [TEST]"' in yaml
+        assert 'workspace_name: "CHANGE-ME [PROD]"' in yaml
+        # Real pipeline/stage names should NOT appear in values
+        assert 'pipeline_name: "Sales Analytics - Pipeline"' not in yaml
+
+    def test_templatise_pipeline_has_scaffolded_from_comment(self):
+        """Pipeline section should include a comment with real names."""
+        yaml = self._gen(
+            pipeline_name="Sales Analytics - Pipeline",
+            templatise=True,
+        )
+        assert "Scaffolded from pipeline: Sales Analytics - Pipeline" in yaml
+
+    def test_templatise_pipeline_capacity_ids_use_fallback(self):
+        """Test and Prod capacity IDs should use fallback syntax."""
+        yaml = self._gen(
+            pipeline_name="Sales Analytics - Pipeline",
+            templatise=True,
+        )
+        assert "${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}" in yaml
+        assert "${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}" in yaml
+
+    def test_non_templatise_preserves_real_names(self):
+        """Default (templatise=False) should use real workspace names."""
+        yaml = self._gen(pipeline_name="Sales Analytics - Pipeline")
+        assert 'name: "Sales Analytics [DEV]"' in yaml
+        assert "git_directory: /sales_analytics" in yaml
+        assert 'pipeline_name: "Sales Analytics - Pipeline"' in yaml
+        assert "CHANGE-ME" not in yaml
+
+    def test_templatise_no_todo_comment_for_principals(self):
+        """templatise=True should NOT emit the TODO comment for principals."""
+        yaml = self._gen(templatise=True)
+        assert "TODO: Add project-specific principals" not in yaml
+
+
+# ── _generate_feature_yaml templatise tests ──────────────────────────────
+
+
+class TestGenerateFeatureYamlTemplatise:
+    """Tests for _generate_feature_yaml with templatise=True."""
+
+    FOLDERS = ["000 Orchestrate", "200 Store"]
+
+    def test_templatise_header_says_template(self):
+        """Header should say Template and reference the source workspace."""
+        yaml = _generate_feature_yaml(
+            workspace_name="HR Analytics [DEV]",
+            folders=self.FOLDERS,
+            templatise=True,
+        )
+        assert "(Template)" in yaml
+        assert "Scaffolded from: HR Analytics [DEV]" in yaml
+
+    def test_templatise_git_directory_is_change_me(self):
+        """git_directory should be /CHANGE-ME."""
+        yaml = _generate_feature_yaml(
+            workspace_name="HR Analytics [DEV]",
+            folders=self.FOLDERS,
+            templatise=True,
+        )
+        assert "git_directory: /CHANGE-ME" in yaml
+        assert "git_directory: /hr_analytics" not in yaml
+
+    def test_templatise_principal_prefix_is_changeme(self):
+        """TODO principal comment should use CHANGEME prefix."""
+        yaml = _generate_feature_yaml(
+            workspace_name="HR Analytics [DEV]",
+            folders=self.FOLDERS,
+            templatise=True,
+        )
+        assert "${CHANGEME_ADMIN_ID}" in yaml
+        # Should NOT use the real slug
+        assert "HR_ANALYTICS_ADMIN_ID" not in yaml
+
+    def test_non_templatise_uses_real_slug(self):
+        """Default should use the real slug-based values."""
+        yaml = _generate_feature_yaml(
+            workspace_name="HR Analytics [DEV]",
+            folders=self.FOLDERS,
+        )
+        assert "git_directory: /hr_analytics" in yaml
+        assert "${HR_ANALYTICS_ADMIN_ID}" in yaml
+        assert "CHANGE-ME" not in yaml
+
+    def test_templatise_with_explicit_slug(self):
+        """Custom project_slug should still use CHANGE-ME placeholders."""
+        yaml = _generate_feature_yaml(
+            workspace_name="HR Analytics [DEV]",
+            folders=self.FOLDERS,
+            project_slug="hr_custom",
+            templatise=True,
+        )
+        assert "git_directory: /CHANGE-ME" in yaml
+        assert "${CHANGEME_ADMIN_ID}" in yaml

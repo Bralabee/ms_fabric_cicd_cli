@@ -984,7 +984,92 @@ class FabricDeployer:
                                 "explicit credentials...[/yellow]"
                             )
 
-            # Step 2: Connect workspace to Git
+            # Step 2: Check for existing Git connection and disconnect if
+            # it points to a different repo/branch/directory.  This handles
+            # the scaffold flow where the workspace was originally connected
+            # to a different Git location (or manually via the Fabric portal).
+            # Without this, connect_workspace_to_git returns "already connected"
+            # (idempotent) but initializeConnection fails with 400 because the
+            # workspace is still bound to the OLD Git configuration.
+            existing_git = self.git_api.get_git_connection(self.workspace_id)
+            if existing_git.get("success") and existing_git.get("connection"):
+                existing_conn = existing_git["connection"]
+                existing_details = existing_conn.get("gitProviderDetails", {})
+
+                # Build the expected values for comparison
+                if provider_type == GitProviderType.GITHUB:
+                    expected_owner = git_details.get("owner", "")
+                    expected_repo = git_details.get("repo", "")
+                    current_owner = existing_details.get("ownerName", "")
+                    current_repo = existing_details.get("repositoryName", "")
+                    location_matches = (
+                        current_owner == expected_owner
+                        and current_repo == expected_repo
+                    )
+                else:
+                    expected_org = git_details.get("organization", "")
+                    expected_project = git_details.get("project", "")
+                    expected_repo = git_details.get("repo", "")
+                    current_org = existing_details.get("organizationName", "")
+                    current_project = existing_details.get("projectName", "")
+                    current_repo = existing_details.get("repositoryName", "")
+                    location_matches = (
+                        current_org == expected_org
+                        and current_project == expected_project
+                        and current_repo == expected_repo
+                    )
+
+                current_branch = existing_details.get("branchName", "")
+                current_dir = existing_details.get("directoryName", "/")
+                branch_matches = current_branch == branch
+                dir_matches = current_dir == git_directory
+
+                if location_matches and branch_matches and dir_matches:
+                    console.print(
+                        "[green]* Workspace already connected to the correct "
+                        "Git location (idempotent)[/green]"
+                    )
+                else:
+                    # Mismatch — disconnect so we can reconnect with the
+                    # correct config.  This is expected when deploying a
+                    # scaffolded workspace that was originally connected to
+                    # a different repo, branch, or directory.
+                    console.print(
+                        "[yellow]Existing Git connection points to a different "
+                        "location — disconnecting to reconnect with new "
+                        "config...[/yellow]"
+                    )
+                    logger.info(
+                        "Git connection mismatch for workspace %s: "
+                        "current branch=%s dir=%s repo=%s, "
+                        "expected branch=%s dir=%s repo=%s",
+                        self.workspace_id,
+                        current_branch,
+                        current_dir,
+                        current_repo,
+                        branch,
+                        git_directory,
+                        git_details.get("repo", ""),
+                    )
+                    disconnect_result = self.git_api.disconnect_from_git(
+                        self.workspace_id
+                    )
+                    if disconnect_result["success"]:
+                        console.print(
+                            "[green]* Disconnected from previous Git "
+                            "connection[/green]"
+                        )
+                    else:
+                        console.print(
+                            f"[red]Failed to disconnect from Git: "
+                            f"{disconnect_result.get('error')}[/red]"
+                        )
+                        console.print(
+                            "[yellow]Continuing anyway — connect may still "
+                            "succeed if the workspace is not locked.[/yellow]"
+                        )
+
+            # Step 3: Connect workspace to Git
             console.print("[blue]Connecting workspace to Git repository...[/blue]")
 
             if provider_type == GitProviderType.GITHUB:
@@ -1055,7 +1140,7 @@ class FabricDeployer:
                 f"[bold cyan]Open repo in browser:[/bold cyan] " f"{browse_url}"
             )
 
-            # Step 3: Initialize the Git connection
+            # Step 4: Initialize the Git connection
             strategy = self.config.git_init_strategy
             if strategy:
                 console.print(
@@ -1086,7 +1171,7 @@ class FabricDeployer:
             required_action = init_result.get("required_action", "None")
             console.print(f"[blue]Required action: {required_action}[/blue]")
 
-            # Step 4: Handle required action (UpdateFromGit if needed)
+            # Step 5: Handle required action (UpdateFromGit if needed)
             if required_action == "UpdateFromGit":
                 console.print("[blue]Updating workspace from Git repository...[/blue]")
                 update_result = self.git_api.update_from_git(

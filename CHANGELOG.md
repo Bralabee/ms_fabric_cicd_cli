@@ -12,11 +12,13 @@ All notable changes to this project will be documented in this file.
 - **`discover-folders` module**: New `src/usf_fabric_cli/scripts/admin/utilities/discover_folders.py` with functions: `discover_folders()`, `_compute_diff()`, `_update_yaml_file()`, `_derive_feature_workspace_name()`.
 - **Makefile `scaffold` target**: New `make scaffold workspace="<name>"` target for running the scaffold command with optional `slug=`, `feature=`, `pipeline=` parameters. Includes Docker variant `make docker-scaffold`.
 - **Makefile `discover-folders` target**: New `make discover-folders config="<path>"` target with optional `workspace=`, `branch=`, `dry_run=` parameters. Includes Docker variant `make docker-discover-folders`.
+- **`scaffold --templatise` flag**: New `-t`/`--templatise` option on the `scaffold` CLI command and `_generate_yaml`/`_generate_feature_yaml` functions. Replaces real workspace/pipeline names with `CHANGE-ME` placeholders, uses `CHANGEME_` principal prefix, and adds `${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}` fallback syntax for pipeline stages — making scaffold output directly compatible with `make new-project` placeholder replacement. Discovered principals are included as reference comments rather than live YAML entries.
 - **Docs freshness audit in release process**: Added mandatory audit checklist to `docs/RELEASE_PROCESS.md` — version numbers, test counts, command counts, workflow counts must be verified before every release.
 - **CLI reference docs**: Added `discover-folders` and `scaffold` to `docs/CLI_REFERENCE.md`, including exit code 2 semantics.
 
 ### Fixed
 
+- **Deployer: Disconnect-before-reconnect for scaffolded workspaces**: When deploying to a workspace that already has a Git connection (e.g. scaffolded from a live workspace), the deployer now checks whether the existing connection matches the target repo/branch/directory. If it differs, it disconnects first, then reconnects with the new config. Previously, `connect_workspace_to_git` returned "already connected" (idempotent) but `initializeConnection` failed with 400 Bad Request because the workspace was still bound to the old Git configuration. This is the most common failure mode when using `scaffold` → `deploy` on existing workspaces.
 - **Windows cross-platform compatibility**: Replaced all non-ASCII characters (Unicode emojis, special symbols) with ASCII equivalents across CLI output, Makefile, and Rich console output. Prevents `UnicodeEncodeError` on Windows terminals with `cp1252` encoding.
 - **Polyglot shell detection**: `Makefile` shell detection now works on Windows (MSYS2/Git Bash), macOS, and Linux via `PROGRAMFILES` fallback and portable `chmod` handling.
 - **`--cleanup-repo` resilience**: Hardened error handling — partial failures (e.g., config dir removed but workflow update fails) no longer leave the repo in an inconsistent state. Each cleanup step is independent and logs warnings instead of aborting.
@@ -24,7 +26,7 @@ All notable changes to this project will be documented in this file.
 
 ### Tests
 
-- **634/634 tests passing**.
+- **656/656 tests passing** (15 new: templatise=True YAML generation in `test_scaffold_workspace.py`, 7 new: disconnect-before-reconnect flow in `test_deployer.py`).
 
 ## [1.8.0] - 2026-03-06
 

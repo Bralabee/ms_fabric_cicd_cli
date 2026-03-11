@@ -373,7 +373,44 @@ python -m usf_fabric_cli.scripts.admin.utilities.init_ado_repo \
 
 ---
 
-### 11. Capacity Issues
+### 11. Scaffold Deploy — `initializeConnection` Returns 400 Bad Request
+
+**Symptom**:
+
+```bash
+# Scaffold + deploy to an existing workspace fails at Git init
+ERROR: Failed to initialize Git connection: 400 Client Error: Bad Request
+WARNING: Git connection failed -- workspace was deployed but Git sync may need manual configuration
+```
+
+The deployment summary shows:
+```
+[OK] Principals added
+[!]  Git connection failed
+```
+
+**Cause**: The workspace **already had a Git connection** (either from a previous manual setup in the Fabric portal or from an earlier deployment). When the CLI tried to connect Git, Fabric returned "WorkspaceAlreadyConnectedToGit" (treated as idempotent success), but the `initializeConnection` call failed with 400 because the workspace was still bound to the **old** Git configuration (different repo, branch, or directory).
+
+**Fixed in**: CLI version post-1.8.0 (disconnect-before-reconnect). The deployer now:
+1. Checks the existing Git connection via `GET /workspaces/{id}/git/connection`
+2. Compares repo, branch, and directory against the YAML config
+3. If mismatched, disconnects first via `POST /workspaces/{id}/git/disconnect`
+4. Then reconnects with the correct config
+
+**Important**: When deploying a scaffolded workspace, the CLI will **disconnect the existing Git connection** and reconnect it to the new repo/branch/directory specified in your YAML config. This means:
+- Any uncommitted workspace changes will remain in the workspace but will be out of sync until the new Git connection syncs
+- The workspace's Git history will start fresh from the new connection point
+- Users with access will temporarily see the workspace as "not connected to Git" during the switchover
+
+**Workaround (for older CLI versions)**:
+
+1. Go to the Fabric portal → Workspace Settings → Git integration
+2. Click **Disconnect**
+3. Re-run the `setup-base-workspaces` workflow
+
+---
+
+### 12. Capacity Issues
 
 **Symptom**:
 
@@ -416,7 +453,7 @@ environments:
 
 ---
 
-### 12. Template Rendering Errors
+### 13. Template Rendering Errors
 
 **Symptom**:
 
@@ -459,7 +496,7 @@ print(variables)  # ['env', 'name']
 
 ---
 
-### 13. Deployment Pipeline / Promote Failures
+### 14. Deployment Pipeline / Promote Failures
 
 **Symptom**:
 
@@ -491,7 +528,7 @@ fabric-cicd promote --pipeline-name "My Pipeline"
 
 ---
 
-### 14. Onboarding Failures
+### 15. Onboarding Failures
 
 **Symptom**:
 
@@ -554,7 +591,7 @@ docker run --rm fabric-cli-cicd --help
 
 ---
 
-### 15. Inline Environments Schema Validation Error
+### 16. Inline Environments Schema Validation Error
 
 **Symptom**:
 

@@ -108,6 +108,8 @@ python -m usf_fabric_cli.cli scaffold "Sales [DEV]" -f -p "Sales - Pipeline"
 # Copy to config/projects/<project>/ and customize before deploying
 ```
 
+> **⚠️ Scaffold + Deploy Note**: When you deploy a scaffolded workspace, the CLI will **disconnect the workspace's existing Git connection** and reconnect it to the repo/branch/directory specified in your YAML config. This is expected — the workspace was originally connected to a different location, and the deploy needs to point it to the new CI/CD-managed path. Any uncommitted workspace changes will remain but will be out of sync until the new connection syncs.
+
 **Step 2: Initialize Git Repository**
 
 Two approaches are available — choose based on your team's needs:
@@ -356,6 +358,8 @@ fabric-cicd scaffold "HR Analytics [DEV]" -f -p "HR - Pipeline"
 # With explicit stage workspace names
 fabric-cicd scaffold "My WS" -p "Pipeline" --test-workspace-name "My WS [TEST]"
 ```
+
+> **⚠️ Important**: When you subsequently `deploy` a scaffolded workspace, the CLI will disconnect the workspace's existing Git connection and reconnect it to the repo/branch/directory in your YAML config. See [Troubleshooting § 11](docs/01_User_Guides/06_Troubleshooting.md) for details.
 
 ## Interactive Learning Guide
 
