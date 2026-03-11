@@ -224,7 +224,7 @@ make validate config=config/projects/your_org/your_project.yaml
 make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
 
-## Make Targets Reference (49 Available)
+## Make Targets Reference (53 Available)
 
 ### Local Development
 
