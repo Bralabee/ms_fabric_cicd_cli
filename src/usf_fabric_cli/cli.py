@@ -89,7 +89,7 @@ def deploy(
                     " or check your configuration.",
                 )
 
-            console.print("[green]✅ Pre-flight checks passed[/green]")
+            console.print("[green][OK] Pre-flight checks passed[/green]")
         except (FabricCLIError, KeyError, ValueError) as e:
             handle_cli_error(
                 "run diagnostics",
@@ -102,7 +102,7 @@ def deploy(
         try:
             config_manager = ConfigManager(config, validate_env=False)
             config_manager.load_config(environment)
-            console.print("[green]✅ Configuration is valid[/green]")
+            console.print("[green][OK] Configuration is valid[/green]")
             return
         except (ValueError, FileNotFoundError, KeyError) as e:
             handle_cli_error(
@@ -139,7 +139,7 @@ def validate(
         config_manager = ConfigManager(config, validate_env=False)
         workspace_config = config_manager.load_config(environment)
 
-        console.print("[green]✅ Configuration is valid[/green]")
+        console.print("[green][OK] Configuration is valid[/green]")
         console.print(f"Workspace: {workspace_config.name}")
         console.print(f"Capacity ID: {workspace_config.capacity_id}")
         console.print(f"Folders: {', '.join(workspace_config.folders or [])}")
@@ -147,7 +147,7 @@ def validate(
         console.print(f"Warehouses: {len(workspace_config.warehouses or [])}")
         console.print(f"Notebooks: {len(workspace_config.notebooks or [])}")
 
-        # Validate folder references — check that items and folder_rules
+        # Validate folder references -- check that items and folder_rules
         # reference folders that actually exist in the folders list
         defined_folders = set(workspace_config.folders or [])
         warnings = []
@@ -182,12 +182,12 @@ def validate(
 
         if warnings:
             console.print(
-                f"\n[yellow]⚠️  {len(warnings)} folder reference warning(s):[/yellow]"
+                f"\n[yellow][!] {len(warnings)} folder reference warning(s):[/yellow]"
             )
             for w in warnings:
-                console.print(f"  [yellow]• {w}[/yellow]")
+                console.print(f"  [yellow]- {w}[/yellow]")
         else:
-            console.print("[green]✅ All folder references are valid[/green]")
+            console.print("[green][OK] All folder references are valid[/green]")
 
     except (ValueError, FileNotFoundError, KeyError) as e:
         handle_cli_error(
@@ -211,7 +211,7 @@ def diagnose():
         # Check Fabric CLI installation
         cli_check = diagnostics.validate_fabric_cli_installation()
         if cli_check["success"]:
-            console.print(f"[green]✅ Fabric CLI: {cli_check['version']}[/green]")
+            console.print(f"[green][OK] Fabric CLI: {cli_check['version']}[/green]")
         else:
             handle_cli_error(
                 "validate Fabric CLI installation",
@@ -222,7 +222,7 @@ def diagnose():
         # Check authentication
         auth_check = diagnostics.validate_authentication()
         if auth_check["success"]:
-            console.print("[green]✅ Authentication: Valid[/green]")
+            console.print("[green][OK] Authentication: Valid[/green]")
         else:
             handle_cli_error(
                 "validate authentication",
@@ -234,11 +234,11 @@ def diagnose():
         api_check = diagnostics.validate_api_connectivity()
         if api_check["success"]:
             console.print(
-                f"[green]✅ API Connectivity: {api_check['workspaces_count']} "
+                f"[green][OK] API Connectivity: {api_check['workspaces_count']} "
                 "workspaces accessible[/green]"
             )
         else:
-            console.print(f"[red]❌ API Connectivity: {api_check['error']}[/red]")
+            console.print(f"[red][ERROR] API Connectivity: {api_check['error']}[/red]")
 
         console.print("\n[green]All diagnostic checks completed![/green]")
 
@@ -270,7 +270,7 @@ def destroy(
         "--branch",
         "-b",
         help=(
-            "Git branch name — derives workspace name using "
+            "Git branch name -- derives workspace name using "
             "get_workspace_name_from_branch() (overrides "
             "--workspace-name-override)"
         ),
@@ -293,7 +293,7 @@ def destroy(
         False,
         "--force-destroy-populated",
         help=(
-            "Override safety mode — delete workspace even if it "
+            "Override safety mode -- delete workspace even if it "
             "contains Fabric items. Use with caution."
         ),
     ),
@@ -320,7 +320,7 @@ def destroy(
         workspace_config = config_manager.load_config(environment)
 
         # Derive workspace name priority:
-        # --branch → --workspace-name-override → config default
+        # --branch -> --workspace-name-override -> config default
         if branch:
             from usf_fabric_cli.services.git_integration import GitFabricIntegration
 
@@ -331,7 +331,7 @@ def destroy(
                 feature_prefix=feature_prefix,
             )
             console.print(
-                f"[blue]Branch '{branch}' → workspace: {workspace_name}[/blue]"
+                f"[blue]Branch '{branch}' -> workspace: {workspace_name}[/blue]"
             )
         elif workspace_name_override:
             workspace_name = workspace_name_override
@@ -352,14 +352,14 @@ def destroy(
         console.print(f"[red]Destroying workspace: {workspace_name}[/red]")
         if effective_safe:
             console.print(
-                "[blue]🛡️  Safety mode ON — populated workspaces "
+                "[blue][SAFETY] Safety mode ON -- populated workspaces "
                 "will be protected[/blue]"
             )
 
         env_vars = get_environment_variables(validate_vars=True)
         fabric = FabricCLIWrapper(env_vars["FABRIC_TOKEN"])
 
-        # ── Tear down deployment pipeline first (if configured) ────
+        # -- Tear down deployment pipeline first (if configured) ----
         # Fabric refuses to delete workspaces connected to ALM pipelines.
         # When force flags are set, automatically unassign + delete the
         # pipeline before attempting workspace deletion.
@@ -397,7 +397,7 @@ def destroy(
                                     )
                                 else:
                                     console.print(
-                                        f"  [yellow]⚠️  Failed to unassign "
+                                        f"  [yellow][!] Failed to unassign "
                                         f"{stage_name}: "
                                         f"{unassign.get('error', '')}[/yellow]"
                                     )
@@ -405,16 +405,16 @@ def destroy(
                     del_result = pipeline_api.delete_pipeline(pipeline_id)
                     if del_result["success"]:
                         console.print(
-                            f"  [green]✓ Pipeline '{pipeline_name}' deleted[/green]"
+                            f"  [green]* Pipeline '{pipeline_name}' deleted[/green]"
                         )
                     else:
                         console.print(
-                            f"  [yellow]⚠️  Failed to delete pipeline: "
+                            f"  [yellow][!] Failed to delete pipeline: "
                             f"{del_result.get('error', '')}[/yellow]"
                         )
                 else:
                     console.print(
-                        f"[dim]Pipeline '{pipeline_name}' not found — "
+                        f"[dim]Pipeline '{pipeline_name}' not found -- "
                         "skipping pipeline teardown[/dim]"
                     )
 
@@ -423,11 +423,11 @@ def destroy(
         if result.get("blocked_by_safety"):
             summary = result.get("item_summary", {})
             console.print(
-                f"[yellow]🛡️  SAFETY BLOCK: Workspace '{workspace_name}' "
+                f"[yellow][SAFETY] SAFETY BLOCK: Workspace '{workspace_name}' "
                 f"contains {summary.get('item_count', '?')} item(s):[/yellow]"
             )
             for item_type, count in summary.get("items_by_type", {}).items():
-                console.print(f"  [yellow]• {count}x {item_type}[/yellow]")
+                console.print(f"  [yellow]- {count}x {item_type}[/yellow]")
             console.print(
                 "[yellow]Use --force-destroy-populated to override, "
                 "or clean up items manually first.[/yellow]"
@@ -438,21 +438,21 @@ def destroy(
             method = result.get("method", "fab_cli")
             if method == "pbi_api":
                 console.print(
-                    f"[green]✅ Workspace '{workspace_name}' destroyed "
+                    f"[green][OK] Workspace '{workspace_name}' destroyed "
                     "(via PBI API fallback)[/green]"
                 )
             else:
                 console.print(
-                    f"[green]✅ Workspace '{workspace_name}' destroyed[/green]"
+                    f"[green][OK] Workspace '{workspace_name}' destroyed[/green]"
                 )
         else:
             error_msg = result.get("error", "")
             error_str = str(error_msg)
-            # Treat "not found" as success — workspace already cleaned up (idempotent)
+            # Treat "not found" as success -- workspace already cleaned up (idempotent)
             if "NotFound" in error_str or "could not be found" in error_str.lower():
                 console.print(
-                    f"[yellow]⚠️  Workspace '{workspace_name}'"
-                    " not found — already cleaned up[/yellow]"
+                    f"[yellow][!] Workspace '{workspace_name}'"
+                    " not found -- already cleaned up[/yellow]"
                 )
             # Treat InsufficientPrivileges as a non-fatal warning
             elif (
@@ -460,7 +460,7 @@ def destroy(
                 or "insufficient" in error_str.lower()
             ):
                 console.print(
-                    f"[yellow]⚠️  Workspace '{workspace_name}' — "
+                    f"[yellow][!] Workspace '{workspace_name}' -- "
                     "insufficient privileges to delete. "
                     "Manual cleanup may be required.[/yellow]"
                 )
@@ -471,7 +471,7 @@ def destroy(
                     "Check your Fabric API connectivity and permissions.",
                 )
 
-        # ── Repo cleanup (local files + workflow entries) ──────────
+        # -- Repo cleanup (local files + workflow entries) ----------
         # Only runs when --cleanup-repo and --force-destroy-populated are
         # both set, and the workspace was successfully destroyed (or was
         # already gone).
@@ -486,7 +486,7 @@ def destroy(
 
             config_path = Path(config).resolve()
             # Derive project slug from config directory name
-            # e.g., config/projects/ap_testing_si/base_workspace.yaml → ap_testing_si
+            # e.g., config/projects/ap_testing_si/base_workspace.yaml -> ap_testing_si
             project_slug = config_path.parent.name
 
             # Find repo root (walk up until we find .github/ or .git/)
@@ -496,10 +496,12 @@ def destroy(
                     break
                 repo_root = repo_root.parent
             # Safeguard: abort if we walked all the way to filesystem root
-            if not (repo_root / ".git").exists() and not (repo_root / ".github").exists():
+            has_git = (repo_root / ".git").exists()
+            has_gh = (repo_root / ".github").exists()
+            if not has_git and not has_gh:
                 console.print(
                     "[red]ERROR: Could not find repo root (.git/ or .github/) "
-                    "— skipping repo cleanup to prevent accidental deletions.[/red]"
+                    "-- skipping repo cleanup to prevent accidental deletions.[/red]"
                 )
                 return
 
@@ -520,7 +522,7 @@ def destroy(
             except Exception as cleanup_err:
                 cleanup_errors.append(f"Config dir: {cleanup_err}")
                 console.print(
-                    f"  [yellow]⚠️  Failed to remove config directory: "
+                    f"  [yellow][!] Failed to remove config directory: "
                     f"{cleanup_err}[/yellow]"
                 )
 
@@ -528,7 +530,7 @@ def destroy(
             try:
                 git_directory = workspace_config.git_directory
                 if git_directory and git_directory != "/":
-                    # git_directory is like "/ap_testing_si" — strip leading /
+                    # git_directory is like "/ap_testing_si" -- strip leading /
                     sync_dir = repo_root / git_directory.lstrip("/")
                     if sync_dir.exists():
                         shutil.rmtree(sync_dir)
@@ -539,7 +541,7 @@ def destroy(
             except Exception as cleanup_err:
                 cleanup_errors.append(f"Git sync dir: {cleanup_err}")
                 console.print(
-                    f"  [yellow]⚠️  Failed to remove git sync directory: "
+                    f"  [yellow][!] Failed to remove git sync directory: "
                     f"{cleanup_err}[/yellow]"
                 )
 
@@ -551,15 +553,11 @@ def destroy(
                     # or "          - ap_testing_si  # comment"
                     # in YAML workflow_dispatch choice lists
                     pattern = re.compile(
-                        r"^\s*-\s+"
-                        + re.escape(project_slug)
-                        + r"(\s*#.*)?\s*$"
+                        r"^\s*-\s+" + re.escape(project_slug) + r"(\s*#.*)?\s*$"
                     )
                     for wf_path in sorted(workflows_dir.glob("*.yml")):
                         lines = wf_path.read_text().splitlines(keepends=True)
-                        new_lines = [
-                            line for line in lines if not pattern.match(line)
-                        ]
+                        new_lines = [line for line in lines if not pattern.match(line)]
                         if len(new_lines) < len(lines):
                             wf_path.write_text("".join(new_lines))
                             removed = len(lines) - len(new_lines)
@@ -570,19 +568,19 @@ def destroy(
             except Exception as cleanup_err:
                 cleanup_errors.append(f"Workflow entries: {cleanup_err}")
                 console.print(
-                    f"  [yellow]⚠️  Failed to update workflow files: "
+                    f"  [yellow][!] Failed to update workflow files: "
                     f"{cleanup_err}[/yellow]"
                 )
 
             if cleanup_errors:
                 console.print(
-                    f"[yellow]⚠️  Repo cleanup partially completed for "
-                    f"'{project_slug}' — {len(cleanup_errors)} step(s) "
+                    f"[yellow][!] Repo cleanup partially completed for "
+                    f"'{project_slug}' -- {len(cleanup_errors)} step(s) "
                     f"failed. Manual cleanup may be needed.[/yellow]"
                 )
             else:
                 console.print(
-                    f"[green]✅ Repo cleanup complete for "
+                    f"[green][OK] Repo cleanup complete for "
                     f"'{project_slug}'[/green]"
                 )
 
@@ -590,12 +588,12 @@ def destroy(
         raise  # Re-raise exit codes (including safety block exit code 2)
     except (FabricCLIError, ValueError, KeyError) as e:
         error_str = str(e)
-        # Treat "not found" as success — workspace already cleaned up (idempotent)
+        # Treat "not found" as success -- workspace already cleaned up (idempotent)
         if "NotFound" in error_str or "could not be found" in error_str.lower():
             ws_display = workspace_name or "<unknown>"
             console.print(
-                f"[yellow]⚠️  Workspace '{ws_display}'"
-                " not found — already cleaned up[/yellow]"
+                f"[yellow][!] Workspace '{ws_display}'"
+                " not found -- already cleaned up[/yellow]"
             )
         # Treat InsufficientPrivileges as a non-fatal warning
         elif (
@@ -603,7 +601,7 @@ def destroy(
         ):
             ws_display = workspace_name or "<unknown>"
             console.print(
-                f"[yellow]⚠️  Workspace '{ws_display}' — "
+                f"[yellow][!] Workspace '{ws_display}' -- "
                 "insufficient privileges to delete. "
                 "Manual cleanup may be required.[/yellow]"
             )
@@ -647,7 +645,7 @@ def promote(
         False,
         "--selective",
         help=(
-            "Use selective promotion — excludes unsupported item types "
+            "Use selective promotion -- excludes unsupported item types "
             "and retries with auto-exclusion of failing items"
         ),
     ),
@@ -665,7 +663,7 @@ def promote(
         help="Wait N seconds for Fabric Git Sync before promoting (0=skip)",
     ),
 ):
-    """Promote content through Fabric Deployment Pipeline stages (Dev → Test → Prod)"""
+    """Promote content through Deployment Pipeline (Dev -> Test -> Prod)."""
 
     try:
         import time as _time
@@ -695,12 +693,12 @@ def promote(
             )
 
         display_target = target_stage or DeploymentStage.next_stage(source_stage)
-        console.print(f"[blue]🚀 Promoting: {source_stage} → {display_target}[/blue]")
+        console.print(f"[blue]Promoting: {source_stage} -> {display_target}[/blue]")
 
         # Wait for Fabric Git Sync if requested
         if wait_for_git_sync > 0:
             console.print(
-                f"[blue]⏳ Waiting up to {wait_for_git_sync}s for Fabric "
+                f"[blue]Waiting up to {wait_for_git_sync}s for Fabric "
                 "Git Sync to complete...[/blue]"
             )
 
@@ -735,7 +733,7 @@ def promote(
                         if remote_commit and remote_commit == ws_head:
                             short_hash = str(ws_head)[:7] if ws_head else "unknown"
                             console.print(
-                                "[green]✅ Fabric Git Sync complete "
+                                "[green][OK] Fabric Git Sync complete "
                                 f"(Commit: {short_hash})[/green]"
                             )
                             break
@@ -752,7 +750,7 @@ def promote(
                         error_str = str(status_res.get("error", ""))
                         if "WorkspaceNotConnectedToGit" in error_str:
                             console.print(
-                                "[yellow]⚠️  Workspace is not connected to Git. "
+                                "[yellow][!] Workspace is not connected to Git. "
                                 "Skipping wait.[/yellow]"
                             )
                             break
@@ -763,12 +761,12 @@ def promote(
 
                 if elapsed >= wait_for_git_sync:
                     console.print(
-                        "[yellow]⚠️  Git Sync polling timed out "
+                        "[yellow][!] Git Sync polling timed out "
                         f"after {wait_for_git_sync}s[/yellow]"
                     )
             else:
                 console.print(
-                    "[yellow]⚠️  Could not determine source workspace ID. "
+                    "[yellow][!] Could not determine source workspace ID. "
                     "Falling back to naive sleep.[/yellow]"
                 )
                 _time.sleep(wait_for_git_sync)
@@ -795,11 +793,11 @@ def promote(
 
             if result.get("no_items"):
                 console.print(
-                    f"[yellow]⚠️  {result.get('message', 'No items')}[/yellow]"
+                    f"[yellow][!] {result.get('message', 'No items')}[/yellow]"
                 )
             elif result["success"]:
                 msg = result.get("message", "Promotion succeeded")
-                console.print(f"[green]✅ {msg}[/green]")
+                console.print(f"[green][OK] {msg}[/green]")
             else:
                 handle_cli_error(
                     "promote selective items",
@@ -817,7 +815,7 @@ def promote(
 
             if result["success"]:
                 console.print(
-                    f"[green]✅ Promotion succeeded: {source_stage} → "
+                    f"[green][OK] Promotion succeeded: {source_stage} -> "
                     f"{display_target}[/green]"
                 )
             else:
@@ -835,9 +833,9 @@ def promote(
         )
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # Onboarding & Project Setup Commands
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 
 @app.command()
@@ -950,9 +948,9 @@ def generate(
         )
 
 
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 # Admin Utility Commands
-# ──────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------------------
 
 
 @app.command("list-workspaces")
@@ -1018,7 +1016,7 @@ def list_items(
             items = data or []
             console.print(f"Found {len(items)} items:\n")
             console.print(f"  {'Name':<40} {'Type':<25} {'Description'}")
-            console.print(f"  {'─' * 40} {'─' * 25} {'─' * 30}")
+            console.print(f"  {'-' * 40} {'-' * 25} {'-' * 30}")
             for item in items:
                 name = item.get("displayName", "N/A")
                 item_type = item.get("type", "N/A")
@@ -1113,7 +1111,7 @@ def organize_folders(
         if not folder_rules:
             console.print(
                 "[yellow]No folder_rules defined in config "
-                "— nothing to organize.[/yellow]"
+                "-- nothing to organize.[/yellow]"
             )
             raise typer.Exit(0)
 
@@ -1121,7 +1119,7 @@ def organize_folders(
         console.print(f"[blue]Organizing items in workspace '{ws_name}'...[/blue]")
 
         if dry_run:
-            console.print("[yellow]DRY RUN — no items will be moved.[/yellow]\n")
+            console.print("[yellow]DRY RUN -- no items will be moved.[/yellow]\n")
             items = fabric.list_workspace_items_api(ws_name)
             root_items = [it for it in items if not it.get("folderId")]
             console.print(f"  Items at root: {len(root_items)}")
@@ -1147,22 +1145,22 @@ def organize_folders(
                     matched_ids.add(item.get("id", ""))
                     console.print(
                         f"  Would move {item['type']} '{item['displayName']}' "
-                        f"→ folder '{target_folder}'"
+                        f"-> folder '{target_folder}'"
                     )
             raise typer.Exit(0)
 
         result = fabric.organize_items_into_folders(ws_name, folder_rules)
         console.print(
-            f"\n[green]✅ Organize complete: "
+            f"\n[green][OK] Organize complete: "
             f"{result['moved']} moved, "
             f"{result['skipped']} skipped, "
             f"{result['failed']} failed[/green]"
         )
         for detail in result.get("details", []):
-            status_icon = "✓" if detail["status"] == "moved" else "✗"
+            status_icon = "*" if detail["status"] == "moved" else "X"
             console.print(
                 f"  {status_icon} {detail.get('type', '')} "
-                f"'{detail['item']}' → {detail['folder']} "
+                f"'{detail['item']}' -> {detail['folder']} "
                 f"({detail['status']})"
             )
 
@@ -1233,7 +1231,7 @@ def discover_folders_cmd(
             if not dry_run:
                 console.print(f"[green]Updated: {result['config']}[/green]")
         else:
-            console.print("[green]Config is up to date — no changes needed.[/green]")
+            console.print("[green]Config is up to date -- no changes needed.[/green]")
 
     except (ValueError, FileNotFoundError, KeyError, OSError, RuntimeError) as e:
         handle_cli_error(
@@ -1272,10 +1270,10 @@ def init_github_repo(
             private=private,
         )
         if clone_url:
-            console.print(f"[green]✅ Repository ready: {clone_url}[/green]")
+            console.print(f"[green][OK] Repository ready: {clone_url}[/green]")
             # Show the browsable web URL for convenience
             web_url = clone_url.removesuffix(".git")
-            console.print(f"[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}")
+            console.print(f"[bold cyan]Open in browser:[/bold cyan] {web_url}")
         else:
             handle_cli_error(
                 "initialize github repo",

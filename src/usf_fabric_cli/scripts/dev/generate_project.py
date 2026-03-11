@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quick project generator — creates customized configuration for your organization.
+Quick project generator -- creates customized configuration for your organization.
 
 Templates use the git-sync-only convention:
   - Fabric items (notebooks, lakehouses, etc.) are managed through Git Sync
@@ -27,7 +27,7 @@ def generate_project_config(
 
     The template is loaded, workspace names are customized for the organization,
     and the deployment pipeline stages are updated to match. Principals remain
-    as environment variable references — configure them in .env or CI/CD secrets.
+    as environment variable references -- configure them in .env or CI/CD secrets.
     """
 
     # Load base template
@@ -43,7 +43,7 @@ def generate_project_config(
     project_slug = project_name.lower().replace(" ", "_")
     workspace_name = f"{org_slug}-{project_slug}".replace("_", "-")
 
-    # ── Customize workspace section ──────────────────────────────────────
+    # -- Customize workspace section --------------------------------------
     config["workspace"]["name"] = workspace_name
     config["workspace"]["display_name"] = f"{org_name} {project_name}"
     config["workspace"]["capacity_id"] = capacity_id
@@ -51,7 +51,7 @@ def generate_project_config(
     if git_repo:
         config["workspace"]["git_repo"] = git_repo
 
-    # ── Update environment overrides (if present) ────────────────────────
+    # -- Update environment overrides (if present) ------------------------
     if "environments" in config:
         for env_name, env_config in config["environments"].items():
             if "workspace" in env_config:
@@ -60,7 +60,7 @@ def generate_project_config(
                 if "capacity_id" in env_config["workspace"]:
                     env_config["workspace"]["capacity_id"] = capacity_id
 
-    # ── Customize deployment pipeline (if present in template) ───────────
+    # -- Customize deployment pipeline (if present in template) -----------
     if "deployment_pipeline" in config:
         pipeline = config["deployment_pipeline"]
         pipeline["pipeline_name"] = f"{org_name}-{project_name} Pipeline"
@@ -76,7 +76,7 @@ def generate_project_config(
                     "workspace_name"
                 ] = f"{workspace_name} [Production]"
     else:
-        # Template lacks deployment_pipeline — add default 3-stage pipeline
+        # Template lacks deployment_pipeline -- add default 3-stage pipeline
         config["deployment_pipeline"] = {
             "pipeline_name": f"{org_name}-{project_name} Pipeline",
             "stages": {
@@ -95,7 +95,7 @@ def generate_project_config(
             },
         }
 
-    # ── Save customized config ───────────────────────────────────────────
+    # -- Save customized config -------------------------------------------
     output_dir = Path(f"config/projects/{org_slug}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -103,12 +103,12 @@ def generate_project_config(
     with open(output_path, "w", encoding="utf-8") as f:
         yaml.dump(config, f, default_flow_style=False, indent=2, sort_keys=False)
 
-    print(f"✅ Generated configuration: {output_path}")
-    print("📝 Next steps:")
+    print(f"[OK] Generated configuration: {output_path}")
+    print("Next steps:")
     print(f"   1. Review and edit: {output_path}")
-    print("   2. Set secret env vars in .env (see template ← CHANGE markers)")
-    print(f"   3. Validate: make validate config={output_path}")
-    print(f"   4. Deploy:   make deploy config={output_path} env=dev")
+    print("   2. Set secret env vars in .env (see template CHANGE markers)")
+    print("   3. Validate: make validate project=<slug>")
+    print("   4. Run the 'Setup Base Workspaces' workflow")
 
     return output_path
 
@@ -161,7 +161,7 @@ def main():
             args.git_repo,
         )
     except (ValueError, OSError, RuntimeError) as e:
-        print(f"❌ Error: {e}")
+        print(f"[ERROR] Error: {e}")
         return 1
 
     return 0

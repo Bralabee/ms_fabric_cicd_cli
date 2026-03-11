@@ -35,8 +35,8 @@ class FabricAPIBase:
 
     Subclasses get:
     * ``self.base_url`` / ``self.headers`` ready to use
-    * ``_refresh_token_if_needed()`` — proactive bearer-token refresh
-    * ``_make_request()`` — HTTP call with retry + backoff + token refresh
+    * ``_refresh_token_if_needed()`` -- proactive bearer-token refresh
+    * ``_make_request()`` -- HTTP call with retry + backoff + token refresh
     """
 
     def __init__(
@@ -59,7 +59,7 @@ class FabricAPIBase:
             "Authorization": f"Bearer {access_token}",
         }
 
-    # ── Token helpers ──────────────────────────────────────────────
+    # -- Token helpers ----------------------------------------------
 
     def _refresh_token_if_needed(self) -> None:
         """Refresh the bearer token via *TokenManager* when available."""
@@ -73,7 +73,7 @@ class FabricAPIBase:
             except RuntimeError as e:
                 logger.warning("Token refresh failed: %s", e)
 
-    # ── HTTP helper ────────────────────────────────────────────────
+    # -- HTTP helper ------------------------------------------------
 
     def _make_request(
         self,
@@ -89,7 +89,7 @@ class FabricAPIBase:
         long-running retry sequences don't fail due to token expiry.
 
         Args:
-            method: HTTP method (GET, POST, PATCH, DELETE …).
+            method: HTTP method (GET, POST, PATCH, DELETE ...).
             url: Fully-qualified request URL.
             json: Optional JSON body.
             timeout: Per-request timeout in seconds.
@@ -133,7 +133,7 @@ class FabricAPIBase:
 
                 delay = calculate_backoff(attempt, self._base_delay, self._max_delay)
                 logger.warning(
-                    "%s request failed (attempt %d/%d): %s. " "Retrying in %.2fs…",
+                    "%s request failed (attempt %d/%d): %s. " "Retrying in %.2fs...",
                     self.__class__.__name__,
                     attempt + 1,
                     self._max_retries + 1,

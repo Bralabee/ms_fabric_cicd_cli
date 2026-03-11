@@ -14,7 +14,7 @@ Usage:
         config/projects/edp/base_workspace.yaml \\
         --workspace "EDP Feature-my-feature"
 
-    # Dry-run — show what would change without writing
+    # Dry-run -- show what would change without writing
     fabric-cicd discover-folders \\
         config/projects/edp/base_workspace.yaml \\
         --workspace "EDP Feature-my-feature" \\
@@ -104,7 +104,7 @@ def _compute_diff(
     """Compute new folders and rules not already in the config.
 
     Returns:
-        (new_folders, new_rules) — items to add to the YAML.
+        (new_folders, new_rules) -- items to add to the YAML.
     """
     existing_folders = set(config.get("folders") or [])
     existing_rules = config.get("folder_rules") or []
@@ -153,7 +153,7 @@ def _update_yaml_file(
             updated_block = existing_block.rstrip("\n") + "\n" + insert_block + "\n"
             updated = updated.replace(existing_block, updated_block)
         else:
-            # No folders section exists — add one before folder_rules or principals
+            # No folders section exists -- add one before folder_rules or principals
             has_rules = "folder_rules:" in updated
             insert_point = "folder_rules:" if has_rules else "principals:"
             if insert_point in updated:
@@ -179,7 +179,7 @@ def _update_yaml_file(
             updated_block = existing_block.rstrip("\n") + "\n" + insert_block + "\n"
             updated = updated.replace(existing_block, updated_block)
         else:
-            # No folder_rules section — add one after folders section
+            # No folder_rules section -- add one after folders section
             folders_end = re.search(r"(folders:\s*\n(?:\s+-\s+.*\n)*)\n", updated)
             if folders_end:
                 insert_after = folders_end.group(0)
@@ -277,7 +277,7 @@ def discover_folders(
         print(f"  + {r['type']} -> {r['folder']}")
 
     if dry_run:
-        print("\n(Dry run — no changes written)")
+        print("\n(Dry run -- no changes written)")
         return result
 
     # Update the YAML file

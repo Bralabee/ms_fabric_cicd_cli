@@ -46,7 +46,7 @@ IDEMPOTENT_ERROR_PATTERNS: tuple[str, ...] = (
     "an item with the same name exists",
 )
 
-# ── Power BI API constants for workspace deletion fallback ─────────
+# -- Power BI API constants for workspace deletion fallback ---------
 # The Fabric REST API (api.fabric.microsoft.com) and the `fab rm` CLI
 # command can return transient ``UnknownError`` responses when deleting
 # workspaces.  The Power BI REST API (api.powerbi.com) is more
@@ -73,7 +73,7 @@ class FabricCLIWrapper:
         self.cli_version: Optional[str] = None
         self.min_version = min_version or MINIMUM_CLI_VERSION
         self._token_manager = token_manager
-        # Cache workspace name → ID to avoid fab CLI lookup failures
+        # Cache workspace name -> ID to avoid fab CLI lookup failures
         # after REST API-based workspace creation
         self._workspace_id_cache: Dict[str, str] = {}
 
@@ -553,7 +553,7 @@ sys.exit(main())
         Returns:
             dict with keys:
                 - item_count: total number of items
-                - items_by_type: dict mapping item type → count
+                - items_by_type: dict mapping item type -> count
                 - has_items: bool (True if workspace is non-empty)
                 - items: list of item dicts (id, displayName, type)
         """
@@ -605,14 +605,14 @@ sys.exit(main())
                     "item_summary": summary,
                 }
 
-        # ── Primary: fab rm ────────────────────────────────────────
+        # -- Primary: fab rm ----------------------------------------
         command = ["rm", f"{name}.Workspace", "--force"]
         result = self._execute_command(command)
 
         if result.get("success"):
             return result
 
-        # ── Fallback: PBI REST API ─────────────────────────────────
+        # -- Fallback: PBI REST API ---------------------------------
         # The Fabric CLI can return UnknownError on workspace deletion
         # even though the workspace exists and the SP has admin access.
         # The PBI API (DELETE /groups/{id}) is more reliable.
@@ -676,7 +676,7 @@ sys.exit(main())
             return {
                 "success": False,
                 "error": (
-                    f"Cannot resolve workspace ID for '{name}' — "
+                    f"Cannot resolve workspace ID for '{name}' -- "
                     "PBI API fallback requires a workspace ID"
                 ),
             }
@@ -1488,7 +1488,7 @@ sys.exit(main())
             }
             api_role = role_map.get(role, role)
 
-            # Try principal types in order: User → ServicePrincipal → Group
+            # Try principal types in order: User -> ServicePrincipal -> Group
             principal_types_to_try = ["User", "ServicePrincipal", "Group"]
             last_error = ""
 
@@ -1817,7 +1817,7 @@ sys.exit(main())
 
             if isinstance(data, dict):
                 items.extend(data.get("value", []))
-                # Handle pagination — prefer continuationToken (just the
+                # Handle pagination -- prefer continuationToken (just the
                 # token) over continuationUri (full URL that needs path
                 # extraction).  The Fabric CLI `api` command expects a
                 # relative path, not a full URL.
@@ -1830,7 +1830,7 @@ sys.exit(main())
                     )
                 elif continuation_uri:
                     # Extract relative path from full URL
-                    # e.g. https://api.fabric.microsoft.com/v1/workspaces/…
+                    # e.g. https://api.fabric.microsoft.com/v1/workspaces/...
                     if "/v1/" in continuation_uri:
                         url = continuation_uri.split("/v1/", 1)[1]
                     else:
@@ -1903,7 +1903,7 @@ sys.exit(main())
             workspace_name: Workspace display name.
             folder_rules: List of dicts, each with:
                 - ``type``: Fabric item type (e.g. "Lakehouse", "Notebook")
-                - ``name``: Item display name (optional — omit to match all
+                - ``name``: Item display name (optional -- omit to match all
                   items of the given type)
                 - ``folder``: Target folder display name
 
@@ -1927,7 +1927,7 @@ sys.exit(main())
             logger.info("No items found in workspace %s", workspace_name)
             return result
 
-        # Step 2: Build folder-path → folder-id lookup (supports nested folders)
+        # Step 2: Build folder-path -> folder-id lookup (supports nested folders)
         raw_folders = self._list_all_folders_raw(workspace_name)
         if not raw_folders:
             result["failed"] = len(folder_rules)
@@ -1955,7 +1955,7 @@ sys.exit(main())
             folder_id = folder_lookup.get(target_folder)
             if not folder_id:
                 logger.warning(
-                    "Folder '%s' not found in workspace %s — skipping rule",
+                    "Folder '%s' not found in workspace %s -- skipping rule",
                     target_folder,
                     workspace_name,
                 )
@@ -2007,7 +2007,7 @@ sys.exit(main())
                         }
                     )
                     logger.info(
-                        "Moved %s '%s' → folder '%s'",
+                        "Moved %s '%s' -> folder '%s'",
                         item_type,
                         item_name,
                         target_folder,

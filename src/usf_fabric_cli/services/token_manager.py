@@ -201,7 +201,7 @@ class TokenManager:
                         logger.warning("Token refresh callback failed: %s", e)
 
             if self._token_info is None:
-                raise RuntimeError("Token acquisition failed — no token available")
+                raise RuntimeError("Token acquisition failed -- no token available")
             return self._token_info.token
 
     def refresh_fabric_cli_auth(self) -> bool:

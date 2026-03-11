@@ -82,7 +82,7 @@ def create_repo(
     """Create a GitHub repository (user or org).
 
     When *auto_init* is ``True`` (the default) GitHub creates the
-    default branch with an initial commit containing a README — this
+    default branch with an initial commit containing a README -- this
     is required because Fabric's Git-connect API expects an existing
     branch.
 
@@ -105,12 +105,12 @@ def create_repo(
     body: Dict[str, Any] = {
         "name": repo_name,
         "description": description
-        or ("Fabric data-product repo – " "provisioned by usf-fabric-cli"),
+        or ("Fabric data-product repo -- " "provisioned by usf-fabric-cli"),
         "private": private,
         "auto_init": auto_init,
     }
 
-    console.print(f"[blue]Creating GitHub repo " f"'{owner}/{repo_name}' …[/blue]")
+    console.print(f"[blue]Creating GitHub repo " f"'{owner}/{repo_name}' ...[/blue]")
     resp = requests.post(
         url,
         headers=_headers(token),
@@ -120,7 +120,7 @@ def create_repo(
 
     if resp.status_code == 201:
         data = resp.json()
-        console.print(f"[green]✅ Created: {data['html_url']}[/green]")
+        console.print(f"[green][OK] Created: {data['html_url']}[/green]")
         return data
 
     if resp.status_code == 422:
@@ -131,7 +131,7 @@ def create_repo(
             e.get("message") == "name already exists on " "this account" for e in errors
         ):
             console.print(
-                f"[yellow]⚠️  Repo '{owner}/{repo_name}' " f"already exists.[/yellow]"
+                f"[yellow][!] Repo '{owner}/{repo_name}' " f"already exists.[/yellow]"
             )
             existing = get_repo(owner, repo_name, token)
             if existing:
@@ -160,14 +160,14 @@ def ensure_branch(
         timeout=30,
     )
     if resp.status_code == 200:
-        console.print(f"[green]✓ Branch '{branch}' already exists[/green]")
+        console.print(f"[green]* Branch '{branch}' already exists[/green]")
         return True
 
     if resp.status_code != 404:
         resp.raise_for_status()
 
-    # Branch doesn't exist — create it from the default branch HEAD
-    console.print(f"[blue]Creating branch '{branch}' …[/blue]")
+    # Branch doesn't exist -- create it from the default branch HEAD
+    console.print(f"[blue]Creating branch '{branch}' ...[/blue]")
     # Get default-branch SHA
     repo_info = get_repo(owner, repo_name, token)
     if not repo_info:
@@ -198,7 +198,7 @@ def ensure_branch(
         timeout=30,
     )
     if create_resp.status_code in (201, 200):
-        console.print(f"[green]✅ Branch '{branch}' created[/green]")
+        console.print(f"[green][OK] Branch '{branch}' created[/green]")
         return True
 
     create_resp.raise_for_status()
@@ -252,7 +252,7 @@ def init_github_repo(
 
         # Display the browsable GitHub URL so users can navigate directly
         html_url = repo_data.get("html_url", f"https://github.com/{owner}/{repo_name}")
-        console.print(f"\n[bold cyan]🔗 GitHub Repo:[/bold cyan] {html_url}")
+        console.print(f"\n[bold cyan]GitHub Repo:[/bold cyan] {html_url}")
 
         return clone_url
     except (ValueError, requests.exceptions.RequestException, OSError) as exc:
@@ -305,7 +305,7 @@ def main(
         console.print(f"\n[bold green]Clone URL:[/bold green] {url}")
         # Also show the browsable web URL for convenience
         web_url = url.removesuffix(".git")
-        console.print(f"[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}")
+        console.print(f"[bold cyan]Open in browser:[/bold cyan] {web_url}")
     else:
         raise typer.Exit(1)
 

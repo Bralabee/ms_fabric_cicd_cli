@@ -57,22 +57,22 @@ def run_preflight(auto_install: bool, skip_env: bool) -> int:
             cli_path = shutil.which("fab")
         if not cli_path:
             print(
-                "❌ Fabric CLI binary is not available on PATH."
+                "[ERROR] Fabric CLI binary is not available on PATH."
                 " See https://github.com/microsoft/fabric-cli"
                 " for manual steps."
             )
             return 1
 
-    print(f"✅ Fabric CLI detected at {cli_path}")
+    print(f"[OK] Fabric CLI detected at {cli_path}")
     version = subprocess.check_output(["fab", "--version"], text=True).strip()
     print(f"   Version: {version}")
 
     if skip_env:
-        print("ℹ️  Skipping environment variable validation per flag")
+        print("[i] Skipping environment variable validation per flag")
     else:
         missing = _validate_auth_vars()
         if missing:
-            print("⚠️  Missing required environment variables for authentication.")
+            print("[!] Missing required environment variables for authentication.")
             print("    You must provide EITHER:")
             print("      1. FABRIC_TOKEN")
             print("    OR")
@@ -86,7 +86,7 @@ def run_preflight(auto_install: bool, skip_env: bool) -> int:
                 " .env.template."
             )
             return 1
-        print("✅ Required environment variables detected")
+        print("[OK] Required environment variables detected")
     return 0
 
 

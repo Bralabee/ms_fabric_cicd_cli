@@ -90,15 +90,15 @@ def main(
         console.print(f"Response: {response.text}")
 
         if response.status_code in [200, 201]:
-            console.print("[green]✅ Connection created successfully.[/green]")
+            console.print("[green][OK] Connection created successfully.[/green]")
         elif response.status_code == 409:
             console.print(
-                "[yellow]⚠️  Connection already exists"
+                "[yellow][!] Connection already exists"
                 " (Conflict). This is expected if you"
                 " ran this before.[/yellow]"
             )
         else:
-            console.print("[red]❌ Failed to create connection.[/red]")
+            console.print("[red][ERROR] Failed to create connection.[/red]")
 
     except Exception as e:
         console.print(f"[red]Error: {str(e)}[/red]")

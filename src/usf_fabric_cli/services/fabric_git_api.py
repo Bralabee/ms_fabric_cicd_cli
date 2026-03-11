@@ -188,7 +188,7 @@ class FabricGitAPI(FabricAPIBase):
             return {"success": True, "connection": result}
 
         except requests.exceptions.RequestException as e:
-            # Check for 409 DuplicateConnectionName — expected in
+            # Check for 409 DuplicateConnectionName -- expected in
             # idempotent re-deploys, not a real error
             if hasattr(e, "response") and e.response is not None:
                 if e.response.status_code == 409:
@@ -410,7 +410,7 @@ class FabricGitAPI(FabricAPIBase):
         """
         url = f"{self.base_url}/workspaces/{workspace_id}/git/initializeConnection"
 
-        # Build request body — empty preserves backward-compatible behavior
+        # Build request body -- empty preserves backward-compatible behavior
         body: Dict[str, Any] = {}
         if initialization_strategy:
             body["initializationStrategy"] = initialization_strategy
@@ -440,7 +440,7 @@ class FabricGitAPI(FabricAPIBase):
 
         except requests.exceptions.RequestException as e:
             # 409 means workspace Git connection is already initialized
-            # — this is expected on idempotent re-deploys
+            # -- this is expected on idempotent re-deploys
             if hasattr(e, "response") and e.response is not None:
                 if e.response.status_code == 409:
                     logger.info(
@@ -577,7 +577,7 @@ class FabricGitAPI(FabricAPIBase):
         """
         Get Git status for workspace (pending changes).
 
-        This API supports LRO — may return 202 with an operation ID.
+        This API supports LRO -- may return 202 with an operation ID.
 
         Args:
             workspace_id: Fabric workspace ID

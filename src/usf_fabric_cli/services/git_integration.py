@@ -211,16 +211,16 @@ class GitFabricIntegration:
           - Display names (contain spaces): prepend feature_prefix + append
             [FEATURE-<desc>]
             e.g. "Sales Report" + feature/fix-bug
-              → "[F] Sales Report [FEATURE-fix-bug]"
+              -> "[F] Sales Report [FEATURE-fix-bug]"
           - Slug names (no spaces): append -feature-<desc>
             e.g. "my-project" + feature/fix-bug
-              → "my-project-feature-fix-bug"
+              -> "my-project-feature-fix-bug"
 
         The feature_prefix (default "[F]") provides instant visual
         identification of feature workspaces in the Fabric portal
         sidebar.  Set to empty string "" to disable.
 
-        Note: The prefix must use only ASCII characters — Fabric
+        Note: The prefix must use only ASCII characters -- Fabric
         rejects non-ASCII characters (e.g. emoji) and the symbols
         ``.`` / ``%`` in workspace names that contain schema-enabled
         lakehouses.
@@ -253,8 +253,8 @@ class GitFabricIntegration:
         if branch.startswith("feature/"):
             branch_desc = branch[len("feature/") :]
 
-        # Display names (contain spaces) → bracket notation [FEATURE-<desc>]
-        # Replace '/' with '-' — Fabric CLI treats '/' as a path separator
+        # Display names (contain spaces) -> bracket notation [FEATURE-<desc>]
+        # Replace '/' with '-' -- Fabric CLI treats '/' as a path separator
         if " " in base_clean:
             safe_desc = branch_desc.replace("/", "-")
             prefix = f"{feature_prefix} " if feature_prefix else ""
@@ -262,7 +262,7 @@ class GitFabricIntegration:
             GitFabricIntegration._validate_workspace_name(result)
             return result
 
-        # Slug names → hyphen notation (legacy behavior, no prefix)
+        # Slug names -> hyphen notation (legacy behavior, no prefix)
         sanitized_branch = branch.replace("/", "-").replace("_", "-").lower()
         result = f"{base_clean}-{sanitized_branch}"
         GitFabricIntegration._validate_workspace_name(result)

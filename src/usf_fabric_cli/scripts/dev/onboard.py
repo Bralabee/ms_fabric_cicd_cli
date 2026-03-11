@@ -3,7 +3,7 @@
 Unified Onboarding Automation for Fabric Data Products.
 
 Supports two modes:
-  - Dev Setup (default): Full bootstrap — creates Dev, Test,
+  - Dev Setup (default): Full bootstrap -- creates Dev, Test,
     and Prod workspaces, creates a Fabric Deployment Pipeline,
     and assigns workspaces to stages.
   - Feature Workspace (--with-feature-branch): Creates an
@@ -53,14 +53,14 @@ DEFAULT_STAGES = {"dev", "test", "prod"}
 def run_command(command, cwd=None, check=True):
     """Run shell command with logging"""
     cmd_str = " ".join(command)
-    logger.info("▶ Running: %s", cmd_str)
+    logger.info("> Running: %s", cmd_str)
     try:
         result = subprocess.run(
             command, cwd=cwd, check=check, text=True, capture_output=True
         )
         return result
     except subprocess.CalledProcessError as e:
-        logger.error("❌ Command failed: %s", e.stderr)
+        logger.error("[ERROR] Command failed: %s", e.stderr)
         raise
 
 
@@ -214,7 +214,7 @@ def _create_empty_workspace(
                 or error_code == "EntityNotFound"
             ) and "insufficientpermissionsovercapacity" not in error_msg:
                 logger.warning(
-                    "  ⚠️  Capacity assignment failed. Retrying without capacity..."
+                    "  [!] Capacity assignment failed. Retrying without capacity..."
                 )
                 result = fabric.create_workspace(
                     name=workspace_name,
@@ -223,11 +223,18 @@ def _create_empty_workspace(
                 )
 
         if not result["success"]:
-            logger.error("  ❌ Failed to create workspace: %s", result.get("error"))
+            logger.error(
+                "  [ERROR] Failed to create workspace: %s",
+                result.get("error"),
+            )
             return None
 
         workspace_id = result.get("workspace_id")
-        logger.info("  ✅ Workspace created: %s (ID: %s)", workspace_name, workspace_id)
+        logger.info(
+            "  [OK] Workspace created: %s (ID: %s)",
+            workspace_name,
+            workspace_id,
+        )
 
         # Add principals
         if principals:
@@ -250,7 +257,9 @@ def _create_empty_workspace(
                     )
                     if p_result["success"]:
                         logger.info(
-                            "  ✅ Principal added: %s (%s)", pid, principal.get("role")
+                            "  [OK] Principal added: %s (%s)",
+                            pid,
+                            principal.get("role"),
                         )
 
         return workspace_id
@@ -262,7 +271,7 @@ def _create_empty_workspace(
         RuntimeError,
         subprocess.SubprocessError,
     ) as e:
-        logger.error("  ❌ Workspace creation failed: %s", e)
+        logger.error("  [ERROR] Workspace creation failed: %s", e)
         return None
 
 
@@ -284,7 +293,7 @@ def _create_deployment_pipeline(
     if dry_run:
         logger.info("  (Dry Run) Would create pipeline: %s", pipeline_name)
         for stage, ws_id in workspace_ids.items():
-            logger.info("  (Dry Run) Would assign %s → %s", stage, ws_id)
+            logger.info("  (Dry Run) Would assign %s -> %s", stage, ws_id)
         return True
 
     try:
@@ -301,7 +310,7 @@ def _create_deployment_pipeline(
         if existing:
             pipeline_id = existing["id"]
             logger.info(
-                "  ℹ️  Pipeline already exists: %s (ID: %s)", pipeline_name, pipeline_id
+                "  [i] Pipeline already exists: %s (ID: %s)", pipeline_name, pipeline_id
             )
         else:
             # Create pipeline
@@ -314,19 +323,23 @@ def _create_deployment_pipeline(
             )
 
             if not result["success"]:
-                logger.error("  ❌ Failed to create pipeline: %s", result.get("error"))
+                logger.error(
+                    "  [ERROR] Failed to create pipeline: %s",
+                    result.get("error"),
+                )
                 return False
 
             pipeline_id = result["pipeline"]["id"]
             logger.info(
-                "  ✅ Pipeline created: %s (ID: %s)", pipeline_name, pipeline_id
+                "  [OK] Pipeline created: %s (ID: %s)", pipeline_name, pipeline_id
             )
 
         # Get pipeline stages
         stages_result = api.get_pipeline_stages(pipeline_id)
         if not stages_result["success"]:
             logger.error(
-                "  ❌ Failed to get pipeline stages: %s", stages_result.get("error")
+                "  [ERROR] Failed to get pipeline stages: %s",
+                stages_result.get("error"),
             )
             return False
 
@@ -342,7 +355,7 @@ def _create_deployment_pipeline(
         for stage_key, ws_id in workspace_ids.items():
             if not ws_id:
                 logger.warning(
-                    "  ⚠️  No workspace ID for %s. Skipping assignment.", stage_key
+                    "  [!] No workspace ID for %s. Skipping assignment.", stage_key
                 )
                 continue
 
@@ -354,7 +367,7 @@ def _create_deployment_pipeline(
 
             if not stage_obj:
                 logger.warning(
-                    "  ⚠️  Stage '%s' not found in pipeline.", target_display_name
+                    "  [!] Stage '%s' not found in pipeline.", target_display_name
                 )
                 continue
 
@@ -365,10 +378,13 @@ def _create_deployment_pipeline(
             )
 
             if assign_result["success"]:
-                logger.info("  ✅ Assigned workspace → %s stage", target_display_name)
+                logger.info(
+                    "  [OK] Assigned workspace -> %s stage",
+                    target_display_name,
+                )
             else:
                 logger.error(
-                    "  ❌ Failed to assign %s: %s",
+                    "  [ERROR] Failed to assign %s: %s",
                     stage_key,
                     assign_result.get("error"),
                 )
@@ -376,7 +392,7 @@ def _create_deployment_pipeline(
         return True
 
     except (ValueError, KeyError, OSError, RuntimeError) as e:
-        logger.error("  ❌ Pipeline setup failed: %s", e)
+        logger.error("  [ERROR] Pipeline setup failed: %s", e)
         return False
 
 
@@ -490,13 +506,13 @@ def onboard_project(
         git_mode = "Isolated" if create_repo else "Shared"
         mode = f"Full Bootstrap ({', '.join(sorted(stages))}) " f"[Git: {git_mode}]"
 
-    logger.info("🚀 Starting onboarding for %s / %s", org_name, project_name)
-    logger.info("📋 Template: %s", template)
-    logger.info("🔀 Mode: %s", mode)
+    logger.info("Starting onboarding for %s / %s", org_name, project_name)
+    logger.info("Template: %s", template)
+    logger.info("Mode: %s", mode)
 
     current_step = 0
 
-    # ─── Phase 0: Git Repo Provisioning (optional) ────────────────
+    # --- Phase 0: Git Repo Provisioning (optional) ----------------
     if create_repo and not with_feature_branch:
         current_step += 1
         logger.info(
@@ -532,12 +548,12 @@ def onboard_project(
             if not git_repo:
                 logger.error("Repo provisioning failed")
                 return False
-            logger.info("  ✅ Repo URL: %s", git_repo)
+            logger.info("  [OK] Repo URL: %s", git_repo)
             # Show browsable web URL for user convenience
             web_url = git_repo.removesuffix(".git")
-            logger.info("  🔗 Open in browser: %s", web_url)
+            logger.info("  Open in browser: %s", web_url)
 
-    # ─── Phase 1: Generate Configuration ──────────────────────────
+    # --- Phase 1: Generate Configuration --------------------------
     current_step += 1
     logger.info("\n[%s/%s] Generating Configuration...", current_step, total_steps)
     try:
@@ -568,7 +584,7 @@ def onboard_project(
                 loaded_config = yaml.safe_load(f)
             principals = loaded_config.get("principals", [])
         except (OSError, ValueError):
-            logger.warning("  ⚠️  Could not load principals from config.")
+            logger.warning("  [!] Could not load principals from config.")
 
     # Inject mandatory env-var principals (governance SP + admin user)
     principals = _enrich_principals(principals)
@@ -588,7 +604,7 @@ def onboard_project(
     branch_name = None  # Used only in feature-branch mode
     workspace_ids = {}  # Collect workspace IDs for pipeline assignment
 
-    # ─── Phase 2 (Feature mode): Create Feature Branch ────────────
+    # --- Phase 2 (Feature mode): Create Feature Branch ------------
     if with_feature_branch:
         current_step += 1
         logger.info(
@@ -611,23 +627,23 @@ def onboard_project(
                 else:
                     run_command(["git", "checkout", "-b", branch_name])
 
-                logger.info("  ✅ On branch: %s", branch_name)
+                logger.info("  [OK] On branch: %s", branch_name)
 
                 # Push branch to remote (Required for Fabric to see it)
-                logger.info("  ☁️  Pushing branch to remote...")
+                logger.info("  Pushing branch to remote...")
                 run_command(["git", "push", "-u", "origin", branch_name])
-                logger.info("  ✅ Branch pushed to origin")
+                logger.info("  [OK] Branch pushed to origin")
 
             except (subprocess.SubprocessError, OSError) as e:
                 logger.error("Failed to manage git branch: %s", e)
                 return False
 
-    # ─── Phase 2 (Bootstrap mode): Deploy Dev Workspace ───────────
+    # --- Phase 2 (Bootstrap mode): Deploy Dev Workspace -----------
     if "dev" in stages and not with_feature_branch:
         current_step += 1
         logger.info("\n[%s/%s] Deploying Dev Workspace...", current_step, total_steps)
-        logger.info("  📦 Workspace: %s", ws_names["dev"])
-        logger.info("  🔗 Connected to main branch via Git")
+        logger.info("  Workspace: %s", ws_names["dev"])
+        logger.info("  Connected to main branch via Git")
 
         deploy_cmd = [
             "python3",
@@ -644,7 +660,7 @@ def onboard_project(
         else:
             try:
                 subprocess.run(deploy_cmd, check=True)
-                logger.info("  ✅ Dev workspace deployed")
+                logger.info("  [OK] Dev workspace deployed")
 
                 # Capture workspace ID for pipeline assignment
                 # Look up by name via Fabric REST API
@@ -670,14 +686,14 @@ def onboard_project(
                                 break
                 except (ValueError, KeyError, OSError, RuntimeError):
                     logger.warning(
-                        "  ⚠️  Could not retrieve Dev workspace ID for pipeline."
+                        "  [!] Could not retrieve Dev workspace ID for pipeline."
                     )
 
             except subprocess.CalledProcessError:
-                logger.error("  ❌ Dev workspace deployment failed.")
+                logger.error("  [ERROR] Dev workspace deployment failed.")
                 return False
 
-    # ─── Feature branch deploy (alternative to full bootstrap) ────
+    # --- Feature branch deploy (alternative to full bootstrap) ----
     if with_feature_branch:
         assert branch_name is not None, "branch_name must be set for feature mode"
         current_step += 1
@@ -697,7 +713,7 @@ def onboard_project(
             branch_name,
             "--force-branch-workspace",
         ]
-        logger.info("  📦 Creating feature workspace for branch: %s", branch_name)
+        logger.info("  Creating feature workspace for branch: %s", branch_name)
 
         if dry_run:
             logger.info("  (Dry Run) Would execute: %s", " ".join(deploy_cmd))
@@ -706,21 +722,21 @@ def onboard_project(
             try:
                 subprocess.run(deploy_cmd, check=True)
             except subprocess.CalledProcessError:
-                logger.error("  ❌ Feature workspace deployment failed.")
+                logger.error("  [ERROR] Feature workspace deployment failed.")
                 return False
 
-        logger.info("\n✨ Onboarding Complete! ✨")
+        logger.info("\n[OK] Onboarding Complete!")
         logger.info("Config:    %s", config_path)
         logger.info("Branch:    %s", branch_name)
         logger.info("Workspace: feature-isolated (branch-specific)")
         return True
 
-    # ─── Phase 3: Create Test Workspace ───────────────────────────
+    # --- Phase 3: Create Test Workspace ---------------------------
     if "test" in stages:
         current_step += 1
         logger.info("\n[%s/%s] Creating Test Workspace...", current_step, total_steps)
-        logger.info("  📦 Workspace: %s", ws_names["test"])
-        logger.info("  ℹ️  Empty workspace (content delivered via pipeline promotion)")
+        logger.info("  Workspace: %s", ws_names["test"])
+        logger.info("  [i] Empty workspace (content delivered via pipeline promotion)")
 
         test_capacity = _resolve_capacity_id("test")
         test_ws_id = _create_empty_workspace(
@@ -733,14 +749,14 @@ def onboard_project(
         if test_ws_id:
             workspace_ids["test"] = test_ws_id
 
-    # ─── Phase 4: Create Prod Workspace ───────────────────────────
+    # --- Phase 4: Create Prod Workspace ---------------------------
     if "prod" in stages:
         current_step += 1
         logger.info(
             "\n[%s/%s] Creating Production Workspace...", current_step, total_steps
         )
-        logger.info("  📦 Workspace: %s", ws_names["prod"])
-        logger.info("  ℹ️  Empty workspace (content delivered via pipeline promotion)")
+        logger.info("  Workspace: %s", ws_names["prod"])
+        logger.info("  [i] Empty workspace (content delivered via pipeline promotion)")
 
         prod_capacity = _resolve_capacity_id("prod")
         prod_ws_id = _create_empty_workspace(
@@ -753,7 +769,7 @@ def onboard_project(
         if prod_ws_id:
             workspace_ids["prod"] = prod_ws_id
 
-    # ─── Phase 5-6: Create Pipeline & Assign Stages ──────────────
+    # --- Phase 5-6: Create Pipeline & Assign Stages --------------
     if stages & {"test", "prod"}:
         # Phase 5: Create Pipeline
         current_step += 1
@@ -763,7 +779,7 @@ def onboard_project(
         logger.info(
             "\n[%s/%s] Creating Deployment Pipeline...", current_step, total_steps
         )
-        logger.info("  📦 Pipeline: %s", pipeline_name)
+        logger.info("  Pipeline: %s", pipeline_name)
 
         # Phase 6: Assign Stages
         current_step += 1
@@ -775,7 +791,7 @@ def onboard_project(
             logger.info("  (Dry Run) Would create pipeline: %s", pipeline_name)
             for stage_key in sorted(stages):
                 logger.info(
-                    "  (Dry Run) Would assign %s → %s stage",
+                    "  (Dry Run) Would assign %s -> %s stage",
                     ws_names.get(stage_key, "N/A"),
                     stage_key.capitalize(),
                 )
@@ -786,14 +802,14 @@ def onboard_project(
                 dry_run=dry_run,
             )
             if not success:
-                logger.error("  ❌ Pipeline setup failed.")
+                logger.error("  [ERROR] Pipeline setup failed.")
                 logger.info(
-                    "  💡 Tip: You can create the pipeline manually in the "
+                    "  [TIP] Tip: You can create the pipeline manually in the "
                     "Fabric Portal and assign workspaces there."
                 )
 
-    # ─── Summary ──────────────────────────────────────────────────
-    logger.info("\n✨ Onboarding Complete! ✨")
+    # --- Summary --------------------------------------------------
+    logger.info("\n[OK] Onboarding Complete!")
     logger.info("Config:     %s", config_path)
     logger.info("Stages:     %s", ", ".join(sorted(stages)))
     if "dev" in stages:
@@ -861,7 +877,7 @@ def main():
         default=None,
         help=("Custom Prod workspace name " "(default: '{name} [Production]')"),
     )
-    # ── Git Repo Isolation ──
+    # -- Git Repo Isolation --
     parser.add_argument(
         "--create-repo",
         action="store_true",

@@ -49,7 +49,7 @@ def list_workspace_items(workspace_name: str) -> None:
             print(f"Found {len(items)} items:\n")
 
             print(f"  {'Name':<40} {'Type':<25} {'Description'}")
-            print(f"  {'─' * 40} {'─' * 25} {'─' * 30}")
+            print(f"  {'-' * 40} {'-' * 25} {'-' * 30}")
 
             for item in items:
                 name = item.get("displayName", "N/A")

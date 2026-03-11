@@ -57,8 +57,8 @@ def handle_cli_error(
     """
     import typer
 
-    console.print(f"[red]❌ Failed to {operation}[/red]")
+    console.print(f"[red][ERROR] Failed to {operation}[/red]")
     console.print(f"   [red]Reason: {error}[/red]")
     if suggestion:
-        console.print(f"\n[yellow]💡 Suggested Action: {suggestion}[/yellow]")
+        console.print(f"\n[yellow][TIP] Suggested Action: {suggestion}[/yellow]")
     raise typer.Exit(1)

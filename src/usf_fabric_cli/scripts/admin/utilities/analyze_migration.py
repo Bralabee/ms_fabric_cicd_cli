@@ -27,7 +27,7 @@ class CustomSolutionAnalyzer:
 
     def analyze(self) -> Dict[str, Any]:
         """Perform analysis of custom solution."""
-        print(f"🔍 Analyzing custom solution in {self.source_dir}")
+        print(f"Analyzing custom solution in {self.source_dir}")
 
         python_files = list(self.source_dir.rglob("*.py"))
         self.analysis["total_files"] = len(python_files)
@@ -60,10 +60,10 @@ class CustomSolutionAnalyzer:
                 tree = ast.parse(content)
                 self._analyze_ast(tree, file_path)
             except SyntaxError:
-                print(f"⚠️  Could not parse {file_path} (syntax error)")
+                print(f"[!] Could not parse {file_path} (syntax error)")
 
         except OSError as e:
-            print(f"⚠️  Error analyzing {file_path}: {e}")
+            print(f"[!] Error analyzing {file_path}: {e}")
 
     def _analyze_ast(self, tree: ast.AST, file_path: Path) -> None:
         """Analyze AST for Fabric-related patterns."""
@@ -239,7 +239,7 @@ class CustomSolutionAnalyzer:
         if output_file:
             with open(output_file, "w") as f:
                 json.dump(report, f, indent=2)
-            print(f"📄 Migration report saved to {output_file}")
+            print(f"Migration report saved to {output_file}")
 
         return report
 
@@ -254,14 +254,14 @@ def main() -> int:
     args = parser.parse_args()
 
     if not Path(args.source_directory).exists():
-        print(f"❌ Directory not found: {args.source_directory}")
+        print(f"[ERROR] Directory not found: {args.source_directory}")
         return 1
 
     try:
         analyzer = CustomSolutionAnalyzer(args.source_directory)
         analysis = analyzer.analyze()
 
-        print("\n📊 Migration Analysis Summary:")
+        print("\nMigration Analysis Summary:")
         print(f"   Total files: {analysis['total_files']}")
         print(f"   Total LOC: {analysis['total_loc']}")
         print(f"   Components found: {len(analysis['components_found'])}")
@@ -272,7 +272,7 @@ def main() -> int:
         print(f"   Migration complexity: {analysis['migration_complexity']}")
 
         if "recommendations" in analysis:
-            print("\n💡 Recommendations:")
+            print("\nRecommendations:")
             for rec in analysis["recommendations"]:
                 print(f"   {rec['priority']}: {rec['action']}")
                 print(f"      Reason: {rec['reason']}")
@@ -281,7 +281,7 @@ def main() -> int:
             analyzer.generate_report(args.output)
 
     except (ValueError, OSError, RuntimeError) as e:
-        print(f"❌ Analysis failed: {e}")
+        print(f"[ERROR] Analysis failed: {e}")
         return 1
 
     return 0

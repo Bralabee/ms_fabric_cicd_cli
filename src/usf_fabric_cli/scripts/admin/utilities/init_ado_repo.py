@@ -173,25 +173,25 @@ def main(
 
         if response.status_code == 201:
             console.print(
-                f"[green]✅ Successfully initialized "
+                f"[green][OK] Successfully initialized "
                 f"branch '{branch}' in repository "
                 f"'{repository}'.[/green]"
             )
         elif response.status_code == 400 and "TF401021" in response.text:
             console.print(
-                f"[yellow]⚠️  Branch '{branch}' already "
+                f"[yellow][!] Branch '{branch}' already "
                 f"exists. Skipping initialization.[/yellow]"
             )
         else:
             console.print(
-                f"[red]❌ Failed to initialize branch: {response.status_code}[/red]"
+                f"[red][ERROR] Failed to init branch: {response.status_code}[/red]"
             )
             console.print(response.text)
             raise typer.Exit(1)
 
         # Show the browsable web URL for convenience
         web_url = f"https://dev.azure.com/{organization}/{project}/_git/{repository}"
-        console.print(f"\n[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}")
+        console.print(f"\n[bold cyan]Open in browser:[/bold cyan] {web_url}")
 
     except (
         ValueError,
@@ -310,9 +310,9 @@ def init_ado_repo(
             timeout=30,
         )
         if resp.status_code == 201:
-            console.print(f"[green]✅ Branch '{branch}' initialized" f"[/green]")
+            console.print(f"[green][OK] Branch '{branch}' initialized" f"[/green]")
         elif resp.status_code == 400 and "TF401021" in resp.text:
-            console.print(f"[yellow]⚠️  Branch '{branch}' already " f"exists.[/yellow]")
+            console.print(f"[yellow][!] Branch '{branch}' already " f"exists.[/yellow]")
         else:
             console.print(
                 f"[yellow]Branch init returned " f"{resp.status_code}[/yellow]"
@@ -320,7 +320,7 @@ def init_ado_repo(
 
         # Show the browsable web URL for convenience
         web_url = f"https://dev.azure.com/{organization}/{project}/_git/{repo_name}"
-        console.print(f"\n[bold cyan]🔗 Open in browser:[/bold cyan] {web_url}")
+        console.print(f"\n[bold cyan]Open in browser:[/bold cyan] {web_url}")
 
         return clone_url
 

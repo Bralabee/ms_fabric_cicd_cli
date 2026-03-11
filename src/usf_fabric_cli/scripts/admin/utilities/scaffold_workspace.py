@@ -6,7 +6,7 @@ Connects to a live Microsoft Fabric workspace, introspects its items,
 folders, and structure, then generates a YAML config file compatible
 with the usf_fabric_cli_cicd deployer.
 
-This eliminates the need to manually write YAML — especially useful
+This eliminates the need to manually write YAML -- especially useful
 for onboarding existing workspaces into CI/CD.
 
 Usage:
@@ -44,7 +44,7 @@ from usf_fabric_cli.utils.config import get_environment_variables
 logger = logging.getLogger(__name__)
 
 
-# ── Fabric item type → recommended folder mapping ──────────────────────────
+# -- Fabric item type -> recommended folder mapping --------------------------
 # These mirror the standard medallion folder rules used across projects.
 ITEM_TYPE_TO_FOLDER: Dict[str, str] = {
     "DataPipeline": "000 Orchestrate",
@@ -187,7 +187,7 @@ def _build_folder_rules(
     This ensures scaffolded configs accurately reflect non-standard folder
     structures (e.g. workspaces that don't follow the medallion convention).
     """
-    # Build folder-ID → path lookup from discovered folders
+    # Build folder-ID -> path lookup from discovered folders
     folder_id_to_path: Dict[str, str] = {}
     if folders:
         # Reuse _build_folder_paths logic to get full path per folder ID
@@ -231,7 +231,7 @@ def _build_folder_rules(
             most_common_folder, _ = counter.most_common(1)[0]
             type_to_folder[item_type] = most_common_folder
 
-    # Build final rules — prefer actual placement, fall back to hardcoded map
+    # Build final rules -- prefer actual placement, fall back to hardcoded map
     discovered_types = {item.get("type", "") for item in items}
     rules = []
     seen_types: set = set()
@@ -280,7 +280,7 @@ def _discover_principals(
 
     if not result.get("success"):
         logger.info(
-            "Could not retrieve role assignments for '%s' — "
+            "Could not retrieve role assignments for '%s' -- "
             "will use placeholder principals instead.",
             workspace_name,
         )
@@ -356,7 +356,7 @@ def _check_git_directory_conflicts(
     collisions.  Skips the ``_templates/`` directory (templates are not live
     projects).  Returns the conflicting file path, or None if no conflict.
     """
-    # Always search from config/projects/ — walk up past _templates/ if needed
+    # Always search from config/projects/ -- walk up past _templates/ if needed
     if output_dir:
         search_root = output_dir.parent.parent
         # If we're inside _templates/, go one more level up to config/projects/
@@ -370,7 +370,7 @@ def _check_git_directory_conflicts(
 
     target_dir = f"/{slug}"
     for yaml_file in search_root.glob("*/base_workspace.yaml"):
-        # Skip templates — they are not live project configs
+        # Skip templates -- they are not live project configs
         if "_templates" in yaml_file.parts:
             continue
         try:
@@ -386,8 +386,8 @@ def _check_git_directory_conflicts(
     return None
 
 
-# ── Dev/Test/Prod stage name patterns ──────────────────────────────────────
-# Recognises [DEV], (DEV), -DEV, _DEV, Dev, Development — case-insensitive
+# -- Dev/Test/Prod stage name patterns --------------------------------------
+# Recognises [DEV], (DEV), -DEV, _DEV, Dev, Development -- case-insensitive
 _STAGE_PATTERNS: List[tuple] = [
     # Bracketed: [DEV], [Dev], [dev]
     (re.compile(r"\[DEV(?:ELOPMENT)?\]", re.IGNORECASE), "[{stage}]"),
@@ -404,17 +404,17 @@ def _infer_stage_name(workspace_name: str, target_stage: str) -> str:
     """Infer a Test/Prod workspace name from the Dev workspace name.
 
     Handles common naming conventions:
-      ``EDP [DEV]``       →  ``EDP [TEST]``          (bracket replacement)
-      ``Sales - Dev``     →  ``Sales [TEST]``         (separator replacement)
-      ``HR Development``  →  ``HR [TEST]``            (word replacement)
-      ``MyWorkspace``     →  ``MyWorkspace [TEST]``   (append as fallback)
+      ``EDP [DEV]``       ->  ``EDP [TEST]``          (bracket replacement)
+      ``Sales - Dev``     ->  ``Sales [TEST]``         (separator replacement)
+      ``HR Development``  ->  ``HR [TEST]``            (word replacement)
+      ``MyWorkspace``     ->  ``MyWorkspace [TEST]``   (append as fallback)
     """
     for pattern, template in _STAGE_PATTERNS:
         if pattern.search(workspace_name):
             replacement = template.format(stage=target_stage)
             return pattern.sub(replacement, workspace_name).strip()
 
-    # Fallback: no recognisable dev marker — append [STAGE]
+    # Fallback: no recognisable dev marker -- append [STAGE]
     return f"{workspace_name} [{target_stage}]"
 
 
@@ -435,9 +435,9 @@ def _generate_yaml(
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     lines = []
-    separator = "# " + "─" * 77
+    separator = "# " + "-" * 77
     lines.append(separator)
-    lines.append(f"# {workspace_name} — Base Workspace Configuration")
+    lines.append(f"# {workspace_name} -- Base Workspace Configuration")
     lines.append("#")
     lines.append("# Auto-generated by: scaffold_workspace.py")
     lines.append(f"# Generated at: {timestamp}")
@@ -448,11 +448,11 @@ def _generate_yaml(
     lines.append(separator)
     lines.append("")
 
-    # ── workspace section ──
+    # -- workspace section --
     lines.append("workspace:")
     lines.append(f'  name: "{workspace_name}"')
     lines.append(f'  display_name: "{workspace_name}"')
-    lines.append(f'  description: "{workspace_name} workspace — managed by CI/CD"')
+    lines.append(f'  description: "{workspace_name} workspace -- managed by CI/CD"')
     lines.append("  capacity_id: ${FABRIC_CAPACITY_ID}")
     lines.append("  domain: ${FABRIC_DOMAIN_NAME}")
     lines.append("  git_repo: ${GIT_REPO_URL}")
@@ -460,7 +460,7 @@ def _generate_yaml(
     lines.append(f"  git_directory: /{slug}")
     lines.append("")
 
-    # ── environments section ──
+    # -- environments section --
     lines.append("environments:")
     lines.append("  dev:")
     lines.append("    workspace:")
@@ -468,25 +468,25 @@ def _generate_yaml(
     lines.append("      capacity_id: ${FABRIC_CAPACITY_ID}")
     lines.append("")
 
-    # ── folders section ──
+    # -- folders section --
     lines.append("# Folder structure (discovered from workspace)")
     lines.append("folders:")
     for folder in folders:
         lines.append(f'  - "{folder}"')
     lines.append("")
 
-    # ── folder_rules section ──
+    # -- folder_rules section --
     if folder_rules:
-        lines.append("# Folder rules — auto-organize items after Git Sync")
+        lines.append("# Folder rules -- auto-organize items after Git Sync")
         lines.append("folder_rules:")
         for rule in folder_rules:
             lines.append(f'  - type: {rule["type"]}')
             lines.append(f'    folder: "{rule["folder"]}"')
         lines.append("")
 
-    # ── items inventory (as comments, for reference) ──
+    # -- items inventory (as comments, for reference) --
     lines.append(
-        "# ── Discovered Items (for reference) ────────────────────────────────────────"
+        "# -- Discovered Items (for reference) ----------------------------------------"
     )
     total_count = sum(len(v) for v in items_by_type.values())
     lines.append(f"# Total items found: {total_count}")
@@ -497,14 +497,14 @@ def _generate_yaml(
             lines.append(f"#     - {name}")
     lines.append("")
 
-    # ── items section (empty — Git Sync manages content) ──
-    lines.append("# No Fabric items — content is managed through Fabric Git Sync")
+    # -- items section (empty -- Git Sync manages content) --
+    lines.append("# No Fabric items -- content is managed through Fabric Git Sync")
     lines.append("lakehouses: []")
     lines.append("notebooks: []")
     lines.append("resources: []")
     lines.append("")
 
-    # ── principals section ──
+    # -- principals section --
     lines.append("# Access control")
     lines.append("principals:")
 
@@ -530,7 +530,7 @@ def _generate_yaml(
         lines.append('  - id: "${AZURE_CLIENT_ID}"')
         lines.append("    type: ServicePrincipal")
         lines.append("    role: Admin")
-        lines.append("    description: Automation SP — required for CI/CD deployments")
+        lines.append("    description: Automation SP -- required for CI/CD deployments")
         lines.append("")
         lines.append("  # 2. Admin security group (governance)")
         lines.append('  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"')
@@ -553,9 +553,9 @@ def _generate_yaml(
     lines.append(f'  #   description: "{workspace_name} project admins"')
     lines.append("")
 
-    # ── deployment pipeline section ──
+    # -- deployment pipeline section --
     if pipeline_name:
-        lines.append("# ── Deployment Pipeline " + "─" * 53)
+        lines.append("# -- Deployment Pipeline " + "-" * 53)
         lines.append("deployment_pipeline:")
         lines.append(f'  pipeline_name: "{pipeline_name}"')
         lines.append("  stages:")
@@ -568,7 +568,7 @@ def _generate_yaml(
         if test_workspace_name:
             test_name = test_workspace_name
         elif prod_workspace_name:
-            # Only prod was given — still need to infer test
+            # Only prod was given -- still need to infer test
             test_name = _infer_stage_name(workspace_name, "TEST")
         else:
             test_name = _infer_stage_name(workspace_name, "TEST")
@@ -598,15 +598,15 @@ def _generate_feature_yaml(
     upper_slug = slug.upper()
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
-    separator = "# " + "─" * 77
+    separator = "# " + "-" * 77
     lines = []
     lines.append(separator)
-    lines.append(f"# {workspace_name} — Feature Workspace Configuration")
+    lines.append(f"# {workspace_name} -- Feature Workspace Configuration")
     lines.append("#")
     lines.append("# Auto-generated by: scaffold_workspace.py")
     lines.append(f"# Generated at: {timestamp}")
     lines.append("#")
-    lines.append("# Feature workspaces are ephemeral — created per " "feature branch,")
+    lines.append("# Feature workspaces are ephemeral -- created per " "feature branch,")
     lines.append("# destroyed after PR merge. Items come from Fabric " "Git Sync.")
     lines.append(separator)
     lines.append("")
@@ -629,13 +629,13 @@ def _generate_feature_yaml(
     lines.append("      capacity_id: ${FABRIC_CAPACITY_ID}")
     lines.append("")
 
-    lines.append("# Folder structure — same as base workspace")
+    lines.append("# Folder structure -- same as base workspace")
     lines.append("folders:")
     for folder in folders:
         lines.append(f'  - "{folder}"')
     lines.append("")
 
-    lines.append("# No Fabric items — content is managed through Fabric Git Sync")
+    lines.append("# No Fabric items -- content is managed through Fabric Git Sync")
     lines.append("lakehouses: []")
     lines.append("notebooks: []")
     lines.append("resources: []")
@@ -646,7 +646,7 @@ def _generate_feature_yaml(
     lines.append('  - id: "${AZURE_CLIENT_ID}"')
     lines.append("    type: ServicePrincipal")
     lines.append("    role: Admin")
-    lines.append("    description: Automation SP — required for CI/CD deployments")
+    lines.append("    description: Automation SP -- required for CI/CD deployments")
     lines.append("")
     lines.append('  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"')
     lines.append("    type: Group")
@@ -692,23 +692,23 @@ def scaffold_workspace(
             If omitted, inferred from ``workspace_name``.
 
     Returns:
-        Dict mapping output file paths → "ok" or error message.
+        Dict mapping output file paths -> "ok" or error message.
     """
     results: Dict[str, str] = {}
 
-    # ── 1. Initialize wrapper ──
+    # -- 1. Initialize wrapper --
     # get_environment_variables() handles the full auth waterfall:
-    #   1. FABRIC_TOKEN from env  →  use directly
-    #   2. SP creds (AZURE_CLIENT_ID / SECRET / TENANT_ID)  →  auto-generates token
-    #   3. .env file in config/  →  loaded automatically
-    # This matches the deployer's auth path — no separate FABRIC_TOKEN requirement.
+    #   1. FABRIC_TOKEN from env  ->  use directly
+    #   2. SP creds (AZURE_CLIENT_ID / SECRET / TENANT_ID)  ->  auto-generates token
+    #   3. .env file in config/  ->  loaded automatically
+    # This matches the deployer's auth path -- no separate FABRIC_TOKEN requirement.
     env_vars = get_environment_variables(validate_vars=False)
     token = env_vars.get("FABRIC_TOKEN", "") or os.getenv("FABRIC_TOKEN", "")
     if not token:
         raise ValueError(
             "Authentication failed. One of the following is required:\n"
-            "  • FABRIC_TOKEN environment variable, OR\n"
-            "  • Service Principal credentials: AZURE_CLIENT_ID + "
+            "  - FABRIC_TOKEN environment variable, OR\n"
+            "  - Service Principal credentials: AZURE_CLIENT_ID + "
             "AZURE_CLIENT_SECRET + AZURE_TENANT_ID\n"
             "Set them in .env or export as environment variables."
         )
@@ -716,8 +716,8 @@ def scaffold_workspace(
     fabric = FabricCLIWrapper(token)
     slug = project_slug or _slugify(workspace_name)
 
-    # ── 2. Verify workspace exists ──
-    print(f"\n🔍 Scanning workspace '{workspace_name}'...")
+    # -- 2. Verify workspace exists --
+    print(f"\nScanning workspace '{workspace_name}'...")
     workspace_id = fabric.get_workspace_id(workspace_name)
     if not workspace_id:
         raise ValueError(
@@ -726,17 +726,17 @@ def scaffold_workspace(
         )
     print(f"   Workspace ID: {workspace_id}")
 
-    # ── 3. List folders ──
+    # -- 3. List folders --
     print("   Discovering folders...")
     raw_folders = _get_workspace_folders(fabric, workspace_name)
     folder_names = _build_folder_paths(raw_folders) if raw_folders else []
     if folder_names:
         print(f"   Found {len(folder_names)} folders: {', '.join(folder_names)}")
     else:
-        print("   No folders found — will use default medallion structure.")
+        print("   No folders found -- will use default medallion structure.")
         folder_names = DEFAULT_FOLDERS.copy()
 
-    # ── 4. List items ──
+    # -- 4. List items --
     print("   Discovering items...")
     items = fabric.list_workspace_items_api(workspace_name)
     items_by_type = _categorize_items(items)
@@ -745,10 +745,10 @@ def scaffold_workspace(
     for item_type, type_items in sorted(items_by_type.items()):
         print(f"     {item_type}: {len(type_items)}")
 
-    # ── 5. Infer folder rules from discovered types ──
+    # -- 5. Infer folder rules from discovered types --
     folder_rules = _build_folder_rules(items, folders=raw_folders)
 
-    # ── 5b. Discover principals (role assignments) ──
+    # -- 5b. Discover principals (role assignments) --
     print("   Discovering principals...")
     discovered_principals = _discover_principals(fabric, workspace_name)
     if discovered_principals:
@@ -759,22 +759,22 @@ def scaffold_workspace(
                 f"{p.get('description', p['id'][:8] + '...')}"
             )
     else:
-        print("   No role assignments discovered — using placeholder principals.")
+        print("   No role assignments discovered -- using placeholder principals.")
 
-    # ── 5c. Check git_directory conflicts ──
+    # -- 5c. Check git_directory conflicts --
     if output_path:
         check_path = Path(output_path)
     else:
         check_path = Path(f"config/projects/_templates/{slug}/base_workspace.yaml")
     conflict = _check_git_directory_conflicts(slug, check_path)
     if conflict:
-        print(f"\n⚠️  WARNING: git_directory '/{slug}' is already used in: {conflict}")
+        print(f"\n[!] WARNING: git_directory '/{slug}' is already used in: {conflict}")
         print(
             "   Consider using --project-slug to set a unique slug, "
             "or update the existing config."
         )
 
-    # ── 6. Generate base_workspace.yaml ──
+    # -- 6. Generate base_workspace.yaml --
     base_yaml = _generate_yaml(
         workspace_name=workspace_name,
         folders=folder_names,
@@ -794,7 +794,7 @@ def scaffold_workspace(
             f"config/projects/_templates/{slug}/base_workspace.yaml"
         ).resolve()
 
-    # Validate output path — guard against writing outside the project tree
+    # Validate output path -- guard against writing outside the project tree
     cwd = Path.cwd().resolve()
     if not str(base_path).startswith(str(cwd)):
         raise SystemExit(
@@ -805,10 +805,10 @@ def scaffold_workspace(
 
     base_path.parent.mkdir(parents=True, exist_ok=True)
     base_path.write_text(base_yaml, encoding="utf-8")
-    print(f"\n✅ Generated: {base_path}")
+    print(f"\n[OK] Generated: {base_path}")
     results[str(base_path)] = "ok"
 
-    # ── 7. Generate feature_workspace.yaml (optional) ──
+    # -- 7. Generate feature_workspace.yaml (optional) --
     if include_feature_template:
         feature_yaml = _generate_feature_yaml(
             workspace_name=workspace_name,
@@ -817,11 +817,11 @@ def scaffold_workspace(
         )
         feature_path = base_path.parent / "feature_workspace.yaml"
         feature_path.write_text(feature_yaml, encoding="utf-8")
-        print(f"✅ Generated: {feature_path}")
+        print(f"[OK] Generated: {feature_path}")
         results[str(feature_path)] = "ok"
 
-    # ── 8. Summary ──
-    print("\n📋 Scaffold Summary:")
+    # -- 8. Summary --
+    print("\nScaffold Summary:")
     print(f"   Workspace:    {workspace_name}")
     print(f"   Workspace ID: {workspace_id}")
     print(f"   Folders:      {len(folder_names)}")
@@ -834,10 +834,10 @@ def scaffold_workspace(
     )
     print(f"   Principals:   {principals_label}")
     if conflict:
-        print(f"   ⚠️  git_directory conflict: {conflict}")
+        print(f"   [!] git_directory conflict: {conflict}")
     print(f"   Output:       {base_path.parent}/")
     print()
-    print("⚠️  Next steps:")
+    print("Next steps:")
     print("   1. Review the generated YAML template and adjust as needed")
     if discovered_principals:
         print(
@@ -847,18 +847,19 @@ def scaffold_workspace(
         step = 3
     else:
         step = 2
-    print(f"   {step}. Copy template to a project config:")
     print(
-        f"      cp -r config/projects/_templates/{slug}/ "
-        f"config/projects/<project_slug>/"
-    )
-    print(
-        f"      — or use: make new-project project=<slug> "
+        f"   {step}. Create a project from this template:\n"
+        f"      make new-project project=<slug> "
         f'display="<Name>" template={slug}'
     )
-    print(f"   {step + 1}. Add required secrets to GitHub")
-    print(f"   {step + 2}. " "Workflow dropdowns are automatic via `make new-project`")
-    print(f"   {step + 3}. " "Run: fabric-cicd deploy <config>.yaml --env dev")
+    print(
+        f"   {step + 1}. Add required secrets to GitHub "
+        f"(run: make show-secrets project=<slug>)"
+    )
+    print(
+        f"   {step + 2}. Run the 'Setup Base Workspaces' "
+        f"GitHub Actions workflow for this project"
+    )
     print()
 
     return results

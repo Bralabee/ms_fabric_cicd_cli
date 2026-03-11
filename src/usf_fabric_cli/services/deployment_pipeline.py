@@ -1,12 +1,12 @@
 """
-Fabric Deployment Pipeline API — Dev → Test → Prod promotion service.
+Fabric Deployment Pipeline API -- Dev -> Test -> Prod promotion service.
 
 Wraps the Microsoft Fabric REST API for Deployment Pipelines, enabling
 automated stage promotion through CI/CD pipelines.
 
 Key Features:
 - List, create, and manage deployment pipelines
-- Deploy (promote) content between stages (Dev → Test → Prod)
+- Deploy (promote) content between stages (Dev -> Test -> Prod)
 - Long-running operation polling for async deployments
 - Automatic retry with exponential backoff for transient failures
 - Token refresh support via TokenManager
@@ -34,7 +34,7 @@ from usf_fabric_cli.utils.retry import (
 if TYPE_CHECKING:
     from usf_fabric_cli.services.token_manager import TokenManager
 
-# ── Power BI API constants ─────────────────────────────────────────
+# -- Power BI API constants -----------------------------------------
 # The Fabric REST API (api.fabric.microsoft.com) does NOT expose a
 # /users endpoint for deployment pipelines.  Pipeline user management
 # is only available via the Power BI REST API (api.powerbi.com).
@@ -83,7 +83,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
     Client for the Fabric Deployment Pipelines REST API.
 
     Provides methods to manage deployment pipelines and promote content
-    between stages (Dev → Test → Prod).
+    between stages (Dev -> Test -> Prod).
     """
 
     def __init__(
@@ -117,7 +117,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
         # Cache for Power BI API token (lazily acquired)
         self._pbi_token: Optional[str] = None
 
-    # ── Power BI token helpers ─────────────────────────────────────
+    # -- Power BI token helpers -------------------------------------
 
     def _get_pbi_headers(self) -> Dict[str, str]:
         """
@@ -147,7 +147,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                     )
                     self._pbi_token = self._access_token
             else:
-                # No credential available — try Fabric token (may work
+                # No credential available -- try Fabric token (may work
                 # when Fabric and PBI share the same backend auth).
                 self._pbi_token = self._access_token
 
@@ -161,7 +161,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
         """Map standard principal types to Power BI API equivalents."""
         return PBI_PRINCIPAL_TYPE_MAP.get(principal_type, principal_type)
 
-    # ── Pipeline CRUD ──────────────────────────────────────────────
+    # -- Pipeline CRUD ----------------------------------------------
 
     def list_pipelines(self) -> Dict[str, Any]:
         """
@@ -225,7 +225,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             stages: Optional list of stage definitions. Each stage is a dict
                 with ``displayName`` (required), ``description`` (optional),
                 and ``isPublic`` (optional, bool). Defaults to the standard
-                three-stage pipeline: Development → Test → Production.
+                three-stage pipeline: Development -> Test -> Production.
 
         Returns:
             ``{"success": True, "pipeline": {...}}``
@@ -281,7 +281,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             logger.error("Failed to delete pipeline %s: %s", pipeline_id, e)
             return {"success": False, "error": str(e)}
 
-    # ── Pipeline user / access management ──────────────────────────
+    # -- Pipeline user / access management --------------------------
 
     def list_pipeline_users(self, pipeline_id: str) -> Dict[str, Any]:
         """
@@ -403,7 +403,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                 "error_detail": error_detail,
             }
 
-    # ── Stage management ───────────────────────────────────────────
+    # -- Stage management -------------------------------------------
 
     def get_pipeline_stages(self, pipeline_id: str) -> Dict[str, Any]:
         """
@@ -506,7 +506,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             logger.error("Failed to unassign workspace from stage: %s", e)
             return {"success": False, "error": str(e)}
 
-    # ── Deploy (promote) ───────────────────────────────────────────
+    # -- Deploy (promote) -------------------------------------------
 
     def deploy_to_stage(
         self,
@@ -558,7 +558,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             retry_after = int(response.headers.get("Retry-After", "10"))
 
             logger.info(
-                "Deployment started: %s → %s (operation: %s)",
+                "Deployment started: %s -> %s (operation: %s)",
                 source_stage_id,
                 target_stage_id,
                 operation_id,
@@ -575,7 +575,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                 error_detail = e.response.text
             return {"success": False, "error": str(e), "details": error_detail}
 
-    # ── Long-running ops ───────────────────────────────────────────
+    # -- Long-running ops -------------------------------------------
 
     def poll_operation(
         self,
@@ -630,7 +630,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
         )
         return {"success": False, "error": "Operation timed out", "status": "Timeout"}
 
-    # ── Stage items ───────────────────────────────────────────────
+    # -- Stage items -----------------------------------------------
 
     def list_stage_items(
         self,
@@ -662,7 +662,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             logger.error("Failed to list stage items: %s", e)
             return {"success": False, "error": str(e)}
 
-    # ── Selective deployment ───────────────────────────────────────
+    # -- Selective deployment ---------------------------------------
 
     # Item types that cannot be deployed via Service Principal
     UNSUPPORTED_SP_TYPES = {"Warehouse", "SQLEndpoint"}
@@ -686,7 +686,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
         if exclude_types is None:
             exclude_types = self.UNSUPPORTED_SP_TYPES
 
-        # Target lookup: (name, type) → target item ID
+        # Target lookup: (name, type) -> target item ID
         target_by_name: Dict = {}
         for t in target_items:
             key = (t.get("itemDisplayName"), t.get("itemType"))
@@ -854,7 +854,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                 "no_items": True,
                 "message": (
                     f"All {len(source_items)} items are excluded "
-                    f"types — nothing to promote"
+                    f"types -- nothing to promote"
                 ),
             }
 
@@ -884,7 +884,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                 source_stage_id=source_id,
                 target_stage_id=target_id,
                 items=current_items,
-                note=note or f"Promote {source_stage_name} → {target_stage_name}",
+                note=note or f"Promote {source_stage_name} -> {target_stage_name}",
             )
 
             if not deploy_result["success"]:
@@ -900,7 +900,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                 total_excluded = len(type_excluded) + len(auto_excluded)
                 msg = (
                     f"Promotion succeeded: "
-                    f"{source_stage_name} → {target_stage_name}"
+                    f"{source_stage_name} -> {target_stage_name}"
                 )
                 if total_excluded:
                     msg += (
@@ -915,7 +915,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
                     "deployed": len(current_items),
                 }
 
-            # Deployment failed — try to auto-exclude failing items
+            # Deployment failed -- try to auto-exclude failing items
             failing_ids = self._extract_failing_item_ids(poll_result)
             if not failing_ids or attempt == max_retries:
                 break
@@ -956,7 +956,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             "result": poll_result.get("result", {}),
         }
 
-    # ── Convenience: full promotion ────────────────────────────────
+    # -- Convenience: full promotion --------------------------------
 
     def promote(
         self,
@@ -970,7 +970,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
         High-level: promote content from one named stage to the next.
 
         If *target_stage_name* is not given, it is inferred as the next
-        stage in the standard Dev → Test → Prod sequence.
+        stage in the standard Dev -> Test -> Prod sequence.
 
         Args:
             pipeline_id: Pipeline ID.
@@ -1021,7 +1021,7 @@ class FabricDeploymentPipelineAPI(FabricAPIBase):
             pipeline_id=pipeline_id,
             source_stage_id=source_id,
             target_stage_id=target_id,
-            note=note or f"Promote {source_stage_name} → {target_stage_name}",
+            note=note or f"Promote {source_stage_name} -> {target_stage_name}",
         )
 
         if not deploy_result["success"] or not wait:

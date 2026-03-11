@@ -122,7 +122,7 @@ class ConfigManager:
 
         Fallback syntax:
             ${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}
-            → tries FABRIC_CAPACITY_ID_PROD first, then FABRIC_CAPACITY_ID.
+            -> tries FABRIC_CAPACITY_ID_PROD first, then FABRIC_CAPACITY_ID.
 
         If neither is set, the literal ${...} is left in place so that
         downstream validation can surface the error.
@@ -166,7 +166,7 @@ class ConfigManager:
     @staticmethod
     def _warn_unresolved_vars(config_data: dict, context: str = "") -> None:
         """Walk the config dict and log warnings for any remaining
-        ${VAR_NAME} or ${VAR:-FALLBACK} literals — these indicate
+        ${VAR_NAME} or ${VAR:-FALLBACK} literals -- these indicate
         environment variables that were not set at load time."""
         unresolved_pattern = re.compile(r"\$\{[^}]+\}")
 
@@ -179,7 +179,7 @@ class ConfigManager:
                     _walk(item, f"{path}[{i}]")
             elif isinstance(obj, str) and unresolved_pattern.search(obj):
                 logger.warning(
-                    "Unresolved variable in %s%s: %s — "
+                    "Unresolved variable in %s%s: %s -- "
                     "check that the env var is set in .env or CI/CD secrets",
                     f"{context} " if context else "",
                     path,

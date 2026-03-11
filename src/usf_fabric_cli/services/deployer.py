@@ -89,7 +89,7 @@ class FabricDeployer:
         # long-running deployments (Azure AD tokens expire after ~60 min)
         self._token_manager = create_token_manager_from_env()
         if self._token_manager:
-            logger.info("TokenManager active — tokens will auto-refresh")
+            logger.info("TokenManager active -- tokens will auto-refresh")
 
         self.fabric = FabricCLIWrapper(
             env_vars["FABRIC_TOKEN"],
@@ -200,7 +200,7 @@ class FabricDeployer:
                     workspace_name,
                     item_id=self.workspace_id,
                 )
-                progress.update(task, description="✅ Workspace created")
+                progress.update(task, description="[OK] Workspace created")
 
                 # Wait for workspace propagation
                 self._wait_for_propagation(
@@ -210,7 +210,7 @@ class FabricDeployer:
                 # Step 2: Create folders
                 task = progress.add_task("Creating folder structure...", total=None)
                 self._create_folders()
-                progress.update(task, description="✅ Folders created")
+                progress.update(task, description="[OK] Folders created")
 
                 # Wait for folder propagation
                 self._wait_for_propagation(
@@ -220,7 +220,7 @@ class FabricDeployer:
                 # Step 3: Create items
                 task = progress.add_task("Creating items...", total=None)
                 self._create_items()
-                progress.update(task, description="✅ Items created")
+                progress.update(task, description="[OK] Items created")
 
                 # Wait for items propagation
                 self._wait_for_propagation(
@@ -230,7 +230,7 @@ class FabricDeployer:
                 # Step 4: Add principals
                 task = progress.add_task("Adding principals...", total=None)
                 self._add_principals()
-                progress.update(task, description="✅ Principals added")
+                progress.update(task, description="[OK] Principals added")
 
                 # Step 5: Assign Domain (if configured)
                 if self.config.domain:
@@ -238,7 +238,7 @@ class FabricDeployer:
                         f"Assigning to domain: {self.config.domain}...", total=None
                     )
                     self._assign_domain()
-                    progress.update(task, description="✅ Domain assigned")
+                    progress.update(task, description="[OK] Domain assigned")
 
                 # Step 6: Connect Git (if configured)
                 if self.config.git_repo:
@@ -246,14 +246,14 @@ class FabricDeployer:
                     git_branch = branch or self.config.git_branch
                     git_ok = self._connect_git(git_branch)
                     if git_ok:
-                        progress.update(task, description="✅ Git connected")
+                        progress.update(task, description="[OK] Git connected")
                     else:
                         progress.update(
                             task,
-                            description="⚠️ Git connection failed",
+                            description="[!] Git connection failed",
                         )
                         logger.warning(
-                            "Git connection failed — workspace was deployed "
+                            "Git connection failed -- workspace was deployed "
                             "but Git sync may need manual configuration"
                         )
 
@@ -274,7 +274,7 @@ class FabricDeployer:
                             progress.update(
                                 task,
                                 description=(
-                                    f"⚠️ Folder organize: {moved} moved, "
+                                    f"[!] Folder organize: {moved} moved, "
                                     f"{failed} failed"
                                 ),
                             )
@@ -282,14 +282,14 @@ class FabricDeployer:
                             progress.update(
                                 task,
                                 description=(
-                                    f"✅ Folder organize: {moved} items moved"
+                                    f"[OK] Folder organize: {moved} items moved"
                                 ),
                             )
                     except (FabricCLIError, ValueError) as e:
                         logger.warning("Folder organization failed (non-fatal): %s", e)
                         progress.update(
                             task,
-                            description="⚠️ Folder organize skipped (error)",
+                            description="[!] Folder organize skipped (error)",
                         )
 
                 # Step 7: Set up Deployment Pipeline (if configured)
@@ -301,15 +301,15 @@ class FabricDeployer:
                     if pipeline_ok:
                         progress.update(
                             task,
-                            description="✅ Deployment Pipeline configured",
+                            description="[OK] Deployment Pipeline configured",
                         )
                     else:
                         progress.update(
                             task,
-                            description=("⚠️ Deployment Pipeline setup had errors"),
+                            description=("[!] Deployment Pipeline setup had errors"),
                         )
                         logger.warning(
-                            "Deployment Pipeline setup failed — "
+                            "Deployment Pipeline setup failed -- "
                             "workspace was deployed but pipeline may "
                             "need manual configuration"
                         )
@@ -337,7 +337,7 @@ class FabricDeployer:
 
                 if rollback_result["success"]:
                     console.print(
-                        f"[green]✅ Rollback complete: {rollback_result['deleted']} "
+                        f"[green][OK] Rollback complete: {rollback_result['deleted']} "
                         f"items deleted[/green]"
                     )
                 else:
@@ -411,7 +411,7 @@ class FabricDeployer:
         return result
 
     def _create_folders(self):
-        """Create folder structure — parents before children."""
+        """Create folder structure -- parents before children."""
         workspace_name = self._effective_workspace_name
         if self.config.folders:
             console.print("[blue]Creating folders...[/blue]")
@@ -454,7 +454,7 @@ class FabricDeployer:
             if result["success"]:
                 reused = "exists" if result.get("reused") else "created"
                 console.print(
-                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"  {'*' if not result.get('reused') else '*'} "
                     f"Lakehouse: {lakehouse['name']} ({reused})"
                 )
                 self.audit.log_item_creation(
@@ -486,7 +486,7 @@ class FabricDeployer:
             if result["success"]:
                 reused = "exists" if result.get("reused") else "created"
                 console.print(
-                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"  {'*' if not result.get('reused') else '*'} "
                     f"Warehouse: {warehouse['name']} ({reused})"
                 )
                 self.audit.log_item_creation(
@@ -536,13 +536,13 @@ class FabricDeployer:
                         effective_file_path = tmp.name
                         temp_file_path = tmp.name
                         logger.debug(
-                            "Rendered notebook template %s → %s",
+                            "Rendered notebook template %s -> %s",
                             notebook.get("file_path"),
                             effective_file_path,
                         )
                 except (OSError, ValueError, RuntimeError) as e:
                     logger.warning(
-                        "Template rendering failed for %s: %s — using raw file",
+                        "Template rendering failed for %s: %s -- using raw file",
                         notebook.get("file_path"),
                         e,
                     )
@@ -570,7 +570,7 @@ class FabricDeployer:
             if result["success"]:
                 reused = "exists" if result.get("reused") else "created"
                 console.print(
-                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"  {'*' if not result.get('reused') else '*'} "
                     f"Notebook: {notebook['name']} ({reused})"
                 )
                 self.audit.log_item_creation(
@@ -602,7 +602,7 @@ class FabricDeployer:
             if result["success"]:
                 reused = "exists" if result.get("reused") else "created"
                 console.print(
-                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"  {'*' if not result.get('reused') else '*'} "
                     f"Pipeline: {pipeline['name']} ({reused})"
                 )
                 self.audit.log_item_creation(
@@ -634,7 +634,7 @@ class FabricDeployer:
             if result["success"]:
                 reused = "exists" if result.get("reused") else "created"
                 console.print(
-                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"  {'*' if not result.get('reused') else '*'} "
                     f"SemanticModel: {model['name']} ({reused})"
                 )
                 self.audit.log_item_creation(
@@ -667,7 +667,7 @@ class FabricDeployer:
             if result["success"]:
                 reused = "exists" if result.get("reused") else "created"
                 console.print(
-                    f"  {'✓' if not result.get('reused') else '·'} "
+                    f"  {'*' if not result.get('reused') else '*'} "
                     f"{resource['type']}: {resource['name']} ({reused})"
                 )
                 self.audit.log_item_creation(
@@ -732,7 +732,7 @@ class FabricDeployer:
                 if result.get("success"):
                     if result.get("skipped"):
                         console.print(
-                            f"  [yellow]⚠ Skipped principal {pid[:12]}...: "
+                            f"  [yellow][!] Skipped principal {pid[:12]}...: "
                             f"{result.get('message', 'skipped')}[/yellow]"
                         )
                     elif result.get("reused"):
@@ -741,7 +741,7 @@ class FabricDeployer:
                             f"{role} role[/dim]"
                         )
                     else:
-                        console.print(f"  ✓ Added {pid[:12]}... as {role}")
+                        console.print(f"  * Added {pid[:12]}... as {role}")
                     self.audit.log_principal_assignment(
                         pid,
                         role,
@@ -751,7 +751,7 @@ class FabricDeployer:
                 else:
                     error_msg = result.get("error", "Unknown error")
                     console.print(
-                        f"  [red]✗ Failed to add {pid[:12]}... as {role}: "
+                        f"  [red]X Failed to add {pid[:12]}... as {role}: "
                         f"{error_msg}[/red]"
                     )
 
@@ -761,7 +761,7 @@ class FabricDeployer:
             # Skip if domain contains unresolved env var placeholders
             if "${" in self.config.domain:
                 console.print(
-                    f"[yellow]⚠ Skipping domain assignment: "
+                    f"[yellow][!] Skipping domain assignment: "
                     f"'{self.config.domain}' contains unresolved environment "
                     f"variable. Set the FABRIC_DOMAIN_NAME secret if needed.[/yellow]"
                 )
@@ -773,7 +773,7 @@ class FabricDeployer:
                 console.print(f"  Assigned to domain: {self.config.domain}")
             else:
                 console.print(
-                    f"[red]❌ Failed to assign domain: {result.get('error')}[/red]"
+                    f"[red][ERROR] Failed to assign domain: {result.get('error')}[/red]"
                 )
                 console.print(
                     "[yellow]   Note: Ensure the Service Principal is a Domain "
@@ -836,7 +836,7 @@ class FabricDeployer:
                         if conn_result["success"]:
                             connection_id = conn_result["connection"]["id"]
                             console.print(
-                                f"[green]✓ Created GitHub connection: "
+                                f"[green]* Created GitHub connection: "
                                 f"{connection_id}[/green]"
                             )
                         else:
@@ -865,7 +865,7 @@ class FabricDeployer:
                                     del_result = self.git_api.delete_connection(old_id)
                                     if del_result["success"]:
                                         console.print(
-                                            f"  · Deleted stale connection "
+                                            f"  * Deleted stale connection "
                                             f"{old_id[:8]}..."
                                         )
                                         retry_result = (
@@ -884,7 +884,7 @@ class FabricDeployer:
                                                 "id"
                                             ]
                                             console.print(
-                                                f"[green]✓ Created fresh "
+                                                f"[green]* Created fresh "
                                                 f"connection: "
                                                 f"{connection_id}[/green]"
                                             )
@@ -896,7 +896,7 @@ class FabricDeployer:
                                                 f"[/yellow]"
                                             )
                                     else:
-                                        # Could not delete — fall back to
+                                        # Could not delete -- fall back to
                                         # reusing the existing connection
                                         connection_id = old_id
                                         console.print(
@@ -950,11 +950,11 @@ class FabricDeployer:
                         if conn_result["success"]:
                             connection_id = conn_result["connection"]["id"]
                             console.print(
-                                f"[green]✓ Created Azure DevOps connection: "
+                                f"[green]* Created Azure DevOps connection: "
                                 f"{connection_id}[/green]"
                             )
                         elif conn_result.get("duplicate"):
-                            # 409 DuplicateConnectionName — look up
+                            # 409 DuplicateConnectionName -- look up
                             # the existing connection by name
                             console.print(
                                 "[blue]Connection already exists. "
@@ -966,7 +966,7 @@ class FabricDeployer:
                             if existing_conn:
                                 connection_id = existing_conn["id"]
                                 console.print(
-                                    f"[green]✓ Found existing connection: "
+                                    f"[green]* Found existing connection: "
                                     f"{connection_id}[/green]"
                                 )
                             else:
@@ -1021,11 +1021,11 @@ class FabricDeployer:
 
             if result.get("already_connected"):
                 console.print(
-                    "[green]✓ Workspace already connected to Git "
+                    "[green]* Workspace already connected to Git "
                     "(idempotent)[/green]"
                 )
             else:
-                console.print("[green]✓ Workspace connected to Git[/green]")
+                console.print("[green]* Workspace connected to Git[/green]")
 
             # Show the browsable Git repo URL
             if provider_type == GitProviderType.GITHUB:
@@ -1052,7 +1052,7 @@ class FabricDeployer:
                     browse_url += f"?path=/{dir_path}"
             self._git_browse_url = browse_url
             console.print(
-                f"[bold cyan]🔗 Open repo in browser:[/bold cyan] " f"{browse_url}"
+                f"[bold cyan]Open repo in browser:[/bold cyan] " f"{browse_url}"
             )
 
             # Step 3: Initialize the Git connection
@@ -1107,7 +1107,7 @@ class FabricDeployer:
 
                     if poll_result["success"]:
                         console.print(
-                            "[green]✓ Workspace updated from Git successfully[/green]"
+                            "[green]* Workspace updated from Git successfully[/green]"
                         )
                     else:
                         console.print(
@@ -1210,7 +1210,7 @@ class FabricDeployer:
         pipeline = self.pipeline_api.get_pipeline_by_name(pipeline_name)
         if pipeline:
             pipeline_id = pipeline["id"]
-            console.print(f"  · Pipeline exists: {pipeline_id[:8]}...")
+            console.print(f"  * Pipeline exists: {pipeline_id[:8]}...")
 
             # Pre-check: verify the caller (SP) can actually manage this
             # pipeline.  The list_pipelines() endpoint returns ALL visible
@@ -1219,7 +1219,7 @@ class FabricDeployer:
             access_check = self.pipeline_api.get_pipeline(pipeline_id)
             if not access_check["success"]:
                 console.print(
-                    f"  [red]✗ Pipeline '{pipeline_name}' exists but the "
+                    f"  [red]X Pipeline '{pipeline_name}' exists but the "
                     f"automation SP does not have manage access.[/red]"
                 )
                 console.print(
@@ -1243,12 +1243,12 @@ class FabricDeployer:
             if not result["success"]:
                 logger.error("Failed to create pipeline: %s", result.get("error"))
                 console.print(
-                    f"  [red]✗ Failed to create pipeline: "
+                    f"  [red]X Failed to create pipeline: "
                     f"{result.get('error')}[/red]"
                 )
                 return False
             pipeline_id = result["pipeline"]["id"]
-            console.print(f"  ✓ Pipeline created: {pipeline_id[:8]}...")
+            console.print(f"  * Pipeline created: {pipeline_id[:8]}...")
 
         # Step 2: Grant pipeline access to admin principals
         #
@@ -1266,7 +1266,7 @@ class FabricDeployer:
 
         # Resolve the SP's Object ID for pipeline user assignment.
         # The Fabric Pipeline Users API requires the SP's Object ID
-        # (Enterprise App) — NOT the Application (Client) ID.
+        # (Enterprise App) -- NOT the Application (Client) ID.
         # Priority: SP_OBJECT_ID env var > AZURE_CLIENT_ID fallback
         sp_id_from_env = (
             os.getenv("SP_OBJECT_ID")
@@ -1280,7 +1280,7 @@ class FabricDeployer:
             )
         else:
             logger.warning(
-                "SP_OBJECT_ID not set — falling back to AZURE_CLIENT_ID. "
+                "SP_OBJECT_ID not set -- falling back to AZURE_CLIENT_ID. "
                 "This may fail if AZURE_CLIENT_ID is the Application ID "
                 "rather than the Object ID."
             )
@@ -1288,7 +1288,7 @@ class FabricDeployer:
         # Track whether the SP was already added to the pipeline
         sp_added_to_pipeline = False
 
-        # Add the calling SP to the pipeline FIRST — this is critical
+        # Add the calling SP to the pipeline FIRST -- this is critical
         # because the SP is the authenticated caller and must have pipeline
         # Admin access before it can add other principals.
         if sp_id_from_env:
@@ -1303,19 +1303,19 @@ class FabricDeployer:
                 sp_added_to_pipeline = True
                 if sp_result.get("reused"):
                     console.print(
-                        f"    · SP {sp_id_from_env[:12]}... already has "
+                        f"    * SP {sp_id_from_env[:12]}... already has "
                         f"pipeline access"
                     )
                 else:
                     console.print(
-                        f"    ✓ Added SP {sp_id_from_env[:12]}... to pipeline "
+                        f"    * Added SP {sp_id_from_env[:12]}... to pipeline "
                         f"as Admin"
                     )
             else:
                 error_str = sp_result.get("error", "")
                 error_detail = sp_result.get("error_detail", "")
                 console.print(
-                    f"    [yellow]⚠ Could not add SP to pipeline: "
+                    f"    [yellow][!] Could not add SP to pipeline: "
                     f"{error_str}[/yellow]"
                 )
                 if "404" in error_str or "EntityNotFound" in str(error_detail):
@@ -1347,7 +1347,7 @@ class FabricDeployer:
 
                     # Determine the correct principalType:
                     # 1. Explicit 'type' field in config (preferred)
-                    # 2. Auto-detect: if ID matches AZURE_CLIENT_ID → SP
+                    # 2. Auto-detect: if ID matches AZURE_CLIENT_ID -> SP
                     # 3. Auto-detect: if description contains SP keywords
                     # 4. Default: "Group" (security groups are most common)
                     p_type = principal.get("type")
@@ -1370,7 +1370,7 @@ class FabricDeployer:
                         if not pid:
                             continue
 
-                        # Skip the SP — already added above.
+                        # Skip the SP -- already added above.
                         # Match by SP_OBJECT_ID or by AZURE_CLIENT_ID (which
                         # is the App ID, not the Object ID needed by PBI API).
                         if sp_added_to_pipeline and (
@@ -1379,7 +1379,7 @@ class FabricDeployer:
                             or (self.secrets and pid == self.secrets.azure_client_id)
                         ):
                             logger.debug(
-                                "Skipping %s in admin loop — SP already "
+                                "Skipping %s in admin loop -- SP already "
                                 "added to pipeline via SP_OBJECT_ID",
                                 pid[:12],
                             )
@@ -1395,12 +1395,12 @@ class FabricDeployer:
                         if result.get("success"):
                             if result.get("reused"):
                                 console.print(
-                                    f"    · {pid[:12]}... already has "
+                                    f"    * {pid[:12]}... already has "
                                     f"pipeline access"
                                 )
                             else:
                                 console.print(
-                                    f"    ✓ Added {pid[:12]}... ({p_type}) "
+                                    f"    * Added {pid[:12]}... ({p_type}) "
                                     f"to pipeline as Admin"
                                 )
                         else:
@@ -1410,7 +1410,7 @@ class FabricDeployer:
                             ):
                                 user_add_404s += 1
                             console.print(
-                                f"    [yellow]⚠ Could not add {pid[:12]}... "
+                                f"    [yellow][!] Could not add {pid[:12]}... "
                                 f"({p_type}) to pipeline: "
                                 f"{result.get('error', 'unknown')}"
                                 f"[/yellow]"
@@ -1418,12 +1418,12 @@ class FabricDeployer:
 
         # If ALL user additions returned 404 (EntityNotFound), the
         # /users endpoint is inaccessible to the current SP.  This is a
-        # known Fabric API limitation for Service Principals — the /stages
+        # known Fabric API limitation for Service Principals -- the /stages
         # endpoint still works, so we continue to stage assignment.
         if user_add_attempts > 0 and user_add_404s == user_add_attempts:
             console.print(
-                f"  [yellow]⚠ All {user_add_404s} pipeline user additions "
-                f"returned 404 — /users endpoint inaccessible to SP.[/yellow]"
+                f"  [yellow][!] All {user_add_404s} pipeline user additions "
+                f"returned 404 -- /users endpoint inaccessible to SP.[/yellow]"
             )
             console.print(
                 "  [dim]Pipeline users can be added manually in the "
@@ -1444,13 +1444,13 @@ class FabricDeployer:
                 "Failed to get pipeline stages: %s", stages_result.get("error")
             )
             console.print(
-                f"  [red]✗ Failed to get stages: {stages_result.get('error')}[/red]"
+                f"  [red]X Failed to get stages: {stages_result.get('error')}[/red]"
             )
             return False
 
         # Build maps from fetched stages:
-        # - stage_map: display name → stage ID (for stage lookup)
-        # - stage_ws_map: stage ID → workspace ID (for pre-check)
+        # - stage_map: display name -> stage ID (for stage lookup)
+        # - stage_ws_map: stage ID -> workspace ID (for pre-check)
         stage_map = {}
         stage_ws_map = {}
         for stage in stages_result["stages"]:
@@ -1483,7 +1483,7 @@ class FabricDeployer:
             if not stage_id:
                 logger.warning("No pipeline stage '%s' found", fabric_stage_name)
                 console.print(
-                    f"  [yellow]⚠ Stage '{fabric_stage_name}' not found "
+                    f"  [yellow][!] Stage '{fabric_stage_name}' not found "
                     f"in pipeline[/yellow]"
                 )
                 continue
@@ -1492,7 +1492,7 @@ class FabricDeployer:
             if ws_name == dev_workspace_name and self.workspace_id:
                 ws_id = self.workspace_id
                 console.print(
-                    f"  · {stage_key.title()}: {ws_name} (current deployment)"
+                    f"  * {stage_key.title()}: {ws_name} (current deployment)"
                 )
             else:
                 # Create workspace if it doesn't exist (idempotent)
@@ -1501,7 +1501,7 @@ class FabricDeployer:
                 )
                 if not ws_result["success"]:
                     console.print(
-                        f"  [red]✗ Failed to create workspace {ws_name}: "
+                        f"  [red]X Failed to create workspace {ws_name}: "
                         f"{ws_result.get('error')}[/red]"
                     )
                     continue
@@ -1512,7 +1512,7 @@ class FabricDeployer:
 
                 if not ws_id:
                     console.print(
-                        f"  [red]✗ Could not resolve workspace ID "
+                        f"  [red]X Could not resolve workspace ID "
                         f"for {ws_name}[/red]"
                     )
                     continue
@@ -1520,7 +1520,7 @@ class FabricDeployer:
                 reused = ws_result.get("reused", False)
                 action = "exists" if reused else "created"
                 console.print(
-                    f"  {'·' if reused else '✓'} {stage_key.title()}: "
+                    f"  {'*' if reused else '*'} {stage_key.title()}: "
                     f"{ws_name} ({action})"
                 )
 
@@ -1548,11 +1548,11 @@ class FabricDeployer:
                             if p_result.get("success"):
                                 if not p_result.get("reused"):
                                     console.print(
-                                        f"      ✓ Added {pid[:12]}... as {role}"
+                                        f"      * Added {pid[:12]}... as {role}"
                                     )
                             else:
                                 console.print(
-                                    f"      [yellow]⚠ Could not add "
+                                    f"      [yellow][!] Could not add "
                                     f"{pid[:12]}...: "
                                     f"{p_result.get('error', 'unknown')}"
                                     f"[/yellow]"
@@ -1576,10 +1576,10 @@ class FabricDeployer:
                                     ws_name,
                                 )
                             else:
-                                console.print(f"      ✓ Created folder: {folder}")
+                                console.print(f"      * Created folder: {folder}")
                         else:
                             console.print(
-                                f"      [yellow]⚠ Could not create "
+                                f"      [yellow][!] Could not create "
                                 f"folder '{folder}': "
                                 f"{f_result.get('error', 'unknown')}"
                                 f"[/yellow]"
@@ -1592,7 +1592,7 @@ class FabricDeployer:
             # avoid the API call entirely.
             existing_ws_for_stage = stage_ws_map.get(stage_id)
             if existing_ws_for_stage and existing_ws_for_stage == ws_id:
-                console.print(f"    · Already assigned to {fabric_stage_name} stage")
+                console.print(f"    * Already assigned to {fabric_stage_name} stage")
                 continue
 
             # Assign workspace to pipeline stage
@@ -1600,13 +1600,13 @@ class FabricDeployer:
                 pipeline_id, stage_id, ws_id
             )
             if assign_result["success"]:
-                console.print(f"    → Assigned to {fabric_stage_name} stage")
+                console.print(f"    -> Assigned to {fabric_stage_name} stage")
             else:
                 error = assign_result.get("error", "")
                 error_detail = assign_result.get("error_detail", "")
                 status_code = assign_result.get("status_code")
                 combined = f"{error} {error_detail}".lower()
-                # Already assigned is OK (idempotent) — check both the
+                # Already assigned is OK (idempotent) -- check both the
                 # HTTP status code (400) with the Fabric error body, and
                 # the legacy substring match for backward compatibility.
                 is_already_assigned = (
@@ -1620,15 +1620,15 @@ class FabricDeployer:
                         )
                     )
                     # Fabric returns 400 "UnknownError" when re-assigning
-                    # to the same pipeline — treat as idempotent.
+                    # to the same pipeline -- treat as idempotent.
                     or (status_code == 400 and "UnknownError" in (error_detail or ""))
                 )
                 if is_already_assigned:
                     console.print(
-                        f"    · Already assigned to {fabric_stage_name} stage"
+                        f"    * Already assigned to {fabric_stage_name} stage"
                     )
                 else:
-                    console.print(f"    [red]✗ Assignment failed: {error}[/red]")
+                    console.print(f"    [red]X Assignment failed: {error}[/red]")
                     if error_detail:
                         logger.debug("Assignment error detail: %s", error_detail)
                     # Surface actionable hints for opaque Fabric 400 errors
@@ -1649,7 +1649,7 @@ class FabricDeployer:
                             "deployment pipelines"
                         )
                         console.print(
-                            "    [dim]Check Fabric portal → Deployment Pipelines "
+                            "    [dim]Check Fabric portal -> Deployment Pipelines "
                             "to inspect current assignments.[/dim]"
                         )
 
@@ -1674,4 +1674,4 @@ class FabricDeployer:
             summary_table.add_row("Git Directory", git_dir)
 
         console.print(summary_table)
-        console.print("\n[green]✅ Deployment completed successfully![/green]")
+        console.print("\n[green][OK] Deployment completed successfully![/green]")

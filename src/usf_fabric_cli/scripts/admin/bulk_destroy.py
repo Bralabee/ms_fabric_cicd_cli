@@ -73,13 +73,13 @@ def bulk_destroy(file_path, dry_run=False, force=False):
         try:
             result = fabric.delete_workspace(ws)
             if result["success"]:
-                print(" ✅ Deleted")
+                print(" [OK] Deleted")
                 success_count += 1
             else:
-                print(f" ❌ Failed: {result.get('error')}")
+                print(f" [ERROR] Failed: {result.get('error')}")
                 fail_count += 1
         except (ValueError, KeyError, OSError, RuntimeError) as e:
-            print(f" ❌ Error: {e}")
+            print(f" [ERROR] Error: {e}")
             fail_count += 1
 
     print(f"\nSummary: {success_count} deleted, {fail_count} failed.")

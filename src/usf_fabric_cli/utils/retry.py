@@ -118,7 +118,7 @@ def calculate_backoff(
         attempt: Current attempt number (0-indexed)
         base_delay: Initial delay in seconds
         max_delay: Maximum delay cap in seconds
-        jitter: Whether to add random jitter (±25%)
+        jitter: Whether to add random jitter (+/-25%)
 
     Returns:
         Delay in seconds
@@ -126,7 +126,7 @@ def calculate_backoff(
     delay = min(base_delay * (2**attempt), max_delay)
 
     if jitter:
-        # Add jitter (±25%) to prevent thundering herd
+        # Add jitter (+/-25%) to prevent thundering herd
         jitter_range = delay * 0.25
         delay = delay + (2 * random.random() - 1) * jitter_range
 

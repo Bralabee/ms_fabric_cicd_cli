@@ -73,7 +73,7 @@ def main(
 
         if response.status_code == 200:
             console.print(
-                "[green]✅ SUCCESS: Service Principal can"
+                "[green][OK] SUCCESS: Service Principal can"
                 " access Azure DevOps"
                 " repositories.[/green]"
             )
@@ -97,12 +97,12 @@ def main(
                         console.print(f"     - {ref['name']}")
                 else:
                     console.print(
-                        "   [red]❌ Failed to list branches:"
+                        "   [red][ERROR] Failed to list branches:"
                         f" {refs_response.status_code}[/red]"
                     )
         else:
             console.print(
-                "[red]❌ FAILED: Service Principal cannot"
+                "[red][ERROR] FAILED: Service Principal cannot"
                 " access Azure DevOps."
                 f" Status Code: {response.status_code}[/red]"
             )
