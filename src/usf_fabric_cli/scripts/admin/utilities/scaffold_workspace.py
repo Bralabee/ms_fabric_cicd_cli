@@ -593,52 +593,54 @@ def _generate_yaml(
             for p in discovered_principals:
                 desc = p.get("description", p["id"][:12] + "...")
                 lines.append(f"  #   {p['type']} ({p['role']}): {desc}")
-    elif discovered_principals:
-        # Non-templatised: emit real principals discovered from the live workspace
-        for i, p in enumerate(discovered_principals, 1):
-            lines.append(f"  # {i}. {p.get('description', 'Discovered principal')}")
-            lines.append(f'  - id: "{p["id"]}"')
-            lines.append(f"    type: {p['type']}")
-            lines.append(f"    role: {p['role']}")
-            lines.append(f'    description: "{p.get("description", "")}"')
-            lines.append("")
-        lines.append(
-            "  # NOTE: Principals above were discovered from the live workspace."
-        )
-        lines.append(
-            "  # Consider replacing literal IDs with env var " "references (${...})"
-        )
-        lines.append("  # for portability across environments.")
     else:
-        # Fallback: placeholder principals when discovery fails
-        lines.append("  # 1. Automation Service Principal (runs deployments)")
+        # Non-templatised: emit governance + project-specific principals
+        # using env var refs (production-ready pattern)
+        lines.append(
+            "  # -- Mandatory governance principals" " (every workspace gets these) --"
+        )
         lines.append('  - id: "${AZURE_CLIENT_ID}"')
         lines.append("    type: ServicePrincipal")
         lines.append("    role: Admin")
         lines.append("    description: Automation SP -- required for CI/CD deployments")
         lines.append("")
-        lines.append("  # 2. Admin security group (governance)")
         lines.append('  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"')
         lines.append("    type: Group")
         lines.append("    role: Admin")
         lines.append("    description: Mandatory governance admin group")
         lines.append("")
-        lines.append("  # 3. Contributor security group (support team)")
         lines.append('  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"')
         lines.append("    type: Group")
         lines.append("    role: Contributor")
         lines.append("    description: Mandatory governance contributor group")
-
-    if not templatise:
         lines.append("")
+        lines.append("  # -- Project-specific principals (runtime-configurable) --")
+        lines.append(f'  - id: "${{{upper_slug}_ADMIN_ID}}"')
+        lines.append("    type: Group")
+        lines.append("    role: Admin")
         lines.append(
-            f"  # TODO: Add project-specific principals "
-            f"(e.g. ${{{upper_slug}_ADMIN_ID}})"
+            f'    description: "{workspace_name} project admins'
+            f' -- set via {upper_slug}_ADMIN_ID secret"'
         )
-        lines.append(f'  # - id: "${{{upper_slug}_ADMIN_ID}}"')
-        lines.append("  #   type: Group")
-        lines.append("  #   role: Admin")
-        lines.append(f'  #   description: "{workspace_name} project admins"')
+        lines.append("")
+        lines.append(f'  - id: "${{{upper_slug}_MEMBERS_ID}}"')
+        lines.append("    type: Group")
+        lines.append("    role: Member")
+        lines.append(
+            f'    description: "{workspace_name} team members'
+            f' -- set via {upper_slug}_MEMBERS_ID secret"'
+        )
+
+        if discovered_principals:
+            lines.append("")
+            lines.append(
+                "  # -- Discovered principals from source workspace (for reference) --"
+            )
+            for p in discovered_principals:
+                desc = p.get("description", p["id"][:12] + "...")
+                lines.append(
+                    f"  #   {p['id'][:8]}... {p['type']} ({p['role']}): {desc}"
+                )
     lines.append("")
 
     # -- deployment pipeline section --
@@ -786,11 +788,22 @@ def _generate_feature_yaml(
     lines.append("    role: Contributor")
     lines.append("    description: Mandatory governance contributor group")
     lines.append("")
-    lines.append("  # TODO: Add project-specific principals")
-    lines.append(f'  # - id: "${{{principal_prefix}_ADMIN_ID}}"')
-    lines.append("  #   type: Group")
-    lines.append("  #   role: Admin")
-    lines.append(f'  #   description: "{workspace_name} project admins"')
+    lines.append("  # -- Project-specific principals (runtime-configurable) --")
+    lines.append(f'  - id: "${{{principal_prefix}_ADMIN_ID}}"')
+    lines.append("    type: Group")
+    lines.append("    role: Admin")
+    lines.append(
+        f'    description: "{workspace_name} project admins'
+        f' -- set via {principal_prefix}_ADMIN_ID secret"'
+    )
+    lines.append("")
+    lines.append(f'  - id: "${{{principal_prefix}_MEMBERS_ID}}"')
+    lines.append("    type: Group")
+    lines.append("    role: Member")
+    lines.append(
+        f'    description: "{workspace_name} team members'
+        f' -- set via {principal_prefix}_MEMBERS_ID secret"'
+    )
     lines.append("")
 
     return "\n".join(lines) + "\n"

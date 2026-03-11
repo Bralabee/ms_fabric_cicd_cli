@@ -475,6 +475,60 @@ class TestGenerateYamlTemplatise:
         yaml = self._gen(templatise=True)
         assert "TODO: Add project-specific principals" not in yaml
 
+    def test_non_templatise_has_governance_principals(self):
+        """Non-templatised output should have all 3 governance principals."""
+        yaml = self._gen()
+        assert "${AZURE_CLIENT_ID}" in yaml
+        assert "${ADDITIONAL_ADMIN_PRINCIPAL_ID}" in yaml
+        assert "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}" in yaml
+
+    def test_non_templatise_has_active_project_principals(self):
+        """Non-templatised output should have active project-specific principals."""
+        yaml = self._gen()
+        assert "${SALES_ANALYTICS_ADMIN_ID}" in yaml
+        assert "${SALES_ANALYTICS_MEMBERS_ID}" in yaml
+        # Should NOT be commented out
+        for line in yaml.splitlines():
+            if "SALES_ANALYTICS_ADMIN_ID" in line and "- id:" in line:
+                assert not line.strip().startswith("#")
+
+    def test_non_templatise_no_hardcoded_uuids(self):
+        """Non-templatised output should NOT contain hardcoded principal UUIDs."""
+        principals = [
+            {
+                "id": "aaaa-bbbb-cccc-dddd",
+                "type": "Group",
+                "role": "Admin",
+                "description": "Data Team Admins",
+            },
+        ]
+        yaml = self._gen(discovered_principals=principals)
+        # UUID should only appear in comments, not as active principals
+        for line in yaml.splitlines():
+            if "aaaa-bbbb-cccc-dddd" in line:
+                assert line.strip().startswith(
+                    "#"
+                ), "Discovered principal UUID should be a comment, not active"
+
+    def test_non_templatise_discovered_principals_as_comments(self):
+        """Discovered principals should appear as reference comments."""
+        principals = [
+            {
+                "id": "f21d0f2e-f041-4ccc-8a13-c05abfaa886c",
+                "type": "Group",
+                "role": "Admin",
+                "description": "IT Admins",
+            },
+        ]
+        yaml = self._gen(discovered_principals=principals)
+        assert "Discovered principals from source workspace" in yaml
+        assert "IT Admins" in yaml
+
+    def test_non_templatise_no_todo_comment(self):
+        """Non-templatised output should NOT have TODO comments for principals."""
+        yaml = self._gen()
+        assert "TODO: Add project-specific principals" not in yaml
+
 
 # ── _generate_feature_yaml templatise tests ──────────────────────────────
 
@@ -505,13 +559,14 @@ class TestGenerateFeatureYamlTemplatise:
         assert "git_directory: /hr_analytics" not in yaml
 
     def test_templatise_principal_prefix_is_changeme(self):
-        """TODO principal comment should use CHANGEME prefix."""
+        """Templatised principals should use CHANGEME prefix."""
         yaml = _generate_feature_yaml(
             workspace_name="HR Analytics [DEV]",
             folders=self.FOLDERS,
             templatise=True,
         )
         assert "${CHANGEME_ADMIN_ID}" in yaml
+        assert "${CHANGEME_MEMBERS_ID}" in yaml
         # Should NOT use the real slug
         assert "HR_ANALYTICS_ADMIN_ID" not in yaml
 
@@ -523,7 +578,21 @@ class TestGenerateFeatureYamlTemplatise:
         )
         assert "git_directory: /hr_analytics" in yaml
         assert "${HR_ANALYTICS_ADMIN_ID}" in yaml
+        assert "${HR_ANALYTICS_MEMBERS_ID}" in yaml
         assert "CHANGE-ME" not in yaml
+
+    def test_non_templatise_principals_are_active(self):
+        """Non-templatised feature yaml should have active project principals."""
+        yaml = _generate_feature_yaml(
+            workspace_name="HR Analytics [DEV]",
+            folders=self.FOLDERS,
+        )
+        # Project principals should be active (not commented out)
+        for line in yaml.splitlines():
+            if "HR_ANALYTICS_ADMIN_ID" in line:
+                assert not line.strip().startswith(
+                    "#"
+                ), "Project principal should be active, not a comment"
 
     def test_templatise_with_explicit_slug(self):
         """Custom project_slug should still use CHANGE-ME placeholders."""
