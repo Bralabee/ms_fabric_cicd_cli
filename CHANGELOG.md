@@ -12,6 +12,19 @@ All notable changes to this project will be documented in this file.
 - **`discover-folders` module**: New `src/usf_fabric_cli/scripts/admin/utilities/discover_folders.py` with functions: `discover_folders()`, `_compute_diff()`, `_update_yaml_file()`, `_derive_feature_workspace_name()`.
 - **Makefile `scaffold` target**: New `make scaffold workspace="<name>"` target for running the scaffold command with optional `slug=`, `feature=`, `pipeline=` parameters. Includes Docker variant `make docker-scaffold`.
 - **Makefile `discover-folders` target**: New `make discover-folders config="<path>"` target with optional `workspace=`, `branch=`, `dry_run=` parameters. Includes Docker variant `make docker-discover-folders`.
+- **Docs freshness audit in release process**: Added mandatory audit checklist to `docs/RELEASE_PROCESS.md` — version numbers, test counts, command counts, workflow counts must be verified before every release.
+- **CLI reference docs**: Added `discover-folders` and `scaffold` to `docs/CLI_REFERENCE.md`, including exit code 2 semantics.
+
+### Fixed
+
+- **Windows cross-platform compatibility**: Replaced all non-ASCII characters (Unicode emojis, special symbols) with ASCII equivalents across CLI output, Makefile, and Rich console output. Prevents `UnicodeEncodeError` on Windows terminals with `cp1252` encoding.
+- **Polyglot shell detection**: `Makefile` shell detection now works on Windows (MSYS2/Git Bash), macOS, and Linux via `PROGRAMFILES` fallback and portable `chmod` handling.
+- **`--cleanup-repo` resilience**: Hardened error handling — partial failures (e.g., config dir removed but workflow update fails) no longer leave the repo in an inconsistent state. Each cleanup step is independent and logs warnings instead of aborting.
+- **Stale version refs across docs**: Fixed test count (627 → 634), command count, and version references in README, copilot-instructions, and docs that still referenced older values.
+
+### Tests
+
+- **634/634 tests passing**.
 
 ## [1.8.0] - 2026-03-06
 
