@@ -173,8 +173,9 @@ scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace
 	echo "Examples:"; \
 	echo "  make scaffold workspace=\"EDP [DEV]\""; \
 	echo "  make scaffold workspace=\"EDP [DEV]\" feature=1 pipeline=\"EDP - Pipeline\""; \
-	echo "  make scaffold workspace=\"Sales\" slug=re_sales output=config/projects/_templates/re_sales/base_workspace.yaml"; \
-	exit 1; \
+	echo "  make scaffold workspace=\"Sales\" slug=re_sales output=config/projects/_templates/re_sales/base_workspace.yaml"; \		echo ""; \
+		printf "\033[33mNote: Do not put spaces around the '=' sign (e.g., workspace= \"...\").\033[0m\n"; \
+		echo ""; \	exit 1; \
 	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.scaffold_workspace "$(workspace)" \
 		$(if $(output),--output "$(output)",) \
