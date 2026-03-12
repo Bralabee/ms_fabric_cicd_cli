@@ -4,9 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [1.8.2]
 
-## [1.8.2]
+## [1.8.3] - 2026-03-12
+
+### Changed
+- scaffold: Fix git_repo template substitution when using --templatise
+- scaffold: Fix make scaffold help text matching
+
+
+## [1.8.2] - 2026-03-12
 
 ### Bug Fixes
 - Fixed Pydantic env mapping regression preventing `AZURE_TENANT_ID` extraction from `.env` files.

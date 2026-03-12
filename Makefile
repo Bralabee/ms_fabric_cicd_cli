@@ -144,8 +144,8 @@ scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace
 	echo "Options:"; \
 	echo "  workspace  -- Name of the existing Fabric workspace to scan (required)"; \
 	echo "  output     -- Output path for base_workspace.yaml (default: config/projects/_templates/<slug>/)"; \
-	echo "  feature=1  -- Also generate feature_workspace.yaml"; \
-	echo "  pipeline   -- Include deployment_pipeline section with this name"; \
+	echo "  feature=1  -- (Required for CI/CD flow) Set feature=1 to also generate feature_workspace.yaml"; \
+	echo "  pipeline   -- (Required for Prod promotion) Pipeline name to scaffold dev/test/prod stages"; \
 	echo "  slug       -- Override the auto-generated project slug"; \
 	echo "  test_ws    -- Explicit Test stage workspace name"; \
 	echo "  prod_ws    -- Explicit Production stage workspace name"; \

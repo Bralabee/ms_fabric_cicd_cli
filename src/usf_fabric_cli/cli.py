@@ -28,6 +28,7 @@ from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
 load_dotenv(encoding="utf-8")
 
 logger = logging.getLogger(__name__)
+logging.getLogger("azure").setLevel(logging.WARNING)
 
 
 app = typer.Typer(help="Fabric CLI CI/CD - Enterprise Deployment Framework")

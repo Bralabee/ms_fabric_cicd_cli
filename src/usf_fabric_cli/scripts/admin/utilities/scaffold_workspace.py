@@ -38,6 +38,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from usf_fabric_cli.services.fabric_git_api import FabricGitAPI
 from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
 from usf_fabric_cli.utils.config import get_environment_variables
 
@@ -429,6 +430,9 @@ def _generate_yaml(
     test_workspace_name: Optional[str] = None,
     prod_workspace_name: Optional[str] = None,
     templatise: bool = False,
+    git_branch: str = "main",
+    git_directory: Optional[str] = None,
+    git_repo_fallback: str = "${GIT_REPO_URL}",
 ) -> str:
     """Generate base_workspace.yaml content."""
     slug = project_slug or _slugify(workspace_name)
@@ -479,11 +483,15 @@ def _generate_yaml(
     if templatise:
         ws_name = "CHANGE-ME [DEV]"
         ws_desc = "Standard data product workspace"
-        git_dir = "/CHANGE-ME"
+        git_dir = git_directory or "/CHANGE-ME"
+        git_repo = '"${GIT_REPO_URL}"'
+        git_branch_out = '"main"'
     else:
         ws_name = workspace_name
         ws_desc = f"{workspace_name} workspace -- managed by CI/CD"
-        git_dir = f"/{slug}"
+        git_dir = git_directory or f"/{slug}"
+        git_repo = f'"{git_repo_fallback}"'
+        git_branch_out = f'"{git_branch}"'
 
     # -- workspace section --
     lines.append("workspace:")
@@ -492,8 +500,8 @@ def _generate_yaml(
     lines.append(f'  description: "{ws_desc}"')
     lines.append("  capacity_id: ${FABRIC_CAPACITY_ID}")
     lines.append("  domain: ${FABRIC_DOMAIN_NAME}")
-    lines.append("  git_repo: ${GIT_REPO_URL}")
-    lines.append("  git_branch: main")
+    lines.append(f"  git_repo: {git_repo}")
+    lines.append(f"  git_branch: {git_branch_out}")
     lines.append(f"  git_directory: {git_dir}")
     lines.append("")
 
@@ -919,6 +927,41 @@ def scaffold_workspace(
             "or update the existing config."
         )
 
+    # -- 5d. Discover Git connection details --
+    print("   Discovering Git connection details...")
+    git_api = FabricGitAPI(token)
+    git_branch = "main"
+    git_directory = None
+    git_repo_url = "${GIT_REPO_URL}"
+    try:
+        git_conn = git_api.get_git_connection(workspace_id)
+        if git_conn and git_conn.get("gitProviderDetails"):
+            details = git_conn["gitProviderDetails"]
+            git_branch = details.get("branchName", "main")
+            raw_dir = details.get("directoryName", "")
+            if raw_dir:
+                git_directory = raw_dir if raw_dir.startswith("/") else f"/{raw_dir}"
+            repo_name = details.get("repositoryName")
+            org_name = details.get("organizationName")
+            project_name = details.get("projectName")
+            owner_name = details.get("ownerName")
+
+            if org_name and project_name and repo_name:
+                git_repo_url = (
+                    f"https://dev.azure.com/{org_name}/{project_name}/_git/{repo_name}"
+                )
+            elif owner_name and repo_name:
+                git_repo_url = f"https://github.com/{owner_name}/{repo_name}"
+
+            print(
+                f"   Found Git connection: branch='{git_branch}', "
+                f"directory='{git_directory}'"
+            )
+        else:
+            print("   No Git connection found on workspace.")
+    except Exception as e:
+        print(f"   Could not discover Git connection: {e}")
+
     # -- 6. Generate base_workspace.yaml --
     base_yaml = _generate_yaml(
         workspace_name=workspace_name,
@@ -931,6 +974,9 @@ def scaffold_workspace(
         test_workspace_name=test_workspace_name,
         prod_workspace_name=prod_workspace_name,
         templatise=templatise,
+        git_branch=git_branch,
+        git_directory=git_directory,
+        git_repo_fallback=git_repo_url,
     )
 
     if output_path:
