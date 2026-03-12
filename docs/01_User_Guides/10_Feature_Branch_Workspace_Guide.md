@@ -326,7 +326,7 @@ Six workflows cover the full lifecycle. All live in `.github/workflows/`.
 | 6 | `promote-test-to-prod.yml` | `workflow_dispatch` + confirm | Manual promote Test → Prod |
 
 > **Note**: All workflows use **parameterised variables** with fallback defaults.
-> Set `PROJECT_PREFIX`, `CLI_REPO_URL`, `CLI_REPO_REF`, and `FABRIC_CLI_VERSION`
+> Set required secrets, `CLI_REPO_URL`, `CLI_REPO_REF`, and `FABRIC_CLI_VERSION`
 > as **repository variables** (Settings → Variables) to customise for your project.
 > See the [REPLICATION_GUIDE](../../../fabric_cicd_test_repo/docs/REPLICATION_GUIDE.md) for full setup instructions.
 
@@ -359,7 +359,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.FABRIC_GITHUB_TOKEN }}
       GIT_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
       DEV_ADMIN_OBJECT_ID: ${{ secrets.DEV_ADMIN_OBJECT_ID }}
-      PROJECT_PREFIX: ${{ vars.PROJECT_PREFIX || 'fabric-cicd-demo' }}
+      PROJECT_PREFIX: ${{ inputs.project }}
 
     steps:
       - uses: actions/checkout@v6
@@ -417,7 +417,7 @@ jobs:
       FABRIC_CAPACITY_ID: ${{ secrets.FABRIC_CAPACITY_ID }}
       DEV_ADMIN_OBJECT_ID: ${{ secrets.DEV_ADMIN_OBJECT_ID }}
       GIT_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-      PROJECT_PREFIX: ${{ vars.PROJECT_PREFIX || 'fabric-cicd-demo' }}
+      PROJECT_PREFIX: ${{ inputs.project }}
 
     steps:
       - uses: actions/checkout@v6
@@ -503,7 +503,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      PROJECT_PREFIX: ${{ vars.PROJECT_PREFIX || 'fabric-cicd-demo' }}
+      PROJECT_PREFIX: ${{ inputs.project }}
 
     steps:
       - uses: actions/checkout@v6
@@ -580,7 +580,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      PROJECT_PREFIX: ${{ vars.PROJECT_PREFIX || 'fabric-cicd-demo' }}
+      PROJECT_PREFIX: ${{ inputs.project }}
 
     steps:
       - uses: actions/checkout@v6
@@ -666,7 +666,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      PROJECT_PREFIX: ${{ vars.PROJECT_PREFIX || 'fabric-cicd-demo' }}
+      PROJECT_PREFIX: ${{ inputs.project }}
 
     steps:
       - uses: actions/checkout@v6
@@ -1142,5 +1142,5 @@ Where:
 *E2E lifecycle validated: 15 February 2026 — all 3 phases passed (setup, feature branch, promotion).*
 
 > **`<prefix>` notation**: Throughout this document, `<prefix>` refers to the value of the
-> `PROJECT_PREFIX` repository variable (default: `fabric-cicd-demo`). Set this variable in
+> `PROJECT_PREFIX` is dynamically passed via GitHub Action inputs based on the project you are deploying.
 > GitHub → Settings → Secrets and variables → Actions → Variables.
