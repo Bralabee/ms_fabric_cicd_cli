@@ -43,7 +43,7 @@ class FabricDeployer:
         # Ensure .env is loaded
         from dotenv import load_dotenv
 
-        load_dotenv()
+        load_dotenv(encoding="utf-8")
 
         self.config_manager = ConfigManager(config_path)
         self.config = self.config_manager.load_config(environment)

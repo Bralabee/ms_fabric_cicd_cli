@@ -40,7 +40,7 @@ from usf_fabric_cli.scripts.dev.generate_project import generate_project_config
 
 # Load .env so all env-var reads (GITHUB_TOKEN, FABRIC_CAPACITY_ID, etc.) work
 # consistently with the rest of the project.
-load_dotenv()
+load_dotenv(encoding="utf-8")
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")

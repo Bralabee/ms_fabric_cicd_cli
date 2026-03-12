@@ -27,7 +27,7 @@ from rich.console import Console
 
 # Load .env so GITHUB_TOKEN (and any other vars) are available when
 # running this script directly (consistent with the rest of the project).
-load_dotenv()
+load_dotenv(encoding="utf-8")
 
 # ---------------------------------------------------------------------------
 # Logging / UI

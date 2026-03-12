@@ -376,7 +376,7 @@ def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
     This function is maintained for backward compatibility.
     """
     # Load variables from .env to simplify local workflows
-    load_dotenv()
+    load_dotenv(encoding="utf-8")
 
     # Try the new secrets module first
     try:
@@ -407,7 +407,7 @@ def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
         if config_env_files:
             # Load the first found env file
             logger.info("Loading environment from %s", config_env_files[0])
-            load_dotenv(config_env_files[0])
+            load_dotenv(config_env_files[0], encoding="utf-8")
 
     # Map Azure standard names to internal names if needed
     _azure_tenant = os.getenv("AZURE_TENANT_ID")

@@ -25,7 +25,7 @@ from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
 
 # Ensure .env vars are loaded for all CLI commands, including those that
 # read env vars directly (e.g., init-github-repo reads GITHUB_TOKEN).
-load_dotenv()
+load_dotenv(encoding="utf-8")
 
 logger = logging.getLogger(__name__)
 

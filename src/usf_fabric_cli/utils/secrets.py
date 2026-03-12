@@ -246,6 +246,12 @@ def get_secrets() -> FabricSecrets:
     """
     secrets = FabricSecrets()
 
+    # Backfill os.environ to ensure subprocesses (like fab CLI) and legacy
+    # os.getenv() calls see variables that were loaded by Pydantic from .env
+    for key, val in secrets.to_env_dict().items():
+        if val and not os.getenv(key):
+            os.environ[key] = val
+
     # Auto-generate FABRIC_TOKEN from SP credentials if not already set
     if (
         not secrets.fabric_token

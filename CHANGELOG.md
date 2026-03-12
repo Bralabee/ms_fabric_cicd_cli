@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-03-12
+
 ### Added
 
 - **`destroy` — automatic pipeline teardown**: When `--force-destroy-populated` is set and the config has a `deployment_pipeline` section, the `destroy` command now automatically unassigns all workspaces from pipeline stages and deletes the pipeline before deleting the workspace. Previously, Fabric blocked workspace deletion with `ALM_InvalidRequest_CannotDisableFoldersThatAreConnectedToAnyALMPipeline`.
@@ -17,6 +19,8 @@ All notable changes to this project will be documented in this file.
 - **CLI reference docs**: Added `discover-folders` and `scaffold` to `docs/CLI_REFERENCE.md`, including exit code 2 semantics.
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Deployer: Disconnect-before-reconnect for scaffolded workspaces**: When deploying to a workspace that already has a Git connection (e.g. scaffolded from a live workspace), the deployer now checks whether the existing connection matches the target repo/branch/directory. If it differs, it disconnects first, then reconnects with the new config. Previously, `connect_workspace_to_git` returned "already connected" (idempotent) but `initializeConnection` failed with 400 Bad Request because the workspace was still bound to the old Git configuration. This is the most common failure mode when using `scaffold` → `deploy` on existing workspaces.
 - **Windows cross-platform compatibility**: Replaced all non-ASCII characters (Unicode emojis, special symbols) with ASCII equivalents across CLI output, Makefile, and Rich console output. Prevents `UnicodeEncodeError` on Windows terminals with `cp1252` encoding.
@@ -42,6 +46,8 @@ All notable changes to this project will be documented in this file.
 - **Folder rules schema: `name` property (XREPO-M1)**: `folder_rules` items now accept an optional `name` field for item-specific folder placement, without breaking `additionalProperties: false`.
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **`initializeConnection` response casing (API-H3)**: `fabric_git_api.py` now reads `requiredAction`, `remoteCommitHash`, `workspaceHead` (camelCase) from the Fabric REST API response. Previously used PascalCase (`RequiredAction`, etc.) which silently defaulted to `"None"`, breaking the Git sync flow.
 - **`commitToGit` field name (API-H1)**: Request body now sends `"comment"` instead of `"message"` per the [official API spec](https://learn.microsoft.com/en-us/rest/api/fabric/core/git/commit-to-git). Commit messages were silently dropped.
@@ -73,6 +79,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Polling busy-poll floor (H3)**: `deployment_pipeline.py` and `fabric_git_api.py` LRO polling loops now use `time.sleep(max(retry_after, 2))` instead of bare `time.sleep(retry_after)`. Prevents CPU spin if the Fabric API returns `Retry-After: 0` or a caller passes 0.
 - **Key Vault error visibility (M3)**: `secrets.py` previously swallowed all Azure Key Vault exceptions silently. Now logs `logger.warning("Azure Key Vault error [%s]: %s", type(e).__name__, e)` before falling back to `None`, making misconfigured Key Vault URLs diagnosable without inspecting source.
 - **RECOMMENDED_CLI_VERSION updated (M9)**: `fabric_wrapper.py:RECOMMENDED_CLI_VERSION` updated from `"1.0.0"` to `"1.3.1"` to match the ms-fabric-cli version pinned in all consumer workflow `pip install` lines.
@@ -80,6 +88,8 @@ All notable changes to this project will be documented in this file.
 ## [1.7.16] - 2026-02-21
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Workspace Deletion PBI API Fallback**: `delete_workspace()` now falls back to the Power BI REST API (`DELETE /v1.0/myorg/groups/{workspaceId}`) when the Fabric CLI (`fab rm`) returns an `UnknownError`. This mirrors the v1.7.15 pattern used for pipeline user management — the Fabric API intermittently returns HTTP 400 `UnknownError` for workspace deletion, while the PBI API works reliably.
 - **CLI Destroy Output**: The `destroy` command now shows "(via PBI API fallback)" when the fallback path is used.
@@ -94,6 +104,8 @@ All notable changes to this project will be documented in this file.
 ## [1.7.15] - 2026-02-20
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Pipeline User Assignment Fix**: Switched from Fabric REST API (`api.fabric.microsoft.com`) to **Power BI REST API** (`api.powerbi.com`) for managing deployment pipeline users. The Fabric API does not expose the `/users` endpoint for pipelines.
 - **Service Principal Mapping**: Automatically maps `ServicePrincipal` type to `App` as required by the Power BI API.
@@ -142,6 +154,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Deployer: Continue to Stage Assignment on User 404**: Pipeline user additions that return 404 (a known Fabric API limitation for Service Principals accessing the `/users` endpoint) no longer block stage assignment. Previously, all-404 user additions caused `return False`, skipping workspace-to-stage assignment. Now the deployer logs a warning and proceeds to assign workspaces to pipeline stages, which uses the `/stages` endpoint that SPs can access.
 - **Deployer: Removed Unnecessary 5s Propagation Delay**: Removed the `time.sleep(5)` after `create_pipeline()` since diagnostic testing confirmed the pipeline 404 is a permissions issue (SP cannot access `/users` endpoint), not a propagation delay.
 
@@ -150,6 +164,8 @@ All notable changes to this project will be documented in this file.
 ## [1.7.10] - 2026-02-19
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Deployer: Stale Git Connection Recycling**: On `DuplicateConnectionName` (409) during Git connection, the deployer now deletes the stale connection and creates a fresh one with current credentials, instead of reusing the stale connection ID. Previously, reusing a stale connection caused `ConnectionMismatch` (400) when the stored GITHUB_TOKEN had been rotated or the connection metadata was incompatible. Falls back to reusing the old ID if deletion fails.
 - **Deployer: Pipeline Propagation Delay**: Added a 5-second delay after `create_pipeline()` before attempting to add pipeline users. Previously, the `/users` endpoint returned 404 (EntityNotFound) when called milliseconds after pipeline creation, because the Fabric backend had not yet propagated the new resource.
@@ -164,6 +180,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Deployer: Git Connection Status Reporting**: `_connect_git()` now returns a `bool` indicating success/failure. The caller in `deploy()` displays "⚠️ Git connection failed" when Git connection fails, instead of unconditionally showing "✅ Git connected". Previously, all failure paths (400 Bad Request, incompatible connection, parse errors) were silently swallowed with a false-positive success indicator.
 
 ### Enhanced
@@ -176,6 +194,8 @@ All notable changes to this project will be documented in this file.
 ## [1.7.8] - 2026-02-18
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Schema: Allow `folder_rules` Property**: Added `folder_rules` to the JSON schema (`workspace_config.json`) as a valid top-level property. Previously, configs with `folder_rules:` blocks (used by `organize-folders` command and several blueprint templates) failed validation with `Additional properties are not allowed ('folder_rules')`. The schema now describes `folder_rules` as an array of `{type, folder}` objects with proper validation.
 
@@ -191,6 +211,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Default Folders Changed to Explicit Opt-In**: `config.py` default folders changed from `["Bronze", "Silver", "Gold", "Notebooks", "Pipelines"]` to `[]`. Workspaces that declare no `folders:` key (or `folders: []`) no longer get unwanted default folders created. Projects must explicitly list their desired folders in the config.
 
 ### Tests
@@ -204,6 +226,8 @@ All notable changes to this project will be documented in this file.
 ## [1.7.6] - 2026-02-12
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Inline `environments` Config Support**: The JSON schema (`workspace_config.json`) now includes `environments` as a valid top-level property. Previously, configs with inline `environments:` blocks (used by most blueprints) failed validation with `Additional properties are not allowed ('environments')`. The `ConfigManager` now reads inline environment overrides before schema validation, with inline blocks taking priority over external `config/environments/*.yaml` files.
 
@@ -233,6 +257,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Import Path Bug**: Fixed `config.py` importing from `usf_fabric_cli.secrets` → `usf_fabric_cli.utils.secrets` (prevents `ImportError` in fresh installs).
 - **UTC Timestamp Deprecation**: `audit.py` now uses `datetime.now(timezone.utc)` instead of deprecated `datetime.utcnow()`.
 - **Jinja2 Undefined Handling**: `ArtifactTemplateEngine` in non-strict mode now uses `Undefined` class instead of `None` (prevents `TypeError` on missing variables).
@@ -260,6 +286,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Idempotent Workspace Destroy**: The `destroy` command now exits 0 when the target workspace no longer exists (`NotFound`), printing a warning instead of failing. This resolves the race condition where both `pull_request:closed` and `delete` events fire simultaneously on PR merge with branch deletion — the second cleanup no longer fails.
 
 ### Tests
@@ -271,6 +299,8 @@ All notable changes to this project will be documented in this file.
 ## [1.7.3] - 2026-02-12
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Clean CI/CD Log Messages for Idempotent Git Operations**: Eliminated three alarming log messages that appeared during successful idempotent re-deploys:
   - `create_git_connection()`: Now returns structured `duplicate: True` flag for 409 DuplicateConnectionName instead of logging `Failed to create Git connection` at error level
@@ -287,6 +317,8 @@ All notable changes to this project will be documented in this file.
 ## [1.7.2] - 2026-02-12
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **GitHub Git Connection — 409 DuplicateConnectionName Recovery**: When creating a GitHub connection that already exists (409), the deployer now looks up the existing connection by name (matching the existing Azure DevOps recovery pattern) and reuses it instead of failing.
 - **GitHub Git Connection — myGitCredentials SSO**: The `connect_workspace_to_git` method now includes `myGitCredentials` with `"source": "Automatic"` for GitHub connections, resolving `400 InvalidInput` ("myGitCredentials is required for GitProviderType GitHub") errors when using SSO-based authentication.
@@ -355,6 +387,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Governance SP Injection**: Test/Prod workspaces now receive mandatory `ADDITIONAL_ADMIN_PRINCIPAL_ID` and `ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID` via new `_enrich_principals()` helper in `onboard.py` (previously only Dev stage received these)
 - **Stale Admin Script Imports**: Replaced legacy `from src.core` imports with `usf_fabric_cli` paths in `list_workspace_items.py`, `init_ado_repo.py`, `debug_connection.py`, `debug_ado_access.py`
 - **`list_workspace_items.py` Rewrite**: Replaced broken `FabricSecrets` + SP auth flow with `get_environment_variables()` pattern (matching `list_workspaces.py`), fixing tenant_id validation error
@@ -406,6 +440,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Type Safety**: Comprehensive Mypy fixes across core services:
   - Updated `FabricCLIWrapper`, `FabricDeployer`, `AuditLogger` to correctly handle `Optional[str]` types.
   - Fixed dataclass `WorkspaceConfig` using `Optional[List[...]]` instead of `List[...] = None`.
@@ -434,6 +470,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Type Safety**: Addressed mypy type hints in `token_manager.py` and `retry.py`.
 
 ## [1.6.0] - 2026-02-05
@@ -455,6 +493,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Webapp Loading**: Resolved infinite 307 Redirect loop on Home Page caused by trailing slash mismatch in FastAPI router (`/api/scenarios` vs `/api/scenarios/`).
 
 ### Changed
@@ -464,6 +504,8 @@ All notable changes to this project will be documented in this file.
 ## [1.5.1] - 2026-02-02
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Configuration Confusion**: Removed redundant `examples/projects` and `examples/workspaces_to_delete` directories. `config/` is now the single source of truth.
 - **Blueprint Templates**:
@@ -555,6 +597,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
+
 - **Documentation Refresh** (39+ fixes across 20+ files):
   - All `python -m core.cli` → `python -m usf_fabric_cli.cli`
   - All `src/core/` → `src/usf_fabric_cli/` with correct subfolders
@@ -596,6 +640,8 @@ All notable changes to this project will be documented in this file.
   - Template generation, environment validation, feature workflow, and multi-environment strategy enhancements
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Blueprint Templates**: Added mandatory security principals (`ADDITIONAL_ADMIN_PRINCIPAL_ID`, `ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID`) to 7 templates:
   - compliance_regulated.yaml, data_mesh_domain.yaml, extensive_example.yaml
@@ -639,6 +685,8 @@ All notable changes to this project will be documented in this file.
   - `make deploy-azure-dryrun`: Preview Azure deployment
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Frontend API Interfaces**: Aligned TypeScript interfaces with backend API field names:
   - `step.type` (was `step_type`)
@@ -706,6 +754,8 @@ All notable changes to this project will be documented in this file.
 - **Environment**: Enforced strict usage of `fabric-cli-cicd` Conda environment.
 
 ### Fixed
+
+- **Windows Authentication Failure**: Enforced `utf-8` encoding on all `.env` loadings because Windows systems default to `cp1252`, causing silent failure and subsequently missing `os.environ` secrets when invoking the `fab` CLI via subprocess.
 
 - **Shell Escaping**: Fixed Makefile commands to properly handle paths with apostrophes and special characters by quoting PYTHONPATH.
 - **Entry Point**: Resolved `fabric-cicd` command not found issue by adding editable install to setup process.
