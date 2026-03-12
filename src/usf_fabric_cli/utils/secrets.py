@@ -15,7 +15,7 @@ import logging
 import os
 from typing import Optional
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 try:
@@ -49,7 +49,9 @@ class FabricSecrets(BaseSettings):
     azure_client_secret: Optional[str] = Field(
         default=None, alias="AZURE_CLIENT_SECRET"
     )
-    tenant_id: Optional[str] = Field(default=None, alias="TENANT_ID")
+    tenant_id: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("TENANT_ID", "AZURE_TENANT_ID")
+    )
 
     # Fabric Access Token (optional, for direct token auth)
     fabric_token: Optional[str] = Field(default=None, alias="FABRIC_TOKEN")
@@ -183,6 +185,7 @@ class FabricSecrets(BaseSettings):
             "AZURE_CLIENT_ID": self.azure_client_id or "",
             "AZURE_CLIENT_SECRET": self.azure_client_secret or "",
             "TENANT_ID": self.tenant_id or "",
+            "AZURE_TENANT_ID": self.tenant_id or "",
             "FABRIC_TOKEN": self.fabric_token or "",
             "GITHUB_TOKEN": self.github_token or "",
             "AZURE_DEVOPS_PAT": self.azure_devops_pat or "",

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.2]
+
+## [1.8.2]
+
+### Bug Fixes
+- Fixed Pydantic env mapping regression preventing `AZURE_TENANT_ID` extraction from `.env` files.
+
 ## [1.8.1] - 2026-03-12
 
 ### Added
