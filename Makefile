@@ -170,10 +170,8 @@ scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace
 	echo "  test_ws    -- Explicit Test stage workspace name"; \
 	echo "  prod_ws    -- Explicit Production stage workspace name"; \
 	echo ""; \
-	echo "Examples:"; \
-	echo "  make scaffold workspace=\"EDP [DEV]\""; \
-	echo "  make scaffold workspace=\"EDP [DEV]\" feature=1 pipeline=\"EDP - Pipeline\""; \
-	echo "  make scaffold workspace=\"Sales\" slug=re_sales output=config/projects/_templates/re_sales/base_workspace.yaml"; \		echo ""; \
+	echo "Example:"; \
+		echo "  make scaffold workspace=\"Sales\" slug=sales_analytics feature=true pipeline=\"Sales Pipeline\""; \		echo ""; \
 		printf "\033[33mNote: Do not put spaces around the '=' sign (e.g., workspace= \"...\").\033[0m\n"; \
 		echo ""; \	exit 1; \
 	fi
@@ -213,8 +211,10 @@ deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env
 	echo "Usage: make deploy config=path/to/config.yaml env=dev"; \
 	exit 1; \
 	fi
+	@echo "[1mStarting deployment with config: [36m$(config)[0m [1mto environment: [36m$(env)[0m"
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli deploy "$(config)" --env "$(env)" \
 		$(if $(branch),--branch "$(branch)" --force-branch-workspace,)
+	@echo "[32m[1mDeployment process completed.[0m"
 
 promote: ## Promote through Deployment Pipeline stages (Usage: make promote pipeline="Name" [source=Dev] [target=Test] [note="msg"])
 	@if [ -z "$(pipeline)" ]; then \
