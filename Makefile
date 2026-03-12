@@ -132,14 +132,34 @@ diagnose: ## Run pre-flight system diagnostics
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.preflight_check
 
 generate: ## Generate project config (Usage: make generate org="Org" project="Proj" [template="medallion"])
-	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
-	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
+	@if [ -z "$(org)" ]; then \
+		printf "\033[31mError: 'org' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make generate org=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make generate org=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(project)" ]; then \
+		printf "\033[31mError: 'project' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make generate project=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make generate project=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.generate_project "$(org)" "$(project)" --template $(or $(template),medallion)
 
 scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace="Name" [output=path] [feature=1] [pipeline="Name"] [slug=override])
 	@if [ -z "$(workspace)" ]; then \
 	printf "\033[31mError: 'workspace' argument is missing.\033[0m\n"; \
-	echo "Usage: make scaffold workspace=\"My Workspace [DEV]\""; \
+		echo "Usage: make scaffold workspace=\"My Workspace [DEV]\" [output=path] [feature=1] [pipeline=\"Name\"] [slug=override]"; \
 	echo ""; \
 	echo "Options:"; \
 	echo "  workspace  -- Name of the existing Fabric workspace to scan (required)"; \
@@ -196,7 +216,17 @@ deploy: ## Deploy a workspace (Usage: make deploy config=path/to/config.yaml env
 		$(if $(branch),--branch "$(branch)" --force-branch-workspace,)
 
 promote: ## Promote through Deployment Pipeline stages (Usage: make promote pipeline="Name" [source=Dev] [target=Test] [note="msg"])
-	@if [ -z "$(pipeline)" ]; then echo "Error: 'pipeline' argument is missing."; exit 1; fi
+	@if [ -z "$(pipeline)" ]; then \
+		printf "\033[31mError: 'pipeline' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make promote pipeline=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make promote pipeline=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli promote \
 		--pipeline-name "$(pipeline)" \
 		$(if $(source),--source-stage $(source),) \
@@ -204,8 +234,28 @@ promote: ## Promote through Deployment Pipeline stages (Usage: make promote pipe
 		$(if $(note),--note "$(note)",)
 
 onboard: ## Full bootstrap: Dev+Test+Prod + Pipeline (Usage: make onboard org="Org" project="Proj" [stages="dev,test,prod"] [capacity_id=...] [dry_run=1])
-	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
-	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
+	@if [ -z "$(org)" ]; then \
+		printf "\033[31mError: 'org' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make onboard org=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make onboard org=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(project)" ]; then \
+		printf "\033[31mError: 'project' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make onboard project=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make onboard project=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli onboard \
 		--org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
 		$(if $(stages),--stages $(stages),) \
@@ -214,21 +264,91 @@ onboard: ## Full bootstrap: Dev+Test+Prod + Pipeline (Usage: make onboard org="O
 		$(if $(dry_run),--dry-run,)
 
 onboard-isolated: ## Bootstrap with auto-created project repo (Usage: make onboard-isolated org="Org" project="Proj" git_owner="Owner")
-	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
-	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
-	@if [ -z "$(git_owner)" ]; then echo "Error: 'git_owner' argument is missing."; exit 1; fi
+	@if [ -z "$(org)" ]; then \
+		printf "\033[31mError: 'org' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make onboard-isolated org=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make onboard-isolated org=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(project)" ]; then \
+		printf "\033[31mError: 'project' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make onboard-isolated project=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make onboard-isolated project=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(git_owner)" ]; then \
+		printf "\033[31mError: 'git_owner' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make onboard-isolated git_owner=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make onboard-isolated git_owner=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
 		--create-repo --git-provider $(or $(git_provider),github) --git-owner "$(git_owner)" \
 		$(if $(ado_project),--ado-project "$(ado_project)",) $(if $(stages),--stages $(stages),)
 
 init-github-repo: ## Create & initialize a GitHub repo (Usage: make init-github-repo git_owner="Owner" repo="Repo")
-	@if [ -z "$(git_owner)" ]; then echo "Error: 'git_owner' argument is missing."; exit 1; fi
-	@if [ -z "$(repo)" ]; then echo "Error: 'repo' argument is missing."; exit 1; fi
+	@if [ -z "$(git_owner)" ]; then \
+		printf "\033[31mError: 'git_owner' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make init-github-repo git_owner=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make init-github-repo git_owner=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(repo)" ]; then \
+		printf "\033[31mError: 'repo' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make init-github-repo repo=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make init-github-repo repo=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.init_github_repo --owner "$(git_owner)" --repo "$(repo)" $(if $(branch),--branch $(branch),)
 
 feature-workspace: ## Create isolated feature workspace (Usage: make feature-workspace org="Org" project="Proj")
-	@if [ -z "$(org)" ]; then echo "Error: 'org' argument is missing."; exit 1; fi
-	@if [ -z "$(project)" ]; then echo "Error: 'project' argument is missing."; exit 1; fi
+	@if [ -z "$(org)" ]; then \
+		printf "\033[31mError: 'org' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make feature-workspace org=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make feature-workspace org=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(project)" ]; then \
+		printf "\033[31mError: 'project' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make feature-workspace project=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make feature-workspace project=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
 
 destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override="Name"])
@@ -243,7 +363,17 @@ destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml 
 		$(if $(workspace_override),--workspace-name-override "$(workspace_override)",)
 
 bulk-destroy: ## Bulk destroy workspaces from list (Usage: make bulk-destroy file=list.txt)
-	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make bulk-destroy file=list.txt"; exit 1; fi
+	@if [ -z "$(file)" ]; then \
+		printf "\033[31mError: 'file' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make bulk-destroy file=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make bulk-destroy file=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.bulk_destroy $(file)
 
 
@@ -253,7 +383,17 @@ list-workspaces: ## List all Fabric workspaces
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.list_workspaces
 
 list-items: ## List items in a workspace (Usage: make list-items workspace="Name")
-	@if [ -z "$(workspace)" ]; then echo "Error: 'workspace' argument is missing."; exit 1; fi
+	@if [ -z "$(workspace)" ]; then \
+		printf "\033[31mError: 'workspace' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make list-items workspace=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make list-items workspace=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.list_workspace_items "$(workspace)"
 
 analyze-migration: ## Analyze what can be replaced with Fabric CLI (Usage: make analyze-migration)
@@ -286,16 +426,56 @@ docker-build: ## Build the Docker image
 	$(DOCKER_PREFIX) docker build -t $(DOCKER_IMAGE) .
 
 docker-validate: ## Validate config using Docker (Usage: make docker-validate config=... ENVFILE=.env)
-	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
+	@if [ -z "$(config)" ]; then \
+		printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-validate config=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-validate config=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) validate "$(config)"
 
 docker-deploy: ## Deploy using Docker (Usage: make docker-deploy config=... env=dev ENVFILE=.env)
-	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
-	@if [ -z "$(env)" ]; then echo "Error: env argument required"; exit 1; fi
+	@if [ -z "$(config)" ]; then \
+		printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-deploy config=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-deploy config=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(env)" ]; then \
+		printf "\033[31mError: 'env' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-deploy env=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-deploy env=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) deploy "$(config)" --env "$(env)"
 
 docker-promote: ## Promote using Docker (Usage: make docker-promote pipeline="Name" [source=Dev] [target=Test])
-	@if [ -z "$(pipeline)" ]; then echo "Error: pipeline argument required"; exit 1; fi
+	@if [ -z "$(pipeline)" ]; then \
+		printf "\033[31mError: 'pipeline' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-promote pipeline=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-promote pipeline=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) $(DOCKER_IMAGE) promote \
 		--pipeline-name "$(pipeline)" \
 		$(if $(source),--source-stage $(source),) \
@@ -303,7 +483,17 @@ docker-promote: ## Promote using Docker (Usage: make docker-promote pipeline="Na
 		$(if $(note),--note "$(note)",)
 
 docker-destroy: ## Destroy using Docker (Usage: make docker-destroy config=... ENVFILE=.env)
-	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
+	@if [ -z "$(config)" ]; then \
+		printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-destroy config=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-destroy config=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) destroy "$(config)"
 
 docker-shell: ## Run interactive shell in Docker container (Usage: make docker-shell ENVFILE=.env)
@@ -313,13 +503,43 @@ docker-diagnose: ## Run diagnostics in Docker (Usage: make docker-diagnose ENVFI
 	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) $(DOCKER_IMAGE) diagnose
 
 docker-generate: ## Generate project config in Docker (Usage: make docker-generate org="Org" project="Proj" template="basic_etl")
-	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
-	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
+	@if [ -z "$(org)" ]; then \
+		printf "\033[31mError: 'org' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-generate org=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-generate org=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(project)" ]; then \
+		printf "\033[31mError: 'project' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-generate project=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-generate project=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.dev.generate_project "$(org)" "$(project)" --template $(or $(template),basic_etl)
 
 docker-scaffold: ## Scaffold config from live workspace in Docker (Usage: make docker-scaffold workspace="Name" [feature=1] [pipeline="Name"] ENVFILE=.env)
-	@if [ -z "$(workspace)" ]; then echo "Error: workspace argument required"; exit 1; fi
+	@if [ -z "$(workspace)" ]; then \
+		printf "\033[31mError: 'workspace' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-scaffold workspace=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-scaffold workspace=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.utilities.scaffold_workspace "$(workspace)" \
 	$(if $(output),--output "$(output)",) \
@@ -330,7 +550,17 @@ docker-scaffold: ## Scaffold config from live workspace in Docker (Usage: make d
 	$(if $(prod_ws),--prod-workspace-name "$(prod_ws)",)
 
 docker-discover-folders: ## Discover new folders from live workspace in Docker (Usage: make docker-discover-folders config=... [workspace="Name"] [branch=...] ENVFILE=.env)
-	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
+	@if [ -z "$(config)" ]; then \
+		printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-discover-folders config=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-discover-folders config=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.utilities.discover_folders "$(config)" \
 	$(if $(workspace),--workspace "$(workspace)",) \
@@ -338,42 +568,182 @@ docker-discover-folders: ## Discover new folders from live workspace in Docker (
 	$(if $(dry_run),--dry-run,)
 
 docker-init-repo: ## Initialize ADO repo in Docker (Usage: make docker-init-repo org="Org" project="Proj" repo="Repo")
-	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
-	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
-	@if [ -z "$(repo)" ]; then echo "Error: repo argument required"; exit 1; fi
+	@if [ -z "$(org)" ]; then \
+		printf "\033[31mError: 'org' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-init-repo org=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-init-repo org=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(project)" ]; then \
+		printf "\033[31mError: 'project' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-init-repo project=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-init-repo project=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(repo)" ]; then \
+		printf "\033[31mError: 'repo' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-init-repo repo=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-init-repo repo=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.utilities.init_ado_repo --organization "$(org)" --project "$(project)" --repository "$(repo)"
 
 docker-feature-deploy: ## Deploy feature workspace using Docker (Usage: make docker-feature-deploy config=... env=dev branch=feature/x)
-	@if [ -z "$(config)" ]; then echo "Error: config argument required"; exit 1; fi
-	@if [ -z "$(env)" ]; then echo "Error: env argument required"; exit 1; fi
-	@if [ -z "$(branch)" ]; then echo "Error: branch argument required"; exit 1; fi
+	@if [ -z "$(config)" ]; then \
+		printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-feature-deploy config=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-feature-deploy config=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(env)" ]; then \
+		printf "\033[31mError: 'env' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-feature-deploy env=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-feature-deploy env=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(branch)" ]; then \
+		printf "\033[31mError: 'branch' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-feature-deploy branch=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-feature-deploy branch=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	deploy "$(config)" --env "$(env)" --branch "$(branch)" --force-branch-workspace
 
 docker-onboard: ## Full bootstrap using Docker (Usage: make docker-onboard org="Org" project="Proj" [stages="dev,test,prod"] ENVFILE=.env)
-	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
-	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
+	@if [ -z "$(org)" ]; then \
+		printf "\033[31mError: 'org' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-onboard org=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-onboard org=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(project)" ]; then \
+		printf "\033[31mError: 'project' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-onboard project=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-onboard project=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) $(if $(stages),--stages $(stages),)
 
 docker-onboard-isolated: ## Bootstrap with auto-created repo using Docker (Usage: make docker-onboard-isolated org="Org" project="Proj" git_owner="Owner" ENVFILE=.env)
-	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
-	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
-	@if [ -z "$(git_owner)" ]; then echo "Error: git_owner argument required"; exit 1; fi
+	@if [ -z "$(org)" ]; then \
+		printf "\033[31mError: 'org' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-onboard-isolated org=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-onboard-isolated org=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(project)" ]; then \
+		printf "\033[31mError: 'project' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-onboard-isolated project=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-onboard-isolated project=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(git_owner)" ]; then \
+		printf "\033[31mError: 'git_owner' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-onboard-isolated git_owner=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-onboard-isolated git_owner=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) \
 	--create-repo --git-provider $(or $(git_provider),github) --git-owner "$(git_owner)" \
 	$(if $(ado_project),--ado-project "$(ado_project)",) $(if $(stages),--stages $(stages),)
 
 docker-feature-workspace: ## Create isolated feature workspace using Docker (Usage: make docker-feature-workspace org="Org" project="Proj" ENVFILE=.env)
-	@if [ -z "$(org)" ]; then echo "Error: org argument required"; exit 1; fi
-	@if [ -z "$(project)" ]; then echo "Error: project argument required"; exit 1; fi
+	@if [ -z "$(org)" ]; then \
+		printf "\033[31mError: 'org' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-feature-workspace org=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-feature-workspace org=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@if [ -z "$(project)" ]; then \
+		printf "\033[31mError: 'project' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-feature-workspace project=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-feature-workspace project=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
 
 docker-bulk-destroy: ## Bulk destroy workspaces using Docker (Usage: make docker-bulk-destroy file=list.txt ENVFILE=.env)
-	@if [ -z "$(file)" ]; then echo "Error: file argument required. Usage: make docker-bulk-destroy file=list.txt"; exit 1; fi
+	@if [ -z "$(file)" ]; then \
+		printf "\033[31mError: 'file' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-bulk-destroy file=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-bulk-destroy file=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/$(file):/app/$(file) $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.bulk_destroy $(file)
 
@@ -382,6 +752,16 @@ docker-list-workspaces: ## List all Fabric workspaces using Docker (Usage: make 
 	-m usf_fabric_cli.scripts.admin.utilities.list_workspaces
 
 docker-list-items: ## List items in a workspace using Docker (Usage: make docker-list-items workspace="Name" ENVFILE=.env)
-	@if [ -z "$(workspace)" ]; then echo "Error: workspace argument required"; exit 1; fi
+	@if [ -z "$(workspace)" ]; then \
+		printf "\033[31mError: 'workspace' argument is missing.\033[0m\n"; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make docker-list-items workspace=<value>\n"; \
+		echo ""; \
+		printf "\033[1mExample:\033[0m\n"; \
+		printf "  make docker-list-items workspace=\"example_value\"\n"; \
+		echo ""; \
+		exit 1; \
+	fi
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.admin.utilities.list_workspace_items "$(workspace)"
