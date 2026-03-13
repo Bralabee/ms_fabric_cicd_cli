@@ -29,7 +29,7 @@ PYTEST := pytest
 CONDA_ENV := fabric-cli-cicd
 CONDA_ACTIVATE := source ~/miniconda3/etc/profile.d/conda.sh && conda activate $(CONDA_ENV)
 
-.PHONY: help setup install build test test-integration lint format clean \
+.PHONY: help setup install build vendor-sync test test-integration lint format clean \
 	validate diagnose deploy promote onboard onboard-isolated \
 	init-github-repo feature-workspace destroy bulk-destroy generate scaffold discover-folders \
 	check-env typecheck security coverage ci version \
@@ -69,6 +69,31 @@ install: check-env ## Install dependencies and package in editable mode
 build: check-env ## Build Python package (wheel)
 	$(PIP) install build
 	$(PYTHON) -m build
+
+# -- Consumer repo vendor directories (sibling repos) -------------------------
+# These are the repos that vendor the CLI wheel.  Paths are relative to the
+# parent directory (../) — i.e., sibling folders at the same level as this repo.
+CONSUMER_VENDOR_DIRS := \
+	../fabric_cicd_test_repo/vendor \
+	../edp_fabric_consumer_repo/EDPFabric/vendor
+
+vendor-sync: build ## Build wheel and copy to all consumer repo vendor/ dirs
+	@WHEEL=$$(ls -t dist/usf_fabric_cli-*-py3-none-any.whl 2>/dev/null | head -1); \
+	if [ -z "$$WHEEL" ]; then \
+		printf "\033[31mERROR: No wheel found in dist/\033[0m\n"; \
+		exit 1; \
+	fi; \
+	printf "\033[1mSyncing $$WHEEL to consumer repos...\033[0m\n"; \
+	for dir in $(CONSUMER_VENDOR_DIRS); do \
+		if [ -d "$$dir" ]; then \
+			rm -f "$$dir"/usf_fabric_cli-*.whl; \
+			cp "$$WHEEL" "$$dir/"; \
+			printf "  \033[32m[OK]\033[0m $$dir/$$(basename $$WHEEL)\n"; \
+		else \
+			printf "  \033[33m[SKIP]\033[0m $$dir — directory not found\n"; \
+		fi; \
+	done; \
+	printf "\033[32mVendor sync complete.\033[0m\n"
 
 
 ##@ Code Quality

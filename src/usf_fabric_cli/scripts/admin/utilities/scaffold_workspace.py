@@ -1000,15 +1000,24 @@ def scaffold_workspace(
     print(f"\n[OK] Generated: {base_path}")
     results[str(base_path)] = "ok"
 
-    # -- 7. Generate feature_workspace.yaml (optional) --
-    if include_feature_template:
+    # -- 7. Generate feature_workspace.yaml (optional / auto-update) --
+    # If feature_workspace.yaml already exists alongside the base, regenerate
+    # it automatically so both files stay in sync on re-runs — even when the
+    # user doesn't pass --include-feature-template again.
+    feature_path = base_path.parent / "feature_workspace.yaml"
+    should_generate_feature = include_feature_template or feature_path.exists()
+    if should_generate_feature:
+        if not include_feature_template:
+            print(
+                "\n[Auto-update] Existing feature_workspace.yaml detected "
+                "-- regenerating to stay in sync."
+            )
         feature_yaml = _generate_feature_yaml(
             workspace_name=workspace_name,
             folders=folder_names,
             project_slug=slug,
             templatise=templatise,
         )
-        feature_path = base_path.parent / "feature_workspace.yaml"
         feature_path.write_text(feature_yaml, encoding="utf-8")
         print(f"[OK] Generated: {feature_path}")
         results[str(feature_path)] = "ok"

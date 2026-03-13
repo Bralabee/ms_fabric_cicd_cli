@@ -216,6 +216,12 @@ class GitFabricIntegration:
             e.g. "my-project" + feature/fix-bug
               -> "my-project-feature-fix-bug"
 
+        Multi-segment branches (``feature/<project>/<description>``) have
+        the project slug stripped automatically so the workspace name
+        doesn't duplicate the base name:
+            "Sales Report" + feature/sales_report/add-chart
+              -> "[F] Sales Report [FEATURE-add-chart]"
+
         The feature_prefix (default "[F]") provides instant visual
         identification of feature workspaces in the Fabric portal
         sidebar.  Set to empty string "" to disable.
@@ -250,8 +256,13 @@ class GitFabricIntegration:
 
         # Extract description (strip feature/ prefix if present)
         branch_desc = branch
-        if branch.startswith("feature/"):
+        is_feature = branch.startswith("feature/")
+        if is_feature:
             branch_desc = branch[len("feature/") :]
+            # Convention: feature/<project>/<description> — strip the project
+            # slug so the feature suffix doesn't duplicate the base name.
+            if "/" in branch_desc:
+                branch_desc = branch_desc.split("/", 1)[1]
 
         # Display names (contain spaces) -> bracket notation [FEATURE-<desc>]
         # Replace '/' with '-' -- Fabric CLI treats '/' as a path separator
@@ -263,8 +274,12 @@ class GitFabricIntegration:
             return result
 
         # Slug names -> hyphen notation (legacy behavior, no prefix)
-        sanitized_branch = branch.replace("/", "-").replace("_", "-").lower()
-        result = f"{base_clean}-{sanitized_branch}"
+        if is_feature:
+            sanitized_desc = branch_desc.replace("/", "-").replace("_", "-").lower()
+            result = f"{base_clean}-feature-{sanitized_desc}"
+        else:
+            sanitized_branch = branch.replace("/", "-").replace("_", "-").lower()
+            result = f"{base_clean}-{sanitized_branch}"
         GitFabricIntegration._validate_workspace_name(result)
         return result
 
