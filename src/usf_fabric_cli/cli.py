@@ -1389,5 +1389,131 @@ def scaffold(
         )
 
 
+@app.command("repoint-connections")
+def repoint_connections(
+    config: str = typer.Argument(..., help="Path to configuration file"),
+    workspace: Optional[str] = typer.Option(
+        None,
+        "--workspace",
+        "-w",
+        help="Override workspace name (default: read from config)",
+    ),
+    environment: Optional[str] = typer.Option(
+        None, "--env", "-e", help="Environment (dev/staging/prod)"
+    ),
+    source_pattern: str = typer.Option(
+        "feature[-_].*",
+        "--source-pattern",
+        "-s",
+        help="Regex pattern matching feature workspace names to repoint away from",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Show what would be repointed without making changes",
+    ),
+):
+    """Repoint semantic model connections after Git Sync.
+
+    After a feature branch is merged and Git Sync copies definitions into
+    the Dev workspace, semantic model connections may still reference the
+    feature workspace's lakehouses or warehouses.  This command detects
+    those stale connections and updates them to point to the target
+    workspace.
+
+    Example:
+
+        fabric-cicd repoint-connections config/projects/edp/dev.yaml
+
+        fabric-cicd repoint-connections config/projects/edp/dev.yaml \\
+            --source-pattern "feature[-_].*" --dry-run
+    """
+    try:
+        from usf_fabric_cli.services.datasource_repoint import (
+            FabricDatasourceRepointAPI,
+        )
+
+        env_vars = get_environment_variables()
+        token = env_vars.get("FABRIC_TOKEN") or ""
+        if not token:
+            handle_cli_error(
+                "repoint connections",
+                "FABRIC_TOKEN is not set",
+                "Export FABRIC_TOKEN in your environment or set it in .env file.",
+            )
+
+        config_mgr = ConfigManager(config)
+        cfg = config_mgr.load_config(environment)
+        ws_name = workspace or cfg.name
+
+        fabric = FabricCLIWrapper(token)
+        workspace_id = fabric.get_workspace_id(ws_name)
+        if not workspace_id:
+            handle_cli_error(
+                "repoint connections",
+                f"Could not resolve workspace ID for '{ws_name}'",
+                "Verify the workspace name and your access permissions.",
+            )
+            return
+
+        console.print(
+            f"[blue]Checking semantic model connections in '{ws_name}'...[/blue]"
+        )
+        if dry_run:
+            console.print("[yellow]DRY RUN -- no changes will be made.[/yellow]\n")
+
+        # Build the repoint API client (reuses the same token)
+        token_manager = getattr(fabric, "_token_manager", None)
+        repoint_api = FabricDatasourceRepointAPI(
+            access_token=token,
+            token_manager=token_manager,
+        )
+
+        result = repoint_api.repoint_workspace_models(
+            workspace_id=workspace_id,
+            target_workspace_name=ws_name,
+            source_pattern=source_pattern,
+            dry_run=dry_run,
+        )
+
+        summary = result.summary
+        if summary["repointed"] > 0:
+            mode = " (DRY RUN)" if dry_run else ""
+            console.print(
+                f"\n[green][OK] Repointed {summary['repointed']} "
+                f"connection(s){mode}:[/green]"
+            )
+            for detail in summary["details"]["repointed"]:
+                console.print(
+                    f"  * {detail['model']}: {detail['from']} -> {detail['to']}"
+                )
+        else:
+            console.print(
+                "[green]No connections needed repointing -- "
+                "all connections already point to the correct workspace.[/green]"
+            )
+
+        if summary["skipped"] > 0:
+            console.print(f"\n  Skipped: {summary['skipped']} model(s)")
+            for detail in summary["details"]["skipped"]:
+                console.print(f"    - {detail['model']}: {detail['reason']}")
+
+        if summary["failed"] > 0:
+            console.print(f"\n[red]  Failed: {summary['failed']} model(s)[/red]")
+            for detail in summary["details"]["failed"]:
+                console.print(f"    X {detail['model']}: {detail['reason']}")
+            raise typer.Exit(1)
+
+    except typer.Exit:
+        raise
+    except (FabricCLIError, KeyError, ValueError) as e:
+        handle_cli_error(
+            "repoint connections",
+            e,
+            "Verify the workspace name and your access permissions. "
+            "The service principal must have dataset write permissions.",
+        )
+
+
 if __name__ == "__main__":
     app()
