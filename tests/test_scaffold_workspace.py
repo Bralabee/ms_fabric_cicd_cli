@@ -19,6 +19,8 @@ from usf_fabric_cli.scripts.admin.utilities.scaffold_workspace import (
     _categorize_items,
     _generate_feature_yaml,
     _generate_yaml,
+    _infer_pipeline_name,
+    _strip_dev_marker,
 )
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
@@ -578,14 +580,127 @@ class TestGenerateFeatureYamlTemplatise:
         )
         assert "git_directory: /hr_analytics" in yaml
         assert "${HR_ANALYTICS_ADMIN_ID}" in yaml
-        assert "${HR_ANALYTICS_MEMBERS_ID}" in yaml
-        assert "CHANGE-ME" not in yaml
+
+
+# ── _strip_dev_marker tests ─────────────────────────────────────────────
+
+
+class TestStripDevMarker:
+    """Tests for _strip_dev_marker — removes stage indicators from workspace names."""
+
+    def test_bracket_dev(self):
+        assert _strip_dev_marker("EDP [DEV]") == "EDP"
+
+    def test_bracket_dev_case_insensitive(self):
+        assert _strip_dev_marker("Sales Audience [dev]") == "Sales Audience"
+
+    def test_parenthesised_dev(self):
+        assert _strip_dev_marker("HR Analytics (Dev)") == "HR Analytics"
+
+    def test_suffix_development(self):
+        assert _strip_dev_marker("MyProject Development") == "MyProject"
+
+    def test_suffix_dev(self):
+        assert _strip_dev_marker("MyProject Dev") == "MyProject"
+
+    def test_bracket_test_passthrough(self):
+        # _strip_dev_marker only strips DEV markers; TEST/PROD pass through
+        assert _strip_dev_marker("EDP [TEST]") == "EDP [TEST]"
+
+    def test_bracket_prod_passthrough(self):
+        assert _strip_dev_marker("EDP [PROD]") == "EDP [PROD]"
+
+    def test_no_marker_passthrough(self):
+        assert _strip_dev_marker("MyWorkspace") == "MyWorkspace"
+
+    def test_whitespace_trimmed(self):
+        assert _strip_dev_marker("  EDP [DEV]  ") == "EDP"
+
+    def test_complex_name(self):
+        assert (
+            _strip_dev_marker("SC30GLD-DM30 - Opco Data Mart [DEV]")
+            == "SC30GLD-DM30 - Opco Data Mart"
+        )
+
+    def test_re_active_directory(self):
+        assert _strip_dev_marker("RE Active Directory [DEV]") == "RE Active Directory"
+
+
+# ── _infer_pipeline_name tests ───────────────────────────────────────────
+
+
+class TestInferPipelineName:
+    """Tests for _infer_pipeline_name — derives pipeline name from workspace name."""
+
+    def test_standard_dev_workspace(self):
+        assert _infer_pipeline_name("EDP [DEV]") == "EDP - Pipeline"
+
+    def test_complex_workspace_name(self):
+        assert (
+            _infer_pipeline_name("Sales Audience [DEV]") == "Sales Audience - Pipeline"
+        )
+
+    def test_no_dev_marker(self):
+        assert _infer_pipeline_name("MyWorkspace") == "MyWorkspace - Pipeline"
+
+    def test_development_suffix(self):
+        assert _infer_pipeline_name("HR Development") == "HR - Pipeline"
+
+    def test_hyphenated_workspace(self):
+        assert (
+            _infer_pipeline_name("SC30GLD-DM30 - Opco Data Mart [DEV]")
+            == "SC30GLD-DM30 - Opco Data Mart - Pipeline"
+        )
+
+
+# ── Capacity ID fallback tests ───────────────────────────────────────────
+
+
+class TestCapacityIdFallback:
+    """Tests for non-templatised capacity ID fallback syntax in _generate_yaml."""
+
+    def test_non_templatise_test_capacity_has_fallback(self):
+        """Non-templatised YAML should use env-var fallback for test capacity."""
+        yaml = _generate_yaml(
+            workspace_name="Test WS [DEV]",
+            folders=["Data"],
+            folder_rules=[],
+            items_by_type={},
+            pipeline_name="Test WS - Pipeline",
+        )
+        assert "${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}" in yaml
+
+    def test_non_templatise_prod_capacity_has_fallback(self):
+        """Non-templatised YAML should use env-var fallback for prod capacity."""
+        yaml = _generate_yaml(
+            workspace_name="Test WS [DEV]",
+            folders=["Data"],
+            folder_rules=[],
+            items_by_type={},
+            pipeline_name="Test WS - Pipeline",
+        )
+        assert "${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}" in yaml
+
+    def test_templatise_test_capacity_has_fallback(self):
+        """Templatised YAML should also use env-var fallback for test capacity."""
+        yaml = _generate_yaml(
+            workspace_name="Test WS [DEV]",
+            folders=["Data"],
+            folder_rules=[],
+            items_by_type={},
+            pipeline_name="Test WS - Pipeline",
+            templatise=True,
+        )
+        assert "${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}" in yaml
+        # Templatised mode uses CHANGEME placeholders, not project-specific vars
+        assert "${CHANGEME_MEMBERS_ID}" in yaml
+        assert "CHANGE-ME" in yaml
 
     def test_non_templatise_principals_are_active(self):
         """Non-templatised feature yaml should have active project principals."""
         yaml = _generate_feature_yaml(
             workspace_name="HR Analytics [DEV]",
-            folders=self.FOLDERS,
+            folders=["Bronze", "Silver", "Gold"],
         )
         # Project principals should be active (not commented out)
         for line in yaml.splitlines():
@@ -598,7 +713,7 @@ class TestGenerateFeatureYamlTemplatise:
         """Custom project_slug should still use CHANGE-ME placeholders."""
         yaml = _generate_feature_yaml(
             workspace_name="HR Analytics [DEV]",
-            folders=self.FOLDERS,
+            folders=["Bronze", "Silver", "Gold"],
             project_slug="hr_custom",
             templatise=True,
         )
