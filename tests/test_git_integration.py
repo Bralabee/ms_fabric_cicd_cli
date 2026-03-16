@@ -63,9 +63,7 @@ class TestGetWorkspaceNameFromBranch:
             "SC30GLD-DM30 - Opco Data Mart",
             "feature/sc30gld_dm30_opco_data_mart/test-access",
         )
-        assert result == (
-            "[F] SC30GLD-DM30 - Opco Data Mart [FEATURE-test-access]"
-        )
+        assert result == ("[F] SC30GLD-DM30 - Opco Data Mart [FEATURE-test-access]")
 
     # ── Display-style names (contain spaces) → bracket notation ──
 
@@ -90,8 +88,7 @@ class TestGetWorkspaceNameFromBranch:
             "feature/re_sales_direct/dev-setup",
         )
         assert result == (
-            "[F] RE Sales - Direct Sales Helicopter View "
-            "[FEATURE-dev-setup]"
+            "[F] RE Sales - Direct Sales Helicopter View " "[FEATURE-dev-setup]"
         )
 
     def test_display_name_non_feature_branch(self):

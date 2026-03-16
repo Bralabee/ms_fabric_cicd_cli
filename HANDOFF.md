@@ -1,20 +1,153 @@
-# Handoff: Scaffold Workspace Git Fix
+# HANDOFF — Scaffold E2E Audit Remediation
 
-## Context
-We are working in the `usf_fabric_cli_cicd` repository, specifically maintaining the `scaffold_workspace.py` utility. We previously reverted some aggressive changes and correctly injected "True Git Discovery" via the `FabricGitAPI`.
+**Date**: 2026-03-16
+**Branch**: `feat/repoint-connections` (usf_fabric_cli_cicd)
+**Status**: All implementation + tests complete. **Nothing committed yet.**
 
-## Discovered Issues & Status
-1. **Test/Prod Workspaces Not Showing / Promote Failing**: Resolved. This is expected behavior when a pipeline name isn't passed. To view them, `make scaffold ...` must be run with the `pipeline="<Name>"` parameter.
-2. **Existing Principals Not in Test/Prod**: Resolved. Scaffold correctly outputs these at the ROOT of the `base_workspace.yaml` rather than duplicating them, which is the architecture standard.
-3. **Feature Workspace Not Created**: Resolved. `make scaffold ...` must be run with `feature=true` to trigger this.
-4. **Git Repo hardcoded to dev.azure.com (Not GitHub compatible)**: **PENDING FIX**. 
+---
 
-## The Pending Bug
-Because the Makefile for `scaffold` automatically parses the `--templatise` flag, it generates templates that are meant to be agnostic. However, the newly injected Git Discovery logic incorrectly hardcodes the original source's Git configuration into the template output rather than templatizing it, causing cross-repo interference and disconnect/reconnect failures.
+## Goal
 
-## Next Step for the Agent
-1. Open `src/usf_fabric_cli/scripts/admin/utilities/scaffold_workspace.py`.
-2. Locate the `_generate_yaml` function.
-3. Apply a fix so that when `templatise=True`, `git_repo` evaluates to `"${GIT_REPO_URL}"` and `git_branch` evaluates to `"main"`, regardless of what was discovered by `FabricGitAPI`.
-4. Ensure `black` formatting passes.
-5. Create a feature branch, commit, and push per the repository guidelines.
+Address all 9 findings from the E2E scaffold audit (documented in `E2E_AUDIT_REPORT.md`). The scaffold command must produce complete, deployment-ready output by default — deployment pipeline, feature workspace, governance principals, correct capacity fallbacks — with zero additional flags.
+
+## Progress — DONE
+
+All code changes are applied and **67 tests pass** (48 existing + 19 new, 0 failures). Changes span 4 repos.
+
+## Uncommitted Changes by Repo
+
+### 1. `usf_fabric_cli_cicd` — branch `feat/repoint-connections`
+
+| File | Change |
+|------|--------|
+| `src/usf_fabric_cli/scripts/admin/utilities/scaffold_workspace.py` | +`_strip_dev_marker()`, +`_infer_pipeline_name()`, capacity fallback syntax, default feature gen, `--skip-pipeline`/`--skip-feature-template` argparse flags |
+| `src/usf_fabric_cli/cli.py` | Updated Typer options + docstring for new default behaviour |
+| `tests/test_scaffold_workspace.py` | +3 test classes (19 tests): `TestStripDevMarker`, `TestInferPipelineName`, `TestCapacityIdFallback` |
+
+### 2. `usf-fabric-cicd` (mirror) — on `main` (needs feature branch)
+
+Same 3 files as #1 — copied via `cp`, verified identical via `diff`.
+
+**⚠️ Mirror is on `main`** — create a feature branch before committing.
+
+### 3. `edp_fabric_consumer_repo/EDPFabric` — on `main` (needs feature branch)
+
+| File | Change |
+|------|--------|
+| `.github/workflows/feature-workspace-create.yml` | Branch name sanitization (spaces→hyphens, invalid chars stripped) |
+| `docs/04_QUICK_REFERENCE.md` | Important callout: only `feature/` prefix triggers automation |
+| `config/projects/re_active_directory/base_workspace.yaml` | Added `deployment_pipeline` section |
+| `config/projects/re_active_directory/feature_workspace.yaml` | **NEW** — ephemeral feature workspace config |
+| `config/projects/sc30gld_dm30_opco_data_mart/base_workspace.yaml` | Added `deployment_pipeline` section |
+| `config/projects/_templates/re_active_directory/base_workspace.yaml` | Added CHANGE-ME `deployment_pipeline` |
+| `config/projects/_templates/re_active_directory/feature_workspace.yaml` | **NEW** — template version |
+| `config/projects/_templates/sc30gld_dm30_opco_data_mart/base_workspace.yaml` | Added CHANGE-ME `deployment_pipeline` |
+
+Also has an unrelated `.sqlproj` modification (pre-existing, not ours).
+
+### 4. `fabric_cicd_test_repo` — branch `chore/vendor-sync-scaffold-fix`
+
+| File | Change |
+|------|--------|
+| `.github/workflows/feature-workspace-create.yml` | Branch name sanitization |
+| `docs/04_QUICK_REFERENCE.md` | `feature/` prefix convention documented |
+
+## Resume Instructions
+
+### Step 1 — Verify tests still green
+```bash
+cd usf_fabric_cli_cicd
+conda activate fabric-cli-cicd
+pytest tests/test_scaffold_workspace.py -v
+# Expect: 67 passed
+```
+
+### Step 2 — Commit usf_fabric_cli_cicd (already on feature branch)
+```bash
+cd usf_fabric_cli_cicd
+git add src/usf_fabric_cli/cli.py \
+  src/usf_fabric_cli/scripts/admin/utilities/scaffold_workspace.py \
+  tests/test_scaffold_workspace.py
+git commit -m "feat: auto-generate deployment_pipeline and feature_workspace in scaffold
+
+- Add _strip_dev_marker() and _infer_pipeline_name() helpers
+- Scaffold now generates deployment_pipeline by default (skip via --skip-pipeline)
+- Feature workspace generated by default (skip via --skip-feature-template)
+- Capacity IDs use fallback syntax: \${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}
+- 19 new tests across 3 test classes (67 total, all passing)"
+```
+
+### Step 3 — Create feature branch + commit usf-fabric-cicd (mirror)
+```bash
+cd usf-fabric-cicd
+git checkout -b feat/scaffold-audit-remediation
+git add src/usf_fabric_cli/cli.py \
+  src/usf_fabric_cli/scripts/admin/utilities/scaffold_workspace.py \
+  tests/test_scaffold_workspace.py
+git commit -m "feat: mirror scaffold improvements from usf_fabric_cli_cicd
+
+- Auto-generate deployment_pipeline and feature_workspace by default
+- Add _strip_dev_marker(), _infer_pipeline_name() helpers
+- Capacity ID fallback syntax for non-templatised output
+- 19 new tests (67 total, all passing)"
+```
+
+### Step 4 — Create feature branch + commit EDPFabric
+```bash
+cd edp_fabric_consumer_repo/EDPFabric
+git checkout -b feat/scaffold-audit-remediation
+git add .github/workflows/feature-workspace-create.yml \
+  docs/04_QUICK_REFERENCE.md \
+  config/projects/re_active_directory/ \
+  config/projects/sc30gld_dm30_opco_data_mart/base_workspace.yaml \
+  config/projects/_templates/re_active_directory/ \
+  config/projects/_templates/sc30gld_dm30_opco_data_mart/base_workspace.yaml
+git commit -m "feat: complete scaffold output for incomplete projects
+
+- Add deployment_pipeline to re_active_directory and sc30gld configs
+- Create feature_workspace.yaml for re_active_directory (concrete + template)
+- Add branch name sanitization to feature-workspace-create.yml
+- Document feature/ prefix requirement in 04_QUICK_REFERENCE.md"
+```
+
+### Step 5 — Commit fabric_cicd_test_repo (already on feature branch)
+```bash
+cd fabric_cicd_test_repo
+git add .github/workflows/feature-workspace-create.yml docs/04_QUICK_REFERENCE.md
+git commit -m "fix: sanitize branch names in feature workspace workflow
+
+- Strip spaces, invalid chars, collapse double hyphens in SAFE_FEATURE
+- Document that only feature/ prefix triggers automation"
+```
+
+### Step 6 — Push + PRs
+Push each feature branch and open PRs. Follow the multi-remote push order for usf_fabric_cli_cicd (see git-remotes memory note).
+
+## Finding → Resolution Map
+
+| # | Finding | Resolution | Type |
+|---|---------|------------|------|
+| 1 | deployment_pipeline missing from scaffold output | `_infer_pipeline_name()` auto-generates it | Engine (all future scaffolds) |
+| 2 | feature_workspace.yaml missing from scaffold output | Default-on generation | Engine (all future scaffolds) |
+| 3 | Principals not discovered | Verified: scaffold already discovers & includes them | No change needed |
+| 4 | Branch name sanitization | `SAFE_FEATURE` cleanup in workflow files | Workflow (consumer repos) |
+| 5 | Only feature/ prefix documented | Important callout added to QUICK_REFERENCE | Docs (consumer repos) |
+| 6 | Governance principals | Verified: always emitted + ConfigManager auto-injects | No change needed |
+| 7 | Non-standard folders | Verified: majority vote algorithm handles this | No change needed |
+| 8 | Incomplete scaffolded projects | deployment_pipeline + feature_workspace.yaml added | Retroactive (EDPFabric) |
+| 9 | Capacity ID inconsistency | Fallback syntax in `_generate_yaml()` | Engine (all future scaffolds) |
+
+## Key Design Decisions
+
+1. **`_strip_dev_marker` only strips DEV markers** — not TEST/PROD. This is intentional: the function derives the base project name from the dev workspace, so it only needs to handle dev patterns.
+
+2. **Feature workspace is opt-out, not opt-in** — previous behaviour required `--include-feature-template`. Now it's generated by default; use `--skip-feature-template` to suppress. The legacy `--include-feature-template` flag is kept for backward compat but is now a no-op.
+
+3. **Concrete projects use `${FABRIC_CAPACITY_ID}` for all stages** — matches existing consumer repo convention (same capacity for dev/test/prod in current deployment). Templates use fallback syntax `${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}` for future multi-capacity setups.
+
+## Environment
+
+- **Conda env**: `fabric-cli-cicd`
+- **Python**: 3.11.14
+- **pytest**: 9.0.1
+- **Test result**: 67 passed in 0.38s
