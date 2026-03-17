@@ -513,7 +513,9 @@ class FabricDatasourceRepointAPI(FabricAPIBase):
                 result.failed.append(
                     {
                         "model": model_name,
-                        "reason": outcome.get("reason", "UpdateDatasources API call failed"),
+                        "reason": outcome.get(
+                            "reason", "UpdateDatasources API call failed"
+                        ),
                     }
                 )
 
