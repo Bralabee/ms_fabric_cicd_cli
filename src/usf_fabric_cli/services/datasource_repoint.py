@@ -5,18 +5,35 @@ After Git Sync copies item definitions from a feature branch into the Dev
 workspace, semantic model connection strings may still reference the feature
 workspace's lakehouses or warehouses.  This service detects those stale
 connections and repoints them to the target (Dev) workspace using the
-Power BI REST API.
+Power BI REST API (UpdateDatasources).
 
 Supported connection types:
-- Lakehouse SQL endpoint connections
-- Warehouse connections
-- Direct Lake bindings (via Fabric REST API rebind)
+- Lakehouse SQL endpoint connections (datasourceType: Sql)
+- Warehouse connections (datasourceType: Sql)
+
+Not yet supported:
+- Direct Lake models — these use a different binding mechanism
+  (Fabric REST API: Bind Semantic Model Connection) that is not
+  implemented here.  Direct Lake models will be reported as
+  "skipped: no datasources found" since their bindings are not
+  surfaced by the Power BI GetDatasources API.
+
+API limitations (per Microsoft docs):
+- The caller must be the semantic model OWNER (not just workspace admin).
+- Datasets modified via the XMLA endpoint are not supported.
+- Datasets with incremental refresh may result in partial updates.
+- Only these datasource types are updatable: SQL Server, Azure SQL,
+  Azure Analysis Services, Azure Synapse, OData, SharePoint, Teradata,
+  SAP HANA.  Fabric Lakehouse/Warehouse SQL endpoints present as "Sql"
+  type and are therefore supported.
 
 References:
 - https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/
   get-datasources-in-group
 - https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/
   update-datasources-in-group
+- https://learn.microsoft.com/en-us/rest/api/fabric/semanticmodel/
+  items/bind-semantic-model-connection  (Direct Lake — future)
 """
 
 import logging
@@ -199,7 +216,7 @@ class FabricDatasourceRepointAPI(FabricAPIBase):
         workspace_id: str,
         dataset_id: str,
         update_details: List[Dict[str, Any]],
-    ) -> bool:
+    ) -> Dict[str, Any]:
         """
         Update datasource connections for a semantic model.
 
@@ -213,7 +230,7 @@ class FabricDatasourceRepointAPI(FabricAPIBase):
                 ``datasourceSelector`` and ``connectionDetails``.
 
         Returns:
-            True if update succeeded, False otherwise.
+            Dict with "success" (bool) and optional "reason" (str) for failures.
         """
         url = (
             f"{PBI_API_BASE_URL}/groups/{workspace_id}"
@@ -230,14 +247,45 @@ class FabricDatasourceRepointAPI(FabricAPIBase):
                 len(update_details),
                 dataset_id,
             )
-            return True
+            return {"success": True}
+        except requests.HTTPError as e:
+            status = e.response.status_code if e.response is not None else 0
+            if status == 403:
+                logger.error(
+                    "403 Forbidden updating dataset %s — the service principal "
+                    "is likely not the semantic model owner. The Power BI "
+                    "UpdateDatasources API requires the caller to be the "
+                    "dataset owner, not just a workspace admin.",
+                    dataset_id,
+                )
+                return {
+                    "success": False,
+                    "reason": (
+                        "403 Forbidden — SP is not the semantic model owner. "
+                        "Use the TakeOver API or reassign ownership in the "
+                        "Fabric portal."
+                    ),
+                }
+            logger.error(
+                "HTTP %d updating datasources for dataset %s: %s",
+                status,
+                dataset_id,
+                e,
+            )
+            return {
+                "success": False,
+                "reason": f"UpdateDatasources API returned HTTP {status}",
+            }
         except requests.RequestException as e:
             logger.error(
                 "Failed to update datasources for dataset %s: %s",
                 dataset_id,
                 e,
             )
-            return False
+            return {
+                "success": False,
+                "reason": f"UpdateDatasources API call failed: {e}",
+            }
 
     # -- Repoint logic -----------------------------------------------------
 
@@ -394,9 +442,20 @@ class FabricDatasourceRepointAPI(FabricAPIBase):
 
             datasources = self.get_datasources(workspace_id, model_id)
             if not datasources:
-                result.skipped.append(
-                    {"model": model_name, "reason": "no datasources found"}
+                # No SQL-type datasources found. This is expected for Direct
+                # Lake models which bind to lakehouses via OneLake, not SQL
+                # connections. The Power BI GetDatasources API does not surface
+                # Direct Lake bindings.
+                reason = (
+                    "no SQL datasources found (if this is a Direct Lake model, "
+                    "use deployment rules or the Bind Semantic Model Connection "
+                    "API to manage its connections)"
                 )
+                logger.info(
+                    "Model '%s' has no datasources — possibly Direct Lake",
+                    model_name,
+                )
+                result.skipped.append({"model": model_name, "reason": reason})
                 continue
 
             updates: List[Dict[str, Any]] = []
@@ -436,8 +495,8 @@ class FabricDatasourceRepointAPI(FabricAPIBase):
                     )
                 continue
 
-            success = self.update_datasources(workspace_id, model_id, updates)
-            if success:
+            outcome = self.update_datasources(workspace_id, model_id, updates)
+            if outcome["success"]:
                 for upd in updates:
                     old_server = upd["datasourceSelector"]["connectionDetails"][
                         "server"
@@ -454,7 +513,9 @@ class FabricDatasourceRepointAPI(FabricAPIBase):
                 result.failed.append(
                     {
                         "model": model_name,
-                        "reason": "UpdateDatasources API call failed",
+                        "reason": outcome.get(
+                            "reason", "UpdateDatasources API call failed"
+                        ),
                     }
                 )
 

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **`repoint-connections` exit codes**: Exit 0 = connections repointed, exit 1 = API failure, exit 2 = nothing to repoint (graceful skip). Previously exit 0 was used for both success and nothing-to-do, making it impossible for workflow callers to distinguish outcomes.
+- **`repoint-connections` error diagnostics**: `update_datasources()` now returns structured results with specific failure reasons. HTTP 403 errors surface the ownership requirement ("SP is not the semantic model owner") instead of a generic failure message.
+- **`repoint-connections` docstring accuracy**: Removed false claim of Direct Lake support. Documented actual API limitations (owner requirement, XMLA exclusion, incremental refresh caveat, supported datasource types). Fixed CLI example from `dev.yaml` to `base_workspace.yaml`.
+- **Scaffold suggested folder_rules**: `_build_folder_rules()` now returns suggested (commented-out) rules for common undiscovered item types (SemanticModel, Report, Notebook, etc.). Brownfield workspaces are pre-wired for item types they may add later.
+
+### Tests
+- **729/729 tests passing** (up from 720). Added: exit code 2 CLI test, 403 ownership detection (4 tests), Direct Lake skip hint, scaffold suggested rules (3 tests).
+
 ## [1.8.4] - 2026-03-17
 
 ### Added

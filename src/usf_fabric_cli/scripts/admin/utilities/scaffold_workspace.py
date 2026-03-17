@@ -177,7 +177,7 @@ def _build_folder_paths(raw_folders: List[Dict[str, str]]) -> List[str]:
 def _build_folder_rules(
     items: List[Dict[str, Any]],
     folders: Optional[List[Dict[str, str]]] = None,
-) -> List[Dict[str, str]]:
+) -> "tuple[List[Dict[str, str]], List[Dict[str, str]]]":
     """Infer folder_rules from discovered item types and actual folder placement.
 
     When folder information is available (from the workspace API), uses each
@@ -247,7 +247,28 @@ def _build_folder_rules(
             rules.append({"type": item_type, "folder": folder_name})
             seen_types.add(item_type)
 
-    return rules
+    # Collect common item types NOT discovered in the workspace.
+    # These are emitted as commented-out suggestions so brownfield projects
+    # are pre-wired for item types they may add later (e.g. SemanticModel,
+    # Report, Notebook).  The caller renders these as YAML comments.
+    COMMON_FUTURE_TYPES = [
+        "DataPipeline",
+        "Lakehouse",
+        "SQLEndpoint",
+        "Notebook",
+        "SemanticModel",
+        "Report",
+        "Warehouse",
+        "Environment",
+    ]
+    suggested: List[Dict[str, str]] = []
+    for item_type in COMMON_FUTURE_TYPES:
+        if item_type not in seen_types and item_type in ITEM_TYPE_TO_FOLDER:
+            suggested.append(
+                {"type": item_type, "folder": ITEM_TYPE_TO_FOLDER[item_type]}
+            )
+
+    return rules, suggested
 
 
 def _categorize_items(
@@ -460,6 +481,7 @@ def _generate_yaml(
     git_directory: Optional[str] = None,
     git_repo_fallback: str = "${GIT_REPO_URL}",
     brownfield: bool = False,
+    suggested_rules: Optional[List[Dict[str, str]]] = None,
 ) -> str:
     """Generate base_workspace.yaml content."""
     slug = project_slug or _slugify(workspace_name)
@@ -548,12 +570,19 @@ def _generate_yaml(
     lines.append("")
 
     # -- folder_rules section --
-    if folder_rules:
+    if folder_rules or suggested_rules:
         lines.append("# Folder rules -- auto-organize items after Git Sync")
         lines.append("folder_rules:")
         for rule in folder_rules:
             lines.append(f'  - type: {rule["type"]}')
             lines.append(f'    folder: "{rule["folder"]}"')
+        if suggested_rules:
+            lines.append(
+                "  # -- Undiscovered types (uncomment when these items are added) --"
+            )
+            for rule in suggested_rules:
+                lines.append(f'  # - type: {rule["type"]}')
+                lines.append(f'  #   folder: "{rule["folder"]}"')
         lines.append("")
 
     # -- items inventory (as comments, for reference) --
@@ -1013,7 +1042,7 @@ def scaffold_workspace(
         print(f"     {item_type}: {len(type_items)}")
 
     # -- 5. Infer folder rules from discovered types --
-    folder_rules = _build_folder_rules(items, folders=raw_folders)
+    folder_rules, suggested_rules = _build_folder_rules(items, folders=raw_folders)
 
     # -- 5b. Discover principals (role assignments) --
     print("   Discovering principals...")
@@ -1092,6 +1121,7 @@ def scaffold_workspace(
         git_directory=git_directory,
         git_repo_fallback=git_repo_url,
         brownfield=brownfield,
+        suggested_rules=suggested_rules,
     )
 
     if output_path:
@@ -1139,7 +1169,11 @@ def scaffold_workspace(
     print(f"   Workspace ID: {workspace_id}")
     print(f"   Folders:      {len(folder_names)}")
     print(f"   Items:        {total_items}")
-    print(f"   Folder rules: {len(folder_rules)}")
+    suggested_count = len(suggested_rules) if suggested_rules else 0
+    rules_label = f"{len(folder_rules)} active"
+    if suggested_count:
+        rules_label += f", {suggested_count} suggested (commented out)"
+    print(f"   Folder rules: {rules_label}")
     principals_label = (
         f"{len(discovered_principals)} discovered"
         if discovered_principals
