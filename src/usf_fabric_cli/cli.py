@@ -1039,11 +1039,30 @@ def list_items(
 
 @app.command("bulk-destroy")
 def bulk_destroy(
-    file: str = typer.Argument(..., help="Path to file containing workspace list"),
+    file: str = typer.Argument(
+        ..., help="Path to file containing workspace list (one name per line)"
+    ),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be deleted"),
     force: bool = typer.Option(False, "--force", help="Skip confirmation prompt"),
+    skip_pipeline_teardown: bool = typer.Option(
+        False,
+        "--skip-pipeline-teardown",
+        help="Skip deployment pipeline unassignment before deletion",
+    ),
+    skip_item_deletion: bool = typer.Option(
+        False,
+        "--skip-item-deletion",
+        help="Skip deleting workspace items before workspace deletion",
+    ),
 ):
-    """Bulk destroy workspaces from a list file"""
+    """Bulk destroy workspaces from a list file.
+
+    Performs full teardown per workspace: (1) unassign from deployment
+    pipelines, (2) delete all workspace items, (3) delete the workspace.
+
+    The input file should have one workspace display name per line.
+    Lines starting with # are comments.
+    """
     from pathlib import Path
 
     if not Path(file).exists():
@@ -1054,7 +1073,13 @@ def bulk_destroy(
         )
 
     try:
-        bulk_destroy_fn(file, dry_run, force)
+        bulk_destroy_fn(
+            file,
+            dry_run,
+            force,
+            teardown_pipelines=not skip_pipeline_teardown,
+            delete_items=not skip_item_deletion,
+        )
     except typer.Exit:
         raise
     except (FabricCLIError, KeyError, ValueError, OSError) as e:
@@ -1347,6 +1372,15 @@ def scaffold(
             "making the output a reusable template for 'make new-project'"
         ),
     ),
+    brownfield: bool = typer.Option(
+        False,
+        "--brownfield",
+        help=(
+            "Emit discovered principals as active YAML entries with actual GUIDs "
+            "instead of placeholder env vars. Use for existing workspaces that "
+            "already have principals which need to propagate to Test/Prod/Feature."
+        ),
+    ),
 ):
     """Scaffold a YAML config from an existing Fabric workspace.
 
@@ -1360,6 +1394,8 @@ def scaffold(
     Examples:
 
         fabric-cicd scaffold "EDP [DEV]"
+
+        fabric-cicd scaffold "SC30GLD [DEV]" --brownfield
 
         fabric-cicd scaffold "Sales [DEV]" -p "Sales - Pipeline"
 
@@ -1383,6 +1419,7 @@ def scaffold(
             templatise=templatise,
             skip_pipeline=skip_pipeline,
             skip_feature_template=skip_feature_template,
+            brownfield=brownfield,
         )
 
         if not results:

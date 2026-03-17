@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-03-17
+
+### Added
+- **`bulk-destroy` rewrite**: Full teardown per workspace — pipeline unbinding, item deletion, then workspace deletion. Fixed name parser to handle multi-word names. Added `--skip-pipeline-teardown` and `--skip-item-deletion` flags. Upfront pipeline map (O(pipelines) scan once) replaces O(workspaces × pipelines) per-workspace scanning.
+- **`repoint-connections` command**: New command for semantic model datasource rebinding.
+- **`scaffold --brownfield` flag**: Emits discovered principals as active YAML entries with actual GUIDs instead of placeholder env vars. For existing workspaces where principals already exist and need to propagate to Test/Prod/Feature without creating GitHub Secrets.
+- **Scaffold display-name detection**: Feature workspace templates now use the base display name (e.g., `"SC30GLD-DM30 - Opco Data Mart"`) for spaced workspace names instead of `${PROJECT_PREFIX}`, producing readable Fabric portal names like `[F] SC30GLD-DM30 - Opco Data Mart [FEATURE-my-branch]`.
+
+### Fixed
+- **Pagination safety**: `list_workspace_items_api` now has max_pages=50 limit and duplicate continuationToken detection to prevent infinite loops from Fabric API bugs.
+- **Makefile destroy targets**: All destroy/bulk-destroy targets (local + Docker) now pass through full flag set with inline documentation and examples.
+- **Stale docs**: Fixed 11 broken CLI_REFERENCE.md links, removed stale HANDOFF.md, updated README banner format, added version substitution note to LOCAL_DEPLOYMENT_GUIDE.
+
+### Tests
+- **720/720 tests passing** (up from 656).
 
 ## [1.8.3] - 2026-03-12
 

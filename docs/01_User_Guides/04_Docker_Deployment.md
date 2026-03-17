@@ -2,7 +2,7 @@
 
 > **Audience**: DevOps Engineers, CI/CD Pipeline Authors | **Time**: 20–30 min | **Deployment Path**: Docker
 > **Difficulty**: Intermediate | **Prerequisites**: Docker installed, `.env` configured
-> **See also**: [00_START_HERE.md](00_START_HERE.md) for orientation | [LOCAL_DEPLOYMENT_GUIDE.md](LOCAL_DEPLOYMENT_GUIDE.md) for non-Docker path | [CLI Reference](CLI_REFERENCE.md) for all Docker Make targets
+> **See also**: [00_START_HERE.md](00_START_HERE.md) for orientation | [LOCAL_DEPLOYMENT_GUIDE.md](LOCAL_DEPLOYMENT_GUIDE.md) for non-Docker path | [CLI Reference](02_CLI_Walkthrough.md) for all Docker Make targets
 
 This guide covers deploying Microsoft Fabric workspaces using the Dockerized CLI.
 No Python, conda, or local dependencies required — everything runs inside the container.

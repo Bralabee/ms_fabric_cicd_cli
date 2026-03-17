@@ -2,7 +2,7 @@
 
 > **Audience**: Developers, Platform Engineers | **Time**: 20–30 min | **Deployment Path**: Local Python
 > **Difficulty**: Beginner–Intermediate | **Prerequisites**: See §1 below
-> **See also**: [00_START_HERE.md](00_START_HERE.md) for orientation | [CLI Reference](CLI_REFERENCE.md) for all commands
+> **See also**: [00_START_HERE.md](00_START_HERE.md) for orientation | [CLI Reference](02_CLI_Walkthrough.md) for all commands
 
 This guide walks you through deploying a Microsoft Fabric workspace **from your local machine**
 using the Fabric CLI CI/CD framework. By the end, you will have a fully provisioned Fabric
@@ -76,7 +76,8 @@ pip install -e .
 
 > **For consumers** (using the CLI as a dependency, not developing it):
 > ```bash
-> pip install git+https://github.com/<org>/usf_fabric_cli_cicd.git@v1.8.0
+> # Replace v1.8.4 with your desired release tag (see CHANGELOG.md for versions)
+> pip install git+https://github.com/<org>/usf_fabric_cli_cicd.git@v1.8.4
 > ```
 
 ---

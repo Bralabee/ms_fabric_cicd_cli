@@ -1,6 +1,6 @@
 # START HERE — Fabric CLI CI/CD Documentation Guide
 
-> **Version**: 1.8.0 · **Last Updated**: 9 March 2026
+> **Version**: 1.8.4 · **Last Updated**: 17 March 2026
 >
 > This is the **starting point** for all documentation. Read this page first to understand
 > the system architecture, choose your deployment path, and find the right guide for your role.
@@ -40,7 +40,7 @@ The system uses **two repositories** that work together:
 │  • Blueprint templates       │     │  • Makefile (make targets)    │
 │  • Docker image              │     │  • Project-specific secrets   │
 └─────────────────────────────┘     └──────────────────────────────┘
-        ▲ installed at runtime via: pip install git+https://...@v1.8.0
+        ▲ installed at runtime via: pip install git+https://...@v1.8.4
 ```
 
 **Key insight**: The CLI repo is a *shared product*. The consumer repo is *your project's configuration*.
@@ -68,7 +68,7 @@ You'll run the CLI directly on your machine — no GitHub Actions needed.
 1. Read this page (you're here)
 2. → [Local Deployment Guide](LOCAL_DEPLOYMENT_GUIDE.md) — from zero to deployed, step by step
 3. → [Project Configuration](03_Project_Configuration.md) — customise your YAML config
-4. → [CLI Reference](CLI_REFERENCE.md) — all commands and flags
+4. → [CLI Reference](02_CLI_Walkthrough.md) — all commands and flags
 
 ### 🟡 "I'm building Docker images for CI pipelines"
 
@@ -76,7 +76,7 @@ You'll use the Docker image to run deployments in any CI/CD system.
 
 1. Read this page (you're here)
 2. → [Docker Deployment Guide](04_Docker_Deployment.md) — build, configure, deploy via Docker
-3. → [CLI Reference](CLI_REFERENCE.md) — command details
+3. → [CLI Reference](02_CLI_Walkthrough.md) — command details
 
 ### 🟣 "I'm exploring what this tool can do"
 
@@ -185,7 +185,7 @@ GITHUB_TOKEN=<your-fine-grained-pat>    # GitHub
 ### Reference
 | Guide | Description |
 |-------|-------------|
-| **[CLI_REFERENCE.md](CLI_REFERENCE.md)** | All commands, flags, exit codes, env vars |
+| **[02_CLI_Walkthrough.md](02_CLI_Walkthrough.md)** | All commands, flags, exit codes, env vars |
 | **[01_Usage_Guide.md](01_Usage_Guide.md)** | Make targets reference and scenarios |
 | **[06_Troubleshooting.md](06_Troubleshooting.md)** | Common issues and solutions |
 
@@ -228,4 +228,4 @@ make generate org="Acme" project="Sales" template=basic_etl
 # Or: python -m usf_fabric_cli.scripts.dev.generate_project "Acme" "Sales" --template basic_etl
 ```
 
-For the full command reference, see [CLI_REFERENCE.md](CLI_REFERENCE.md).
+For the full command reference, see [02_CLI_Walkthrough.md](02_CLI_Walkthrough.md).

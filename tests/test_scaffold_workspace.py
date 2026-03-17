@@ -581,6 +581,36 @@ class TestGenerateFeatureYamlTemplatise:
         assert "git_directory: /hr_analytics" in yaml
         assert "${HR_ANALYTICS_ADMIN_ID}" in yaml
 
+    def test_display_style_name_uses_base_name(self):
+        """Display-style names (with spaces) should use the base display name
+        instead of ${PROJECT_PREFIX} so feature workspaces get readable names
+        like [F] Sales Audience [FEATURE-my-branch]."""
+        yaml = _generate_feature_yaml(
+            workspace_name="SC30GLD-DM30 - Opco Data Mart [DEV]",
+            folders=["30_lakehouses"],
+        )
+        assert '  name: "SC30GLD-DM30 - Opco Data Mart"' in yaml
+        assert '  display_name: "SC30GLD-DM30 - Opco Data Mart"' in yaml
+        assert "${PROJECT_PREFIX}" not in yaml
+
+    def test_slug_style_name_uses_project_prefix(self):
+        """Slug-style names (no spaces) should still use ${PROJECT_PREFIX}."""
+        yaml = _generate_feature_yaml(
+            workspace_name="edp-test-v17 [DEV]",
+            folders=["200 Store"],
+        )
+        assert "  name: ${PROJECT_PREFIX}" in yaml
+        assert "  display_name: ${PROJECT_PREFIX}" in yaml
+
+    def test_templatise_always_uses_project_prefix(self):
+        """Templates always use ${PROJECT_PREFIX} regardless of name style."""
+        yaml = _generate_feature_yaml(
+            workspace_name="SC30GLD-DM30 - Opco Data Mart [DEV]",
+            folders=["30_lakehouses"],
+            templatise=True,
+        )
+        assert "  name: ${PROJECT_PREFIX}" in yaml
+
 
 # ── _strip_dev_marker tests ─────────────────────────────────────────────
 
@@ -719,3 +749,97 @@ class TestCapacityIdFallback:
         )
         assert "git_directory: /CHANGE-ME" in yaml
         assert "${CHANGEME_ADMIN_ID}" in yaml
+
+
+# ── Brownfield tests ──────────────────────────────────────────────────
+
+
+class TestBrownfieldScaffold:
+    """Tests for --brownfield flag: discovered principals emitted as active entries."""
+
+    DISCOVERED = [
+        {
+            "id": "aaa-111",
+            "type": "Group",
+            "role": "Admin",
+            "description": "IT Admin Group",
+        },
+        {"id": "bbb-222", "type": "User", "role": "Admin", "description": "Jane Doe"},
+        {
+            "id": "ccc-333",
+            "type": "ServicePrincipal",
+            "role": "Admin",
+            "description": "Data Pipeline SP",
+        },
+    ]
+
+    def test_base_yaml_brownfield_emits_active_principals(self):
+        """Brownfield base_workspace.yaml should have discovered principals as active entries."""
+        yaml = _generate_yaml(
+            workspace_name="SC30GLD [DEV]",
+            folders=["Data"],
+            folder_rules=[],
+            items_by_type={},
+            discovered_principals=self.DISCOVERED,
+            brownfield=True,
+        )
+        # Active entries (not comments)
+        assert '  - id: "aaa-111"' in yaml
+        assert '  - id: "bbb-222"' in yaml
+        assert '  - id: "ccc-333"' in yaml
+        assert "IT Admin Group" in yaml
+        # Should NOT have placeholder env vars
+        assert "SC30GLD_ADMIN_ID" not in yaml
+        assert "SC30GLD_MEMBERS_ID" not in yaml
+
+    def test_base_yaml_brownfield_still_has_mandatory_governance(self):
+        """Brownfield should still include mandatory governance env-var principals."""
+        yaml = _generate_yaml(
+            workspace_name="SC30GLD [DEV]",
+            folders=["Data"],
+            folder_rules=[],
+            items_by_type={},
+            discovered_principals=self.DISCOVERED,
+            brownfield=True,
+        )
+        assert "${AZURE_CLIENT_ID}" in yaml
+        assert "${ADDITIONAL_ADMIN_PRINCIPAL_ID}" in yaml
+        assert "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}" in yaml
+
+    def test_feature_yaml_brownfield_emits_active_principals(self):
+        """Brownfield feature_workspace.yaml should have discovered principals."""
+        yaml = _generate_feature_yaml(
+            workspace_name="SC30GLD [DEV]",
+            folders=["Data"],
+            brownfield=True,
+            discovered_principals=self.DISCOVERED,
+        )
+        assert '  - id: "aaa-111"' in yaml
+        assert '  - id: "bbb-222"' in yaml
+        assert "SC30GLD_ADMIN_ID" not in yaml
+
+    def test_greenfield_default_uses_placeholder_env_vars(self):
+        """Without --brownfield, discovered principals stay as comments."""
+        yaml = _generate_yaml(
+            workspace_name="SC30GLD [DEV]",
+            folders=["Data"],
+            folder_rules=[],
+            items_by_type={},
+            discovered_principals=self.DISCOVERED,
+            brownfield=False,
+        )
+        assert "${SC30GLD_ADMIN_ID}" in yaml
+        assert "#   aaa-111" in yaml.replace("...", "")  # commented
+
+    def test_brownfield_without_discovered_falls_back_to_greenfield(self):
+        """Brownfield with no discovered principals should use placeholder env vars."""
+        yaml = _generate_yaml(
+            workspace_name="SC30GLD [DEV]",
+            folders=["Data"],
+            folder_rules=[],
+            items_by_type={},
+            discovered_principals=None,
+            brownfield=True,
+        )
+        # Falls through to greenfield path since no discovered principals
+        assert "${SC30GLD_ADMIN_ID}" in yaml

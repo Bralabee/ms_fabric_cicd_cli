@@ -11,6 +11,7 @@ Tests the full promote flow:
 Usage:
     PYTHONPATH=src pytest tests/integration/test_promote_e2e.py -m integration -v
 """
+
 import os
 
 import pytest

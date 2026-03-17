@@ -2,7 +2,7 @@
 
 > **Audience**: Config Authors, Platform Engineers | **Time**: 20–40 min | **Deployment Path**: All
 > **Difficulty**: Intermediate | **Prerequisites**: Understanding of Fabric resource types
-> **See also**: [Blueprint Catalog](07_Blueprint_Catalog.md) for templates | [CLI Reference](CLI_REFERENCE.md) for config format & commands | [00_START_HERE.md](00_START_HERE.md) for orientation
+> **See also**: [Blueprint Catalog](07_Blueprint_Catalog.md) for templates | [CLI Reference](02_CLI_Walkthrough.md) for config format & commands | [00_START_HERE.md](00_START_HERE.md) for orientation
 
 This guide covers how to create and customize project configuration files for the USF Fabric CLI CI/CD toolkit.
 

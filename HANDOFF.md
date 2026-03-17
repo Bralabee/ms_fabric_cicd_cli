@@ -1,153 +1,126 @@
-# HANDOFF — Scaffold E2E Audit Remediation
+# HANDOFF — Bulk Destroy + Brownfield Scaffold + SC30GLD Deployment
 
-**Date**: 2026-03-16
-**Branch**: `feat/repoint-connections` (usf_fabric_cli_cicd)
-**Status**: All implementation + tests complete. **Nothing committed yet.**
+**Date**: 2026-03-17
+**Session**: Bulk destroy fix → scaffold improvements → SC30GLD onboarding
+**Status**: SC30GLD deployed. PRs open. Individual user principals NOT propagated to TEST/PROD (see below).
 
 ---
 
 ## Goal
 
-Address all 9 findings from the E2E scaffold audit (documented in `E2E_AUDIT_REPORT.md`). The scaffold command must produce complete, deployment-ready output by default — deployment pipeline, feature workspace, governance principals, correct capacity fallbacks — with zero additional flags.
+Fix bulk destroy (stuck in infinite loop), re-scaffold SC30GLD-DM30 - Opco Data Mart [DEV] as a brownfield project, and deploy Test/Prod workspaces + deployment pipeline.
 
-## Progress — DONE
+## Completed Work
 
-All code changes are applied and **67 tests pass** (48 existing + 19 new, 0 failures). Changes span 4 repos.
+### 1. Bulk Destroy Rewrite
+- Fixed workspace name parser (was splitting on whitespace, truncating multi-word names)
+- Added full teardown: pipeline unbinding → item deletion → workspace deletion
+- Upfront pipeline map (O(pipelines) scan once) instead of O(workspaces × pipelines)
+- Added `--skip-pipeline-teardown`, `--skip-item-deletion` CLI flags
+- Pagination safety on `list_workspace_items_api` (max_pages=50, duplicate token detection)
+- Successfully destroyed 9 test workspaces (e2e_test_consumer, e2e_test_scaffold, edp_test_v17)
 
-## Uncommitted Changes by Repo
+### 2. Brownfield Scaffold (`--brownfield`)
+- New flag: emits discovered principals as active YAML entries with actual GUIDs
+- Display-name detection: feature templates use base display name for spaced workspaces
+- Context-aware next steps: detects existing project + workflow dropdown presence
+- Checks both config dir AND workflow dropdown before declaring project exists
+- Added to: scaffold_workspace.py (argparse), cli.py (Typer), Makefile (both repos)
 
-### 1. `usf_fabric_cli_cicd` — branch `feat/repoint-connections`
+### 3. SC30GLD-DM30 Deployment
+- Re-scaffolded with `--brownfield` — 16 principals (3 governance env vars + 13 discovered GUIDs)
+- Setup Base Workspaces workflow run #23173478356 — **SUCCESS**:
+  - DEV: Already existed (idempotent)
+  - TEST: Created (`8e06b14c`) with principals + folders
+  - PROD: Created (`3e30e3b9`) with principals + folders
+  - Pipeline: Created (`c10ecfab`) with 3 stages assigned
 
-| File | Change |
-|------|--------|
-| `src/usf_fabric_cli/scripts/admin/utilities/scaffold_workspace.py` | +`_strip_dev_marker()`, +`_infer_pipeline_name()`, capacity fallback syntax, default feature gen, `--skip-pipeline`/`--skip-feature-template` argparse flags |
-| `src/usf_fabric_cli/cli.py` | Updated Typer options + docstring for new default behaviour |
-| `tests/test_scaffold_workspace.py` | +3 test classes (19 tests): `TestStripDevMarker`, `TestInferPipelineName`, `TestCapacityIdFallback` |
+### 4. Docs & Version Bump
+- Version: 1.8.3 → **1.8.4** across pyproject.toml, all docs, vendor wheel
+- CHANGELOG: [Unreleased] moved to [1.8.4] - 2026-03-17
+- Fixed 11 broken CLI_REFERENCE.md links → redirected to 02_CLI_Walkthrough.md
+- Removed stale HANDOFF.md from feat/repoint-connections
+- Updated Makefile scaffold/destroy targets with full docs in both repos
+- 720 tests passing
 
-### 2. `usf-fabric-cicd` (mirror) — on `main` (needs feature branch)
+## Remaining Work / Known Issues
 
-Same 3 files as #1 — copied via `cp`, verified identical via `diff`.
-
-**⚠️ Mirror is on `main`** — create a feature branch before committing.
-
-### 3. `edp_fabric_consumer_repo/EDPFabric` — on `main` (needs feature branch)
-
-| File | Change |
-|------|--------|
-| `.github/workflows/feature-workspace-create.yml` | Branch name sanitization (spaces→hyphens, invalid chars stripped) |
-| `docs/04_QUICK_REFERENCE.md` | Important callout: only `feature/` prefix triggers automation |
-| `config/projects/re_active_directory/base_workspace.yaml` | Added `deployment_pipeline` section |
-| `config/projects/re_active_directory/feature_workspace.yaml` | **NEW** — ephemeral feature workspace config |
-| `config/projects/sc30gld_dm30_opco_data_mart/base_workspace.yaml` | Added `deployment_pipeline` section |
-| `config/projects/_templates/re_active_directory/base_workspace.yaml` | Added CHANGE-ME `deployment_pipeline` |
-| `config/projects/_templates/re_active_directory/feature_workspace.yaml` | **NEW** — template version |
-| `config/projects/_templates/sc30gld_dm30_opco_data_mart/base_workspace.yaml` | Added CHANGE-ME `deployment_pipeline` |
-
-Also has an unrelated `.sqlproj` modification (pre-existing, not ours).
-
-### 4. `fabric_cicd_test_repo` — branch `chore/vendor-sync-scaffold-fix`
-
-| File | Change |
-|------|--------|
-| `.github/workflows/feature-workspace-create.yml` | Branch name sanitization |
-| `docs/04_QUICK_REFERENCE.md` | `feature/` prefix convention documented |
-
-## Resume Instructions
-
-### Step 1 — Verify tests still green
-```bash
-cd usf_fabric_cli_cicd
-conda activate fabric-cli-cicd
-pytest tests/test_scaffold_workspace.py -v
-# Expect: 67 passed
+### CRITICAL: Individual user principals NOT propagated to TEST/PROD
+The deployer's `_setup_deployment_pipeline()` at line 1617 has:
+```python
+if not principal_id_raw or principal_id_raw.startswith("${"):
+    continue
 ```
+The hardcoded GUIDs (f21d0f2e, c1f65310) passed through correctly. But the logs only show 3 principals added to TEST/PROD:
+- `4a4973a3` (Automation SP)
+- `f21d0f2e` (IT Admin Group)
+- `c1f65310` (EDP Support Group)
 
-### Step 2 — Commit usf_fabric_cli_cicd (already on feature branch)
-```bash
-cd usf_fabric_cli_cicd
-git add src/usf_fabric_cli/cli.py \
-  src/usf_fabric_cli/scripts/admin/utilities/scaffold_workspace.py \
-  tests/test_scaffold_workspace.py
-git commit -m "feat: auto-generate deployment_pipeline and feature_workspace in scaffold
+The 10 individual users (Kevin Quinlan, Gabor Balazs, etc.) and EMEA-JDE_2_FABRIC SP are NOT visible in the logs for TEST/PROD. **Investigate whether the deployer filtered them or if it's a log truncation issue.** Check the Fabric portal directly to confirm.
 
-- Add _strip_dev_marker() and _infer_pipeline_name() helpers
-- Scaffold now generates deployment_pipeline by default (skip via --skip-pipeline)
-- Feature workspace generated by default (skip via --skip-feature-template)
-- Capacity IDs use fallback syntax: \${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}
-- 19 new tests across 3 test classes (67 total, all passing)"
+### Pipeline User Access Warnings (non-blocking)
+- SP → 401 Unauthorized on PBI Pipeline Users API (known Fabric limitation — SP needs tenant Fabric Admin role)
+- This doesn't affect functionality — SP has implicit access as pipeline creator
+
+### FABRIC_DOMAIN_NAME not set
+- Domain assignment skipped for all workspaces
+- Cosmetic only — set `FABRIC_DOMAIN_NAME` secret in GitHub if needed
+
+### PRs Open (not merged)
+| Repo | Branch | PR |
+|---|---|---|
+| usf_fabric_cli_cicd | `feature/bulk-destroy-improvements` | [#68](https://github.com/BralaBee-LEIT/usf_fabric_cli_cicd_codebase/pull/68) |
+| usf-fabric-cicd (mirror) | `feature/bulk-destroy-and-brownfield-scaffold` | [#17](https://github.com/BralaBee-LEIT/usf_fabric_cicd_codebase/pull/17) |
+| EDPFabric (consumer) | `feature/docs-freshness-audit` | [#81](https://github.com/ABBA-REPLC/EDPFabric/pull/81) |
+
+### Consumer repo has 2 uncommitted template files
 ```
-
-### Step 3 — Create feature branch + commit usf-fabric-cicd (mirror)
-```bash
-cd usf-fabric-cicd
-git checkout -b feat/scaffold-audit-remediation
-git add src/usf_fabric_cli/cli.py \
-  src/usf_fabric_cli/scripts/admin/utilities/scaffold_workspace.py \
-  tests/test_scaffold_workspace.py
-git commit -m "feat: mirror scaffold improvements from usf_fabric_cli_cicd
-
-- Auto-generate deployment_pipeline and feature_workspace by default
-- Add _strip_dev_marker(), _infer_pipeline_name() helpers
-- Capacity ID fallback syntax for non-templatised output
-- 19 new tests (67 total, all passing)"
+M config/projects/_templates/sc30gld_dm30_opco_data_mart/base_workspace.yaml
+M config/projects/_templates/sc30gld_dm30_opco_data_mart/feature_workspace.yaml
 ```
+These are from the last `make scaffold` run. Either commit them or discard (the concrete project configs are already committed).
 
-### Step 4 — Create feature branch + commit EDPFabric
-```bash
-cd edp_fabric_consumer_repo/EDPFabric
-git checkout -b feat/scaffold-audit-remediation
-git add .github/workflows/feature-workspace-create.yml \
-  docs/04_QUICK_REFERENCE.md \
-  config/projects/re_active_directory/ \
-  config/projects/sc30gld_dm30_opco_data_mart/base_workspace.yaml \
-  config/projects/_templates/re_active_directory/ \
-  config/projects/_templates/sc30gld_dm30_opco_data_mart/base_workspace.yaml
-git commit -m "feat: complete scaffold output for incomplete projects
+### bralabee remote (CLI repo)
+Push to `Bralabee/ms_fabric_cicd_cli.git` returned 403 — credentials/access issue.
 
-- Add deployment_pipeline to re_active_directory and sc30gld configs
-- Create feature_workspace.yaml for re_active_directory (concrete + template)
-- Add branch name sanitization to feature-workspace-create.yml
-- Document feature/ prefix requirement in 04_QUICK_REFERENCE.md"
-```
+## Key Decisions
 
-### Step 5 — Commit fabric_cicd_test_repo (already on feature branch)
-```bash
-cd fabric_cicd_test_repo
-git add .github/workflows/feature-workspace-create.yml docs/04_QUICK_REFERENCE.md
-git commit -m "fix: sanitize branch names in feature workspace workflow
-
-- Strip spaces, invalid chars, collapse double hyphens in SAFE_FEATURE
-- Document that only feature/ prefix triggers automation"
-```
-
-### Step 6 — Push + PRs
-Push each feature branch and open PRs. Follow the multi-remote push order for usf_fabric_cli_cicd (see git-remotes memory note).
-
-## Finding → Resolution Map
-
-| # | Finding | Resolution | Type |
-|---|---------|------------|------|
-| 1 | deployment_pipeline missing from scaffold output | `_infer_pipeline_name()` auto-generates it | Engine (all future scaffolds) |
-| 2 | feature_workspace.yaml missing from scaffold output | Default-on generation | Engine (all future scaffolds) |
-| 3 | Principals not discovered | Verified: scaffold already discovers & includes them | No change needed |
-| 4 | Branch name sanitization | `SAFE_FEATURE` cleanup in workflow files | Workflow (consumer repos) |
-| 5 | Only feature/ prefix documented | Important callout added to QUICK_REFERENCE | Docs (consumer repos) |
-| 6 | Governance principals | Verified: always emitted + ConfigManager auto-injects | No change needed |
-| 7 | Non-standard folders | Verified: majority vote algorithm handles this | No change needed |
-| 8 | Incomplete scaffolded projects | deployment_pipeline + feature_workspace.yaml added | Retroactive (EDPFabric) |
-| 9 | Capacity ID inconsistency | Fallback syntax in `_generate_yaml()` | Engine (all future scaffolds) |
-
-## Key Design Decisions
-
-1. **`_strip_dev_marker` only strips DEV markers** — not TEST/PROD. This is intentional: the function derives the base project name from the dev workspace, so it only needs to handle dev patterns.
-
-2. **Feature workspace is opt-out, not opt-in** — previous behaviour required `--include-feature-template`. Now it's generated by default; use `--skip-feature-template` to suppress. The legacy `--include-feature-template` flag is kept for backward compat but is now a no-op.
-
-3. **Concrete projects use `${FABRIC_CAPACITY_ID}` for all stages** — matches existing consumer repo convention (same capacity for dev/test/prod in current deployment). Templates use fallback syntax `${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}` for future multi-capacity setups.
+1. **Brownfield vs greenfield**: Existing workspaces use `--brownfield` to emit actual GUIDs instead of placeholder env vars. No GitHub Secrets needed for project-specific principals.
+2. **Display-style names**: Feature workspaces use `"SC30GLD-DM30 - Opco Data Mart"` (not `${PROJECT_PREFIX}`) for readable Fabric portal names.
+3. **SC30GLD_ADMIN_ID / SC30GLD_MEMBERS_ID**: These secrets DON'T EXIST and are NOT used. The configs use hardcoded GUIDs instead. The workflow env var exports for these are harmless dead code.
 
 ## Environment
 
 - **Conda env**: `fabric-cli-cicd`
-- **Python**: 3.11.14
-- **pytest**: 9.0.1
-- **Test result**: 67 passed in 0.38s
+- **Python**: 3.11
+- **Tests**: 720 passed (pytest tests/ -x)
+- **CLI version**: 1.8.4 (pyproject.toml)
+- **Vendor wheel**: usf_fabric_cli-1.8.4-py3-none-any.whl
+
+## Resume Instructions
+
+### To investigate missing user principals on TEST/PROD:
+```bash
+cd usf_fabric_cli_cicd
+conda activate fabric-cli-cicd
+set -a && source .env && set +a
+
+# Check what's actually on the TEST workspace
+python -c "
+from usf_fabric_cli.scripts.admin.utilities.scaffold_workspace import _discover_principals
+from usf_fabric_cli.services.fabric_wrapper import FabricCLIWrapper
+from usf_fabric_cli.utils.config import get_environment_variables
+env = get_environment_variables()
+f = FabricCLIWrapper(env['FABRIC_TOKEN'])
+for p in _discover_principals(f, 'SC30GLD-DM30 - Opco Data Mart [TEST]'):
+    print(f'{p[\"type\"]:20s} {p[\"role\"]:12s} {p[\"id\"]}  # {p[\"description\"]}')
+"
+# Expect: should show all 16 principals if propagation worked
+# If only 3, the deployer filtered the individual users — check line ~1617 in deployer.py
+```
+
+### To merge PRs:
+1. Review and merge CLI PR #68
+2. Review and merge Mirror PR #17
+3. Review and merge Consumer PR #81
+4. Tag: `git tag v1.8.4 && git push origin v1.8.4` (on CLI repo main after merge)

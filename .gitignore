@@ -90,3 +90,5 @@ webapp/backend/.pytest_cache/
 # AI context & tools
 .claude/
 .claude
+workspaces_to_destroy.txt
+workspaces_retry.txt

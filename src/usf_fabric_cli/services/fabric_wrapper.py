@@ -1788,7 +1788,11 @@ sys.exit(main())
 
         items: List[Dict[str, Any]] = []
         url = f"workspaces/{workspace_id}/items"
-        while url:
+        max_pages = 50  # Safety limit to prevent infinite pagination loops
+        page = 0
+        seen_tokens: set = set()
+        while url and page < max_pages:
+            page += 1
             command = ["api", url]
             result = self._execute_command(command)
             if not result.get("success"):
@@ -1824,6 +1828,15 @@ sys.exit(main())
                 continuation_token = data.get("continuationToken", "")
                 continuation_uri = data.get("continuationUri", "")
                 if continuation_token:
+                    # Guard against API returning the same token repeatedly
+                    if continuation_token in seen_tokens:
+                        logger.warning(
+                            "Duplicate continuationToken detected for %s "
+                            "— breaking pagination loop",
+                            workspace_name,
+                        )
+                        break
+                    seen_tokens.add(continuation_token)
                     url = (
                         f"workspaces/{workspace_id}/items"
                         f"?continuationToken={continuation_token}"
@@ -1843,6 +1856,15 @@ sys.exit(main())
                     url = ""
             else:
                 break
+
+        if page >= max_pages:
+            logger.warning(
+                "Pagination safety limit reached (%d pages) for %s — "
+                "returning %d items collected so far",
+                max_pages,
+                workspace_name,
+                len(items),
+            )
         return items
 
     def move_item_to_folder(

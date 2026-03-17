@@ -2,7 +2,7 @@
 
 > **Audience**: Platform Engineers, Data Engineers, DevOps, Team Leads | **Time**: 45–60 min | **Deployment Path**: Conceptual (all paths)
 > **Difficulty**: Beginner | **Prerequisites**: None — conceptual overview
-> **See also**: [00_START_HERE.md](00_START_HERE.md) for hands-on orientation | [Local Deployment Guide](LOCAL_DEPLOYMENT_GUIDE.md) for first deploy | [CLI Reference](CLI_REFERENCE.md) for commands
+> **See also**: [00_START_HERE.md](00_START_HERE.md) for hands-on orientation | [Local Deployment Guide](LOCAL_DEPLOYMENT_GUIDE.md) for first deploy | [CLI Reference](02_CLI_Walkthrough.md) for commands
 
 ---
 

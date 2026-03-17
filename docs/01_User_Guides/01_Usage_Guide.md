@@ -2,7 +2,7 @@
 
 > **Audience**: Operators, DevOps Engineers | **Time**: 20–30 min | **Deployment Path**: Local Python, Make targets
 > **Difficulty**: Beginner–Intermediate | **Prerequisites**: conda environment, `.env` configured
-> **See also**: [00_START_HERE.md](00_START_HERE.md) for orientation | [CLI Reference](CLI_REFERENCE.md) for command details | [Local Deployment Guide](LOCAL_DEPLOYMENT_GUIDE.md) for first deploy
+> **See also**: [00_START_HERE.md](00_START_HERE.md) for orientation | [CLI Reference](02_CLI_Walkthrough.md) for command details | [Local Deployment Guide](LOCAL_DEPLOYMENT_GUIDE.md) for first deploy
 
 This guide demonstrates how to use the Fabric CLI CI/CD solution for any organization and project, leveraging the thin wrapper architecture around the official Fabric CLI.
 

@@ -2,7 +2,7 @@
 
 Enterprise-grade Microsoft Fabric deployment automation leveraging the official Fabric CLI with 12-Factor App configuration management, Jinja2 artifact templating, and REST API Git integration. Designed for organization-agnostic operation with a clean, modular architecture.
 
-> **🎉 March 2026 Update:** Version **1.8.3** — Scaffold git repo templatise fix. See [CHANGELOG.md](CHANGELOG.md) for details.
+> **Latest Release**: Version **1.8.4** (17 March 2026). See [CHANGELOG.md](CHANGELOG.md) for details.
 
 > **🔄 Modern Successor:** This project is the evolution of [usf-fabric-cicd](../usf-fabric-cicd), providing a full-featured enterprise CLI framework built around the official Fabric CLI with comprehensive CI/CD, Git integration, and deployment pipeline support.
 
@@ -224,7 +224,7 @@ make validate config=config/projects/your_org/your_project.yaml
 make deploy config=config/projects/your_org/your_project.yaml env=dev
 ```
 
-## Make Targets Reference (53 Available)
+## Make Targets Reference (54 Available)
 
 ### Local Development
 

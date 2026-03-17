@@ -1,7 +1,7 @@
 # Troubleshooting Guide
 
 > **Audience**: All users | **Deployment Path**: All | **Difficulty**: Varies per issue
-> **See also**: [CLI Reference](CLI_REFERENCE.md) for command flags & exit codes | [Consumer repo troubleshooting](https://github.com/<org>/edp_fabric_consumer_repo/blob/main/EDPFabric/docs/02_REPLICATION_GUIDE.md#11-troubleshooting) for CI/CD-specific issues
+> **See also**: [CLI Reference](02_CLI_Walkthrough.md) for command flags & exit codes | [Consumer repo troubleshooting](https://github.com/<org>/edp_fabric_consumer_repo/blob/main/EDPFabric/docs/02_REPLICATION_GUIDE.md#11-troubleshooting) for CI/CD-specific issues
 
 ## Common Issues and Solutions
 

@@ -2,7 +2,7 @@
 
 > **Audience**: CLI Power Users | **Time**: 30–45 min | **Deployment Path**: CLI commands
 > **Difficulty**: Intermediate | **Prerequisites**: CLI installed, `.env` configured, conda active
-> **See also**: [CLI Reference](CLI_REFERENCE.md) for all commands/flags | [00_START_HERE.md](00_START_HERE.md) for orientation
+> **See also**: [CLI Reference](02_CLI_Walkthrough.md) for all commands/flags | [00_START_HERE.md](00_START_HERE.md) for orientation
 
 This guide provides a hands-on, step-by-step walkthrough of the core workflows in the USF Fabric CI/CD framework. It demonstrates how to use the command-line tools to manage the full lifecycle of a Microsoft Fabric data product, from initialization to production deployment.
 

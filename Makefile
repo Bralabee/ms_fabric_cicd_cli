@@ -181,24 +181,49 @@ generate: ## Generate project config (Usage: make generate org="Org" project="Pr
 	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.generate_project "$(org)" "$(project)" --template $(or $(template),medallion)
 
-scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace="Name" [output=path] [feature=1] [pipeline="Name"] [slug=override])
+scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace="Name" [brownfield=1] [slug=override])
 	@if [ -z "$(workspace)" ]; then \
-	printf "\033[31mError: 'workspace' argument is missing.\033[0m\n"; \
-		echo "Usage: make scaffold workspace=\"My Workspace [DEV]\" [output=path] [feature=1] [pipeline=\"Name\"] [slug=override]"; \
-	echo ""; \
-	echo "Options:"; \
-	echo "  workspace  -- Name of the existing Fabric workspace to scan (required)"; \
-	echo "  output     -- Output path for base_workspace.yaml (default: config/projects/_templates/<slug>/)"; \
-	echo "  feature=1  -- (Required for CI/CD flow) Set feature=1 to also generate feature_workspace.yaml"; \
-	echo "  pipeline   -- (Required for Prod promotion) Pipeline name to scaffold dev/test/prod stages"; \
-	echo "  slug       -- Override the auto-generated project slug"; \
-	echo "  test_ws    -- Explicit Test stage workspace name"; \
-	echo "  prod_ws    -- Explicit Production stage workspace name"; \
-	echo ""; \
-	echo "Example:"; \
-		echo "  make scaffold workspace=\"Sales\" slug=sales_analytics feature=true pipeline=\"Sales Pipeline\""; \		echo ""; \
-		printf "\033[33mNote: Do not put spaces around the '=' sign (e.g., workspace= \"...\").\033[0m\n"; \
-		echo ""; \	exit 1; \
+		printf "\033[31mError: 'workspace' argument is missing.\033[0m\n"; \
+		echo ""; \
+		echo "Scaffold a YAML config by scanning a live Fabric workspace."; \
+		echo "Discovers folders, items, principals, Git connection, and"; \
+		echo "auto-generates deployment pipeline + feature workspace configs."; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		echo "  make scaffold workspace=\"My Workspace [DEV]\""; \
+		echo ""; \
+		printf "\033[1mOptions:\033[0m\n"; \
+		echo "  workspace     -- Name of the existing Fabric workspace to scan (required)"; \
+		echo "  brownfield=1  -- Emit discovered principals as active YAML entries with actual"; \
+		echo "                   GUIDs. Use for EXISTING workspaces that already have principals."; \
+		echo "                   Without this flag, principals are commented out as reference and"; \
+		echo "                   placeholder env vars are generated instead."; \
+		echo "  slug          -- Override the auto-generated project slug"; \
+		echo "  output        -- Output path for base_workspace.yaml"; \
+		echo "                   (default: config/projects/_templates/<slug>/)"; \
+		echo "  pipeline      -- Override the auto-inferred deployment pipeline name"; \
+		echo "  test_ws       -- Explicit Test stage workspace name"; \
+		echo "  prod_ws       -- Explicit Production stage workspace name"; \
+		echo "  skip_pipeline=1 -- Do not include the deployment_pipeline section"; \
+		echo "  skip_feature=1  -- Do not generate feature_workspace.yaml"; \
+		echo ""; \
+		printf "\033[1mExamples:\033[0m\n"; \
+		echo "  # Scaffold an EXISTING workspace (brownfield -- principals as actual GUIDs)"; \
+		echo '  make scaffold workspace="SC30GLD-DM30 - Opco Data Mart [DEV]" brownfield=1'; \
+		echo ""; \
+		echo "  # Scaffold for a NEW project (greenfield -- placeholder env vars for principals)"; \
+		echo '  make scaffold workspace="Sales [DEV]" slug=sales_analytics'; \
+		echo ""; \
+		echo "  # Scaffold without pipeline or feature workspace"; \
+		echo '  make scaffold workspace="My WS [DEV]" skip_pipeline=1 skip_feature=1'; \
+		echo ""; \
+		printf "\033[1mAuto-generated outputs:\033[0m\n"; \
+		echo "  base_workspace.yaml     -- Full workspace config with pipeline + principals"; \
+		echo "  feature_workspace.yaml  -- Ephemeral feature branch workspace config"; \
+		echo ""; \
+		printf "\033[33mNote: Do not put spaces around the '=' sign.\033[0m\n"; \
+		echo ""; \
+		exit 1; \
 	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.utilities.scaffold_workspace "$(workspace)" \
 		$(if $(output),--output "$(output)",) \
@@ -206,7 +231,10 @@ scaffold: ## Scaffold config from live workspace (Usage: make scaffold workspace
 		$(if $(pipeline),--pipeline-name "$(pipeline)",) \
 		$(if $(slug),--project-slug "$(slug)",) \
 		$(if $(test_ws),--test-workspace-name "$(test_ws)",) \
-		$(if $(prod_ws),--prod-workspace-name "$(prod_ws)",)
+		$(if $(prod_ws),--prod-workspace-name "$(prod_ws)",) \
+		$(if $(brownfield),--brownfield,) \
+		$(if $(skip_pipeline),--skip-pipeline,) \
+		$(if $(skip_feature),--skip-feature-template,)
 
 discover-folders: ## Discover new folders from live workspace and update YAML config (Usage: make discover-folders config=path/to/config.yaml [workspace="Name"] [branch=feature/x] [dry_run=1])
 	@if [ -z "$(config)" ]; then \
@@ -377,30 +405,86 @@ feature-workspace: ## Create isolated feature workspace (Usage: make feature-wor
 	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
 
-destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override="Name"])
+destroy: ## Destroy a workspace (Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [force_populated=1] [workspace_override="Name"] [branch=feature/x] [cleanup_repo=1])
 	@if [ -z "$(config)" ]; then \
-	printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
-	echo "Usage: make destroy config=path/to/config.yaml [env=dev] [force=1] [workspace_override=Name]"; \
-	exit 1; \
+		printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
+		echo ""; \
+		echo "Destroy a single workspace with optional pipeline teardown."; \
+		echo ""; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make destroy config=path/to/config.yaml\n"; \
+		echo ""; \
+		printf "\033[1mOptions:\033[0m\n"; \
+		echo "  config             -- Path to workspace YAML config (required)"; \
+		echo "  env                -- Target environment (dev/test/prod)"; \
+		echo "  force=1            -- Skip confirmation prompt"; \
+		echo "  force_populated=1  -- Delete workspace even if it contains items (overrides safety)"; \
+		echo "  workspace_override -- Use this name instead of config-derived name"; \
+		echo "  branch             -- Derive workspace name from branch (e.g., feature/my-branch)"; \
+		echo "  cleanup_repo=1     -- Also remove local config/git-sync dirs (requires force_populated)"; \
+		echo ""; \
+		printf "\033[1mExamples:\033[0m\n"; \
+		echo "  # Destroy the dev workspace (safe mode — won't delete if it has items)"; \
+		echo "  make destroy config=config/projects/edp/base_workspace.yaml force=1"; \
+		echo ""; \
+		echo "  # Force-destroy a populated workspace + teardown its pipeline"; \
+		echo "  make destroy config=config/projects/edp_test_v17/base_workspace.yaml force=1 force_populated=1"; \
+		echo ""; \
+		echo "  # Destroy a feature workspace by branch name"; \
+		echo '  make destroy config=config/projects/edp/feature_workspace.yaml force=1 branch=feature/edp/my-feature'; \
+		echo ""; \
+		exit 1; \
 	fi
 	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.cli destroy "$(config)" \
 		$(if $(env),--env "$(env)",) \
 		$(if $(force),--force,) \
-		$(if $(workspace_override),--workspace-name-override "$(workspace_override)",)
+		$(if $(force_populated),--force-destroy-populated,) \
+		$(if $(workspace_override),--workspace-name-override "$(workspace_override)",) \
+		$(if $(branch),--branch "$(branch)",) \
+		$(if $(cleanup_repo),--cleanup-repo,)
 
-bulk-destroy: ## Bulk destroy workspaces from list (Usage: make bulk-destroy file=list.txt)
+bulk-destroy: ## Bulk destroy workspaces from list file (Usage: make bulk-destroy file=list.txt [force=1] [dry_run=1])
 	@if [ -z "$(file)" ]; then \
 		printf "\033[31mError: 'file' argument is missing.\033[0m\n"; \
 		echo ""; \
-		printf "\033[1mUsage:\033[0m\n"; \
-		printf "  make bulk-destroy file=<value>\n"; \
+		echo "Bulk destroy workspaces with full teardown: pipeline unbinding,"; \
+		echo "item deletion, then workspace deletion. Input file has one"; \
+		echo "workspace display name per line (spaces allowed). Comment lines"; \
+		echo "start with #."; \
 		echo ""; \
-		printf "\033[1mExample:\033[0m\n"; \
-		printf "  make bulk-destroy file=\"example_value\"\n"; \
+		printf "\033[1mUsage:\033[0m\n"; \
+		printf "  make bulk-destroy file=workspaces_to_destroy.txt\n"; \
+		echo ""; \
+		printf "\033[1mOptions:\033[0m\n"; \
+		echo "  file                    -- Text file with workspace names, one per line (required)"; \
+		echo "  force=1                 -- Skip confirmation prompt"; \
+		echo "  dry_run=1               -- Show what would be deleted without doing it"; \
+		echo "  skip_pipeline=1         -- Skip deployment pipeline unassignment"; \
+		echo "  skip_items=1            -- Skip deleting workspace items before deletion"; \
+		echo ""; \
+		printf "\033[1mFile format:\033[0m\n"; \
+		echo "  # Comment lines start with #"; \
+		echo "  E2E Test Consumer [DEV]"; \
+		echo "  E2E Test Consumer [TEST]"; \
+		echo "  edp-test-v17 [DEV]"; \
+		echo ""; \
+		printf "\033[1mExamples:\033[0m\n"; \
+		echo "  # Preview what would be deleted (no changes)"; \
+		echo "  make bulk-destroy file=workspaces_to_destroy.txt dry_run=1"; \
+		echo ""; \
+		echo "  # Full teardown: unbind pipelines, delete items, delete workspaces"; \
+		echo "  make bulk-destroy file=workspaces_to_destroy.txt force=1"; \
+		echo ""; \
+		echo "  # Workspace-only deletion (skip pipeline and item cleanup)"; \
+		echo "  make bulk-destroy file=workspaces_to_destroy.txt force=1 skip_pipeline=1 skip_items=1"; \
 		echo ""; \
 		exit 1; \
 	fi
-	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.bulk_destroy $(file)
+	export PYTHONPATH="$${PYTHONPATH}$(PATHSEP)$(PWD)/src" && $(PYTHON) -m usf_fabric_cli.scripts.admin.bulk_destroy "$(file)" \
+		$(if $(force),--force,) \
+		$(if $(dry_run),--dry-run,) \
+		$(if $(skip_pipeline),--skip-pipeline-teardown,) \
+		$(if $(skip_items),--skip-item-deletion,)
 
 
 ##@ Admin Utilities
@@ -508,19 +592,24 @@ docker-promote: ## Promote using Docker (Usage: make docker-promote pipeline="Na
 		$(if $(target),--target-stage $(target),) \
 		$(if $(note),--note "$(note)",)
 
-docker-destroy: ## Destroy using Docker (Usage: make docker-destroy config=... ENVFILE=.env)
+docker-destroy: ## Destroy using Docker (Usage: make docker-destroy config=... [force=1] [force_populated=1] ENVFILE=.env)
 	@if [ -z "$(config)" ]; then \
 		printf "\033[31mError: 'config' argument is missing.\033[0m\n"; \
 		echo ""; \
-		printf "\033[1mUsage:\033[0m\n"; \
-		printf "  make docker-destroy config=<value>\n"; \
+		echo "Destroy a single workspace via Docker."; \
+		echo "See 'make destroy' for full option documentation."; \
 		echo ""; \
 		printf "\033[1mExample:\033[0m\n"; \
-		printf "  make docker-destroy config=\"example_value\"\n"; \
+		echo "  make docker-destroy config=config/projects/edp_test_v17/base_workspace.yaml force=1 force_populated=1"; \
 		echo ""; \
 		exit 1; \
 	fi
-	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) destroy "$(config)"
+	$(DOCKER_PREFIX) docker run --rm --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) destroy "$(config)" \
+		$(if $(env),--env "$(env)",) \
+		$(if $(force),--force,) \
+		$(if $(force_populated),--force-destroy-populated,) \
+		$(if $(workspace_override),--workspace-name-override "$(workspace_override)",) \
+		$(if $(branch),--branch "$(branch)",)
 
 docker-shell: ## Run interactive shell in Docker container (Usage: make docker-shell ENVFILE=.env)
 	$(DOCKER_PREFIX) docker run --rm -it --entrypoint /bin/bash --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE)
@@ -758,20 +847,24 @@ docker-feature-workspace: ## Create isolated feature workspace using Docker (Usa
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/config:/app/config $(DOCKER_IMAGE) \
 	-m usf_fabric_cli.scripts.dev.onboard --org "$(org)" --project "$(project)" --template $(or $(template),medallion) --with-feature-branch
 
-docker-bulk-destroy: ## Bulk destroy workspaces using Docker (Usage: make docker-bulk-destroy file=list.txt ENVFILE=.env)
+docker-bulk-destroy: ## Bulk destroy workspaces using Docker (Usage: make docker-bulk-destroy file=list.txt [force=1] [dry_run=1] ENVFILE=.env)
 	@if [ -z "$(file)" ]; then \
 		printf "\033[31mError: 'file' argument is missing.\033[0m\n"; \
 		echo ""; \
-		printf "\033[1mUsage:\033[0m\n"; \
-		printf "  make docker-bulk-destroy file=<value>\n"; \
+		echo "Bulk destroy workspaces via Docker with full teardown."; \
+		echo "See 'make bulk-destroy' for full option documentation."; \
 		echo ""; \
 		printf "\033[1mExample:\033[0m\n"; \
-		printf "  make docker-bulk-destroy file=\"example_value\"\n"; \
+		echo "  make docker-bulk-destroy file=workspaces_to_destroy.txt force=1 ENVFILE=.env"; \
 		echo ""; \
 		exit 1; \
 	fi
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) -v $$(pwd)/$(file):/app/$(file) $(DOCKER_IMAGE) \
-	-m usf_fabric_cli.scripts.admin.bulk_destroy $(file)
+	-m usf_fabric_cli.scripts.admin.bulk_destroy "$(file)" \
+		$(if $(force),--force,) \
+		$(if $(dry_run),--dry-run,) \
+		$(if $(skip_pipeline),--skip-pipeline-teardown,) \
+		$(if $(skip_items),--skip-item-deletion,)
 
 docker-list-workspaces: ## List all Fabric workspaces using Docker (Usage: make docker-list-workspaces ENVFILE=.env)
 	$(DOCKER_PREFIX) docker run --rm --entrypoint python --env-file $(ENVFILE) $(DOCKER_IMAGE) \

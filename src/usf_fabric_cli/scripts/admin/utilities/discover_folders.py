@@ -194,9 +194,14 @@ def _update_yaml_file(
 def _derive_feature_workspace_name(config: Dict[str, Any], branch: str) -> str:
     """Derive feature workspace name from config + branch.
 
-    Follows the same convention as the CLI's deploy --branch logic:
-    {base_name}-{sanitized_branch_suffix}
+    Delegates to GitFabricIntegration.get_workspace_name_from_branch()
+    so that the naming convention matches the deploy --force-branch-workspace
+    logic exactly:
+      - Display names (spaces): "[F] Base Name [FEATURE-desc]"
+      - Slug names (no spaces): "base-name-feature-desc"
     """
+    from usf_fabric_cli.services.git_integration import GitFabricIntegration
+
     ws_name = config.get("workspace", {}).get("name", "")
     # Resolve env vars in name
     ws_name = re.sub(
@@ -205,11 +210,7 @@ def _derive_feature_workspace_name(config: Dict[str, Any], branch: str) -> str:
         ws_name,
     )
 
-    # Extract feature suffix: feature/edp/new-reports -> edp-new-reports
-    feature_part = branch.removeprefix("feature/")
-    sanitized = re.sub(r"[^a-zA-Z0-9_-]", "-", feature_part).strip("-")
-
-    return f"{ws_name}-{sanitized}"
+    return GitFabricIntegration.get_workspace_name_from_branch(ws_name, branch)
 
 
 def discover_folders(
@@ -338,7 +339,7 @@ def main() -> None:
                     "\nCI hint: config needs updating. "
                     "Run without --dry-run to apply changes."
                 )
-                sys.exit(2)
+            sys.exit(2)
     except (ValueError, FileNotFoundError) as e:
         print(f"Error: {e}")
         sys.exit(1)

@@ -459,6 +459,7 @@ def _generate_yaml(
     git_branch: str = "main",
     git_directory: Optional[str] = None,
     git_repo_fallback: str = "${GIT_REPO_URL}",
+    brownfield: bool = False,
 ) -> str:
     """Generate base_workspace.yaml content."""
     slug = project_slug or _slugify(workspace_name)
@@ -627,9 +628,40 @@ def _generate_yaml(
             for p in discovered_principals:
                 desc = p.get("description", p["id"][:12] + "...")
                 lines.append(f"  #   {p['type']} ({p['role']}): {desc}")
+    elif brownfield and discovered_principals:
+        # Brownfield: workspace already exists with its own principals.
+        # Emit mandatory governance env-var principals plus ALL discovered
+        # principals as active entries with their actual GUIDs.  This ensures
+        # they propagate to Test, Prod, and Feature workspaces.
+        lines.append(
+            "  # -- Mandatory governance principals" " (resolved via GitHub Secrets) --"
+        )
+        lines.append('  - id: "${AZURE_CLIENT_ID}"')
+        lines.append("    type: ServicePrincipal")
+        lines.append("    role: Admin")
+        lines.append("    description: Automation SP -- required for CI/CD deployments")
+        lines.append("")
+        lines.append('  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"')
+        lines.append("    type: Group")
+        lines.append("    role: Admin")
+        lines.append("    description: Mandatory governance admin group")
+        lines.append("")
+        lines.append('  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"')
+        lines.append("    type: Group")
+        lines.append("    role: Contributor")
+        lines.append("    description: Mandatory governance contributor group")
+        lines.append("")
+        lines.append("  # -- Discovered principals from live workspace (active) --")
+        for p in discovered_principals:
+            desc = p.get("description", f"Discovered {p['type']}")
+            lines.append(f'  - id: "{p["id"]}"')
+            lines.append(f"    type: {p['type']}")
+            lines.append(f"    role: {p['role']}")
+            lines.append(f'    description: "{desc}"')
+            lines.append("")
     else:
-        # Non-templatised: emit governance + project-specific principals
-        # using env var refs (production-ready pattern)
+        # Greenfield: emit governance + project-specific placeholder principals
+        # using env var refs that must be set as GitHub Secrets before deploying.
         lines.append(
             "  # -- Mandatory governance principals" " (every workspace gets these) --"
         )
@@ -735,6 +767,8 @@ def _generate_feature_yaml(
     folders: List[str],
     project_slug: Optional[str] = None,
     templatise: bool = False,
+    brownfield: bool = False,
+    discovered_principals: Optional[List[Dict[str, str]]] = None,
 ) -> str:
     """Generate feature_workspace.yaml content."""
     slug = project_slug or _slugify(workspace_name)
@@ -745,6 +779,21 @@ def _generate_feature_yaml(
     git_dir = "/CHANGE-ME" if templatise else f"/{slug}"
     # Principal prefix: CHANGEME when templatised, actual UPPER_SLUG otherwise
     principal_prefix = "CHANGEME" if templatise else upper_slug
+
+    # Derive the feature workspace base name from the workspace name.
+    # Display-style names (with spaces, e.g., "Sales Audience [DEV]") should
+    # use the display name (stripped of [DEV]) so that get_workspace_name_from_branch()
+    # produces readable Fabric portal names like:
+    #   [F] Sales Audience [FEATURE-my-branch]
+    # Slug-style names (no spaces) use ${PROJECT_PREFIX} for backward compat.
+    base_display_name = _strip_dev_marker(workspace_name)
+    has_spaces = " " in base_display_name
+    if templatise:
+        ws_name_value = "${PROJECT_PREFIX}"
+    elif has_spaces:
+        ws_name_value = f'"{base_display_name}"'
+    else:
+        ws_name_value = "${PROJECT_PREFIX}"
 
     separator = "# " + "-" * 77
     lines = []
@@ -776,9 +825,9 @@ def _generate_feature_yaml(
     lines.append("")
 
     lines.append("workspace:")
-    lines.append("  name: ${PROJECT_PREFIX}")
-    lines.append("  display_name: ${PROJECT_PREFIX}")
-    lines.append(f'  description: "{workspace_name} feature branch workspace"')
+    lines.append(f"  name: {ws_name_value}")
+    lines.append(f"  display_name: {ws_name_value}")
+    lines.append(f'  description: "{base_display_name} feature branch workspace"')
     lines.append("  capacity_id: ${FABRIC_CAPACITY_ID}")
     lines.append("  domain: ${FABRIC_DOMAIN_NAME}")
     lines.append("  git_repo: ${GIT_REPO_URL}")
@@ -789,7 +838,7 @@ def _generate_feature_yaml(
     lines.append("environments:")
     lines.append("  dev:")
     lines.append("    workspace:")
-    lines.append("      name: ${PROJECT_PREFIX}")
+    lines.append(f"      name: {ws_name_value}")
     lines.append("      capacity_id: ${FABRIC_CAPACITY_ID}")
     lines.append("")
 
@@ -805,7 +854,9 @@ def _generate_feature_yaml(
     lines.append("resources: []")
     lines.append("")
 
-    lines.append("# Mandatory governance principals")
+    lines.append(
+        "# Principals -- same as base workspace" " for full access on feature branches"
+    )
     lines.append("principals:")
     lines.append('  - id: "${AZURE_CLIENT_ID}"')
     lines.append("    type: ServicePrincipal")
@@ -821,23 +872,37 @@ def _generate_feature_yaml(
     lines.append("    type: Group")
     lines.append("    role: Contributor")
     lines.append("    description: Mandatory governance contributor group")
-    lines.append("")
-    lines.append("  # -- Project-specific principals (runtime-configurable) --")
-    lines.append(f'  - id: "${{{principal_prefix}_ADMIN_ID}}"')
-    lines.append("    type: Group")
-    lines.append("    role: Admin")
-    lines.append(
-        f'    description: "{workspace_name} project admins'
-        f' -- set via {principal_prefix}_ADMIN_ID secret"'
-    )
-    lines.append("")
-    lines.append(f'  - id: "${{{principal_prefix}_MEMBERS_ID}}"')
-    lines.append("    type: Group")
-    lines.append("    role: Member")
-    lines.append(
-        f'    description: "{workspace_name} team members'
-        f' -- set via {principal_prefix}_MEMBERS_ID secret"'
-    )
+
+    if brownfield and discovered_principals:
+        # Brownfield: emit discovered principals as active entries
+        lines.append("")
+        lines.append("  # -- Discovered principals from live workspace --")
+        for p in discovered_principals:
+            desc = p.get("description", f"Discovered {p['type']}")
+            lines.append(f'  - id: "{p["id"]}"')
+            lines.append(f"    type: {p['type']}")
+            lines.append(f"    role: {p['role']}")
+            lines.append(f'    description: "{desc}"')
+            lines.append("")
+    else:
+        # Greenfield: emit placeholder env-var principals
+        lines.append("")
+        lines.append("  # -- Project-specific principals (runtime-configurable) --")
+        lines.append(f'  - id: "${{{principal_prefix}_ADMIN_ID}}"')
+        lines.append("    type: Group")
+        lines.append("    role: Admin")
+        lines.append(
+            f'    description: "{base_display_name} project admins'
+            f' -- set via {principal_prefix}_ADMIN_ID secret"'
+        )
+        lines.append("")
+        lines.append(f'  - id: "${{{principal_prefix}_MEMBERS_ID}}"')
+        lines.append("    type: Group")
+        lines.append("    role: Member")
+        lines.append(
+            f'    description: "{base_display_name} team members'
+            f' -- set via {principal_prefix}_MEMBERS_ID secret"'
+        )
     lines.append("")
 
     return "\n".join(lines) + "\n"
@@ -854,6 +919,7 @@ def scaffold_workspace(
     templatise: bool = False,
     skip_pipeline: bool = False,
     skip_feature_template: bool = False,
+    brownfield: bool = False,
 ) -> Dict[str, str]:
     """Scaffold YAML config(s) from a live Fabric workspace.
 
@@ -880,6 +946,10 @@ def scaffold_workspace(
             ``make new-project`` placeholder replacement.
         skip_pipeline: Do not include the deployment_pipeline section.
         skip_feature_template: Do not generate feature_workspace.yaml.
+        brownfield: Emit discovered principals as active YAML entries
+            with their actual GUIDs instead of placeholder env vars.
+            Use for workspaces that already exist with their own
+            principals that need to propagate to Test/Prod/Feature.
 
     Returns:
         Dict mapping output file paths -> "ok" or error message.
@@ -1021,6 +1091,7 @@ def scaffold_workspace(
         git_branch=git_branch,
         git_directory=git_directory,
         git_repo_fallback=git_repo_url,
+        brownfield=brownfield,
     )
 
     if output_path:
@@ -1055,6 +1126,8 @@ def scaffold_workspace(
             folders=folder_names,
             project_slug=slug,
             templatise=templatise,
+            brownfield=brownfield,
+            discovered_principals=discovered_principals,
         )
         feature_path.write_text(feature_yaml, encoding="utf-8")
         print(f"[OK] Generated: {feature_path}")
@@ -1077,27 +1150,96 @@ def scaffold_workspace(
         print(f"   [!] git_directory conflict: {conflict}")
     print(f"   Output:       {base_path.parent}/")
     print()
+    # -- Next steps (context-aware) --
+    # A project is fully onboarded when BOTH exist:
+    #   1. config/projects/<slug>/  (config directory)
+    #   2. slug appears in a workflow dropdown (e.g., setup-base-workspaces.yml)
+    # If only the directory exists (manual copy), we still need make new-project
+    # to wire up workflow dropdowns and env vars.
+    project_dir = Path(f"config/projects/{slug}")
+    project_dir_exists = project_dir.is_dir()
+
+    # Check if slug appears in any workflow dropdown
+    in_workflow = False
+    workflows_dir = Path(".github/workflows")
+    if workflows_dir.is_dir():
+        for wf in workflows_dir.glob("*.yml"):
+            try:
+                content = wf.read_text(encoding="utf-8")
+                if f"- {slug}" in content:
+                    in_workflow = True
+                    break
+            except OSError:
+                pass
+
+    project_exists = project_dir_exists and in_workflow
+
     print("Next steps:")
-    print("   1. Review the generated YAML template and adjust as needed")
-    if discovered_principals:
+    step = 1
+
+    print(f"   {step}. Review the generated configs")
+    step += 1
+
+    if brownfield:
+        if not project_exists:
+            display = _strip_dev_marker(workspace_name)
+            print(
+                f"   {step}. Create a concrete project from the template:\n"
+                f"      make new-project project={slug} "
+                f'display="{display}" template={slug}'
+            )
+            step += 1
+        else:
+            print(
+                f"   -- Project '{slug}' already exists "
+                f"-- no need for 'make new-project'"
+            )
         print(
-            "   2. Replace literal principal IDs with env var "
-            "references (${...}) for portability"
+            f"   {step}. Verify mandatory governance secrets exist in GitHub:\n"
+            "      AZURE_CLIENT_ID, ADDITIONAL_ADMIN_PRINCIPAL_ID, "
+            "ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID"
         )
-        step = 3
+        step += 1
+    elif templatise:
+        print(
+            f"   {step}. Create a project from this template:\n"
+            f"      make new-project project=<slug> "
+            f'display="<Name>" template={slug}'
+        )
+        step += 1
+        print(
+            f"   {step}. Add required secrets to GitHub "
+            f"(run: make show-secrets project=<slug>)"
+        )
+        step += 1
     else:
-        step = 2
+        if discovered_principals:
+            print(
+                f"   {step}. Replace literal principal IDs with env var "
+                "references (${...}) for portability"
+            )
+            step += 1
+        if not project_exists:
+            display = _strip_dev_marker(workspace_name)
+            print(
+                f"   {step}. Create a concrete project from the template:\n"
+                f"      make new-project project={slug} "
+                f'display="{display}" template={slug}'
+            )
+            step += 1
+        else:
+            print(
+                f"   -- Project '{slug}' already exists "
+                f"-- no need for 'make new-project'"
+            )
+        print(
+            f"   {step}. Add required secrets to GitHub "
+            f"(run: make show-secrets project={slug})"
+        )
+        step += 1
+
     print(
-        f"   {step}. Create a project from this template:\n"
-        f"      make new-project project=<slug> "
-        f'display="<Name>" template={slug}'
-    )
-    print(
-        f"   {step + 1}. Add required secrets to GitHub "
-        f"(run: make show-secrets project=<slug>)"
-    )
-    print(
-        f"   {step + 2}. Run the 'Setup Base Workspaces' "
+        f"   {step}. Run the 'Setup Base Workspaces' "
         f"GitHub Actions workflow for this project"
     )
     print()
@@ -1174,6 +1316,16 @@ def main() -> None:
             "making the output a reusable template for 'make new-project'"
         ),
     )
+    parser.add_argument(
+        "--brownfield",
+        action="store_true",
+        default=False,
+        help=(
+            "Emit discovered principals as active YAML entries with actual GUIDs "
+            "instead of placeholder env vars. Use for existing workspaces that "
+            "already have principals which need to propagate to Test/Prod/Feature."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -1189,6 +1341,7 @@ def main() -> None:
             templatise=args.templatise,
             skip_pipeline=args.skip_pipeline,
             skip_feature_template=args.skip_feature_template,
+            brownfield=args.brownfield,
         )
     except ValueError as e:
         print(f"Error: {e}")
