@@ -69,7 +69,7 @@ class TestBuildFolderRules:
 
     def test_with_folders_uses_actual_placement(self, sample_items, sample_folders):
         """Items with folderId should map to their actual folder names."""
-        rules = _build_folder_rules(sample_items, folders=sample_folders)
+        rules, _suggested = _build_folder_rules(sample_items, folders=sample_folders)
         rules_dict = {r["type"]: r["folder"] for r in rules}
 
         assert rules_dict["DataPipeline"] == "Pipelines"
@@ -79,7 +79,7 @@ class TestBuildFolderRules:
 
     def test_without_folders_uses_hardcoded_fallback(self, items_without_folders):
         """When folders=None, should fall back to ITEM_TYPE_TO_FOLDER mapping."""
-        rules = _build_folder_rules(items_without_folders, folders=None)
+        rules, _suggested = _build_folder_rules(items_without_folders, folders=None)
         rules_dict = {r["type"]: r["folder"] for r in rules}
 
         assert rules_dict["DataPipeline"] == "000 Orchestrate"
@@ -95,7 +95,7 @@ class TestBuildFolderRules:
             {"type": "Notebook", "displayName": "nb2", "folderId": "folder-002"},
             {"type": "Notebook", "displayName": "nb3", "folderId": "folder-001"},
         ]
-        rules = _build_folder_rules(items, folders=sample_folders)
+        rules, _suggested = _build_folder_rules(items, folders=sample_folders)
         rules_dict = {r["type"]: r["folder"] for r in rules}
 
         # 2 in Notebooks vs 1 in Pipelines → Notebooks wins
@@ -107,7 +107,7 @@ class TestBuildFolderRules:
             {"type": "DataPipeline", "displayName": "p1", "folderId": "folder-001"},
             {"type": "Lakehouse", "displayName": "lh1"},  # No folderId
         ]
-        rules = _build_folder_rules(items, folders=sample_folders)
+        rules, _suggested = _build_folder_rules(items, folders=sample_folders)
         rules_dict = {r["type"]: r["folder"] for r in rules}
 
         assert rules_dict["DataPipeline"] == "Pipelines"  # From actual placement
@@ -115,12 +115,12 @@ class TestBuildFolderRules:
 
     def test_empty_items_returns_empty_rules(self):
         """No items → no rules."""
-        rules = _build_folder_rules([], folders=None)
+        rules, _suggested = _build_folder_rules([], folders=None)
         assert rules == []
 
     def test_empty_items_with_folders_returns_empty_rules(self, sample_folders):
         """No items even with folders → no rules."""
-        rules = _build_folder_rules([], folders=sample_folders)
+        rules, _suggested = _build_folder_rules([], folders=sample_folders)
         assert rules == []
 
     def test_items_with_empty_type_are_skipped(self):
@@ -129,7 +129,7 @@ class TestBuildFolderRules:
             {"type": "", "displayName": "no_type"},
             {"displayName": "missing_type_key"},
         ]
-        rules = _build_folder_rules(items, folders=None)
+        rules, _suggested = _build_folder_rules(items, folders=None)
         assert rules == []
 
     def test_unknown_item_type_without_folder_excluded(self):
@@ -137,7 +137,7 @@ class TestBuildFolderRules:
         items = [
             {"type": "CustomWidgetThing", "displayName": "w1"},
         ]
-        rules = _build_folder_rules(items, folders=None)
+        rules, _suggested = _build_folder_rules(items, folders=None)
         assert rules == []
 
     def test_unknown_item_type_with_folder_included(self, sample_folders):
@@ -149,16 +149,57 @@ class TestBuildFolderRules:
                 "folderId": "folder-004",
             },
         ]
-        rules = _build_folder_rules(items, folders=sample_folders)
+        rules, _suggested = _build_folder_rules(items, folders=sample_folders)
         rules_dict = {r["type"]: r["folder"] for r in rules}
 
         assert rules_dict["CustomWidgetThing"] == "Reports"
 
     def test_rules_are_sorted_by_type(self, items_without_folders):
         """Rules should be sorted alphabetically by item type."""
-        rules = _build_folder_rules(items_without_folders)
+        rules, _suggested = _build_folder_rules(items_without_folders)
         types = [r["type"] for r in rules]
         assert types == sorted(types)
+
+    def test_suggested_rules_for_undiscovered_types(self):
+        """Workspace with only Lakehouse/SQLEndpoint gets suggested rules for common types."""
+        items = [
+            {"type": "Lakehouse", "displayName": "lh1"},
+            {"type": "SQLEndpoint", "displayName": "lh1"},
+        ]
+        rules, suggested = _build_folder_rules(items, folders=None)
+        active_types = {r["type"] for r in rules}
+        suggested_types = {r["type"] for r in suggested}
+
+        # Lakehouse and SQLEndpoint are active, not suggested
+        assert "Lakehouse" in active_types
+        assert "SQLEndpoint" in active_types
+        assert "Lakehouse" not in suggested_types
+        assert "SQLEndpoint" not in suggested_types
+
+        # Common undiscovered types should be suggested
+        assert "SemanticModel" in suggested_types
+        assert "Report" in suggested_types
+        assert "Notebook" in suggested_types
+
+    def test_suggested_rules_empty_when_all_common_types_present(
+        self, items_without_folders
+    ):
+        """When workspace has all common types, no suggestions are needed."""
+        _rules, suggested = _build_folder_rules(items_without_folders)
+        suggested_types = {r["type"] for r in suggested}
+        # items_without_folders includes DataPipeline, Notebook, Lakehouse,
+        # Report, SemanticModel — most common types are covered
+        assert "SemanticModel" not in suggested_types
+        assert "Notebook" not in suggested_types
+        assert "Report" not in suggested_types
+
+    def test_empty_items_still_returns_suggested(self):
+        """Even with no items, common types are suggested."""
+        rules, suggested = _build_folder_rules([], folders=None)
+        assert rules == []
+        assert len(suggested) > 0
+        suggested_types = {r["type"] for r in suggested}
+        assert "SemanticModel" in suggested_types
 
 
 # ── _categorize_items tests ────────────────────────────────────────────────
@@ -339,7 +380,7 @@ class TestBuildFolderRulesNested:
         items = [
             {"type": "Lakehouse", "displayName": "lh1", "folderId": "b"},
         ]
-        rules = _build_folder_rules(items, folders=folders)
+        rules, _suggested = _build_folder_rules(items, folders=folders)
         rules_dict = {r["type"]: r["folder"] for r in rules}
         assert rules_dict["Lakehouse"] == "200 Store/Raw"
 
@@ -352,7 +393,7 @@ class TestBuildFolderRulesNested:
         items = [
             {"type": "Lakehouse", "displayName": "lh1", "folderId": "a"},
         ]
-        rules = _build_folder_rules(items, folders=folders)
+        rules, _suggested = _build_folder_rules(items, folders=folders)
         rules_dict = {r["type"]: r["folder"] for r in rules}
         assert rules_dict["Lakehouse"] == "200 Store"
 

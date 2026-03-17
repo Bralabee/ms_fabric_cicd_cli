@@ -1471,11 +1471,16 @@ def repoint_connections(
     those stale connections and updates them to point to the target
     workspace.
 
+    Exit codes:
+        0 = connections were repointed successfully
+        1 = one or more models failed to repoint (API error)
+        2 = nothing to repoint (no stale connections found)
+
     Example:
 
-        fabric-cicd repoint-connections config/projects/edp/dev.yaml
+        fabric-cicd repoint-connections config/projects/edp/base_workspace.yaml
 
-        fabric-cicd repoint-connections config/projects/edp/dev.yaml \\
+        fabric-cicd repoint-connections config/projects/edp/base_workspace.yaml \\
             --source-pattern "feature[-_].*" --dry-run
     """
     try:
@@ -1537,11 +1542,6 @@ def repoint_connections(
                 console.print(
                     f"  * {detail['model']}: {detail['from']} -> {detail['to']}"
                 )
-        else:
-            console.print(
-                "[green]No connections needed repointing -- "
-                "all connections already point to the correct workspace.[/green]"
-            )
 
         if summary["skipped"] > 0:
             console.print(f"\n  Skipped: {summary['skipped']} model(s)")
@@ -1554,6 +1554,15 @@ def repoint_connections(
                 console.print(f"    X {detail['model']}: {detail['reason']}")
             raise typer.Exit(1)
 
+        if summary["repointed"] == 0:
+            console.print(
+                "[green]No connections needed repointing -- "
+                "all connections already point to the correct workspace.[/green]"
+            )
+            # Exit 2 = graceful skip (nothing to do), matching the convention
+            # used by organize-folders and promote commands.
+            raise typer.Exit(2)
+
     except typer.Exit:
         raise
     except (FabricCLIError, KeyError, ValueError) as e:
@@ -1561,7 +1570,9 @@ def repoint_connections(
             "repoint connections",
             e,
             "Verify the workspace name and your access permissions. "
-            "The service principal must have dataset write permissions.",
+            "The service principal must be the semantic model OWNER "
+            "(not just workspace admin). If models were created by "
+            "Git Sync, ownership may need to be taken over first.",
         )
 
 

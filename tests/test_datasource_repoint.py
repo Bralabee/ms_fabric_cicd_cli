@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import requests
 
 from usf_fabric_cli.services.datasource_repoint import (
     FabricDatasourceRepointAPI,
@@ -193,6 +194,61 @@ class TestBuildUpdateDetail:
 
 
 # ---------------------------------------------------------------------------
+# update_datasources HTTP error handling
+# ---------------------------------------------------------------------------
+
+
+class TestUpdateDatasourcesErrorHandling:
+    @patch("usf_fabric_cli.services.datasource_repoint.requests.post")
+    def test_403_returns_ownership_reason(self, mock_post, repoint_api):
+        """403 response includes a specific ownership failure reason."""
+        mock_response = MagicMock()
+        mock_response.status_code = 403
+        mock_response.raise_for_status.side_effect = requests.HTTPError(
+            response=mock_response
+        )
+        mock_post.return_value = mock_response
+
+        result = repoint_api.update_datasources("ws-id", "ds-id", [{}])
+        assert result["success"] is False
+        assert "403" in result["reason"]
+        assert "owner" in result["reason"]
+
+    @patch("usf_fabric_cli.services.datasource_repoint.requests.post")
+    def test_500_returns_http_status(self, mock_post, repoint_api):
+        """Non-403 HTTP errors include the status code."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.raise_for_status.side_effect = requests.HTTPError(
+            response=mock_response
+        )
+        mock_post.return_value = mock_response
+
+        result = repoint_api.update_datasources("ws-id", "ds-id", [{}])
+        assert result["success"] is False
+        assert "HTTP 500" in result["reason"]
+
+    @patch("usf_fabric_cli.services.datasource_repoint.requests.post")
+    def test_success_returns_true(self, mock_post, repoint_api):
+        """Successful update returns success dict."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        result = repoint_api.update_datasources("ws-id", "ds-id", [{}])
+        assert result["success"] is True
+
+    @patch("usf_fabric_cli.services.datasource_repoint.requests.post")
+    def test_connection_error_returns_failure(self, mock_post, repoint_api):
+        """Network errors return a failure dict with the exception message."""
+        mock_post.side_effect = requests.ConnectionError("Connection refused")
+
+        result = repoint_api.update_datasources("ws-id", "ds-id", [{}])
+        assert result["success"] is False
+        assert "Connection refused" in result["reason"]
+
+
+# ---------------------------------------------------------------------------
 # Integration: repoint_workspace_models
 # ---------------------------------------------------------------------------
 
@@ -214,7 +270,7 @@ class TestRepointWorkspaceModels:
         mock_list.return_value = sample_semantic_models
         # First model has feature datasource, second has dev datasource
         mock_get_ds.side_effect = [feature_datasources, dev_datasources]
-        mock_update.return_value = True
+        mock_update.return_value = {"success": True}
 
         result = repoint_api.repoint_workspace_models(
             workspace_id="ws-id",
@@ -273,7 +329,10 @@ class TestRepointWorkspaceModels:
     ):
         mock_list.return_value = [{"id": "m1", "displayName": "Model A"}]
         mock_get_ds.return_value = feature_datasources
-        mock_update.return_value = False  # Simulate API failure
+        mock_update.return_value = {
+            "success": False,
+            "reason": "UpdateDatasources API returned HTTP 500",
+        }
 
         result = repoint_api.repoint_workspace_models(
             workspace_id="ws-id",
@@ -283,12 +342,44 @@ class TestRepointWorkspaceModels:
 
         assert result.summary["failed"] == 1
         assert result.summary["repointed"] == 0
+        assert "HTTP 500" in result.failed[0]["reason"]
+
+    @patch.object(FabricDatasourceRepointAPI, "update_datasources")
+    @patch.object(FabricDatasourceRepointAPI, "get_datasources")
+    @patch.object(FabricDatasourceRepointAPI, "list_semantic_models")
+    def test_403_ownership_failure_tracked(
+        self,
+        mock_list,
+        mock_get_ds,
+        mock_update,
+        repoint_api,
+        feature_datasources,
+    ):
+        """403 errors surface a specific ownership message in the failure reason."""
+        mock_list.return_value = [{"id": "m1", "displayName": "Sales Model"}]
+        mock_get_ds.return_value = feature_datasources
+        mock_update.return_value = {
+            "success": False,
+            "reason": "403 Forbidden — SP is not the semantic model owner. "
+            "Use the TakeOver API or reassign ownership in the Fabric portal.",
+        }
+
+        result = repoint_api.repoint_workspace_models(
+            workspace_id="ws-id",
+            target_workspace_name="EDP [DEV]",
+            source_pattern="feature[-_].*",
+        )
+
+        assert result.summary["failed"] == 1
+        assert "403" in result.failed[0]["reason"]
+        assert "owner" in result.failed[0]["reason"]
 
     @patch.object(FabricDatasourceRepointAPI, "get_datasources")
     @patch.object(FabricDatasourceRepointAPI, "list_semantic_models")
-    def test_model_with_no_datasources_skipped(
+    def test_model_with_no_datasources_skipped_with_direct_lake_hint(
         self, mock_list, mock_get_ds, repoint_api
     ):
+        """Models with no datasources get a Direct Lake hint in the skip reason."""
         mock_list.return_value = [{"id": "m1", "displayName": "Empty Model"}]
         mock_get_ds.return_value = []
 
@@ -299,7 +390,8 @@ class TestRepointWorkspaceModels:
         )
 
         assert result.summary["skipped"] == 1
-        assert result.skipped[0]["reason"] == "no datasources found"
+        assert "Direct Lake" in result.skipped[0]["reason"]
+        assert "no SQL datasources found" in result.skipped[0]["reason"]
 
 
 # ---------------------------------------------------------------------------
@@ -376,8 +468,56 @@ class TestRepointConnectionsCLI:
                 ],
             )
 
-        # The command should succeed (exit 0)
+        # The command should succeed (exit 0) when connections were repointed
         assert result.exit_code == 0
+
+    @patch(
+        "usf_fabric_cli.cli.FabricDatasourceRepointAPI",
+        create=True,
+    )
+    @patch("usf_fabric_cli.cli.FabricCLIWrapper")
+    @patch("usf_fabric_cli.cli.get_environment_variables")
+    @patch("usf_fabric_cli.cli.ConfigManager")
+    def test_nothing_to_repoint_exits_2(
+        self, mock_config_cls, mock_env, mock_wrapper_cls, mock_repoint_cls
+    ):
+        """Exit code 2 when no connections needed repointing (graceful skip)."""
+        from typer.testing import CliRunner
+        from usf_fabric_cli.cli import app
+
+        mock_env.return_value = {"FABRIC_TOKEN": "fake-token"}
+
+        mock_cfg = MagicMock()
+        mock_cfg.name = "EDP [DEV]"
+        mock_config_cls.return_value.load_config.return_value = mock_cfg
+
+        mock_wrapper = MagicMock()
+        mock_wrapper.get_workspace_id.return_value = "ws-guid"
+        mock_wrapper._token_manager = None
+        mock_wrapper_cls.return_value = mock_wrapper
+
+        # Return empty result — nothing to repoint
+        mock_result = RepointResult()
+        mock_repoint = MagicMock()
+        mock_repoint.repoint_workspace_models.return_value = mock_result
+        mock_repoint_cls.return_value = mock_repoint
+
+        runner = CliRunner()
+        with patch(
+            "usf_fabric_cli.services.datasource_repoint.FabricDatasourceRepointAPI",
+            mock_repoint_cls,
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "repoint-connections",
+                    "config/test.yaml",
+                ],
+            )
+
+        # Exit 2 = graceful skip (nothing to do)
+        assert result.exit_code == 2
+        assert "No connections needed repointing" in result.output
 
 
 # ---------------------------------------------------------------------------
