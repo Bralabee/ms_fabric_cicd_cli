@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.5] - 2026-03-17
+
 ### Changed
 - **`repoint-connections` exit codes**: Exit 0 = connections repointed, exit 1 = API failure, exit 2 = nothing to repoint (graceful skip). Previously exit 0 was used for both success and nothing-to-do, making it impossible for workflow callers to distinguish outcomes.
 - **`repoint-connections` error diagnostics**: `update_datasources()` now returns structured results with specific failure reasons. HTTP 403 errors surface the ownership requirement ("SP is not the semantic model owner") instead of a generic failure message.
