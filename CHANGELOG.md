@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.6] - 2026-03-17
+
+### Fixed
+- **`discover-folders` crash after v1.8.5**: `_build_folder_rules()` return type changed from list to tuple in v1.8.5 (scaffold suggested rules feature), but the `discover_folders.py` caller was not updated. This caused `AttributeError: 'list' object has no attribute 'get'` in the CI discover-folders job. Fixed by unpacking the tuple.
+
 ## [1.8.5] - 2026-03-17
 
 ### Changed

@@ -91,7 +91,7 @@ def _get_workspace_folders_and_items(
 
     # Get items and infer folder rules from actual placement
     items = fabric.list_workspace_items_api(workspace_name)
-    folder_rules = _build_folder_rules(items, folders=raw_folders)
+    folder_rules, _suggested = _build_folder_rules(items, folders=raw_folders)
 
     return folder_paths, folder_rules
 
