@@ -370,7 +370,7 @@ jobs:
       - name: Install CLI
         run: |
           pip install --upgrade pip
-          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
           pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.4' }}"
 
       - name: Verify credentials
@@ -431,7 +431,7 @@ jobs:
       - name: Install CLI tool
         run: |
           pip install --upgrade pip
-          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
           pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.4' }}"
 
       - name: Extract branch info
@@ -515,7 +515,7 @@ jobs:
       - name: Install CLI tool
         run: |
           pip install --upgrade pip
-          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
           pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.4' }}"
 
       - name: Extract branch info
@@ -591,7 +591,7 @@ jobs:
       - name: Install CLI
         run: |
           pip install --upgrade pip
-          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
           pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.4' }}"
 
       - name: Wait for Fabric Git Sync
@@ -677,7 +677,7 @@ jobs:
       - name: Install CLI
         run: |
           pip install --upgrade pip
-          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+          pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
           pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.4' }}"
 
       - name: Promote Test → Production

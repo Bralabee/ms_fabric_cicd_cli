@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.8.7] - 2026-03-17
+
+### Changed
+- **RECOMMENDED_CLI_VERSION bumped to 1.5.0**: Updated `fabric_wrapper.py:RECOMMENDED_CLI_VERSION` from `"1.3.1"` to `"1.5.0"` to match the ms-fabric-cli version now pinned in all consumer workflow `pip install` lines. v1.5.0 adds semantic model/Spark export formats, `deploy` command integration with fabric-cicd, and new item type support (CosmosDBDatabase, UserDataFunction, GraphQuerySet, DigitalTwinBuilder).
+- **Docs: all `1.3.1` references updated to `1.5.0`** in user guides, project reports, and workflow examples.
+
 ## [1.8.6] - 2026-03-17
 
 ### Fixed

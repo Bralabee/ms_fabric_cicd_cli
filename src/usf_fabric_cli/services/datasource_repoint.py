@@ -10,13 +10,9 @@ Power BI REST API (UpdateDatasources).
 Supported connection types:
 - Lakehouse SQL endpoint connections (datasourceType: Sql)
 - Warehouse connections (datasourceType: Sql)
-
-Not yet supported:
-- Direct Lake models — these use a different binding mechanism
-  (Fabric REST API: Bind Semantic Model Connection) that is not
-  implemented here.  Direct Lake models will be reported as
-  "skipped: no datasources found" since their bindings are not
-  surfaced by the Power BI GetDatasources API.
+- Direct Lake models (OneLake mode) — uses the Fabric REST API
+  Bind Semantic Model Connection endpoint to rebind models that
+  reference source workspace lakehouses after promotion.
 
 API limitations (per Microsoft docs):
 - The caller must be the semantic model OWNER (not just workspace admin).
@@ -26,6 +22,8 @@ API limitations (per Microsoft docs):
   Azure Analysis Services, Azure Synapse, OData, SharePoint, Teradata,
   SAP HANA.  Fabric Lakehouse/Warehouse SQL endpoints present as "Sql"
   type and are therefore supported.
+- The bindConnection API does not support bulk operations — each
+  data source reference requires a separate request.
 
 References:
 - https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/
@@ -33,7 +31,11 @@ References:
 - https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/
   update-datasources-in-group
 - https://learn.microsoft.com/en-us/rest/api/fabric/semanticmodel/
-  items/bind-semantic-model-connection  (Direct Lake — future)
+  items/bind-semantic-model-connection
+- https://learn.microsoft.com/en-us/rest/api/fabric/core/items/
+  list-item-connections
+- https://learn.microsoft.com/en-us/rest/api/fabric/lakehouse/items/
+  get-lakehouse
 """
 
 import logging
@@ -287,7 +289,378 @@ class FabricDatasourceRepointAPI(FabricAPIBase):
                 "reason": f"UpdateDatasources API call failed: {e}",
             }
 
-    # -- Repoint logic -----------------------------------------------------
+    # -- Fabric REST API: Item Connections -----------------------------------
+
+    def list_item_connections(
+        self, workspace_id: str, item_id: str
+    ) -> List[Dict[str, Any]]:
+        """
+        List connections for an item via Fabric REST API.
+
+        GET /v1/workspaces/{workspaceId}/items/{itemId}/connections
+
+        Returns a list of connection dicts with connectivityType,
+        connectionDetails (type, path), and optionally id/displayName.
+        """
+        url = (
+            f"{self.base_url}/workspaces/{workspace_id}" f"/items/{item_id}/connections"
+        )
+        try:
+            response = self._make_request("GET", url)
+            data = response.json()
+            return data.get("value", [])
+        except requests.RequestException as e:
+            logger.warning("Failed to list connections for item %s: %s", item_id, e)
+            return []
+
+    def get_lakehouse(
+        self, workspace_id: str, lakehouse_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get lakehouse details including SQL endpoint properties.
+
+        GET /v1/workspaces/{workspaceId}/lakehouses/{lakehouseId}
+
+        Returns the lakehouse dict with properties.sqlEndpointProperties
+        containing connectionString and id.
+        """
+        url = f"{self.base_url}/workspaces/{workspace_id}" f"/lakehouses/{lakehouse_id}"
+        try:
+            response = self._make_request("GET", url)
+            return response.json()
+        except requests.RequestException as e:
+            logger.warning("Failed to get lakehouse %s: %s", lakehouse_id, e)
+            return None
+
+    def list_workspace_items(
+        self, workspace_id: str, item_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        List items in a workspace, optionally filtered by type.
+
+        GET /v1/workspaces/{workspaceId}/items[?type={type}]
+
+        Args:
+            workspace_id: Workspace GUID.
+            item_type: Optional Fabric item type filter (e.g., "Lakehouse",
+                "SQLEndpoint", "SemanticModel").
+
+        Returns:
+            List of item dicts with id, displayName, type.
+        """
+        url = f"{self.base_url}/workspaces/{workspace_id}/items"
+        if item_type:
+            url += f"?type={item_type}"
+        items: List[Dict[str, Any]] = []
+        max_pages = 50
+        for _ in range(max_pages):
+            try:
+                response = self._make_request("GET", url)
+                data = response.json()
+                items.extend(data.get("value", []))
+                continuation = data.get("continuationUri")
+                if not continuation:
+                    break
+                url = continuation
+            except requests.RequestException as e:
+                logger.warning(
+                    "Failed to list workspace items for %s: %s",
+                    workspace_id,
+                    e,
+                )
+                break
+        return items
+
+    # -- Fabric REST API: Bind Connection -----------------------------------
+
+    def bind_connection(
+        self,
+        workspace_id: str,
+        semantic_model_id: str,
+        connection_binding: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Bind a semantic model data source reference to a connection.
+
+        POST /v1/workspaces/{workspaceId}/semanticModels/
+        {semanticModelId}/bindConnection
+
+        Args:
+            workspace_id: Workspace GUID.
+            semantic_model_id: Semantic model GUID.
+            connection_binding: ConnectionBinding object with
+                connectivityType, connectionDetails (type, path),
+                and optionally id.
+
+        Returns:
+            Dict with "success" (bool) and optional "reason" for failures.
+        """
+        url = (
+            f"{self.base_url}/workspaces/{workspace_id}"
+            f"/semanticModels/{semantic_model_id}/bindConnection"
+        )
+        body = {"connectionBinding": connection_binding}
+
+        try:
+            self._make_request("POST", url, json=body, timeout=60)
+            logger.info(
+                "Bound connection for semantic model %s",
+                semantic_model_id,
+            )
+            return {"success": True}
+        except requests.HTTPError as e:
+            status = e.response.status_code if e.response is not None else 0
+            detail = ""
+            if e.response is not None:
+                try:
+                    err_body = e.response.json()
+                    detail = err_body.get("message", e.response.text[:200])
+                except (ValueError, AttributeError):
+                    detail = e.response.text[:200] if e.response.text else ""
+
+            if status == 403:
+                reason = (
+                    "403 Forbidden — SP is not the semantic model owner. "
+                    "The bindConnection API requires the caller to be the "
+                    "semantic model owner."
+                )
+            else:
+                reason = f"bindConnection API returned HTTP {status}" + (
+                    f": {detail}" if detail else ""
+                )
+            logger.error(
+                "HTTP %d binding connection for model %s: %s",
+                status,
+                semantic_model_id,
+                detail or e,
+            )
+            return {"success": False, "reason": reason}
+        except requests.RequestException as e:
+            logger.error(
+                "Failed to bind connection for model %s: %s",
+                semantic_model_id,
+                e,
+            )
+            return {
+                "success": False,
+                "reason": f"bindConnection API call failed: {e}",
+            }
+
+    # -- Direct Lake rebinding logic ----------------------------------------
+
+    def rebind_direct_lake_models(
+        self,
+        target_workspace_id: str,
+        source_workspace_id: str,
+        dry_run: bool = False,
+    ) -> RepointResult:
+        """
+        Rebind Direct Lake semantic models in the target workspace that
+        still reference lakehouses in the source workspace.
+
+        After a Fabric Deployment Pipeline promotes content from source
+        (e.g., Dev) to target (e.g., Test), Direct Lake models keep their
+        OneLake bindings pointing to source workspace lakehouses.  This
+        method detects those stale bindings and rebinds them to the
+        equivalent lakehouse in the target workspace.
+
+        The approach:
+        1. List lakehouses in both source and target workspaces.
+        2. Get the SQL endpoint properties for each target lakehouse
+           (connectionString + database ID).
+        3. For each semantic model in the target workspace, list its
+           item connections.
+        4. For "Automatic" connections whose path references a source
+           lakehouse SQL endpoint, find the target equivalent by name.
+        5. Call bindConnection to rebind to the target lakehouse.
+
+        Args:
+            target_workspace_id: Workspace where models live after promotion.
+            source_workspace_id: Workspace models were promoted FROM.
+            dry_run: If True, report what would change without binding.
+
+        Returns:
+            RepointResult with details of all actions taken.
+        """
+        result = RepointResult()
+
+        # -- Step 1: Build source lakehouse index (SQL endpoint ID → name) --
+        source_lakehouses = self.list_workspace_items(
+            source_workspace_id, item_type="Lakehouse"
+        )
+        # Each lakehouse has an auto-created SQL endpoint; the endpoint ID
+        # appears in the connection path as the database GUID.  We need to
+        # map source endpoint IDs to lakehouse names.
+        #
+        # GET /lakehouses/{id} returns:
+        #   properties.sqlEndpointProperties.id  → the SQL endpoint ID
+        #   properties.sqlEndpointProperties.connectionString → the hostname
+        source_endpoint_to_name: Dict[str, str] = {}
+        for lh in source_lakehouses:
+            lh_detail = self.get_lakehouse(source_workspace_id, lh["id"])
+            if not lh_detail:
+                continue
+            props = lh_detail.get("properties", {})
+            sql_props = props.get("sqlEndpointProperties", {})
+            endpoint_id = sql_props.get("id", "")
+            conn_string = sql_props.get("connectionString", "")
+            if endpoint_id:
+                source_endpoint_to_name[endpoint_id] = lh["displayName"]
+            # Also index by the connection string hostname for path matching
+            if conn_string:
+                source_endpoint_to_name[conn_string] = lh["displayName"]
+
+        if not source_endpoint_to_name:
+            logger.info(
+                "No source lakehouses found in workspace %s",
+                source_workspace_id,
+            )
+            return result
+
+        logger.info(
+            "Indexed %d source lakehouse endpoints",
+            len(source_lakehouses),
+        )
+
+        # -- Step 2: Build target lakehouse index (name → endpoint path) ----
+        target_lakehouses = self.list_workspace_items(
+            target_workspace_id, item_type="Lakehouse"
+        )
+        # For each target lakehouse, get the SQL endpoint path that the
+        # bindConnection API expects: "<hostname>;<database-id>"
+        target_name_to_path: Dict[str, str] = {}
+        for lh in target_lakehouses:
+            lh_detail = self.get_lakehouse(target_workspace_id, lh["id"])
+            if not lh_detail:
+                continue
+            props = lh_detail.get("properties", {})
+            sql_props = props.get("sqlEndpointProperties", {})
+            conn_string = sql_props.get("connectionString", "")
+            endpoint_id = sql_props.get("id", "")
+            if conn_string and endpoint_id:
+                target_name_to_path[lh["displayName"]] = f"{conn_string};{endpoint_id}"
+
+        if not target_name_to_path:
+            logger.info(
+                "No target lakehouses found in workspace %s",
+                target_workspace_id,
+            )
+            return result
+
+        logger.info(
+            "Indexed %d target lakehouse endpoints",
+            len(target_lakehouses),
+        )
+
+        # -- Step 3: Process each semantic model ----------------------------
+        models = self.list_semantic_models(target_workspace_id)
+        if not models:
+            logger.info("No semantic models found — nothing to rebind")
+            return result
+
+        for model in models:
+            model_id = model.get("id", "")
+            model_name = model.get("displayName", "unknown")
+
+            connections = self.list_item_connections(target_workspace_id, model_id)
+            if not connections:
+                result.skipped.append(
+                    {"model": model_name, "reason": "no connections found"}
+                )
+                continue
+
+            rebound_any = False
+            for conn in connections:
+                if conn.get("connectivityType") != "Automatic":
+                    continue
+
+                conn_details = conn.get("connectionDetails", {})
+                path = conn_details.get("path", "")
+                conn_type = conn_details.get("type", "")
+                if not path or ";" not in path:
+                    continue
+
+                # Parse: "<endpoint-hostname>;<database-id>"
+                endpoint_host, db_id = path.rsplit(";", 1)
+
+                # Check if this connection points to a source lakehouse
+                # Match by database ID or by endpoint hostname
+                source_name = source_endpoint_to_name.get(
+                    db_id
+                ) or source_endpoint_to_name.get(endpoint_host)
+
+                if not source_name:
+                    continue
+
+                # Find target equivalent by lakehouse name
+                target_path = target_name_to_path.get(source_name)
+                if not target_path:
+                    result.failed.append(
+                        {
+                            "model": model_name,
+                            "reason": (
+                                f"No lakehouse '{source_name}' found in "
+                                f"target workspace"
+                            ),
+                        }
+                    )
+                    continue
+
+                if dry_run:
+                    result.repointed.append(
+                        {
+                            "model": model_name,
+                            "lakehouse": source_name,
+                            "from": path,
+                            "to": target_path,
+                            "dry_run": "true",
+                        }
+                    )
+                    rebound_any = True
+                    continue
+
+                # Call bindConnection API
+                binding = {
+                    "connectivityType": "Automatic",
+                    "connectionDetails": {
+                        "type": conn_type or "SQL",
+                        "path": target_path,
+                    },
+                }
+                outcome = self.bind_connection(target_workspace_id, model_id, binding)
+                if outcome["success"]:
+                    result.repointed.append(
+                        {
+                            "model": model_name,
+                            "lakehouse": source_name,
+                            "from": path,
+                            "to": target_path,
+                        }
+                    )
+                    rebound_any = True
+                else:
+                    result.failed.append(
+                        {
+                            "model": model_name,
+                            "reason": outcome.get("reason", "bindConnection failed"),
+                        }
+                    )
+
+            if not rebound_any and model_name not in [
+                f.get("model") for f in result.failed
+            ]:
+                result.skipped.append(
+                    {
+                        "model": model_name,
+                        "reason": (
+                            "no Direct Lake connections reference source " "workspace"
+                        ),
+                    }
+                )
+
+        return result
+
+    # -- Repoint logic (SQL endpoint models) --------------------------------
 
     @staticmethod
     def _matches_source_pattern(server: str, source_pattern: str) -> bool:

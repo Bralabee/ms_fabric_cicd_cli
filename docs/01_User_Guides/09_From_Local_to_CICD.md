@@ -342,7 +342,7 @@ The `usf_fabric_cli_cicd` repository is a **library/tool**. It should not deploy
 # In your-consumer-repo/.github/workflows/feature-workspace-create.yml
 - name: Install CLI tool
   run: |
-    pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.3.1' }}
+    pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
     pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.7.7' }}"
 ```
 
@@ -408,7 +408,7 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir git+https://github.com/microsoft/fabric-cli.git@v1.3.1
+RUN pip install --no-cache-dir git+https://github.com/microsoft/fabric-cli.git@v1.5.0
 
 # Stage 2: Runtime — lean production image
 FROM python:3.11-slim

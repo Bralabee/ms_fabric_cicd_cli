@@ -24,6 +24,12 @@ Usage:
     fabric-cicd discover-folders \\
         config/projects/edp/base_workspace.yaml \\
         --branch feature/edp/new-reports
+
+    # Prune stale folders/rules no longer in the live workspace
+    fabric-cicd discover-folders \\
+        config/projects/edp/base_workspace.yaml \\
+        --workspace "EDP [DEV]" \\
+        --prune
 """
 
 import argparse
@@ -100,11 +106,15 @@ def _compute_diff(
     config: Dict[str, Any],
     live_folders: List[str],
     live_rules: List[Dict[str, str]],
-) -> Tuple[List[str], List[Dict[str, str]]]:
-    """Compute new folders and rules not already in the config.
+    prune: bool = False,
+) -> Tuple[List[str], List[Dict[str, str]], List[str], List[Dict[str, str]]]:
+    """Compute new and stale folders/rules by comparing config to live state.
 
     Returns:
-        (new_folders, new_rules) -- items to add to the YAML.
+        (new_folders, new_rules, stale_folders, stale_rules)
+        - new_*: items in the live workspace but not in config (to add)
+        - stale_*: items in config but not in the live workspace (to remove,
+          only populated when prune=True)
     """
     existing_folders = set(config.get("folders") or [])
     existing_rules = config.get("folder_rules") or []
@@ -115,6 +125,12 @@ def _compute_diff(
         key = (rule.get("type", "").lower(), rule.get("folder", "").lower())
         existing_rule_keys.add(key)
 
+    live_folder_set = set(live_folders)
+    live_rule_keys = set()
+    for rule in live_rules:
+        key = (rule.get("type", "").lower(), rule.get("folder", "").lower())
+        live_rule_keys.add(key)
+
     new_folders = [f for f in live_folders if f not in existing_folders]
     new_rules = []
     for rule in live_rules:
@@ -122,7 +138,16 @@ def _compute_diff(
         if key not in existing_rule_keys:
             new_rules.append(rule)
 
-    return new_folders, new_rules
+    stale_folders: List[str] = []
+    stale_rules: List[Dict[str, str]] = []
+    if prune:
+        stale_folders = [f for f in existing_folders if f not in live_folder_set]
+        for rule in existing_rules:
+            key = (rule.get("type", "").lower(), rule.get("folder", "").lower())
+            if key not in live_rule_keys:
+                stale_rules.append(rule)
+
+    return new_folders, new_rules, stale_folders, stale_rules
 
 
 def _update_yaml_file(
@@ -130,17 +155,43 @@ def _update_yaml_file(
     raw_content: str,
     new_folders: List[str],
     new_rules: List[Dict[str, str]],
+    stale_folders: Optional[List[str]] = None,
+    stale_rules: Optional[List[Dict[str, str]]] = None,
 ) -> str:
-    """Update the YAML file content with new folders and rules.
+    """Update the YAML file content with new folders/rules and remove stale ones.
 
-    Does targeted insertions to preserve existing comments and formatting.
-    Returns the updated content string.
+    Does targeted insertions and removals to preserve existing comments and
+    formatting. Returns the updated content string.
     """
     updated = raw_content
 
-    # Insert new folders before the last entry in the folders: list
+    # ── Remove stale folders ──────────────────────────────────────────────
+    for folder_name in stale_folders or []:
+        # Match the YAML list entry for this folder (quoted or unquoted)
+        pattern = re.compile(
+            r'^[ \t]*-\s+["\']?' + re.escape(folder_name) + r'["\']?\s*\n',
+            re.MULTILINE,
+        )
+        updated = pattern.sub("", updated)
+
+    # ── Remove stale folder_rules ─────────────────────────────────────────
+    for rule in stale_rules or []:
+        rule_type = rule.get("type", "")
+        rule_folder = rule.get("folder", "")
+        # Match a two-line block: "  - type: X\n    folder: Y\n"
+        # Handle quoted and unquoted folder values
+        pattern = re.compile(
+            r"^[ \t]*-\s+type:\s+"
+            + re.escape(rule_type)
+            + r'\s*\n[ \t]+folder:\s+["\']?'
+            + re.escape(rule_folder)
+            + r'["\']?\s*\n',
+            re.MULTILINE,
+        )
+        updated = pattern.sub("", updated)
+
+    # ── Insert new folders ────────────────────────────────────────────────
     if new_folders:
-        # Find the last folder entry to append after it
         folder_lines = []
         for f in new_folders:
             folder_lines.append(f'  - "{f}"')
@@ -162,7 +213,7 @@ def _update_yaml_file(
                     "folders:\n" + insert_block + "\n\n" + insert_point,
                 )
 
-    # Insert new folder_rules
+    # ── Insert new folder_rules ───────────────────────────────────────────
     if new_rules:
         rule_lines = []
         for rule in new_rules:
@@ -218,6 +269,7 @@ def discover_folders(
     workspace_name: Optional[str] = None,
     branch: Optional[str] = None,
     dry_run: bool = False,
+    prune: bool = False,
 ) -> Dict[str, Any]:
     """Discover folders from a live workspace and update the YAML config.
 
@@ -227,9 +279,12 @@ def discover_folders(
         branch: Feature branch name (used to derive workspace name if
             workspace_name is not provided).
         dry_run: If True, show changes without writing.
+        prune: If True, also remove folders/rules from config that no
+            longer exist in the live workspace.
 
     Returns:
-        Dict with new_folders, new_rules counts and details.
+        Dict with new_folders, new_rules, stale_folders, stale_rules
+        counts and details.
     """
     path = Path(config_path).resolve()
     if not path.exists():
@@ -248,41 +303,75 @@ def discover_folders(
 
     print(f"Scanning workspace: {workspace_name}")
     print(f"Config file: {path}")
+    if prune:
+        print("Prune mode: stale folders/rules will be removed from config")
 
     # Discover live state
     live_folders, live_rules = _get_workspace_folders_and_items(workspace_name)
     print(f"Found {len(live_folders)} folders, {len(live_rules)} folder rules")
 
-    # Compute diff
-    new_folders, new_rules = _compute_diff(config, live_folders, live_rules)
+    # Compute diff (including stale items when pruning)
+    new_folders, new_rules, stale_folders, stale_rules = _compute_diff(
+        config,
+        live_folders,
+        live_rules,
+        prune=prune,
+    )
+
+    has_additions = bool(new_folders or new_rules)
+    has_removals = bool(stale_folders or stale_rules)
+    has_changes = has_additions or has_removals
 
     result = {
         "new_folders": len(new_folders),
         "new_rules": len(new_rules),
+        "stale_folders": len(stale_folders),
+        "stale_rules": len(stale_rules),
         "folders": new_folders,
         "rules": new_rules,
+        "pruned_folders": stale_folders,
+        "pruned_rules": stale_rules,
         "workspace": workspace_name,
         "config": str(path),
     }
 
-    if not new_folders and not new_rules:
-        print("No new folders or rules discovered. Config is up to date.")
+    if not has_changes:
+        print("No new or stale folders/rules discovered. Config is up to date.")
         return result
 
-    print(f"\nDiscovered {len(new_folders)} new folder(s):")
-    for f in new_folders:
-        print(f"  + {f}")
+    if new_folders:
+        print(f"\nDiscovered {len(new_folders)} new folder(s):")
+        for f in new_folders:
+            print(f"  + {f}")
 
-    print(f"\nDiscovered {len(new_rules)} new folder rule(s):")
-    for r in new_rules:
-        print(f"  + {r['type']} -> {r['folder']}")
+    if new_rules:
+        print(f"\nDiscovered {len(new_rules)} new folder rule(s):")
+        for r in new_rules:
+            print(f"  + {r['type']} -> {r['folder']}")
+
+    if stale_folders:
+        print(f"\nFound {len(stale_folders)} stale folder(s) to prune:")
+        for f in stale_folders:
+            print(f"  - {f}")
+
+    if stale_rules:
+        print(f"\nFound {len(stale_rules)} stale folder rule(s) to prune:")
+        for r in stale_rules:
+            print(f"  - {r.get('type', '?')} -> {r.get('folder', '?')}")
 
     if dry_run:
         print("\n(Dry run -- no changes written)")
         return result
 
     # Update the YAML file
-    updated_content = _update_yaml_file(path, raw_content, new_folders, new_rules)
+    updated_content = _update_yaml_file(
+        path,
+        raw_content,
+        new_folders,
+        new_rules,
+        stale_folders,
+        stale_rules,
+    )
     path.write_text(updated_content, encoding="utf-8")
     print(f"\nUpdated: {path}")
 
@@ -321,6 +410,15 @@ def main() -> None:
         action="store_true",
         help="Show what would change without writing",
     )
+    parser.add_argument(
+        "--prune",
+        action="store_true",
+        help=(
+            "Remove folders and folder_rules from config that no longer "
+            "exist in the live workspace. Use with --workspace to scan "
+            "the Dev workspace directly."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -330,10 +428,17 @@ def main() -> None:
             workspace_name=args.workspace,
             branch=args.branch,
             dry_run=args.dry_run,
+            prune=args.prune,
         )
 
         # Exit code 0 = no changes, 1 = error, 2 = changes found (useful for CI)
-        if result["new_folders"] or result["new_rules"]:
+        has_changes = (
+            result["new_folders"]
+            or result["new_rules"]
+            or result["stale_folders"]
+            or result["stale_rules"]
+        )
+        if has_changes:
             if args.dry_run:
                 print(
                     "\nCI hint: config needs updating. "

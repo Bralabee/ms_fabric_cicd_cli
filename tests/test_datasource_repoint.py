@@ -552,3 +552,326 @@ class TestPBITokenFallback:
         )
         headers = api._get_pbi_headers()
         assert headers["Authorization"] == "Bearer fabric-token"
+
+
+# ---------------------------------------------------------------------------
+# Direct Lake binding tests
+# ---------------------------------------------------------------------------
+
+# Shared fixtures for Direct Lake tests
+
+SOURCE_WS_ID = "source-ws-id"
+TARGET_WS_ID = "target-ws-id"
+
+SOURCE_LAKEHOUSES = [
+    {"id": "src-lh-1", "displayName": "lh_helicopter", "type": "Lakehouse"},
+    {"id": "src-lh-2", "displayName": "lh_scorecard", "type": "Lakehouse"},
+]
+
+TARGET_LAKEHOUSES = [
+    {"id": "tgt-lh-1", "displayName": "lh_helicopter", "type": "Lakehouse"},
+    {"id": "tgt-lh-2", "displayName": "lh_scorecard", "type": "Lakehouse"},
+]
+
+SOURCE_LH_DETAIL_1 = {
+    "id": "src-lh-1",
+    "displayName": "lh_helicopter",
+    "properties": {
+        "sqlEndpointProperties": {
+            "id": "src-sql-ep-1",
+            "connectionString": "srchash1.datawarehouse.fabric.microsoft.com",
+            "provisioningStatus": "Success",
+        }
+    },
+}
+
+SOURCE_LH_DETAIL_2 = {
+    "id": "src-lh-2",
+    "displayName": "lh_scorecard",
+    "properties": {
+        "sqlEndpointProperties": {
+            "id": "src-sql-ep-2",
+            "connectionString": "srchash2.datawarehouse.fabric.microsoft.com",
+            "provisioningStatus": "Success",
+        }
+    },
+}
+
+TARGET_LH_DETAIL_1 = {
+    "id": "tgt-lh-1",
+    "displayName": "lh_helicopter",
+    "properties": {
+        "sqlEndpointProperties": {
+            "id": "tgt-sql-ep-1",
+            "connectionString": "tgthash1.datawarehouse.fabric.microsoft.com",
+            "provisioningStatus": "Success",
+        }
+    },
+}
+
+TARGET_LH_DETAIL_2 = {
+    "id": "tgt-lh-2",
+    "displayName": "lh_scorecard",
+    "properties": {
+        "sqlEndpointProperties": {
+            "id": "tgt-sql-ep-2",
+            "connectionString": "tgthash2.datawarehouse.fabric.microsoft.com",
+            "provisioningStatus": "Success",
+        }
+    },
+}
+
+MODELS_IN_TARGET = [
+    {"id": "model-dl-1", "displayName": "sm_helicopter"},
+    {"id": "model-dl-2", "displayName": "Balanced Scorecard Model"},
+    {"id": "model-sql-1", "displayName": "SM_Helicopter_PoC"},
+]
+
+# Direct Lake model connections (Automatic, path = endpoint;db-id)
+DL_CONNECTIONS_MODEL_1 = [
+    {
+        "connectivityType": "Automatic",
+        "connectionDetails": {
+            "type": "SQL",
+            "path": "srchash1.datawarehouse.fabric.microsoft.com;src-sql-ep-1",
+        },
+    }
+]
+
+DL_CONNECTIONS_MODEL_2 = [
+    {
+        "connectivityType": "Automatic",
+        "connectionDetails": {
+            "type": "SQL",
+            "path": "srchash2.datawarehouse.fabric.microsoft.com;src-sql-ep-2",
+        },
+    }
+]
+
+# SQL endpoint model — has ShareableCloud, not Automatic
+SQL_CONNECTIONS_MODEL = [
+    {
+        "connectivityType": "ShareableCloud",
+        "id": "conn-1",
+        "displayName": "SQL Connection",
+        "connectionDetails": {
+            "type": "SQL",
+            "path": "hash.datawarehouse.fabric.microsoft.com;some-db-id",
+        },
+    }
+]
+
+
+class TestListItemConnections:
+    def test_returns_connections(self, repoint_api):
+        mock_response = Mock()
+        mock_response.json.return_value = {"value": DL_CONNECTIONS_MODEL_1}
+        with patch.object(repoint_api, "_make_request", return_value=mock_response):
+            result = repoint_api.list_item_connections("ws-1", "item-1")
+        assert len(result) == 1
+        assert result[0]["connectivityType"] == "Automatic"
+
+    def test_returns_empty_on_error(self, repoint_api):
+        with patch.object(
+            repoint_api,
+            "_make_request",
+            side_effect=requests.RequestException("fail"),
+        ):
+            result = repoint_api.list_item_connections("ws-1", "item-1")
+        assert result == []
+
+
+class TestGetLakehouse:
+    def test_returns_lakehouse_detail(self, repoint_api):
+        mock_response = Mock()
+        mock_response.json.return_value = SOURCE_LH_DETAIL_1
+        with patch.object(repoint_api, "_make_request", return_value=mock_response):
+            result = repoint_api.get_lakehouse("ws-1", "lh-1")
+        assert result is not None
+        assert result["displayName"] == "lh_helicopter"
+        sql_props = result["properties"]["sqlEndpointProperties"]
+        assert sql_props["id"] == "src-sql-ep-1"
+
+    def test_returns_none_on_error(self, repoint_api):
+        with patch.object(
+            repoint_api,
+            "_make_request",
+            side_effect=requests.RequestException("fail"),
+        ):
+            result = repoint_api.get_lakehouse("ws-1", "lh-1")
+        assert result is None
+
+
+class TestBindConnection:
+    def test_successful_bind(self, repoint_api):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        with patch.object(repoint_api, "_make_request", return_value=mock_response):
+            result = repoint_api.bind_connection(
+                "ws-1",
+                "model-1",
+                {
+                    "connectivityType": "Automatic",
+                    "connectionDetails": {"type": "SQL", "path": "host;db-id"},
+                },
+            )
+        assert result["success"] is True
+
+    def test_403_returns_ownership_error(self, repoint_api):
+        mock_resp = Mock()
+        mock_resp.status_code = 403
+        mock_resp.text = "Forbidden"
+        mock_resp.json.return_value = {"message": "Not the owner"}
+        http_error = requests.HTTPError(response=mock_resp)
+        with patch.object(repoint_api, "_make_request", side_effect=http_error):
+            result = repoint_api.bind_connection(
+                "ws-1",
+                "model-1",
+                {"connectivityType": "Automatic", "connectionDetails": {}},
+            )
+        assert result["success"] is False
+        assert "403" in result["reason"]
+        assert "owner" in result["reason"].lower()
+
+
+class TestRebindDirectLakeModels:
+    """Tests for the full rebind_direct_lake_models orchestration."""
+
+    def _setup_api(self, repoint_api):
+        """Wire up mocks for a standard two-lakehouse scenario."""
+
+        def mock_list_items(ws_id, item_type=None):
+            if ws_id == SOURCE_WS_ID:
+                return SOURCE_LAKEHOUSES
+            return TARGET_LAKEHOUSES
+
+        def mock_get_lakehouse(ws_id, lh_id):
+            mapping = {
+                (SOURCE_WS_ID, "src-lh-1"): SOURCE_LH_DETAIL_1,
+                (SOURCE_WS_ID, "src-lh-2"): SOURCE_LH_DETAIL_2,
+                (TARGET_WS_ID, "tgt-lh-1"): TARGET_LH_DETAIL_1,
+                (TARGET_WS_ID, "tgt-lh-2"): TARGET_LH_DETAIL_2,
+            }
+            return mapping.get((ws_id, lh_id))
+
+        def mock_list_connections(ws_id, model_id):
+            mapping = {
+                "model-dl-1": DL_CONNECTIONS_MODEL_1,
+                "model-dl-2": DL_CONNECTIONS_MODEL_2,
+                "model-sql-1": SQL_CONNECTIONS_MODEL,
+            }
+            return mapping.get(model_id, [])
+
+        repoint_api.list_workspace_items = Mock(side_effect=mock_list_items)
+        repoint_api.get_lakehouse = Mock(side_effect=mock_get_lakehouse)
+        repoint_api.list_semantic_models = Mock(return_value=MODELS_IN_TARGET)
+        repoint_api.list_item_connections = Mock(side_effect=mock_list_connections)
+        repoint_api.bind_connection = Mock(return_value={"success": True})
+
+    def test_rebinds_direct_lake_models(self, repoint_api):
+        self._setup_api(repoint_api)
+        result = repoint_api.rebind_direct_lake_models(
+            target_workspace_id=TARGET_WS_ID,
+            source_workspace_id=SOURCE_WS_ID,
+        )
+        assert result.summary["repointed"] == 2
+        assert result.summary["skipped"] == 1  # SQL model skipped
+        assert result.summary["failed"] == 0
+
+        # Verify bind_connection was called for each Direct Lake model
+        assert repoint_api.bind_connection.call_count == 2
+
+        # Check the binding payloads
+        calls = repoint_api.bind_connection.call_args_list
+        for call in calls:
+            binding = (
+                call[1]["connection_binding"]
+                if "connection_binding" in call[1]
+                else call[0][2]
+            )
+            assert binding["connectivityType"] == "Automatic"
+            assert binding["connectionDetails"]["type"] == "SQL"
+            # Target path should contain target endpoint info
+            assert "tgthash" in binding["connectionDetails"]["path"]
+
+    def test_dry_run_does_not_call_bind(self, repoint_api):
+        self._setup_api(repoint_api)
+        result = repoint_api.rebind_direct_lake_models(
+            target_workspace_id=TARGET_WS_ID,
+            source_workspace_id=SOURCE_WS_ID,
+            dry_run=True,
+        )
+        assert result.summary["repointed"] == 2
+        assert repoint_api.bind_connection.call_count == 0
+        # Verify dry_run flag in details
+        for detail in result.summary["details"]["repointed"]:
+            assert detail.get("dry_run") == "true"
+
+    def test_skips_models_with_no_connections(self, repoint_api):
+        self._setup_api(repoint_api)
+        repoint_api.list_item_connections = Mock(return_value=[])
+        result = repoint_api.rebind_direct_lake_models(
+            target_workspace_id=TARGET_WS_ID,
+            source_workspace_id=SOURCE_WS_ID,
+        )
+        assert result.summary["repointed"] == 0
+        assert result.summary["skipped"] == 3
+
+    def test_skips_when_already_pointing_to_target(self, repoint_api):
+        """Models already pointing to target lakehouses should be skipped."""
+        self._setup_api(repoint_api)
+        # Return target connections instead of source
+        already_correct = [
+            {
+                "connectivityType": "Automatic",
+                "connectionDetails": {
+                    "type": "SQL",
+                    "path": "tgthash1.datawarehouse.fabric.microsoft.com;tgt-sql-ep-1",
+                },
+            }
+        ]
+        repoint_api.list_item_connections = Mock(return_value=already_correct)
+        result = repoint_api.rebind_direct_lake_models(
+            target_workspace_id=TARGET_WS_ID,
+            source_workspace_id=SOURCE_WS_ID,
+        )
+        assert result.summary["repointed"] == 0
+        assert repoint_api.bind_connection.call_count == 0
+
+    def test_fails_when_target_lakehouse_missing(self, repoint_api):
+        """If target workspace lacks a matching lakehouse, report failure."""
+        self._setup_api(repoint_api)
+        # Remove target lakehouses
+        repoint_api.list_workspace_items = Mock(
+            side_effect=lambda ws_id, item_type=None: (
+                SOURCE_LAKEHOUSES if ws_id == SOURCE_WS_ID else []
+            )
+        )
+        result = repoint_api.rebind_direct_lake_models(
+            target_workspace_id=TARGET_WS_ID,
+            source_workspace_id=SOURCE_WS_ID,
+        )
+        # No target lakehouses → early return
+        assert result.summary["repointed"] == 0
+
+    def test_reports_bind_api_failure(self, repoint_api):
+        self._setup_api(repoint_api)
+        repoint_api.bind_connection = Mock(
+            return_value={"success": False, "reason": "403 Forbidden"}
+        )
+        result = repoint_api.rebind_direct_lake_models(
+            target_workspace_id=TARGET_WS_ID,
+            source_workspace_id=SOURCE_WS_ID,
+        )
+        assert result.summary["failed"] == 2
+        assert result.summary["repointed"] == 0
+
+    def test_handles_no_source_lakehouses(self, repoint_api):
+        self._setup_api(repoint_api)
+        repoint_api.list_workspace_items = Mock(return_value=[])
+        repoint_api.get_lakehouse = Mock(return_value=None)
+        result = repoint_api.rebind_direct_lake_models(
+            target_workspace_id=TARGET_WS_ID,
+            source_workspace_id=SOURCE_WS_ID,
+        )
+        assert result.summary["repointed"] == 0

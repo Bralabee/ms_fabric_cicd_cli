@@ -96,7 +96,7 @@ make diagnose
 
 ```
 ✅ Fabric CLI detected at /home/user/miniconda3/envs/fabric-cli-cicd/bin/fab
-   Version: fab version 1.3.1
+   Version: fab version 1.5.0
 ✅ Required environment variables detected
 ```
 

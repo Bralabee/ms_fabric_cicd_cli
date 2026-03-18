@@ -103,3 +103,61 @@ jobs:
 
     - name: Test Docker build
       run: docker build -t usf-fabric-cli-cicd:test .
+
+    - name: Upload wheel artifact
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v4
+      with:
+        name: cli-wheel
+        path: dist/usf_fabric_cli-*.whl
+        retention-days: 90
+
+  # ── Notify consumer repos to update their vendored CLI wheel ──────────────
+  # Only runs on push to main (after CI passes). Dispatches a
+  # repository_dispatch event to each consumer repo, which triggers their
+  # update-vendor-cli.yml workflow to download, vendor, and PR the new wheel.
+  notify-consumers:
+    name: "Notify consumer repos"
+    needs: lint-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        consumer:
+          - repo: ABBA-REPLC/EDPFabric
+          - repo: BralaBee-LEIT/fabric_cicd_test_repo
+
+    steps:
+      - name: Extract CLI version
+        id: version
+        run: |
+          # Read version from the wheel filename in the parent job
+          echo "Extracting version from pyproject.toml..."
+
+      - name: Checkout (for version extraction)
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: pyproject.toml
+          sparse-checkout-cone-mode: false
+
+      - name: Get version
+        id: cli-version
+        run: |
+          VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "CLI version: $VERSION"
+
+      - name: Dispatch to ${{ matrix.consumer.repo }}
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CONSUMER_REPO_PAT }}
+          repository: ${{ matrix.consumer.repo }}
+          event-type: cli-wheel-updated
+          client-payload: |
+            {
+              "version": "${{ steps.cli-version.outputs.version }}",
+              "cli_repo": "${{ github.repository }}",
+              "commit_sha": "${{ github.sha }}",
+              "run_id": "${{ github.run_id }}"
+            }

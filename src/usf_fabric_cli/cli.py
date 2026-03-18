@@ -1220,13 +1220,20 @@ def discover_folders_cmd(
         "--dry-run",
         help="Show what would change without writing to the config file",
     ),
+    prune: bool = typer.Option(
+        False,
+        "--prune",
+        help=(
+            "Remove folders and folder_rules from config that no longer "
+            "exist in the live workspace"
+        ),
+    ),
 ):
     """Discover new folders from a live workspace and update the YAML config.
 
-    Scans a workspace (typically a feature workspace) for folders and item
-    placements not yet in the project's base_workspace.yaml, then adds them.
-    Run this in CI before PR merge to capture folder changes made in feature
-    workspaces.
+    Scans a workspace for folders and item placements not yet in the project's
+    base_workspace.yaml, then adds them. With --prune, also removes folders
+    and rules that no longer exist in the live workspace.
 
     Examples:
 
@@ -1235,6 +1242,9 @@ def discover_folders_cmd(
 
         fabric-cicd discover-folders config/projects/edp/base_workspace.yaml \\
             --branch feature/edp/new-reports --dry-run
+
+        fabric-cicd discover-folders config/projects/edp/base_workspace.yaml \\
+            --workspace "EDP [DEV]" --prune
     """
     try:
         from usf_fabric_cli.scripts.admin.utilities.discover_folders import (
@@ -1246,14 +1256,24 @@ def discover_folders_cmd(
             workspace_name=workspace,
             branch=branch,
             dry_run=dry_run,
+            prune=prune,
         )
 
-        total = result["new_folders"] + result["new_rules"]
-        if total:
-            console.print(
-                f"\n[green]Discovered {result['new_folders']} new folder(s) "
-                f"and {result['new_rules']} new rule(s).[/green]"
-            )
+        added = result["new_folders"] + result["new_rules"]
+        pruned = result["stale_folders"] + result["stale_rules"]
+        if added or pruned:
+            parts = []
+            if added:
+                parts.append(
+                    f"{result['new_folders']} new folder(s), "
+                    f"{result['new_rules']} new rule(s)"
+                )
+            if pruned:
+                parts.append(
+                    f"{result['stale_folders']} stale folder(s), "
+                    f"{result['stale_rules']} stale rule(s) pruned"
+                )
+            console.print(f"\n[green]{'; '.join(parts)}.[/green]")
             if not dry_run:
                 console.print(f"[green]Updated: {result['config']}[/green]")
         else:
@@ -1573,6 +1593,189 @@ def repoint_connections(
             "The service principal must be the semantic model OWNER "
             "(not just workspace admin). If models were created by "
             "Git Sync, ownership may need to be taken over first.",
+        )
+
+
+@app.command("bind-direct-lake")
+def bind_direct_lake(
+    config: str = typer.Argument(..., help="Path to configuration file"),
+    workspace: Optional[str] = typer.Option(
+        None,
+        "--workspace",
+        "-w",
+        help="Override target workspace name (default: read from config)",
+    ),
+    source_workspace: Optional[str] = typer.Option(
+        None,
+        "--source-workspace",
+        "-s",
+        help="Source workspace name (the stage promoted FROM)",
+    ),
+    source_stage: Optional[str] = typer.Option(
+        None,
+        "--source-stage",
+        help=(
+            "Source pipeline stage name to derive source "
+            "workspace (e.g., 'development', 'test'). "
+            "Read from config deployment_pipeline.stages."
+        ),
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Show what would be rebound without making changes",
+    ),
+):
+    """Rebind Direct Lake semantic models after promotion.
+
+    After a Fabric Deployment Pipeline promotes content from one stage
+    to another, Direct Lake semantic models keep their OneLake bindings
+    pointing to the source workspace's lakehouses.  This command detects
+    those stale bindings and rebinds them to the target workspace.
+
+    Requires either --source-workspace (explicit name) or --source-stage
+    (reads the workspace name from the config's deployment_pipeline.stages).
+
+    Exit codes:
+        0 = connections were rebound successfully
+        1 = one or more models failed to rebind (API error)
+        2 = nothing to rebind (no stale connections found)
+
+    Example:
+
+        fabric-cicd bind-direct-lake \\
+            config/projects/re_sales_direct/base_workspace.yaml \\
+            --workspace "RE Sales [TEST]" \\
+            --source-stage development
+
+        fabric-cicd bind-direct-lake \\
+            config/projects/re_sales_direct/base_workspace.yaml \\
+            --source-workspace "RE Sales [DEV]" \\
+            --workspace "RE Sales [TEST]" --dry-run
+    """
+    try:
+        from usf_fabric_cli.services.datasource_repoint import (
+            FabricDatasourceRepointAPI,
+        )
+
+        env_vars = get_environment_variables()
+        token = env_vars.get("FABRIC_TOKEN") or ""
+        if not token:
+            handle_cli_error(
+                "bind direct lake",
+                "FABRIC_TOKEN is not set",
+                "Export FABRIC_TOKEN in your environment or set it in .env file.",
+            )
+
+        config_mgr = ConfigManager(config)
+        cfg = config_mgr.load_config()
+        target_ws_name = workspace or cfg.name
+
+        # Resolve source workspace name
+        source_ws_name = source_workspace
+        if not source_ws_name and source_stage:
+            # Read from config deployment_pipeline.stages.<stage>.workspace_name
+            # (env vars are already resolved by ConfigManager.load_config)
+            pipeline_cfg = cfg.deployment_pipeline or {}
+            stages = pipeline_cfg.get("stages", {})
+            stage_cfg = stages.get(source_stage, {})
+            source_ws_name = stage_cfg.get("workspace_name", "")
+
+        if not source_ws_name:
+            handle_cli_error(
+                "bind direct lake",
+                "Source workspace not specified",
+                "Provide --source-workspace or --source-stage to identify "
+                "the workspace that models were promoted FROM.",
+            )
+            return
+
+        fabric = FabricCLIWrapper(token)
+
+        # Resolve workspace IDs
+        target_ws_id = fabric.get_workspace_id(target_ws_name)
+        if not target_ws_id:
+            handle_cli_error(
+                "bind direct lake",
+                f"Could not resolve workspace ID for target '{target_ws_name}'",
+                "Verify the workspace name and your access permissions.",
+            )
+            return
+
+        source_ws_id = fabric.get_workspace_id(source_ws_name)
+        if not source_ws_id:
+            handle_cli_error(
+                "bind direct lake",
+                f"Could not resolve workspace ID for source '{source_ws_name}'",
+                "Verify the workspace name and your access permissions.",
+            )
+            return
+
+        console.print(
+            f"[blue]Rebinding Direct Lake models in '{target_ws_name}'...[/blue]"
+        )
+        console.print(f"[blue]  Source (promoted from): {source_ws_name}[/blue]")
+        console.print(f"[blue]  Target (promoted to):  {target_ws_name}[/blue]")
+        if dry_run:
+            console.print("[yellow]DRY RUN — no changes will be made.[/yellow]\n")
+
+        token_manager = getattr(fabric, "_token_manager", None)
+        repoint_api = FabricDatasourceRepointAPI(
+            access_token=token,
+            token_manager=token_manager,
+        )
+
+        result = repoint_api.rebind_direct_lake_models(
+            target_workspace_id=target_ws_id,
+            source_workspace_id=source_ws_id,
+            dry_run=dry_run,
+        )
+
+        summary = result.summary
+        if summary["repointed"] > 0:
+            mode = " (DRY RUN)" if dry_run else ""
+            console.print(
+                f"\n[green][OK] Rebound {summary['repointed']} "
+                f"Direct Lake connection(s){mode}:[/green]"
+            )
+            for detail in summary["details"]["repointed"]:
+                console.print(
+                    f"  * {detail['model']}"
+                    + (
+                        f" ({detail.get('lakehouse', '')})"
+                        if detail.get("lakehouse")
+                        else ""
+                    )
+                    + f": {detail['from']} -> {detail['to']}"
+                )
+
+        if summary["skipped"] > 0:
+            console.print(f"\n  Skipped: {summary['skipped']} model(s)")
+            for detail in summary["details"]["skipped"]:
+                console.print(f"    - {detail['model']}: {detail['reason']}")
+
+        if summary["failed"] > 0:
+            console.print(f"\n[red]  Failed: {summary['failed']} model(s)[/red]")
+            for detail in summary["details"]["failed"]:
+                console.print(f"    X {detail['model']}: {detail['reason']}")
+            raise typer.Exit(1)
+
+        if summary["repointed"] == 0:
+            console.print(
+                "[green]No Direct Lake connections needed rebinding — "
+                "all connections already point to the correct workspace.[/green]"
+            )
+            raise typer.Exit(2)
+
+    except typer.Exit:
+        raise
+    except (FabricCLIError, KeyError, ValueError) as e:
+        handle_cli_error(
+            "bind direct lake",
+            e,
+            "Verify the workspace names and your access permissions. "
+            "The service principal must be the semantic model OWNER "
+            "(not just workspace admin).",
         )
 
 
