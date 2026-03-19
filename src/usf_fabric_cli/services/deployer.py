@@ -138,11 +138,15 @@ class FabricDeployer:
             progress.update(task, advance=1)
         progress.update(task, visible=False)
 
+    # Valid stage tokens for --stages filtering
+    VALID_STAGES = {"dev", "test", "prod", "pipeline"}
+
     def deploy(
         self,
         branch: Optional[str] = None,
         force_branch_workspace: bool = False,
         rollback_on_failure: bool = False,
+        stages: Optional[set] = None,
     ) -> bool:
         """Deploy workspace based on configuration
 
@@ -150,7 +154,17 @@ class FabricDeployer:
             branch: Git branch to use
             force_branch_workspace: Create separate workspace for feature branch
             rollback_on_failure: If True, delete all created items on failure
+            stages: Optional set of stages to deploy. When set, only the
+                requested stages are processed. Valid tokens: ``dev``,
+                ``test``, ``prod``, ``pipeline``.  Default (None) means
+                deploy everything — same as ``{"dev", "test", "prod",
+                "pipeline"}``.
         """
+        # Resolve stages -- None means "all"
+        if stages is None:
+            stages = self.VALID_STAGES.copy()
+        deploy_dev = "dev" in stages
+        deploy_pipeline = "pipeline" in stages or "test" in stages or "prod" in stages
 
         start_time = time.time()
         self.deployment_state.start_deployment()
@@ -184,120 +198,153 @@ class FabricDeployer:
                 console=console,
             ) as progress:
 
-                # Step 1: Create workspace
-                task = progress.add_task("Creating workspace...", total=None)
-                result = self._create_workspace(workspace_name)
-                if not result["success"]:
-                    console.print(
-                        f"[red]Failed to create workspace: {result['error']}[/red]"
+                # ── Dev workspace steps (1-6b) ─────────────────────────
+                # Skipped when --stages does not include "dev".
+                if deploy_dev:
+                    # Step 1: Create workspace
+                    task = progress.add_task("Creating workspace...", total=None)
+                    result = self._create_workspace(workspace_name)
+                    if not result["success"]:
+                        console.print(
+                            f"[red]Failed to create workspace: {result['error']}[/red]"
+                        )
+                        raise RuntimeError(
+                            f"Workspace creation failed: {result['error']}"
+                        )
+
+                    # Track workspace for rollback
+                    self.deployment_state.record(
+                        ItemType.WORKSPACE,
+                        workspace_name,
+                        workspace_name,
+                        item_id=self.workspace_id,
                     )
-                    raise RuntimeError(f"Workspace creation failed: {result['error']}")
+                    progress.update(task, description="[OK] Workspace created")
 
-                # Track workspace for rollback
-                self.deployment_state.record(
-                    ItemType.WORKSPACE,
-                    workspace_name,
-                    workspace_name,
-                    item_id=self.workspace_id,
-                )
-                progress.update(task, description="[OK] Workspace created")
+                    # Wait for workspace propagation
+                    self._wait_for_propagation(
+                        progress, 5, "Waiting for workspace propagation..."
+                    )
 
-                # Wait for workspace propagation
-                self._wait_for_propagation(
-                    progress, 5, "Waiting for workspace propagation..."
-                )
-
-                # Step 2: Create folders
-                task = progress.add_task("Creating folder structure...", total=None)
-                self._create_folders()
-                progress.update(task, description="[OK] Folders created")
-
-                # Wait for folder propagation
-                self._wait_for_propagation(
-                    progress, 5, "Waiting for folder propagation..."
-                )
-
-                # Step 3: Create items
-                task = progress.add_task("Creating items...", total=None)
-                self._create_items()
-                progress.update(task, description="[OK] Items created")
-
-                # Wait for items propagation
-                self._wait_for_propagation(
-                    progress, 5, "Waiting for items propagation..."
-                )
-
-                # Step 4: Add principals
-                task = progress.add_task("Adding principals...", total=None)
-                self._add_principals()
-                progress.update(task, description="[OK] Principals added")
-
-                # Step 5: Assign Domain (if configured)
-                if self.config.domain:
+                    # Step 2: Create folders
                     task = progress.add_task(
-                        f"Assigning to domain: {self.config.domain}...", total=None
+                        "Creating folder structure...", total=None
                     )
-                    self._assign_domain()
-                    progress.update(task, description="[OK] Domain assigned")
+                    self._create_folders()
+                    progress.update(task, description="[OK] Folders created")
 
-                # Step 6: Connect Git (if configured)
-                if self.config.git_repo:
-                    task = progress.add_task("Connecting Git...", total=None)
-                    git_branch = branch or self.config.git_branch
-                    git_ok = self._connect_git(git_branch)
-                    if git_ok:
-                        progress.update(task, description="[OK] Git connected")
-                    else:
-                        progress.update(
-                            task,
-                            description="[!] Git connection failed",
-                        )
-                        logger.warning(
-                            "Git connection failed -- workspace was deployed "
-                            "but Git sync may need manual configuration"
-                        )
-
-                # Step 6b: Organize items into folders (after Git Sync)
-                # Fabric Git Sync places all items at the workspace root.
-                # If folder_rules are defined, move items into folders.
-                if self.config.folder_rules and self.config.git_repo:
-                    task = progress.add_task(
-                        "Organizing items into folders...", total=None
+                    # Wait for folder propagation
+                    self._wait_for_propagation(
+                        progress, 5, "Waiting for folder propagation..."
                     )
-                    try:
-                        result = self.fabric.organize_items_into_folders(
-                            workspace_name, self.config.folder_rules
+
+                    # Step 3: Create items
+                    task = progress.add_task("Creating items...", total=None)
+                    self._create_items()
+                    progress.update(task, description="[OK] Items created")
+
+                    # Wait for items propagation
+                    self._wait_for_propagation(
+                        progress, 5, "Waiting for items propagation..."
+                    )
+
+                    # Step 4: Add principals
+                    task = progress.add_task("Adding principals...", total=None)
+                    self._add_principals()
+                    progress.update(task, description="[OK] Principals added")
+
+                    # Step 5: Assign Domain (if configured)
+                    if self.config.domain:
+                        task = progress.add_task(
+                            f"Assigning to domain: {self.config.domain}...",
+                            total=None,
                         )
-                        moved = result.get("moved", 0)
-                        failed = result.get("failed", 0)
-                        if failed:
-                            progress.update(
-                                task,
-                                description=(
-                                    f"[!] Folder organize: {moved} moved, "
-                                    f"{failed} failed"
-                                ),
-                            )
+                        self._assign_domain()
+                        progress.update(task, description="[OK] Domain assigned")
+
+                    # Step 6: Connect Git (if configured)
+                    if self.config.git_repo:
+                        task = progress.add_task("Connecting Git...", total=None)
+                        git_branch = branch or self.config.git_branch
+                        git_ok = self._connect_git(git_branch)
+                        if git_ok:
+                            progress.update(task, description="[OK] Git connected")
                         else:
                             progress.update(
                                 task,
-                                description=(
-                                    f"[OK] Folder organize: {moved} items moved"
-                                ),
+                                description="[!] Git connection failed",
                             )
-                    except (FabricCLIError, ValueError) as e:
-                        logger.warning("Folder organization failed (non-fatal): %s", e)
-                        progress.update(
-                            task,
-                            description="[!] Folder organize skipped (error)",
+                            logger.warning(
+                                "Git connection failed -- workspace was deployed "
+                                "but Git sync may need manual configuration"
+                            )
+
+                    # Step 6b: Organize items into folders (after Git Sync)
+                    if self.config.folder_rules and self.config.git_repo:
+                        task = progress.add_task(
+                            "Organizing items into folders...", total=None
+                        )
+                        try:
+                            result = self.fabric.organize_items_into_folders(
+                                workspace_name, self.config.folder_rules
+                            )
+                            moved = result.get("moved", 0)
+                            failed = result.get("failed", 0)
+                            if failed:
+                                progress.update(
+                                    task,
+                                    description=(
+                                        f"[!] Folder organize: {moved} moved, "
+                                        f"{failed} failed"
+                                    ),
+                                )
+                            else:
+                                progress.update(
+                                    task,
+                                    description=(
+                                        f"[OK] Folder organize: "
+                                        f"{moved} items moved"
+                                    ),
+                                )
+                        except (FabricCLIError, ValueError) as e:
+                            logger.warning(
+                                "Folder organization failed (non-fatal): %s", e
+                            )
+                            progress.update(
+                                task,
+                                description="[!] Folder organize skipped (error)",
+                            )
+                else:
+                    # Dev skipped -- resolve workspace ID for pipeline stage
+                    # assignment (the dev workspace must already exist).
+                    console.print(
+                        "[blue]Skipping dev workspace (not in --stages). "
+                        "Resolving existing workspace ID...[/blue]"
+                    )
+                    self.workspace_id = self.fabric.get_workspace_id(
+                        workspace_name
+                    )
+                    if not self.workspace_id:
+                        console.print(
+                            f"[yellow]Warning: Dev workspace "
+                            f"'{workspace_name}' not found. "
+                            f"Pipeline stage assignment for dev may "
+                            f"fail.[/yellow]"
                         )
 
-                # Step 7: Set up Deployment Pipeline (if configured)
-                if self.config.deployment_pipeline and not force_branch_workspace:
+                # ── Pipeline + Test/Prod steps (7) ─────────────────────
+                # Skipped when --stages has none of: test, prod, pipeline.
+                if (
+                    deploy_pipeline
+                    and self.config.deployment_pipeline
+                    and not force_branch_workspace
+                ):
                     task = progress.add_task(
                         "Setting up Deployment Pipeline...", total=None
                     )
-                    pipeline_ok = self._setup_deployment_pipeline(workspace_name)
+                    pipeline_ok = self._setup_deployment_pipeline(
+                        workspace_name, stages=stages
+                    )
                     if pipeline_ok:
                         progress.update(
                             task,
@@ -1267,13 +1314,24 @@ class FabricDeployer:
         logger.warning("Could not parse Git URL: %s", git_url)
         return None
 
-    def _setup_deployment_pipeline(self, dev_workspace_name: str) -> bool:
+    def _setup_deployment_pipeline(
+        self,
+        dev_workspace_name: str,
+        stages: Optional[set] = None,
+    ) -> bool:
         """Set up Deployment Pipeline and assign workspaces to stages.
 
         Creates the pipeline if it doesn't exist, creates Test/Prod workspaces
         if needed, and assigns each workspace to its pipeline stage.
 
         Only called for base workspace deployments (not feature branches).
+
+        Args:
+            dev_workspace_name: Name of the dev workspace.
+            stages: Optional set of stage tokens (dev, test, prod, pipeline).
+                When set, only creates/assigns workspaces for the requested
+                stages.  The pipeline itself is always created (needed for
+                any stage assignment).  Default (None) processes all stages.
 
         Returns:
             True if pipeline was configured successfully, False on failure.
@@ -1545,8 +1603,22 @@ class FabricDeployer:
                 stage_ws_map[stage["id"]] = existing_ws
 
         # Step 4: For each configured stage, ensure workspace exists and assign
+        # Map config stage keys to --stages tokens for filtering
+        _stage_key_to_token = {
+            "development": "dev",
+            "test": "test",
+            "production": "prod",
+        }
         stage_order = ["development", "test", "production"]
         for stage_key in stage_order:
+            # Skip stages not requested via --stages
+            token = _stage_key_to_token.get(stage_key, stage_key)
+            if stages and token not in stages and "pipeline" not in stages:
+                console.print(
+                    f"  [dim]Skipping {stage_key} (not in --stages)[/dim]"
+                )
+                continue
+
             stage_cfg = stages_config.get(stage_key)
             if not stage_cfg:
                 continue

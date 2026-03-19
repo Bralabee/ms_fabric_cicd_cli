@@ -60,6 +60,15 @@ def deploy(
     diagnose: bool = typer.Option(
         False, "--diagnose", help="Run diagnostic checks before deployment"
     ),
+    stages: Optional[str] = typer.Option(
+        None,
+        "--stages",
+        help=(
+            "Comma-separated stages to deploy (dev, test, prod, pipeline). "
+            "Default: all. Example: --stages dev (dev only, no pipeline). "
+            "--stages test,prod,pipeline (skip dev, create test+prod+pipeline)."
+        ),
+    ),
 ):
     """Deploy Fabric workspace based on configuration"""
 
@@ -113,9 +122,25 @@ def deploy(
                 " variables are correctly set.",
             )
 
+    # Parse --stages into a set
+    requested_stages = None
+    if stages:
+        requested_stages = {s.strip().lower() for s in stages.split(",")}
+        valid = {"dev", "test", "prod", "pipeline"}
+        invalid = requested_stages - valid
+        if invalid:
+            handle_cli_error(
+                "parse --stages",
+                f"Invalid stage(s): {invalid}",
+                f"Valid stages: {', '.join(sorted(valid))}",
+            )
+
     try:
         deployer = FabricDeployer(config, environment)
-        success = deployer.deploy(branch, force_branch_workspace, rollback_on_failure)
+        success = deployer.deploy(
+            branch, force_branch_workspace, rollback_on_failure,
+            stages=requested_stages,
+        )
 
         if not success:
             raise typer.Exit(1)
