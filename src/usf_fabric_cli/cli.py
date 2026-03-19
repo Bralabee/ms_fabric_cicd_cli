@@ -1401,6 +1401,18 @@ def scaffold(
             "already have principals which need to propagate to Test/Prod/Feature."
         ),
     ),
+    as_stage: Optional[str] = typer.Option(
+        None,
+        "--as-stage",
+        help=(
+            "Declare which pipeline stage the scanned workspace represents "
+            "(development, test, or production). The scanned workspace name "
+            "is placed into that stage; other stages are inferred. "
+            "E.g., --as-stage production with 'Finance [PROD]' generates "
+            "workspace.name as 'Finance [DEV]' and sets stages.production "
+            "to 'Finance [PROD]'."
+        ),
+    ),
 ):
     """Scaffold a YAML config from an existing Fabric workspace.
 
@@ -1421,6 +1433,8 @@ def scaffold(
 
         fabric-cicd scaffold "HR Analytics [DEV]" -t
 
+        fabric-cicd scaffold "Finance [PROD]" --brownfield --as-stage production
+
         fabric-cicd scaffold "My WS" --skip-pipeline --skip-feature-template
     """
     try:
@@ -1440,6 +1454,7 @@ def scaffold(
             skip_pipeline=skip_pipeline,
             skip_feature_template=skip_feature_template,
             brownfield=brownfield,
+            as_stage=as_stage,
         )
 
         if not results:

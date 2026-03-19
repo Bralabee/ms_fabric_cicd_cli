@@ -421,6 +421,32 @@ _STAGE_PATTERNS: List[tuple] = [
     (re.compile(r"\bDev(?:elopment)?$", re.IGNORECASE), "[{stage}]"),
 ]
 
+# All-stage patterns -- recognises DEV, TEST, and PROD markers in any form.
+# Used by --as-stage to strip any stage marker from any workspace name.
+_ALL_STAGE_PATTERNS: List[tuple] = [
+    # Bracketed: [DEV], [TEST], [PROD], [PRODUCTION]
+    # Captures optional leading whitespace so the replacement can reinsert it.
+    (re.compile(
+        r"(\s*)\[(?:DEV(?:ELOPMENT)?|TEST(?:ING)?|PROD(?:UCTION)?)\]",
+        re.IGNORECASE,
+    ), r"\1[{stage}]"),
+    # Parenthesised: (DEV), (TEST), (PROD)
+    (re.compile(
+        r"(\s*)\((?:DEV(?:ELOPMENT)?|TEST(?:ING)?|PROD(?:UCTION)?)\)",
+        re.IGNORECASE,
+    ), r"\1({stage})"),
+    # Suffix with separator: -DEV, _TEST, - Prod
+    (re.compile(
+        r"[\s]*[-_][\s]*(?:DEV(?:ELOPMENT)?|TEST(?:ING)?|PROD(?:UCTION)?)$",
+        re.IGNORECASE,
+    ), " [{stage}]"),
+    # Bare suffix: "... Dev", "... Test", "... Production"
+    (re.compile(
+        r"\b(?:Dev(?:elopment)?|Test(?:ing)?|Prod(?:uction)?)$",
+        re.IGNORECASE,
+    ), "[{stage}]"),
+]
+
 
 def _infer_stage_name(workspace_name: str, target_stage: str) -> str:
     """Infer a Test/Prod workspace name from the Dev workspace name.
@@ -437,6 +463,42 @@ def _infer_stage_name(workspace_name: str, target_stage: str) -> str:
             return pattern.sub(replacement, workspace_name).strip()
 
     # Fallback: no recognisable dev marker -- append [STAGE]
+    return f"{workspace_name} [{target_stage}]"
+
+
+def _strip_any_stage_marker(workspace_name: str) -> str:
+    """Remove any stage marker (DEV, TEST, PROD) from a workspace name.
+
+    Returns the base project name without stage indicators.
+
+    Examples:
+      ``EDP [DEV]``         ->  ``EDP``
+      ``Finance [PROD]``    ->  ``Finance``
+      ``Sales [TEST]``      ->  ``Sales``
+      ``HR Production``     ->  ``HR``
+      ``MyWorkspace``       ->  ``MyWorkspace``   (no marker)
+    """
+    for pattern, _template in _ALL_STAGE_PATTERNS:
+        if pattern.search(workspace_name):
+            return pattern.sub("", workspace_name).strip()
+    return workspace_name.strip()
+
+
+def _replace_stage_marker(workspace_name: str, target_stage: str) -> str:
+    """Replace any stage marker (DEV, TEST, PROD) with the target stage.
+
+    Uses ``_ALL_STAGE_PATTERNS`` so it works from any starting stage.
+
+    Examples:
+      ``Finance [PROD]``    + TEST  ->  ``Finance [TEST]``
+      ``Sales [TEST]``      + DEV   ->  ``Sales [DEV]``
+      ``HR Production``     + DEV   ->  ``HR [DEV]``
+      ``MyWorkspace``       + DEV   ->  ``MyWorkspace [DEV]``   (appended)
+    """
+    for pattern, template in _ALL_STAGE_PATTERNS:
+        if pattern.search(workspace_name):
+            replacement = template.format(stage=target_stage)
+            return pattern.sub(replacement, workspace_name).strip()
     return f"{workspace_name} [{target_stage}]"
 
 
@@ -461,8 +523,12 @@ def _infer_pipeline_name(workspace_name: str) -> str:
       ``Sales Audience [DEV]``        ->  ``Sales Audience - Pipeline``
       ``HR Development``              ->  ``HR - Pipeline``
       ``MyWorkspace``                 ->  ``MyWorkspace - Pipeline``
+
+    Also works with non-dev stage names (via ``_strip_any_stage_marker``):
+      ``Finance [PROD]``              ->  ``Finance - Pipeline``
+      ``Sales [TEST]``                ->  ``Sales - Pipeline``
     """
-    base_name = _strip_dev_marker(workspace_name)
+    base_name = _strip_any_stage_marker(workspace_name)
     return f"{base_name} - Pipeline"
 
 
@@ -472,6 +538,7 @@ def _generate_yaml(
     items_by_type: Dict[str, List[Dict[str, Any]]],
     folder_rules: List[Dict[str, str]],
     pipeline_name: Optional[str] = None,
+    as_stage: Optional[str] = None,
     project_slug: Optional[str] = None,
     discovered_principals: Optional[List[Dict[str, str]]] = None,
     test_workspace_name: Optional[str] = None,
@@ -529,6 +596,13 @@ def _generate_yaml(
     lines.append("")
 
     # -- Resolve display names for workspace/pipeline/stages --
+    # When as_stage is set, the scanned workspace is NOT the dev workspace.
+    # Derive the dev name by replacing the stage marker.
+    if as_stage and as_stage != "development":
+        dev_workspace_name = _replace_stage_marker(workspace_name, "DEV")
+    else:
+        dev_workspace_name = workspace_name
+
     if templatise:
         ws_name = "CHANGE-ME [DEV]"
         ws_desc = "Standard data product workspace"
@@ -536,8 +610,8 @@ def _generate_yaml(
         git_repo = '"${GIT_REPO_URL}"'
         git_branch_out = '"main"'
     else:
-        ws_name = workspace_name
-        ws_desc = f"{workspace_name} workspace -- managed by CI/CD"
+        ws_name = dev_workspace_name
+        ws_desc = f"{dev_workspace_name} workspace -- managed by CI/CD"
         git_dir = git_directory or f"/{slug}"
         git_repo = f'"{git_repo_fallback}"'
         git_branch_out = f'"{git_branch}"'
@@ -740,18 +814,31 @@ def _generate_yaml(
 
     # -- deployment pipeline section --
     if pipeline_name:
-        # Resolve real stage names first (needed for both modes)
-        if test_workspace_name:
-            test_name = test_workspace_name
-        elif prod_workspace_name:
-            test_name = _infer_stage_name(workspace_name, "TEST")
+        # Resolve stage names.  When as_stage is set, the scanned workspace
+        # occupies the named stage and the other stages are inferred.
+        if as_stage == "production":
+            # Scanned workspace IS prod; infer dev and test
+            real_dev = dev_workspace_name
+            real_test = test_workspace_name or _replace_stage_marker(
+                workspace_name, "TEST"
+            )
+            real_prod = prod_workspace_name or workspace_name
+        elif as_stage == "test":
+            # Scanned workspace IS test; infer dev and prod
+            real_dev = dev_workspace_name
+            real_test = test_workspace_name or workspace_name
+            real_prod = prod_workspace_name or _replace_stage_marker(
+                workspace_name, "PROD"
+            )
         else:
-            test_name = _infer_stage_name(workspace_name, "TEST")
-
-        if prod_workspace_name:
-            prod_name = prod_workspace_name
-        else:
-            prod_name = _infer_stage_name(workspace_name, "PROD")
+            # Default: scanned workspace IS dev (existing behavior)
+            real_dev = workspace_name
+            real_test = test_workspace_name or _infer_stage_name(
+                workspace_name, "TEST"
+            )
+            real_prod = prod_workspace_name or _infer_stage_name(
+                workspace_name, "PROD"
+            )
 
         if templatise:
             pipe_display = "CHANGE-ME - Pipeline"
@@ -762,9 +849,9 @@ def _generate_yaml(
             prod_cap = "${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}"
         else:
             pipe_display = pipeline_name
-            dev_display = workspace_name
-            test_display = test_name
-            prod_display = prod_name
+            dev_display = real_dev
+            test_display = real_test
+            prod_display = real_prod
             test_cap = "${FABRIC_CAPACITY_ID_TEST:-FABRIC_CAPACITY_ID}"
             prod_cap = "${FABRIC_CAPACITY_ID_PROD:-FABRIC_CAPACITY_ID}"
 
@@ -772,7 +859,16 @@ def _generate_yaml(
         if templatise:
             lines.append(f"# Scaffolded from pipeline: {pipeline_name}")
             lines.append(
-                f"# Inferred stages: {workspace_name} / {test_name} / {prod_name}"
+                f"# Inferred stages: {real_dev} / {real_test} / {real_prod}"
+            )
+        elif as_stage and as_stage != "development":
+            lines.append(f"# Scanned workspace '{workspace_name}' mapped as "
+                         f"{as_stage} stage")
+            lines.append(
+                f"# Stages: {real_dev} (new) / {real_test} "
+                f"{'(existing)' if as_stage == 'test' else '(new)'} / "
+                f"{real_prod} "
+                f"{'(existing)' if as_stage == 'production' else '(new)'}"
             )
         lines.append("deployment_pipeline:")
         lines.append(f'  pipeline_name: "{pipe_display}"')
@@ -949,6 +1045,7 @@ def scaffold_workspace(
     skip_pipeline: bool = False,
     skip_feature_template: bool = False,
     brownfield: bool = False,
+    as_stage: Optional[str] = None,
 ) -> Dict[str, str]:
     """Scaffold YAML config(s) from a live Fabric workspace.
 
@@ -979,6 +1076,14 @@ def scaffold_workspace(
             with their actual GUIDs instead of placeholder env vars.
             Use for workspaces that already exist with their own
             principals that need to propagate to Test/Prod/Feature.
+        as_stage: Declare which pipeline stage the scanned workspace
+            represents.  One of ``"development"``, ``"test"``, or
+            ``"production"``.  When set, the scanned workspace name
+            is placed into that stage and the other stages are inferred.
+            For example, ``as_stage="production"`` with workspace
+            ``"Finance [PROD]"`` generates ``workspace.name`` as
+            ``"Finance [DEV]"`` and sets ``stages.production`` to
+            ``"Finance [PROD]"``.
 
     Returns:
         Dict mapping output file paths -> "ok" or error message.
@@ -1001,6 +1106,19 @@ def scaffold_workspace(
             "AZURE_CLIENT_SECRET + AZURE_TENANT_ID\n"
             "Set them in .env or export as environment variables."
         )
+
+    # -- Validate as_stage --
+    valid_stages = {"development", "test", "production"}
+    if as_stage:
+        as_stage = as_stage.lower()
+        # Accept short aliases
+        stage_aliases = {"dev": "development", "prod": "production"}
+        as_stage = stage_aliases.get(as_stage, as_stage)
+        if as_stage not in valid_stages:
+            raise ValueError(
+                f"Invalid --as-stage value '{as_stage}'. "
+                f"Must be one of: {', '.join(sorted(valid_stages))}"
+            )
 
     fabric = FabricCLIWrapper(token)
     slug = project_slug or _slugify(workspace_name)
@@ -1112,6 +1230,7 @@ def scaffold_workspace(
         items_by_type=items_by_type,
         folder_rules=folder_rules,
         pipeline_name=pipeline_name,
+        as_stage=as_stage,
         project_slug=slug,
         discovered_principals=discovered_principals,
         test_workspace_name=test_workspace_name,
@@ -1360,6 +1479,18 @@ def main() -> None:
             "already have principals which need to propagate to Test/Prod/Feature."
         ),
     )
+    parser.add_argument(
+        "--as-stage",
+        default=None,
+        choices=["development", "dev", "test", "production", "prod"],
+        help=(
+            "Declare which pipeline stage the scanned workspace represents. "
+            "The scanned workspace name is placed into that stage; other "
+            "stages are inferred. E.g., --as-stage production with workspace "
+            "'Finance [PROD]' generates workspace.name as 'Finance [DEV]' "
+            "and sets stages.production to 'Finance [PROD]'."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -1376,6 +1507,7 @@ def main() -> None:
             skip_pipeline=args.skip_pipeline,
             skip_feature_template=args.skip_feature_template,
             brownfield=args.brownfield,
+            as_stage=args.as_stage,
         )
     except ValueError as e:
         print(f"Error: {e}")
