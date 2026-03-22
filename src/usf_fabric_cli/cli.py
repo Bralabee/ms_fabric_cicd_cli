@@ -405,7 +405,7 @@ def destroy(
                 console.print("  Workspace exists: [green]YES[/green]")
                 console.print(f"  Items in workspace: {item_count}")
                 if items.get("success"):
-                    by_type = {}
+                    by_type: dict[str, int] = {}
                     for item in items.get("items", []):
                         t = item.get("type", "Unknown")
                         by_type[t] = by_type.get(t, 0) + 1
