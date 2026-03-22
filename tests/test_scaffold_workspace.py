@@ -20,6 +20,8 @@ from usf_fabric_cli.scripts.admin.utilities.scaffold_workspace import (
     _generate_feature_yaml,
     _generate_yaml,
     _infer_pipeline_name,
+    _replace_stage_marker,
+    _strip_any_stage_marker,
     _strip_dev_marker,
 )
 
@@ -884,3 +886,167 @@ class TestBrownfieldScaffold:
         )
         # Falls through to greenfield path since no discovered principals
         assert "${SC30GLD_ADMIN_ID}" in yaml
+
+
+# ── As-Stage Tests ──────────────────────────────────────────────────────────
+
+
+class TestStripAnyStageMarker:
+    """Tests for _strip_any_stage_marker -- removes DEV, TEST, or PROD markers."""
+
+    def test_strip_dev_bracket(self):
+        assert _strip_any_stage_marker("EDP [DEV]") == "EDP"
+
+    def test_strip_test_bracket(self):
+        assert _strip_any_stage_marker("EDP [TEST]") == "EDP"
+
+    def test_strip_prod_bracket(self):
+        assert _strip_any_stage_marker("Finance [PROD]") == "Finance"
+
+    def test_strip_production_bracket(self):
+        assert _strip_any_stage_marker("Finance [PRODUCTION]") == "Finance"
+
+    def test_strip_testing_bracket(self):
+        assert _strip_any_stage_marker("Sales [TESTING]") == "Sales"
+
+    def test_no_marker_passthrough(self):
+        assert _strip_any_stage_marker("MyWorkspace") == "MyWorkspace"
+
+    def test_case_insensitive(self):
+        assert _strip_any_stage_marker("HR [prod]") == "HR"
+
+
+class TestReplaceStageMarker:
+    """Tests for _replace_stage_marker -- swaps stage markers."""
+
+    def test_prod_to_dev(self):
+        assert _replace_stage_marker("Finance [PROD]", "DEV") == "Finance [DEV]"
+
+    def test_prod_to_test(self):
+        assert _replace_stage_marker("Finance [PROD]", "TEST") == "Finance [TEST]"
+
+    def test_test_to_dev(self):
+        assert _replace_stage_marker("Sales [TEST]", "DEV") == "Sales [DEV]"
+
+    def test_dev_to_prod(self):
+        assert _replace_stage_marker("EDP [DEV]", "PROD") == "EDP [PROD]"
+
+    def test_no_marker_appends(self):
+        assert _replace_stage_marker("MyWorkspace", "DEV") == "MyWorkspace [DEV]"
+
+    def test_production_to_dev(self):
+        assert _replace_stage_marker("HR Production", "DEV") == "HR [DEV]"
+
+
+class TestAsStageGeneration:
+    """Tests for --as-stage parameter in _generate_yaml."""
+
+    def test_as_stage_production_sets_prod_to_scanned_name(self):
+        yaml = _generate_yaml(
+            workspace_name="Finance [PROD]",
+            folders=["Data"],
+            items_by_type={},
+            folder_rules=[],
+            pipeline_name="Finance - Pipeline",
+            as_stage="production",
+        )
+        # workspace.name should be the dev name
+        assert 'name: "Finance [DEV]"' in yaml
+        # prod stage should be the original scanned name
+        assert 'workspace_name: "Finance [PROD]"' in yaml
+        # dev stage should be the inferred dev name
+        lines = yaml.split("\n")
+        dev_stage_idx = next(
+            i for i, l in enumerate(lines) if "development:" in l
+        )
+        assert 'Finance [DEV]' in lines[dev_stage_idx + 1]
+        # test stage should be inferred
+        assert 'workspace_name: "Finance [TEST]"' in yaml
+
+    def test_as_stage_test_sets_test_to_scanned_name(self):
+        yaml = _generate_yaml(
+            workspace_name="Sales [TEST]",
+            folders=["Data"],
+            items_by_type={},
+            folder_rules=[],
+            pipeline_name="Sales - Pipeline",
+            as_stage="test",
+        )
+        assert 'name: "Sales [DEV]"' in yaml
+        assert 'workspace_name: "Sales [TEST]"' in yaml
+        assert 'workspace_name: "Sales [PROD]"' in yaml
+
+    def test_as_stage_development_is_default_behavior(self):
+        yaml_default = _generate_yaml(
+            workspace_name="EDP [DEV]",
+            folders=["Data"],
+            items_by_type={},
+            folder_rules=[],
+            pipeline_name="EDP - Pipeline",
+        )
+        yaml_explicit = _generate_yaml(
+            workspace_name="EDP [DEV]",
+            folders=["Data"],
+            items_by_type={},
+            folder_rules=[],
+            pipeline_name="EDP - Pipeline",
+            as_stage="development",
+        )
+        # Both should produce identical pipeline stage assignments
+        assert 'workspace_name: "EDP [DEV]"' in yaml_default
+        assert 'workspace_name: "EDP [DEV]"' in yaml_explicit
+
+    def test_as_stage_production_no_marker_in_name(self):
+        """Workspace name without stage marker -- appends [DEV] for dev."""
+        yaml = _generate_yaml(
+            workspace_name="Finance Reporting",
+            folders=["Data"],
+            items_by_type={},
+            folder_rules=[],
+            pipeline_name="Finance Reporting - Pipeline",
+            as_stage="production",
+        )
+        # Dev should get [DEV] appended
+        assert 'name: "Finance Reporting [DEV]"' in yaml
+        # Prod should keep the original name
+        assert 'workspace_name: "Finance Reporting"' in yaml
+
+    def test_as_stage_with_templatise_uses_changeme(self):
+        """With templatise=True, as_stage doesn't affect placeholder output."""
+        yaml = _generate_yaml(
+            workspace_name="Finance [PROD]",
+            folders=["Data"],
+            items_by_type={},
+            folder_rules=[],
+            pipeline_name="Finance - Pipeline",
+            as_stage="production",
+            templatise=True,
+        )
+        # Templatise always uses CHANGE-ME regardless of as_stage
+        assert 'name: "CHANGE-ME [DEV]"' in yaml
+        assert 'workspace_name: "CHANGE-ME [PROD]"' in yaml
+
+    def test_as_stage_production_with_explicit_test_override(self):
+        """Explicit test_workspace_name takes precedence over inference."""
+        yaml = _generate_yaml(
+            workspace_name="Finance [PROD]",
+            folders=["Data"],
+            items_by_type={},
+            folder_rules=[],
+            pipeline_name="Finance - Pipeline",
+            as_stage="production",
+            test_workspace_name="Custom Test WS",
+        )
+        assert 'workspace_name: "Custom Test WS"' in yaml
+        assert 'workspace_name: "Finance [PROD]"' in yaml
+
+    def test_as_stage_adds_comment_about_existing_workspace(self):
+        yaml = _generate_yaml(
+            workspace_name="Finance [PROD]",
+            folders=["Data"],
+            items_by_type={},
+            folder_rules=[],
+            pipeline_name="Finance - Pipeline",
+            as_stage="production",
+        )
+        assert "mapped as production stage" in yaml

@@ -60,6 +60,15 @@ def deploy(
     diagnose: bool = typer.Option(
         False, "--diagnose", help="Run diagnostic checks before deployment"
     ),
+    stages: Optional[str] = typer.Option(
+        None,
+        "--stages",
+        help=(
+            "Comma-separated stages to deploy (dev, test, prod, pipeline). "
+            "Default: all. Example: --stages dev (dev only, no pipeline). "
+            "--stages test,prod,pipeline (skip dev, create test+prod+pipeline)."
+        ),
+    ),
 ):
     """Deploy Fabric workspace based on configuration"""
 
@@ -113,9 +122,25 @@ def deploy(
                 " variables are correctly set.",
             )
 
+    # Parse --stages into a set
+    requested_stages = None
+    if stages:
+        requested_stages = {s.strip().lower() for s in stages.split(",")}
+        valid = {"dev", "test", "prod", "pipeline"}
+        invalid = requested_stages - valid
+        if invalid:
+            handle_cli_error(
+                "parse --stages",
+                f"Invalid stage(s): {invalid}",
+                f"Valid stages: {', '.join(sorted(valid))}",
+            )
+
     try:
         deployer = FabricDeployer(config, environment)
-        success = deployer.deploy(branch, force_branch_workspace, rollback_on_failure)
+        success = deployer.deploy(
+            branch, force_branch_workspace, rollback_on_failure,
+            stages=requested_stages,
+        )
 
         if not success:
             raise typer.Exit(1)
@@ -1401,6 +1426,18 @@ def scaffold(
             "already have principals which need to propagate to Test/Prod/Feature."
         ),
     ),
+    as_stage: Optional[str] = typer.Option(
+        None,
+        "--as-stage",
+        help=(
+            "Declare which pipeline stage the scanned workspace represents "
+            "(development, test, or production). The scanned workspace name "
+            "is placed into that stage; other stages are inferred. "
+            "E.g., --as-stage production with 'Finance [PROD]' generates "
+            "workspace.name as 'Finance [DEV]' and sets stages.production "
+            "to 'Finance [PROD]'."
+        ),
+    ),
 ):
     """Scaffold a YAML config from an existing Fabric workspace.
 
@@ -1421,6 +1458,8 @@ def scaffold(
 
         fabric-cicd scaffold "HR Analytics [DEV]" -t
 
+        fabric-cicd scaffold "Finance [PROD]" --brownfield --as-stage production
+
         fabric-cicd scaffold "My WS" --skip-pipeline --skip-feature-template
     """
     try:
@@ -1440,6 +1479,7 @@ def scaffold(
             skip_pipeline=skip_pipeline,
             skip_feature_template=skip_feature_template,
             brownfield=brownfield,
+            as_stage=as_stage,
         )
 
         if not results:
