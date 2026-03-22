@@ -551,9 +551,9 @@ def _discover_pipeline_for_workspace(
             "stage_index": 0,          # 0=dev, 1=test, 2=prod
             "stage_name": "Development",
             "stages": [
-                {"displayName": "Development", "workspaceId": "...", "workspaceName": "..."},
-                {"displayName": "Test",        "workspaceId": "...", "workspaceName": "..."},
-                {"displayName": "Production",  "workspaceId": None,  "workspaceName": None},
+                {"displayName": "Development", ...},
+                {"displayName": "Test", ...},
+                {"displayName": "Production", ...},
             ],
         }
     """
@@ -587,8 +587,12 @@ def _discover_pipeline_for_workspace(
                     ws_name = None
                     if ws_id:
                         try:
+                            url = (
+                                "https://api.fabric.microsoft.com"
+                                f"/v1/workspaces/{ws_id}"
+                            )
                             resp = requests.get(
-                                f"https://api.fabric.microsoft.com/v1/workspaces/{ws_id}",
+                                url,
                                 headers=headers,
                                 timeout=15,
                             )
@@ -1225,7 +1229,8 @@ def scaffold_workspace(
             pipeline_name = discovered_pipeline["pipeline_name"]
             stage_name = discovered_pipeline["stage_name"]
             print(f"   Found pipeline: {pipeline_name}")
-            print(f"   Workspace is stage {discovered_pipeline['stage_index']}: {stage_name}")
+            idx = discovered_pipeline["stage_index"]
+            print(f"   Workspace is stage {idx}: {stage_name}")
             for s in discovered_pipeline["stages"]:
                 ws_label = s["workspaceName"] or "(unassigned)"
                 print(f"     {s['displayName']}: {ws_label}")

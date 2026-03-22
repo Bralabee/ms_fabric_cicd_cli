@@ -397,8 +397,12 @@ def destroy(
             ws_exists = fabric._item_exists(workspace_name)
             if ws_exists:
                 items = fabric.list_workspace_items(workspace_name)
-                item_count = len(items.get("items", [])) if items.get("success") else "?"
-                console.print(f"  Workspace exists: [green]YES[/green]")
+                item_count = (
+                    len(items.get("items", []))
+                    if items.get("success")
+                    else "?"
+                )
+                console.print("  Workspace exists: [green]YES[/green]")
                 console.print(f"  Items in workspace: {item_count}")
                 if items.get("success"):
                     by_type = {}
@@ -408,7 +412,10 @@ def destroy(
                     for t, c in sorted(by_type.items()):
                         console.print(f"    - {c}x {t}")
             else:
-                console.print(f"  Workspace exists: [yellow]NO[/yellow] (already gone)")
+                console.print(
+                    "  Workspace exists: "
+                    "[yellow]NO[/yellow] (already gone)"
+                )
 
             # Check pipeline
             dp_config = workspace_config.deployment_pipeline
@@ -426,7 +433,9 @@ def destroy(
                 project_slug = config_path.parent.name
                 repo_root = config_path.parent
                 while repo_root != repo_root.parent:
-                    if (repo_root / ".git").exists() or (repo_root / ".github").exists():
+                    has_git = (repo_root / ".git").exists()
+                    has_gh = (repo_root / ".github").exists()
+                    if has_git or has_gh:
                         break
                     repo_root = repo_root.parent
 
@@ -444,7 +453,10 @@ def destroy(
 
             # Safety summary
             effective_safe = safe and not force_destroy_populated
-            if effective_safe and ws_exists and item_count and item_count != "?" and int(item_count) > 0:
+            populated = (
+                item_count and item_count != "?" and int(item_count) > 0
+            )
+            if effective_safe and ws_exists and populated:
                 console.print(
                     "\n  [yellow][!] SAFETY BLOCK: Workspace is populated. "
                     "Would need --force-destroy-populated to proceed.[/yellow]"
