@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-03-22
+
+### Added
+- **`deploy --preserve-git` flag (D5)**: Skips Git disconnect/reconnect when the workspace already has a Git connection. Protects brownfield prod workspaces with existing Git bindings from being overwritten during deployment.
+- **`destroy --dry-run` flag (D6)**: Previews what would be destroyed — workspace status, item inventory, pipeline teardown plan, and local files to remove — then exits without mutating anything. Matches the dry-run pattern already used by bulk-destroy and promote commands.
+- **Scaffold pipeline discovery (D2)**: `scaffold` now queries all accessible deployment pipelines to check if the target workspace is already assigned to a stage. Uses the actual pipeline name and auto-detects `--as-stage` from position. Resolves sibling workspace names via REST API. Prevents duplicate pipeline creation in brownfield scenarios.
+
+### Changed
+- **`scaffold --as-stage` flag (D1)**: Scaffolding now supports `--as-stage test` or `--as-stage production` to declare which pipeline stage the scanned workspace represents. Adds full regex recognition for TEST/PROD/PRODUCTION markers alongside existing DEV patterns. New `_strip_any_stage_marker()` function.
+- **`deploy --stages` flag (D4)**: Selective stage deployment — `--stages dev` for dev-only, `--stages test,prod,pipeline` to skip dev. Deployer conditionally processes only requested stages.
+
+### Tests
+- **762/762 tests passing** (up from 742).
+
 ## [1.8.7] - 2026-03-17
 
 ### Changed
