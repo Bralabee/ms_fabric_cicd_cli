@@ -147,6 +147,7 @@ class FabricDeployer:
         force_branch_workspace: bool = False,
         rollback_on_failure: bool = False,
         stages: Optional[set] = None,
+        preserve_git: bool = False,
     ) -> bool:
         """Deploy workspace based on configuration
 
@@ -159,6 +160,7 @@ class FabricDeployer:
                 ``test``, ``prod``, ``pipeline``.  Default (None) means
                 deploy everything — same as ``{"dev", "test", "prod",
                 "pipeline"}``.
+            preserve_git: If True, do not modify existing Git connections.
         """
         # Resolve stages -- None means "all"
         if stages is None:
@@ -263,7 +265,7 @@ class FabricDeployer:
                         progress.update(task, description="[OK] Domain assigned")
 
                     # Step 6: Connect Git (if configured)
-                    if self.config.git_repo:
+                    if self.config.git_repo and not preserve_git:
                         task = progress.add_task("Connecting Git...", total=None)
                         git_branch = branch or self.config.git_branch
                         git_ok = self._connect_git(git_branch)
@@ -278,6 +280,18 @@ class FabricDeployer:
                                 "Git connection failed -- workspace was deployed "
                                 "but Git sync may need manual configuration"
                             )
+                    elif self.config.git_repo and preserve_git:
+                        task = progress.add_task(
+                            "Skipping Git connection (--preserve-git)...",
+                            total=None,
+                        )
+                        progress.update(
+                            task,
+                            description=(
+                                "[OK] Git connection preserved "
+                                "(existing binding untouched)"
+                            ),
+                        )
 
                     # Step 6b: Organize items into folders (after Git Sync)
                     if self.config.folder_rules and self.config.git_repo:

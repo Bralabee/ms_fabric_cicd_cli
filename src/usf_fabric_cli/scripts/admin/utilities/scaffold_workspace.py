@@ -532,6 +532,89 @@ def _infer_pipeline_name(workspace_name: str) -> str:
     return f"{base_name} - Pipeline"
 
 
+def _discover_pipeline_for_workspace(
+    token: str,
+    workspace_id: str,
+) -> Optional[Dict[str, Any]]:
+    """Discover which deployment pipeline (if any) a workspace belongs to.
+
+    Iterates all accessible pipelines and checks their stages for a matching
+    ``workspaceId``.  Returns a dict with pipeline name, stage order, and
+    sibling workspace names — or ``None`` if the workspace is not in any
+    pipeline.
+
+    The result dict has the shape::
+
+        {
+            "pipeline_name": "EDP - Pipeline",
+            "pipeline_id": "...",
+            "stage_index": 0,          # 0=dev, 1=test, 2=prod
+            "stage_name": "Development",
+            "stages": [
+                {"displayName": "Development", "workspaceId": "...", "workspaceName": "..."},
+                {"displayName": "Test",        "workspaceId": "...", "workspaceName": "..."},
+                {"displayName": "Production",  "workspaceId": None,  "workspaceName": None},
+            ],
+        }
+    """
+    from usf_fabric_cli.services.deployment_pipeline import (
+        FabricDeploymentPipelineAPI,
+    )
+
+    pipeline_api = FabricDeploymentPipelineAPI(token)
+    result = pipeline_api.list_pipelines()
+    if not result.get("success"):
+        logger.warning("Could not list pipelines: %s", result.get("error"))
+        return None
+
+    for pipeline in result["pipelines"]:
+        pid = pipeline["id"]
+        stages_result = pipeline_api.get_pipeline_stages(pid)
+        if not stages_result.get("success"):
+            continue
+
+        stages = stages_result["stages"]
+        for idx, stage in enumerate(stages):
+            if stage.get("workspaceId") == workspace_id:
+                # Found it — enrich stage data with workspace names
+                # Use Fabric REST API to resolve workspace IDs to names
+                import requests
+
+                enriched_stages = []
+                headers = {"Authorization": f"Bearer {token}"}
+                for s in stages:
+                    ws_id = s.get("workspaceId")
+                    ws_name = None
+                    if ws_id:
+                        try:
+                            resp = requests.get(
+                                f"https://api.fabric.microsoft.com/v1/workspaces/{ws_id}",
+                                headers=headers,
+                                timeout=15,
+                            )
+                            if resp.ok:
+                                ws_name = resp.json().get("displayName")
+                        except requests.RequestException:
+                            pass
+                    enriched_stages.append(
+                        {
+                            "displayName": s.get("displayName", ""),
+                            "workspaceId": ws_id,
+                            "workspaceName": ws_name,
+                        }
+                    )
+
+                return {
+                    "pipeline_name": pipeline.get("displayName", ""),
+                    "pipeline_id": pid,
+                    "stage_index": idx,
+                    "stage_name": stage.get("displayName", ""),
+                    "stages": enriched_stages,
+                }
+
+    return None
+
+
 def _generate_yaml(
     workspace_name: str,
     folders: List[str],
@@ -1123,13 +1206,6 @@ def scaffold_workspace(
     fabric = FabricCLIWrapper(token)
     slug = project_slug or _slugify(workspace_name)
 
-    # -- Auto-infer pipeline name unless explicitly skipped --
-    if not skip_pipeline and not pipeline_name:
-        pipeline_name = _infer_pipeline_name(workspace_name)
-        print(f"   Auto-inferred pipeline name: {pipeline_name}")
-    elif skip_pipeline:
-        pipeline_name = None
-
     # -- 2. Verify workspace exists --
     print(f"\nScanning workspace '{workspace_name}'...")
     workspace_id = fabric.get_workspace_id(workspace_name)
@@ -1139,6 +1215,40 @@ def scaffold_workspace(
             "Check the name and your Service Principal access permissions."
         )
     print(f"   Workspace ID: {workspace_id}")
+
+    # -- 2b. Discover existing deployment pipeline --
+    discovered_pipeline = None
+    if not skip_pipeline and not pipeline_name:
+        print("   Discovering deployment pipelines...")
+        discovered_pipeline = _discover_pipeline_for_workspace(token, workspace_id)
+        if discovered_pipeline:
+            pipeline_name = discovered_pipeline["pipeline_name"]
+            stage_name = discovered_pipeline["stage_name"]
+            print(f"   Found pipeline: {pipeline_name}")
+            print(f"   Workspace is stage {discovered_pipeline['stage_index']}: {stage_name}")
+            for s in discovered_pipeline["stages"]:
+                ws_label = s["workspaceName"] or "(unassigned)"
+                print(f"     {s['displayName']}: {ws_label}")
+
+            # Auto-infer as_stage from pipeline position if not explicitly set
+            if not as_stage:
+                stage_map = {
+                    0: "development",
+                    1: "test",
+                    2: "production",
+                }
+                inferred_stage = stage_map.get(discovered_pipeline["stage_index"])
+                if inferred_stage:
+                    as_stage = inferred_stage
+                    print(f"   Auto-detected --as-stage: {as_stage}")
+        else:
+            pipeline_name = _infer_pipeline_name(workspace_name)
+            print(f"   No existing pipeline found. Inferred: {pipeline_name}")
+    elif skip_pipeline:
+        pipeline_name = None
+    elif pipeline_name:
+        # User provided explicit pipeline name — use as-is
+        pass
 
     # -- 3. List folders --
     print("   Discovering folders...")
@@ -1223,7 +1333,19 @@ def scaffold_workspace(
     except Exception as e:
         print(f"   Could not discover Git connection: {e}")
 
-    # -- 6. Generate base_workspace.yaml --
+    # -- 6. Use discovered pipeline stage names (if not overridden) --
+    if discovered_pipeline and discovered_pipeline["stages"]:
+        stages_info = discovered_pipeline["stages"]
+        # stages_info is ordered: 0=Dev, 1=Test, 2=Prod (standard 3-stage)
+        if not test_workspace_name and len(stages_info) > 1:
+            test_ws = stages_info[1].get("workspaceName")
+            if test_ws:
+                test_workspace_name = test_ws
+        if not prod_workspace_name and len(stages_info) > 2:
+            prod_ws = stages_info[2].get("workspaceName")
+            if prod_ws:
+                prod_workspace_name = prod_ws
+
     base_yaml = _generate_yaml(
         workspace_name=workspace_name,
         folders=folder_names,
