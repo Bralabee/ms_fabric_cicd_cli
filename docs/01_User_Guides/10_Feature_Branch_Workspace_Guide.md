@@ -1,6 +1,6 @@
 # Fabric CI/CD — Full End-to-End Lifecycle Guide
 
-> **Version**: 1.8.4 | **Last validated**: 17 March 2026
+> **Version**: 1.9.0 | **Last validated**: 22 March 2026
 >
 > **⚠️ NOTE**: This guide references `fabric_cicd_test_repo` as the consumer repository template.
 > For the **current production-ready consumer repo** (`EDPFabric`) with multi-project support,
@@ -274,7 +274,7 @@ workspace:
   git_branch: main
   git_directory: /
 
-# Inline environment overrides (v1.8.4+)
+# Inline environment overrides (v1.9.0+)
 environments:
   dev:
     workspace:
@@ -307,7 +307,7 @@ principals:
 
 - **`workspace.name`** is the **base name**. When `--force-branch-workspace` is used, the CLI appends the branch name as a suffix (e.g., `<prefix>-feature-my-feature`)
 - **`${VAR_NAME}`** placeholders are resolved from environment variables or `.env`
-- **`environments:`** block (v1.8.4+) allows inline per-environment overrides — these take priority over external files in `config/environments/`
+- **`environments:`** block (v1.9.0+) allows inline per-environment overrides — these take priority over external files in `config/environments/`
 - The deploying Service Principal automatically gets Admin access; you don't need to list it
 
 ---
@@ -371,7 +371,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
-          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.4' }}"
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.9.0' }}"
 
       - name: Verify credentials
         run: |
@@ -432,7 +432,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
-          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.4' }}"
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.9.0' }}"
 
       - name: Extract branch info
         id: branch
@@ -516,7 +516,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
-          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.4' }}"
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.9.0' }}"
 
       - name: Extract branch info
         id: branch
@@ -592,7 +592,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
-          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.4' }}"
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.9.0' }}"
 
       - name: Wait for Fabric Git Sync
         run: |
@@ -678,7 +678,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install ms-fabric-cli==${{ vars.FABRIC_CLI_VERSION || '1.5.0' }}
-          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.8.4' }}"
+          pip install "git+https://${{ secrets.FABRIC_GITHUB_TOKEN }}@${{ vars.CLI_REPO_URL || 'github.com/your-org/your-cli-repo' }}.git@${{ vars.CLI_REPO_REF || 'v1.9.0' }}"
 
       - name: Promote Test → Production
         env:

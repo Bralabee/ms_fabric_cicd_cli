@@ -2,7 +2,7 @@
 
 Enterprise Microsoft Fabric deployment automation using a **modular architecture** around official Fabric CLI (~10,000 LOC across services, utils, and CLI layers).
 
-**Current Version**: 1.8.4 (March 2026)
+**Current Version**: 1.9.0 (March 2026)
 
 ## 📏 Development Standards
 
@@ -248,7 +248,7 @@ Service Principal must have:
 
 ## 📦 Packaging & Distribution
 
-- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.8.4-py3-none-any.whl`
+- **Wheel Build**: `make build` → `dist/usf_fabric_cli-1.9.0-py3-none-any.whl`
 - **Entry Point**: `pyproject.toml` defines `fabric-cicd` command → `usf_fabric_cli.cli:app`
 - **Docker Image**: `Dockerfile` installs wheel + Fabric CLI, runs as non-root user
 
