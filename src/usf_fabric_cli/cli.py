@@ -69,6 +69,16 @@ def deploy(
             "--stages test,prod,pipeline (skip dev, create test+prod+pipeline)."
         ),
     ),
+    preserve_git: bool = typer.Option(
+        False,
+        "--preserve-git",
+        help=(
+            "Do not modify existing Git connections on the workspace. "
+            "When set, if the workspace already has a Git connection "
+            "(even to a different repo), it will be left untouched. "
+            "Useful for brownfield workspaces with production Git bindings."
+        ),
+    ),
 ):
     """Deploy Fabric workspace based on configuration"""
 
@@ -140,6 +150,7 @@ def deploy(
         success = deployer.deploy(
             branch, force_branch_workspace, rollback_on_failure,
             stages=requested_stages,
+            preserve_git=preserve_git,
         )
 
         if not success:
@@ -332,6 +343,15 @@ def destroy(
             "choice-list entries. Requires --force-destroy-populated."
         ),
     ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help=(
+            "Preview what would be destroyed without making any changes. "
+            "Shows workspace status, pipeline teardown plan, and local "
+            "files that would be removed."
+        ),
+    ),
 ):
     """Destroy Fabric workspace based on configuration.
 
@@ -363,6 +383,75 @@ def destroy(
             workspace_name = workspace_name_override
         else:
             workspace_name = workspace_config.name
+
+        if dry_run:
+            # -- Dry-run: report what WOULD happen, then exit ----------
+            console.print(
+                f"[blue][DRY RUN] Previewing destroy for: {workspace_name}[/blue]"
+            )
+
+            env_vars = get_environment_variables(validate_vars=True)
+            fabric = FabricCLIWrapper(env_vars["FABRIC_TOKEN"])
+
+            # Check workspace existence and contents
+            ws_exists = fabric._item_exists(workspace_name)
+            if ws_exists:
+                items = fabric.list_workspace_items(workspace_name)
+                item_count = len(items.get("items", [])) if items.get("success") else "?"
+                console.print(f"  Workspace exists: [green]YES[/green]")
+                console.print(f"  Items in workspace: {item_count}")
+                if items.get("success"):
+                    by_type = {}
+                    for item in items.get("items", []):
+                        t = item.get("type", "Unknown")
+                        by_type[t] = by_type.get(t, 0) + 1
+                    for t, c in sorted(by_type.items()):
+                        console.print(f"    - {c}x {t}")
+            else:
+                console.print(f"  Workspace exists: [yellow]NO[/yellow] (already gone)")
+
+            # Check pipeline
+            dp_config = workspace_config.deployment_pipeline
+            if dp_config:
+                pipeline_name = dp_config.get("pipeline_name")
+                console.print(f"  Pipeline to teardown: {pipeline_name}")
+            else:
+                console.print("  Pipeline: [dim]none configured[/dim]")
+
+            # Check repo cleanup
+            if cleanup_repo:
+                from pathlib import Path
+
+                config_path = Path(config).resolve()
+                project_slug = config_path.parent.name
+                repo_root = config_path.parent
+                while repo_root != repo_root.parent:
+                    if (repo_root / ".git").exists() or (repo_root / ".github").exists():
+                        break
+                    repo_root = repo_root.parent
+
+                config_dir = config_path.parent
+                sync_dir = repo_root / project_slug
+                console.print(f"  Config dir to remove: {config_dir}")
+                console.print(
+                    f"    exists: {'YES' if config_dir.exists() else 'NO'}"
+                )
+                console.print(f"  Sync dir to remove: {sync_dir}")
+                console.print(
+                    f"    exists: {'YES' if sync_dir.exists() else 'NO'}"
+                )
+                console.print("  Workflow entries to remove: dropdown + env vars")
+
+            # Safety summary
+            effective_safe = safe and not force_destroy_populated
+            if effective_safe and ws_exists and item_count and item_count != "?" and int(item_count) > 0:
+                console.print(
+                    "\n  [yellow][!] SAFETY BLOCK: Workspace is populated. "
+                    "Would need --force-destroy-populated to proceed.[/yellow]"
+                )
+
+            console.print("\n[blue][DRY RUN] No changes made.[/blue]")
+            raise typer.Exit(0)
 
         if not force:
             confirm = typer.confirm(
