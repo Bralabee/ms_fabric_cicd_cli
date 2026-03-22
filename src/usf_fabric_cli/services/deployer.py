@@ -332,7 +332,8 @@ class FabricDeployer:
                         "[blue]Skipping dev workspace (not in --stages). "
                         "Resolving existing workspace ID...[/blue]"
                     )
-                    self.workspace_id = self.fabric.get_workspace_id(workspace_name)
+                    ws_id = self.fabric.get_workspace_id(workspace_name)
+                    self.workspace_id = ws_id  # type: ignore[assignment]
                     if not self.workspace_id:
                         console.print(
                             f"[yellow]Warning: Dev workspace "
