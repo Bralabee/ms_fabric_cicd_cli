@@ -229,9 +229,7 @@ class FabricDeployer:
                     )
 
                     # Step 2: Create folders
-                    task = progress.add_task(
-                        "Creating folder structure...", total=None
-                    )
+                    task = progress.add_task("Creating folder structure...", total=None)
                     self._create_folders()
                     progress.update(task, description="[OK] Folders created")
 
@@ -316,8 +314,7 @@ class FabricDeployer:
                                 progress.update(
                                     task,
                                     description=(
-                                        f"[OK] Folder organize: "
-                                        f"{moved} items moved"
+                                        f"[OK] Folder organize: " f"{moved} items moved"
                                     ),
                                 )
                         except (FabricCLIError, ValueError) as e:
@@ -335,9 +332,7 @@ class FabricDeployer:
                         "[blue]Skipping dev workspace (not in --stages). "
                         "Resolving existing workspace ID...[/blue]"
                     )
-                    self.workspace_id = self.fabric.get_workspace_id(
-                        workspace_name
-                    )
+                    self.workspace_id = self.fabric.get_workspace_id(workspace_name)
                     if not self.workspace_id:
                         console.print(
                             f"[yellow]Warning: Dev workspace "
@@ -1628,9 +1623,7 @@ class FabricDeployer:
             # Skip stages not requested via --stages
             token = _stage_key_to_token.get(stage_key, stage_key)
             if stages and token not in stages and "pipeline" not in stages:
-                console.print(
-                    f"  [dim]Skipping {stage_key} (not in --stages)[/dim]"
-                )
+                console.print(f"  [dim]Skipping {stage_key} (not in --stages)[/dim]")
                 continue
 
             stage_cfg = stages_config.get(stage_key)

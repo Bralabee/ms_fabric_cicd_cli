@@ -956,10 +956,8 @@ class TestAsStageGeneration:
         assert 'workspace_name: "Finance [PROD]"' in yaml
         # dev stage should be the inferred dev name
         lines = yaml.split("\n")
-        dev_stage_idx = next(
-            i for i, l in enumerate(lines) if "development:" in l
-        )
-        assert 'Finance [DEV]' in lines[dev_stage_idx + 1]
+        dev_stage_idx = next(i for i, l in enumerate(lines) if "development:" in l)
+        assert "Finance [DEV]" in lines[dev_stage_idx + 1]
         # test stage should be inferred
         assert 'workspace_name: "Finance [TEST]"' in yaml
 

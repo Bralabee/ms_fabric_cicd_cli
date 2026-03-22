@@ -148,7 +148,9 @@ def deploy(
     try:
         deployer = FabricDeployer(config, environment)
         success = deployer.deploy(
-            branch, force_branch_workspace, rollback_on_failure,
+            branch,
+            force_branch_workspace,
+            rollback_on_failure,
             stages=requested_stages,
             preserve_git=preserve_git,
         )
@@ -398,9 +400,7 @@ def destroy(
             if ws_exists:
                 items = fabric.list_workspace_items(workspace_name)
                 item_count = (
-                    len(items.get("items", []))
-                    if items.get("success")
-                    else "?"
+                    len(items.get("items", [])) if items.get("success") else "?"
                 )
                 console.print("  Workspace exists: [green]YES[/green]")
                 console.print(f"  Items in workspace: {item_count}")
@@ -413,8 +413,7 @@ def destroy(
                         console.print(f"    - {c}x {t}")
             else:
                 console.print(
-                    "  Workspace exists: "
-                    "[yellow]NO[/yellow] (already gone)"
+                    "  Workspace exists: " "[yellow]NO[/yellow] (already gone)"
                 )
 
             # Check pipeline
@@ -442,20 +441,14 @@ def destroy(
                 config_dir = config_path.parent
                 sync_dir = repo_root / project_slug
                 console.print(f"  Config dir to remove: {config_dir}")
-                console.print(
-                    f"    exists: {'YES' if config_dir.exists() else 'NO'}"
-                )
+                console.print(f"    exists: {'YES' if config_dir.exists() else 'NO'}")
                 console.print(f"  Sync dir to remove: {sync_dir}")
-                console.print(
-                    f"    exists: {'YES' if sync_dir.exists() else 'NO'}"
-                )
+                console.print(f"    exists: {'YES' if sync_dir.exists() else 'NO'}")
                 console.print("  Workflow entries to remove: dropdown + env vars")
 
             # Safety summary
             effective_safe = safe and not force_destroy_populated
-            populated = (
-                item_count and item_count != "?" and int(item_count) > 0
-            )
+            populated = item_count and item_count != "?" and int(item_count) > 0
             if effective_safe and ws_exists and populated:
                 console.print(
                     "\n  [yellow][!] SAFETY BLOCK: Workspace is populated. "

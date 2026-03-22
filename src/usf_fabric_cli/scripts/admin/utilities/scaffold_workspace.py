@@ -426,25 +426,37 @@ _STAGE_PATTERNS: List[tuple] = [
 _ALL_STAGE_PATTERNS: List[tuple] = [
     # Bracketed: [DEV], [TEST], [PROD], [PRODUCTION]
     # Captures optional leading whitespace so the replacement can reinsert it.
-    (re.compile(
-        r"(\s*)\[(?:DEV(?:ELOPMENT)?|TEST(?:ING)?|PROD(?:UCTION)?)\]",
-        re.IGNORECASE,
-    ), r"\1[{stage}]"),
+    (
+        re.compile(
+            r"(\s*)\[(?:DEV(?:ELOPMENT)?|TEST(?:ING)?|PROD(?:UCTION)?)\]",
+            re.IGNORECASE,
+        ),
+        r"\1[{stage}]",
+    ),
     # Parenthesised: (DEV), (TEST), (PROD)
-    (re.compile(
-        r"(\s*)\((?:DEV(?:ELOPMENT)?|TEST(?:ING)?|PROD(?:UCTION)?)\)",
-        re.IGNORECASE,
-    ), r"\1({stage})"),
+    (
+        re.compile(
+            r"(\s*)\((?:DEV(?:ELOPMENT)?|TEST(?:ING)?|PROD(?:UCTION)?)\)",
+            re.IGNORECASE,
+        ),
+        r"\1({stage})",
+    ),
     # Suffix with separator: -DEV, _TEST, - Prod
-    (re.compile(
-        r"[\s]*[-_][\s]*(?:DEV(?:ELOPMENT)?|TEST(?:ING)?|PROD(?:UCTION)?)$",
-        re.IGNORECASE,
-    ), " [{stage}]"),
+    (
+        re.compile(
+            r"[\s]*[-_][\s]*(?:DEV(?:ELOPMENT)?|TEST(?:ING)?|PROD(?:UCTION)?)$",
+            re.IGNORECASE,
+        ),
+        " [{stage}]",
+    ),
     # Bare suffix: "... Dev", "... Test", "... Production"
-    (re.compile(
-        r"\b(?:Dev(?:elopment)?|Test(?:ing)?|Prod(?:uction)?)$",
-        re.IGNORECASE,
-    ), "[{stage}]"),
+    (
+        re.compile(
+            r"\b(?:Dev(?:elopment)?|Test(?:ing)?|Prod(?:uction)?)$",
+            re.IGNORECASE,
+        ),
+        "[{stage}]",
+    ),
 ]
 
 
@@ -920,12 +932,8 @@ def _generate_yaml(
         else:
             # Default: scanned workspace IS dev (existing behavior)
             real_dev = workspace_name
-            real_test = test_workspace_name or _infer_stage_name(
-                workspace_name, "TEST"
-            )
-            real_prod = prod_workspace_name or _infer_stage_name(
-                workspace_name, "PROD"
-            )
+            real_test = test_workspace_name or _infer_stage_name(workspace_name, "TEST")
+            real_prod = prod_workspace_name or _infer_stage_name(workspace_name, "PROD")
 
         if templatise:
             pipe_display = "CHANGE-ME - Pipeline"
@@ -945,12 +953,11 @@ def _generate_yaml(
         lines.append("# -- Deployment Pipeline " + "-" * 53)
         if templatise:
             lines.append(f"# Scaffolded from pipeline: {pipeline_name}")
-            lines.append(
-                f"# Inferred stages: {real_dev} / {real_test} / {real_prod}"
-            )
+            lines.append(f"# Inferred stages: {real_dev} / {real_test} / {real_prod}")
         elif as_stage and as_stage != "development":
-            lines.append(f"# Scanned workspace '{workspace_name}' mapped as "
-                         f"{as_stage} stage")
+            lines.append(
+                f"# Scanned workspace '{workspace_name}' mapped as " f"{as_stage} stage"
+            )
             lines.append(
                 f"# Stages: {real_dev} (new) / {real_test} "
                 f"{'(existing)' if as_stage == 'test' else '(new)'} / "
