@@ -149,7 +149,7 @@ jobs:
           echo "CLI version: $VERSION"
 
       - name: Dispatch to ${{ matrix.consumer.repo }}
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.CONSUMER_REPO_PAT }}
           repository: ${{ matrix.consumer.repo }}
