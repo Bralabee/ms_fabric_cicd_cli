@@ -92,3 +92,5 @@ webapp/backend/.pytest_cache/
 .claude
 workspaces_to_destroy.txt
 workspaces_retry.txt
+CLAUDE.md
+
