@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-03-27
+
+### Fixed
+- **`discover-folders` exit code not signalling CI**: The Typer CLI entry point for `discover-folders` returned exit code 0 even when new folders/rules were found and written to the YAML config. This caused the CI `discover-folders` job to skip the auto-commit step, so folder structure changes detected in feature workspaces were never persisted. Root cause: `typer.Exit` inherits from `RuntimeError` (via `click.exceptions.Exit`), so `raise typer.Exit(code=2)` was silently caught by the command's `except RuntimeError` error handler. Fixed by moving the exit signal outside the try/except block.
+
 ## [1.9.0] - 2026-03-22
 
 ### Added

@@ -1365,6 +1365,7 @@ def discover_folders_cmd(
         fabric-cicd discover-folders config/projects/edp/base_workspace.yaml \\
             --workspace "EDP [DEV]" --prune
     """
+    has_changes = False
     try:
         from usf_fabric_cli.scripts.admin.utilities.discover_folders import (
             discover_folders,
@@ -1381,6 +1382,7 @@ def discover_folders_cmd(
         added = result["new_folders"] + result["new_rules"]
         pruned = result["stale_folders"] + result["stale_rules"]
         if added or pruned:
+            has_changes = True
             parts = []
             if added:
                 parts.append(
@@ -1404,6 +1406,12 @@ def discover_folders_cmd(
             e,
             "Ensure the workspace exists and you have access.",
         )
+
+    # Exit code 2 signals CI that changes were found/applied.
+    # Raised outside try/except because typer.Exit inherits from RuntimeError
+    # (via click.exceptions.Exit) and would be caught by the error handler.
+    if has_changes:
+        raise typer.Exit(code=2)
 
 
 @app.command("init-github-repo")

@@ -1,6 +1,6 @@
 # START HERE — Fabric CLI CI/CD Documentation Guide
 
-> **Version**: 1.9.0 · **Last Updated**: 22 March 2026
+> **Version**: 1.9.1 · **Last Updated**: 27 March 2026
 >
 > This is the **starting point** for all documentation. Read this page first to understand
 > the system architecture, choose your deployment path, and find the right guide for your role.
