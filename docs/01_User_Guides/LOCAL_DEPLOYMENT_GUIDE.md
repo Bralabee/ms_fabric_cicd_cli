@@ -77,7 +77,7 @@ pip install -e .
 > **For consumers** (using the CLI as a dependency, not developing it):
 > ```bash
 > # Replace v1.8.4 with your desired release tag (see CHANGELOG.md for versions)
-> pip install git+https://github.com/<org>/usf_fabric_cli_cicd.git@v1.9.0
+> pip install git+https://github.com/<org>/usf_fabric_cli_cicd.git@v1.9.1
 > ```
 
 ---

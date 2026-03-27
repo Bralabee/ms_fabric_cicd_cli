@@ -40,7 +40,7 @@ The system uses **two repositories** that work together:
 │  • Blueprint templates       │     │  • Makefile (make targets)    │
 │  • Docker image              │     │  • Project-specific secrets   │
 └─────────────────────────────┘     └──────────────────────────────┘
-        ▲ installed at runtime via: pip install git+https://...@v1.9.0
+        ▲ installed at runtime via: pip install git+https://...@v1.9.1
 ```
 
 **Key insight**: The CLI repo is a *shared product*. The consumer repo is *your project's configuration*.
