@@ -1,6 +1,6 @@
 # Fabric CI/CD — Full End-to-End Lifecycle Guide
 
-> **Version**: 1.9.0 | **Last validated**: 22 March 2026
+> **Version**: 1.9.2 | **Last validated**: 22 March 2026
 >
 > **⚠️ NOTE**: This guide references `fabric_cicd_test_repo` as the consumer repository template.
 > For the **current production-ready consumer repo** (`EDPFabric`) with multi-project support,
