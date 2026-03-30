@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-03-30
+
+### Fixed
+- **Brownfield scaffold emits placeholder env vars instead of actual GUIDs**: The Makefile always passes `--templatise` to `scaffold`, and the `if templatise:` branch in `_generate_yaml()` ran before `elif brownfield:`, making brownfield principal propagation dead code. Discovered principals were written as comments instead of active YAML entries. Reordered the if/elif chain so `brownfield and discovered_principals` is checked first. Added regression test for the combined `templatise=True, brownfield=True` path.
+
+### Tests
+- **763/763 tests passing** (up from 762).
+
 ## [1.9.1] - 2026-03-27
 
 ### Fixed

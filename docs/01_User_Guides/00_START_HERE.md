@@ -1,6 +1,6 @@
 # START HERE — Fabric CLI CI/CD Documentation Guide
 
-> **Version**: 1.9.1 · **Last Updated**: 27 March 2026
+> **Version**: 1.9.2 · **Last Updated**: 30 March 2026
 >
 > This is the **starting point** for all documentation. Read this page first to understand
 > the system architecture, choose your deployment path, and find the right guide for your role.
@@ -40,7 +40,7 @@ The system uses **two repositories** that work together:
 │  • Blueprint templates       │     │  • Makefile (make targets)    │
 │  • Docker image              │     │  • Project-specific secrets   │
 └─────────────────────────────┘     └──────────────────────────────┘
-        ▲ installed at runtime via: pip install git+https://...@v1.9.1
+        ▲ installed at runtime via: pip install git+https://...@v1.9.2
 ```
 
 **Key insight**: The CLI repo is a *shared product*. The consumer repo is *your project's configuration*.

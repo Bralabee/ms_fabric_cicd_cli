@@ -5,7 +5,7 @@ This package provides a lightweight CLI wrapper around the Microsoft Fabric CLI
 for enterprise CI/CD workflows.
 """
 
-__version__ = "1.8.0"
+__version__ = "1.9.2"
 __author__ = "USF Fabric Team"
 
 
