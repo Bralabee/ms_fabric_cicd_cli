@@ -887,6 +887,35 @@ class TestBrownfieldScaffold:
         # Falls through to greenfield path since no discovered principals
         assert "${SC30GLD_ADMIN_ID}" in yaml
 
+    def test_brownfield_with_templatise_still_emits_actual_guids(self):
+        """When both brownfield and templatise are set, brownfield principals
+        must take priority -- actual GUIDs, not CHANGEME_ placeholders.
+
+        This is the real-world path: the Makefile always passes --templatise,
+        so brownfield must win for principals even when templatise is True.
+        """
+        yaml = _generate_yaml(
+            workspace_name="SC30GLD [DEV]",
+            folders=["Data"],
+            folder_rules=[],
+            items_by_type={},
+            discovered_principals=self.DISCOVERED,
+            brownfield=True,
+            templatise=True,
+        )
+        # Brownfield principals must be active entries with actual GUIDs
+        assert '  - id: "aaa-111"' in yaml
+        assert '  - id: "bbb-222"' in yaml
+        assert '  - id: "ccc-333"' in yaml
+        assert "IT Admin Group" in yaml
+        # Must NOT have CHANGEME_ placeholder principals
+        assert "CHANGEME_ADMIN_ID" not in yaml
+        assert "CHANGEME_MEMBERS_ID" not in yaml
+        # Must still have mandatory governance env vars
+        assert "${AZURE_CLIENT_ID}" in yaml
+        assert "${ADDITIONAL_ADMIN_PRINCIPAL_ID}" in yaml
+        assert "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}" in yaml
+
 
 # ── As-Stage Tests ──────────────────────────────────────────────────────────
 

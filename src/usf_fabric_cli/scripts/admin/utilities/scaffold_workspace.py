@@ -782,9 +782,40 @@ def _generate_yaml(
     lines.append("# Access control")
     lines.append("principals:")
 
-    if templatise:
-        # Templatised: always emit standard governance + CHANGEME_ project principals
-        # matching the standard_data_product template structure exactly
+    if brownfield and discovered_principals:
+        # Brownfield: workspace already exists with its own principals.
+        # Emit mandatory governance env-var principals plus ALL discovered
+        # principals as active entries with their actual GUIDs.  This ensures
+        # they propagate to Test, Prod, and Feature workspaces.
+        lines.append(
+            "  # -- Mandatory governance principals" " (resolved via GitHub Secrets) --"
+        )
+        lines.append('  - id: "${AZURE_CLIENT_ID}"')
+        lines.append("    type: ServicePrincipal")
+        lines.append("    role: Admin")
+        lines.append("    description: Automation SP -- required for CI/CD deployments")
+        lines.append("")
+        lines.append('  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"')
+        lines.append("    type: Group")
+        lines.append("    role: Admin")
+        lines.append("    description: Mandatory governance admin group")
+        lines.append("")
+        lines.append('  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"')
+        lines.append("    type: Group")
+        lines.append("    role: Contributor")
+        lines.append("    description: Mandatory governance contributor group")
+        lines.append("")
+        lines.append("  # -- Discovered principals from live workspace (active) --")
+        for p in discovered_principals:
+            desc = p.get("description", f"Discovered {p['type']}")
+            lines.append(f'  - id: "{p["id"]}"')
+            lines.append(f"    type: {p['type']}")
+            lines.append(f"    role: {p['role']}")
+            lines.append(f'    description: "{desc}"')
+            lines.append("")
+    elif templatise:
+        # Templatised greenfield: emit CHANGEME_ placeholders for new-project
+        # to replace via sed.  Discovered principals are reference comments only.
         lines.append(
             "  # -- Mandatory governance principals" " (every workspace gets these) --"
         )
@@ -821,7 +852,6 @@ def _generate_yaml(
             '    description: "Project team members'
             ' -- set via <PROJECT>_MEMBERS_ID secret"'
         )
-        # Include discovered principals as reference comments if available
         if discovered_principals:
             lines.append("")
             lines.append(
@@ -830,40 +860,9 @@ def _generate_yaml(
             for p in discovered_principals:
                 desc = p.get("description", p["id"][:12] + "...")
                 lines.append(f"  #   {p['type']} ({p['role']}): {desc}")
-    elif brownfield and discovered_principals:
-        # Brownfield: workspace already exists with its own principals.
-        # Emit mandatory governance env-var principals plus ALL discovered
-        # principals as active entries with their actual GUIDs.  This ensures
-        # they propagate to Test, Prod, and Feature workspaces.
-        lines.append(
-            "  # -- Mandatory governance principals" " (resolved via GitHub Secrets) --"
-        )
-        lines.append('  - id: "${AZURE_CLIENT_ID}"')
-        lines.append("    type: ServicePrincipal")
-        lines.append("    role: Admin")
-        lines.append("    description: Automation SP -- required for CI/CD deployments")
-        lines.append("")
-        lines.append('  - id: "${ADDITIONAL_ADMIN_PRINCIPAL_ID}"')
-        lines.append("    type: Group")
-        lines.append("    role: Admin")
-        lines.append("    description: Mandatory governance admin group")
-        lines.append("")
-        lines.append('  - id: "${ADDITIONAL_CONTRIBUTOR_PRINCIPAL_ID}"')
-        lines.append("    type: Group")
-        lines.append("    role: Contributor")
-        lines.append("    description: Mandatory governance contributor group")
-        lines.append("")
-        lines.append("  # -- Discovered principals from live workspace (active) --")
-        for p in discovered_principals:
-            desc = p.get("description", f"Discovered {p['type']}")
-            lines.append(f'  - id: "{p["id"]}"')
-            lines.append(f"    type: {p['type']}")
-            lines.append(f"    role: {p['role']}")
-            lines.append(f'    description: "{desc}"')
-            lines.append("")
     else:
-        # Greenfield: emit governance + project-specific placeholder principals
-        # using env var refs that must be set as GitHub Secrets before deploying.
+        # Greenfield (no templatise): emit governance + project-specific placeholder
+        # principals using env var refs that must be set as GitHub Secrets.
         lines.append(
             "  # -- Mandatory governance principals" " (every workspace gets these) --"
         )
