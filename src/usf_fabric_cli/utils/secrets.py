@@ -201,6 +201,12 @@ class FabricSecrets(BaseSettings):
         Returns:
             FabricSecrets instance
         """
+        # Callers that didn't specify a file get USF_ENV_FILE if set (multi-client
+        # setups), otherwise the .env default. Explicit callers (including
+        # explicit env_file=None to skip file loading) are left untouched.
+        if env_file == ".env":
+            env_file = os.getenv("USF_ENV_FILE", ".env")
+
         if env_file is None:
             instance = cls(_env_file=None)  # type: ignore[call-arg]
         else:
@@ -247,7 +253,8 @@ def get_secrets() -> FabricSecrets:
     Raises:
         ValueError: When required authentication credentials are missing
     """
-    secrets = FabricSecrets()
+    # USF_ENV_FILE overrides for multi-client setups (defaults to .env).
+    secrets = FabricSecrets(_env_file=os.getenv("USF_ENV_FILE", ".env"))
 
     # Backfill os.environ to ensure subprocesses (like fab CLI) and legacy
     # os.getenv() calls see variables that were loaded by Pydantic from .env

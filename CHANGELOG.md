@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Native (non-Docker) targets now support `ENVFILE=` for multi-client setups**: previously only `docker-*` targets could target a credentials file other than the default `.env` (via `ENVFILE=`). Native targets (`deploy`, `destroy`, `list-workspaces`, `diagnose`, `onboard`, etc.) always loaded plain `.env` regardless, which was silently dangerous in multi-client setups — e.g. `make list-workspaces` with no `ENVFILE` would run against whichever client happens to be the current default `.env`, not necessarily the one you meant. `ENVFILE` is now a single shared Makefile variable used by both native and Docker targets; native targets pass it through as `USF_ENV_FILE`, which every `load_dotenv()`/`FabricSecrets` call site in the CLI now honors, falling back to `.env` when unset (usage unchanged unless overridden).
+
 ### Fixed
 - **`diagnose` crashed on the API connectivity check**: `FabricDiagnostics.validate_api_connectivity()` was called from `cli.py` but never implemented on the class, causing an `AttributeError` on every `diagnose`/`docker-diagnose` run. Masked by a test that mocks `FabricDiagnostics` entirely. Implemented the method using the same `fab ls --output_format json` path `list-workspaces` already uses; added unit test coverage for both the success and failure paths.
 

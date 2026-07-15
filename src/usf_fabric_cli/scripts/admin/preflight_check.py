@@ -21,7 +21,8 @@ def _install_fabric_cli() -> None:
 
 
 def _ensure_env_loaded() -> None:
-    env_path = Path(".env")
+    # USF_ENV_FILE overrides for multi-client setups (defaults to .env).
+    env_path = Path(os.getenv("USF_ENV_FILE", ".env"))
     if env_path.exists():
         load_dotenv(dotenv_path=env_path, encoding="utf-8")
 
