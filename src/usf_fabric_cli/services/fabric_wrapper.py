@@ -2150,3 +2150,27 @@ class FabricDiagnostics:
                 "error": result.get("error", "Authentication failed"),
                 "remediation": "Check FABRIC_TOKEN environment variable",
             }
+
+    def validate_api_connectivity(self) -> Dict[str, Any]:
+        """Validate Fabric API connectivity by listing accessible workspaces"""
+        result = self.cli._execute_command(["ls", "--output_format", "json"])
+
+        if not result.get("success"):
+            return {
+                "success": False,
+                "error": result.get("error", "API connectivity check failed"),
+            }
+
+        data = result.get("data")
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                data = {}
+
+        workspaces = (data or {}).get("result", {}).get("data", [])
+
+        return {
+            "success": True,
+            "workspaces_count": len(workspaces) if isinstance(workspaces, list) else 0,
+        }

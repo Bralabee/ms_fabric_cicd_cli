@@ -173,6 +173,45 @@ class TestFabricCLIWrapper:
         assert "remediation" in result
 
     @patch("subprocess.run")
+    def test_diagnostic_api_connectivity(self, mock_run):
+        """Test API connectivity check counts accessible workspaces"""
+
+        stdout = json.dumps(
+            {
+                "result": {
+                    "data": [
+                        {"name": "ws-one.Workspace"},
+                        {"name": "ws-two.Workspace"},
+                    ]
+                }
+            }
+        )
+        mock_run.return_value = Mock(stdout=stdout, stderr="", returncode=0)
+
+        diagnostics = FabricDiagnostics(self.fabric)
+        result = diagnostics.validate_api_connectivity()
+
+        assert result["success"] is True
+        assert result["workspaces_count"] == 2
+
+    @patch("subprocess.run")
+    def test_diagnostic_api_connectivity_failure(self, mock_run):
+        """Test API connectivity check surfaces failure"""
+        import subprocess
+
+        mock_run.side_effect = subprocess.CalledProcessError(
+            returncode=1,
+            cmd=["fab", "ls", "--output_format", "json"],
+            stderr="x ls: [AuthenticationFailed] token expired",
+        )
+
+        diagnostics = FabricDiagnostics(self.fabric)
+        result = diagnostics.validate_api_connectivity()
+
+        assert result["success"] is False
+        assert "error" in result
+
+    @patch("subprocess.run")
     def test_delete_workspace(self, mock_run):
         """Test workspace deletion"""
         mock_run.return_value = Mock(stdout="", stderr="", returncode=0)

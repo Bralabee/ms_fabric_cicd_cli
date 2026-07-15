@@ -4,6 +4,7 @@
 -r requirements.txt
 
 # Development tools
+setuptools>=83.0.0  # PYSEC-2026-3447 — CI runner ships an older, vulnerable version
 pytest>=7.4.0
 pytest-cov>=4.1.0
 black==26.3.1
