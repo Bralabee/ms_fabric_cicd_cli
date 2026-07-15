@@ -6,6 +6,7 @@ logic is in services/deployer.py (FabricDeployer class).
 """
 
 import logging
+import os
 from typing import Optional
 
 import typer
@@ -25,7 +26,9 @@ from usf_fabric_cli.utils.config import ConfigManager, get_environment_variables
 
 # Ensure .env vars are loaded for all CLI commands, including those that
 # read env vars directly (e.g., init-github-repo reads GITHUB_TOKEN).
-load_dotenv(encoding="utf-8")
+# USF_ENV_FILE lets multi-client setups point at .env.<client> instead of
+# always defaulting to .env (set via `make <target> ENVFILE=.env.client`).
+load_dotenv(dotenv_path=os.getenv("USF_ENV_FILE", ".env"), encoding="utf-8")
 
 logger = logging.getLogger(__name__)
 logging.getLogger("azure").setLevel(logging.WARNING)

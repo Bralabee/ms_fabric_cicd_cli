@@ -375,8 +375,9 @@ def get_environment_variables(validate_vars: bool = True) -> Dict[str, str]:
     DEPRECATED: Use core.secrets.get_secrets() instead for new code.
     This function is maintained for backward compatibility.
     """
-    # Load variables from .env to simplify local workflows
-    load_dotenv(encoding="utf-8")
+    # Load variables from .env to simplify local workflows. USF_ENV_FILE lets
+    # multi-client setups point at .env.<client> instead of always .env.
+    load_dotenv(dotenv_path=os.getenv("USF_ENV_FILE", ".env"), encoding="utf-8")
 
     # Try the new secrets module first
     try:

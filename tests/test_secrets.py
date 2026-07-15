@@ -140,6 +140,9 @@ class TestFabricSecrets:
 
             # Let's use a side_effect to return a real instance with _env_file=None
             def side_effect(*args, **kwargs):
+                # get_secrets() now passes its own _env_file (USF_ENV_FILE-aware);
+                # override it so this test still ignores any real .env on disk.
+                kwargs.pop("_env_file", None)
                 return FabricSecrets(_env_file="non_existent_env_file", **kwargs)
 
             MockSecrets.side_effect = side_effect
@@ -158,6 +161,44 @@ class TestFabricSecrets:
         assert env_vars["FABRIC_TOKEN"] == "test-token"
         assert env_vars["TENANT_ID"] == "test-tenant"
         assert env_vars["GITHUB_TOKEN"] == "test-github"
+
+    def test_get_secrets_honors_usf_env_file(self, tmp_path, monkeypatch):
+        """get_secrets() reads USF_ENV_FILE instead of the default .env when set."""
+        monkeypatch.chdir(tmp_path)
+        # get_secrets() backfills resolved values into the real process os.environ
+        # (so subprocesses like `fab` see them), so a prior test's AZURE_TENANT_ID/
+        # AZURE_CLIENT_ID can otherwise leak in here — clear both alias forms.
+        for var in [
+            "AZURE_CLIENT_ID",
+            "AZURE_CLIENT_SECRET",
+            "TENANT_ID",
+            "AZURE_TENANT_ID",
+            "FABRIC_TOKEN",
+        ]:
+            monkeypatch.delenv(var, raising=False)
+
+        # A plain .env in cwd that should be IGNORED in favour of USF_ENV_FILE.
+        (tmp_path / ".env").write_text("AZURE_CLIENT_ID=default-client-id\n")
+
+        client_env = tmp_path / ".env.client"
+        client_env.write_text(
+            "AZURE_CLIENT_ID=client-specific-id\n"
+            "AZURE_CLIENT_SECRET=client-specific-secret\n"
+            "AZURE_TENANT_ID=client-specific-tenant\n"
+        )
+        monkeypatch.setenv("USF_ENV_FILE", ".env.client")
+
+        # get_secrets() auto-generates a FABRIC_TOKEN from SP creds via a real
+        # Azure AD call — stub it out so the test stays offline.
+        with patch("azure.identity.ClientSecretCredential") as mock_cred:
+            mock_cred.return_value.get_token.return_value = MagicMock(
+                token="fake-token"
+            )
+            secrets = get_secrets()
+
+        assert secrets.azure_client_id == "client-specific-id"
+        assert secrets.azure_client_secret == "client-specific-secret"
+        assert secrets.tenant_id == "client-specific-tenant"
 
 
 class TestPriorityLoading:
@@ -190,6 +231,34 @@ class TestPriorityLoading:
 
         # Should load from file
         assert secrets.azure_client_id == "file-client-id"
+
+    def test_load_with_fallback_honors_usf_env_file(self, tmp_path, monkeypatch):
+        """load_with_fallback() with no args still honors USF_ENV_FILE."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("AZURE_CLIENT_ID", raising=False)
+
+        (tmp_path / ".env").write_text("AZURE_CLIENT_ID=default-client-id\n")
+        (tmp_path / ".env.client").write_text("AZURE_CLIENT_ID=client-specific-id\n")
+        monkeypatch.setenv("USF_ENV_FILE", ".env.client")
+
+        secrets = FabricSecrets.load_with_fallback()
+
+        assert secrets.azure_client_id == "client-specific-id"
+
+    def test_load_with_fallback_explicit_env_file_overrides_usf_env_file(
+        self, tmp_path, monkeypatch
+    ):
+        """An explicit env_file argument still wins over USF_ENV_FILE."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("AZURE_CLIENT_ID", raising=False)
+
+        (tmp_path / ".env.client").write_text("AZURE_CLIENT_ID=client-specific-id\n")
+        (tmp_path / ".env.explicit").write_text("AZURE_CLIENT_ID=explicit-id\n")
+        monkeypatch.setenv("USF_ENV_FILE", ".env.client")
+
+        secrets = FabricSecrets.load_with_fallback(env_file=".env.explicit")
+
+        assert secrets.azure_client_id == "explicit-id"
 
 
 class TestKeyVaultIntegration:

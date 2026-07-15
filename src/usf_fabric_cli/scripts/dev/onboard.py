@@ -39,8 +39,9 @@ from usf_fabric_cli.scripts.admin.utilities.init_github_repo import init_github_
 from usf_fabric_cli.scripts.dev.generate_project import generate_project_config
 
 # Load .env so all env-var reads (GITHUB_TOKEN, FABRIC_CAPACITY_ID, etc.) work
-# consistently with the rest of the project.
-load_dotenv(encoding="utf-8")
+# consistently with the rest of the project. USF_ENV_FILE overrides for
+# multi-client setups.
+load_dotenv(dotenv_path=os.getenv("USF_ENV_FILE", ".env"), encoding="utf-8")
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")

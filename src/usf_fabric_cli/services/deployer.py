@@ -40,10 +40,10 @@ class FabricDeployer:
     """
 
     def __init__(self, config_path: str, environment: Optional[str] = None):
-        # Ensure .env is loaded
+        # Ensure .env is loaded (USF_ENV_FILE overrides for multi-client setups)
         from dotenv import load_dotenv
 
-        load_dotenv(encoding="utf-8")
+        load_dotenv(dotenv_path=os.getenv("USF_ENV_FILE", ".env"), encoding="utf-8")
 
         self.config_manager = ConfigManager(config_path)
         self.config = self.config_manager.load_config(environment)

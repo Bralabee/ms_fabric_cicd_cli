@@ -27,7 +27,8 @@ from rich.console import Console
 
 # Load .env so GITHUB_TOKEN (and any other vars) are available when
 # running this script directly (consistent with the rest of the project).
-load_dotenv(encoding="utf-8")
+# USF_ENV_FILE overrides for multi-client setups.
+load_dotenv(dotenv_path=os.getenv("USF_ENV_FILE", ".env"), encoding="utf-8")
 
 # ---------------------------------------------------------------------------
 # Logging / UI
