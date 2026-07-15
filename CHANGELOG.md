@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **`diagnose` crashed on the API connectivity check**: `FabricDiagnostics.validate_api_connectivity()` was called from `cli.py` but never implemented on the class, causing an `AttributeError` on every `diagnose`/`docker-diagnose` run. Masked by a test that mocks `FabricDiagnostics` entirely. Implemented the method using the same `fab ls --output_format json` path `list-workspaces` already uses; added unit test coverage for both the success and failure paths.
+
 ## [1.9.2] - 2026-03-30
 
 ### Fixed
